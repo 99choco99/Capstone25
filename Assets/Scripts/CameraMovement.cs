@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class CameraMovement : MonoBehaviour
 {
-    PlayerInputs input;
+    PlayerController input;
     public Transform objectToFollow;
     public float followSpeed = 10f;  // 카메라 이동속도
     public float sensitivity = 100f;  // 카메라 감도
@@ -24,7 +24,7 @@ public class CameraMovement : MonoBehaviour
 
     private void Awake()
     {
-        input = GetComponentInParent<PlayerInputs>();
+        input = GetComponentInParent<PlayerController>();
         rotX = transform.localRotation.eulerAngles.x;
         rotY = transform.localRotation.eulerAngles.y;
 
