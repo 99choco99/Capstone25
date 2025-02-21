@@ -83,7 +83,7 @@
                     "id": "641cd816-40e6-41b4-8c3d-04687c349290",
                     "expectedControlType": "",
                     "processors": "",
-                    "interactions": "",
+                    "interactions": "Press(pressPoint=0.1,behavior=2)",
                     "initialStateCheck": false
                 },
                 {
@@ -255,7 +255,7 @@
                     "name": "",
                     "id": "05f6913d-c316-48b2-a6bb-e225f14c7960",
                     "path": "<Mouse>/leftButton",
-                    "interactions": "",
+                    "interactions": "Press(behavior=2)",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
                     "action": "Attack",
@@ -365,7 +365,7 @@
                     "name": "",
                     "id": "eb40bb66-4559-4dfa-9a2f-820438abb426",
                     "path": "<Keyboard>/space",
-                    "interactions": "Press",
+                    "interactions": "Press(pressPoint=0.1,behavior=2)",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "Jump",

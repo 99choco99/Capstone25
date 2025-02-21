@@ -2,10 +2,12 @@ using UnityEngine;
 using System;
 using Unity.VisualScripting;
 using static System.TimeZoneInfo;
+using System.Collections;
+using System.Threading.Tasks;
 
 
 [Serializable]
-public class PlayerStateMachine : MonoBehaviour
+public class PlayerStateMachine : StateMachineBehaviour
 {
     public IState currentState { get; private set; }
     public IState preState { get; private set; }
@@ -15,15 +17,19 @@ public class PlayerStateMachine : MonoBehaviour
     public PlayerUnControllableState playerUnControllableState; // 제어 불가 상태
     public PlayerAttackState playerAttackState;   // 공격 중인 상태
     public PlayerGuardState playerGuardState;  // 가드 상태
+    public PlayerJumpState playerJumpState;
+    public PlayerSlideState playerSlideState;
     public bool isTransitionPosible; //상태 전이가 가능한가?
 
     public PlayerStateMachine(PlayerController player)
     {
-        this.playerMoveState = new PlayerMoveState(player);
-        this.playerIdleState = new PlayerIdleState(player);
-        this.playerUnControllableState = new PlayerUnControllableState(player);
-        this.playerAttackState = new PlayerAttackState(player);
-        this.playerGuardState = new PlayerGuardState(player);
+        playerJumpState = new PlayerJumpState(player);
+        playerMoveState = new PlayerMoveState(player);
+        playerIdleState = new PlayerIdleState(player);
+        playerUnControllableState = new PlayerUnControllableState(player);
+        playerAttackState = new PlayerAttackState(player);
+        playerGuardState = new PlayerGuardState(player);
+        playerSlideState = new PlayerSlideState(player);
     }
 
 
@@ -36,37 +42,34 @@ public class PlayerStateMachine : MonoBehaviour
     // 상태 전이
     public void TransitionTo(IState nextState)
     {
-        if (!isTransitionPosible) { return; }
+        if (!isTransitionPosible || nextState == currentState) { return; }
         currentState.Exit();
         preState = currentState;
         currentState = nextState;
         nextState.Enter();
     }
 
-
-
-    //통제 불가 상태로 전이
-    public void UnControllable()
+    //상태 전이 지연
+    public async Task TransitionDelay(float time)
     {
-        TransitionTo(playerUnControllableState);
         isTransitionPosible = false;
+        await Task.Delay((int)(time * 1000)); // 밀리초 단위로 지연
+        isTransitionPosible = true;
     }
 
-    //통제 가능 상태로 전이
-    public void Controllable()
-    {
-        isTransitionPosible = true;
-        TransitionTo(playerIdleState);
-    }
 
     //입력 받을 수 있는 상태인가?
     public bool IsControll() { return isTransitionPosible; }
+
+
+
 
 
     public void Update()
     {
         if (currentState != null)
         {
+            Debug.Log(currentState);
             currentState.Update();
         }
     }

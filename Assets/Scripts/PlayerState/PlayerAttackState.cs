@@ -3,13 +3,17 @@ using UnityEngine;
 public class PlayerAttackState : IState
 {
     PlayerController player;
+    private float lastAttackTime;
     public PlayerAttackState(PlayerController player) { this.player = player; }
-    public void Enter() { 
+    public void Enter() {
         player.anim.SetBool("Attack", true);
-        player.StartCoroutine("HandleAttack");
+        lastAttackTime = Time.time;
     }
-    public void Update() { }
+    public void Update() { 
+        if(Time.time <= lastAttackTime + player.AttackTime) { return; }
+        player.playerStateMachine.TransitionTo(player.playerStateMachine.playerIdleState);
+    }
     public void Exit() {
-
+        player.anim.SetBool("Attack", false);
     }
 }
