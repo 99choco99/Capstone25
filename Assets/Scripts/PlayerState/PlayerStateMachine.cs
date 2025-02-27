@@ -7,29 +7,32 @@ using System.Threading.Tasks;
 
 
 [Serializable]
-public class PlayerStateMachine : StateMachineBehaviour
+public class PlayerStateMachine
 {
-    public IState currentState { get; private set; }
-    public IState preState { get; private set; }
+    public IState currentState { get; private set; }  // 현재 상태
+    public IState preState { get; private set; }  // 이전 상태
 
     public PlayerIdleState playerIdleState;  // 가만히 있는 상태
     public PlayerMoveState playerMoveState;  // 움직이는 상태
     public PlayerUnControllableState playerUnControllableState; // 제어 불가 상태
     public PlayerAttackState playerAttackState;   // 공격 중인 상태
     public PlayerGuardState playerGuardState;  // 가드 상태
-    public PlayerJumpState playerJumpState;
-    public PlayerSlideState playerSlideState;
+    public PlayerSlideState playerSlideState;   // 슬라이드 상태
+    public PlayerDamagedState playerDamagedState;
+
     public bool isTransitionPosible; //상태 전이가 가능한가?
 
+    
+    //플레이어 상태들
     public PlayerStateMachine(PlayerController player)
     {
-        playerJumpState = new PlayerJumpState(player);
         playerMoveState = new PlayerMoveState(player);
         playerIdleState = new PlayerIdleState(player);
         playerUnControllableState = new PlayerUnControllableState(player);
         playerAttackState = new PlayerAttackState(player);
         playerGuardState = new PlayerGuardState(player);
         playerSlideState = new PlayerSlideState(player);
+        playerDamagedState = new PlayerDamagedState(player);
     }
 
 
@@ -39,6 +42,8 @@ public class PlayerStateMachine : StateMachineBehaviour
         isTransitionPosible = true;
         startingState.Enter();
     }
+
+
     // 상태 전이
     public void TransitionTo(IState nextState)
     {
@@ -62,9 +67,7 @@ public class PlayerStateMachine : StateMachineBehaviour
     public bool IsControll() { return isTransitionPosible; }
 
 
-
-
-
+    //상태 반복
     public void Update()
     {
         if (currentState != null)
