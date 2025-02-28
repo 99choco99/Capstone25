@@ -1,13 +1,14 @@
 using UnityEngine;
 
 using BehaviourTree;
+using UnityEngine.AI;
 
 
 public class TaskPatrol : Node
 {
     public Transform _transform;
     public Transform[] _wayPoints;
-
+    public NavMeshAgent _agent;
     private Animator _animator;
 
     private int _currentWaypointIndex = 0;
@@ -19,24 +20,26 @@ public class TaskPatrol : Node
     {
         _animator = transform.GetComponent<Animator>();
         _transform = transform;
+        _agent = transform.GetComponent<NavMeshAgent>();
         _wayPoints = wayPoints;
     }
 
     public override NodeState Evaluate()
     {
+
         if (_waiting)
         {
             _waitCounter += Time.deltaTime;
-            if (_waitCounter < _waitTime)
+            if (_waitCounter > _waitTime)
             {
                 _waiting = false;
-                _animator.SetBool("Move", false);
             }
+            _animator.SetBool("Move", false);
         }
         else
         {
             Transform wp = _wayPoints[_currentWaypointIndex];
-            if (Vector3.Distance(_transform.position, wp.position) < 0.1f)
+            if (Vector3.Distance(_transform.position, wp.position) < 1f)
             {
                 _transform.position = wp.position;
                 _waitCounter = 0f;
@@ -46,7 +49,7 @@ public class TaskPatrol : Node
             }
             else
             {
-                _transform.position = Vector3.MoveTowards(_transform.position, wp.position, EnemyBT.speed * Time.deltaTime);
+                _agent.SetDestination(wp.position);
                 _transform.LookAt(wp.position);
                 _animator.SetBool("Move", true);
             }

@@ -5,7 +5,7 @@ public class CheckEnemyInFOVRange: Node
 {
     private Transform _transform;
     private Animator _animator;
-    private static int _LayerMask = (1 << 7);
+    private static int _LayerMask = (1 << 6);
     public CheckEnemyInFOVRange(Transform transform)
     {
         _transform = transform;
