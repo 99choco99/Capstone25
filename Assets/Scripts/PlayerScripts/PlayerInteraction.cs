@@ -5,9 +5,10 @@ public class PlayerInteraction : MonoBehaviour
 {
     PlayerController player;
     IInteractable interactObject;
-    Collider [] hits;
+
 
     public float interactRange;
+    private int layerMask = 1 << 8;
     void Start()
     {
         player = GetComponent<PlayerController>();
@@ -15,22 +16,25 @@ public class PlayerInteraction : MonoBehaviour
 
     void Update()
     {
-        DetectInteractable();
         if (player.interaction)
         {
-            foreach(Collider collider in hits)
+            Collider[] hits = Physics.OverlapSphere(transform.position, interactRange, layerMask);
+            if (hits[0].gameObject.TryGetComponent(out interactObject))
             {
-                if(collider.gameObject.TryGetComponent(out interactObject))
-                {
-                    interactObject.Interact();
-                }
+                interactObject.Interact(player.transform);
             }
         }
     }
 
-    void DetectInteractable()
+    public Collider[] GetInteractObject()
     {
-        hits = Physics.OverlapSphere(transform.position, interactRange);
+        Collider[] hits = Physics.OverlapSphere(transform.position, interactRange, layerMask);
+        if (hits != null)
+        {
+            return hits;
+        }
+        return null;
     }
+
 
 }
