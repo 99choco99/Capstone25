@@ -28,6 +28,7 @@ public class CameraMovement : MonoBehaviour
         rotX = transform.localRotation.eulerAngles.x;
         rotY = transform.localRotation.eulerAngles.y;
 
+
         dirNormalized = realCamera.localPosition.normalized;
         finalDistance = realCamera.localPosition.magnitude;
     }

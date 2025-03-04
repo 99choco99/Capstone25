@@ -12,18 +12,7 @@ public class PlayerJumpState : IState
     }
     public void Update()
     {
-        player.jump = false;
-        if (!Physics.Raycast(player.rb.position, Vector3.down, 0.2f))
-        {
-            player.isGround = false;
-        }
-        else
-        {
-            if (player.rb.linearVelocity.y <= 3) { 
-                player.isGround = true;
-                player.playerStateMachine.TransitionTo(player.playerStateMachine.preState);
-            }
-        }
+
     }
     public void Exit()
     {
