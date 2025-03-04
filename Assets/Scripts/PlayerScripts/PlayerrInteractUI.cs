@@ -9,13 +9,13 @@ using System.Linq;
 
 public class PlayerInteractUI : MonoBehaviour
 {
-    [SerializeField] private GameObject containerGameObject;
-    [SerializeField] private PlayerInteraction playerInteraction;
-    [SerializeField] private GameObject InteractInfo;
-
-    private List<GameObject> InteractUIContainer;
-    private Collider[] InteractObject;
-    private TMP_Text InteractObjectName;
+    [SerializeField] private GameObject InteractInfo; //주변 interactable 의 정보
+    [SerializeField] private GameObject containerGameObject;  //InteractInfo 를 담기 위함
+    [SerializeField] private PlayerInteraction playerInteraction; // 플레이어의 interact 참조
+    [SerializeField] private GameObject ScrollBar;
+    private Collider[] InteractObject;//플레이어 주변의 InteractObject  저장
+    private List<GameObject> InteractUIContainer;  //InteractObject를 보여주기 위한 컨테이너
+    private TMP_Text InteractObjectName;  // InteractObject의 이름
 
 
     private void Start()
@@ -25,16 +25,22 @@ public class PlayerInteractUI : MonoBehaviour
 
     private void Update()
     {
-        InteractObject = playerInteraction.GetInteractObject();
-        
-        foreach(GameObject obj in InteractUIContainer)
+        InteractObject = playerInteraction.GetInteractObject();  //주변 InteractObject 가져오기
+        InteractUI();  // UI
+    }
+
+    void InteractUI()
+    {
+        foreach (GameObject obj in InteractUIContainer)
         {
             obj.SetActive(false);
         }
 
-        for(int i = 0; i< InteractObject.Length; i++)
+        // 여유 Container가 없으면 생성, 있으면 Active해서 활용
+        for (int i = 0; i < InteractObject.Length; i++)
         {
             GameObject select;
+
             if (i < InteractUIContainer.Count)
             {
 
@@ -47,30 +53,13 @@ public class PlayerInteractUI : MonoBehaviour
                 InteractUIContainer.Add(select);
             }
 
-            // 이름을 설정합니다.
+            // 주변 NPC 이름 가져오기
             InteractObjectName = select.transform.GetChild(1).GetComponentInChildren<TMP_Text>();
             InteractObjectName.text = InteractObject[i].name;
-
-    }
-        // InteractObject가 존재하면 Show, 없으면 Hide
-        if (InteractObject.Length > 0)
-        {
-            Show();
         }
-        else
-        {
-            Hide();
-        }
+        if(InteractUIContainer.Count <= 0) { return; }
+        //선택된 UI의 색 바꾸기
+        InteractUIContainer[playerInteraction.preselectIndex].transform.GetChild(1).GetComponent<Image>().color = new Color(1, 0, 0);
+        InteractUIContainer[playerInteraction.selectIndex].transform.GetChild(1).GetComponent<Image>().color = new Color(0, 1, 0);
     }
-    void Show()
-    {
-        InteractInfo.SetActive(true);
-    }
-
-    void Hide()
-    {
-        InteractInfo.SetActive(false);
-    }
-
-
 }

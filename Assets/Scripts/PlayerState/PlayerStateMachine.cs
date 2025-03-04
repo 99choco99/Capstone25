@@ -1,16 +1,11 @@
 using UnityEngine;
 using System;
-using Unity.VisualScripting;
-using static System.TimeZoneInfo;
-using System.Collections;
-using System.Threading.Tasks;
 
 
-[Serializable]
-public class PlayerStateMachine
+public class PlayerStateMachine : MonoBehaviour
 {
-    public IState currentState { get; private set; }  // 현재 상태
-    public IState preState { get; private set; }  // 이전 상태
+    public IState CurrentState { get; private set; }  // 현재 상태
+    public IState PreState { get; private set; }  // 이전 상태
 
     public PlayerIdleState playerIdleState;  // 가만히 있는 상태
     public PlayerMoveState playerMoveState;  // 움직이는 상태
@@ -24,8 +19,9 @@ public class PlayerStateMachine
 
     
     //플레이어 상태들
-    public PlayerStateMachine(PlayerController player)
+    private void Awake()
     {
+        PlayerController player = GetComponent<PlayerController>();
         playerMoveState = new PlayerMoveState(player);
         playerIdleState = new PlayerIdleState(player);
         playerUnControllableState = new PlayerUnControllableState(player);
@@ -35,10 +31,9 @@ public class PlayerStateMachine
         playerDamagedState = new PlayerDamagedState(player);
     }
 
-
     // 상태 초기화
     public void Initialized(IState startingState) {
-        currentState = startingState;
+        CurrentState = startingState;
         isTransitionPosible = true;
         startingState.Enter();
     }
@@ -47,33 +42,24 @@ public class PlayerStateMachine
     // 상태 전이
     public void TransitionTo(IState nextState)
     {
-        if (!isTransitionPosible || nextState == currentState) { return; }
-        currentState.Exit();
-        preState = currentState;
-        currentState = nextState;
+        if (!isTransitionPosible || nextState == CurrentState) { return; }
+        CurrentState.Exit();
+        PreState = CurrentState;
+        CurrentState = nextState;
         nextState.Enter();
     }
-
-    //상태 전이 지연
-    public async Task TransitionDelay(float time)
-    {
-        isTransitionPosible = false;
-        await Task.Delay((int)(time * 1000)); // 밀리초 단위로 지연
-        isTransitionPosible = true;
-    }
-
 
     //입력 받을 수 있는 상태인가?
     public bool IsControll() { return isTransitionPosible; }
 
 
     //상태 반복
-    public void Update()
+    public void StateUpdate()
     {
-        if (currentState != null)
+        if (CurrentState != null)
         {
-            Debug.Log(currentState);
-            currentState.Update();
+            Debug.Log(CurrentState);
+            CurrentState.Update();
         }
     }
 }

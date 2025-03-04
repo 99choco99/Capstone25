@@ -22,11 +22,11 @@ public class PlayerSlideState : IState
     public void Update()
     {
         if (player.anim.GetCurrentAnimatorStateInfo(0).IsName("Slide")){
-            player.rb.MovePosition(player.rb.position + (player.transform.forward * player.slideSpeed * Time.deltaTime));
+            player.rb.MovePosition(player.rb.position + (player.slideSpeed * Time.deltaTime * player.transform.forward));
         }
         else
         {
-            player.playerStateMachine.TransitionTo(player.playerStateMachine.preState);
+            player.playerStateMachine.TransitionTo(player.playerStateMachine.PreState);
         }
     }
 

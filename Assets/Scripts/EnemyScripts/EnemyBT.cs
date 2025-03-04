@@ -7,7 +7,7 @@ public class EnemyBT : BehaviourTree.Tree
     public UnityEngine.Transform[] waypoints;
 
     public static float speed = 2.0f;
-    public static float fovRange = 30.0f;
+    public static float fovRange = 15.0f;
 
     protected override Node SetupTree()
     {

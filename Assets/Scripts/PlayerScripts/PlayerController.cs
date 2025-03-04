@@ -2,12 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Animations;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.Windows;
 
 public class PlayerController : MonoBehaviour
 {
+    public static PlayerController player;
 
     public PlayerStateMachine playerStateMachine;
     Camera playerCamera;
@@ -27,6 +29,7 @@ public class PlayerController : MonoBehaviour
     [Header("Player Input Values")]
     public Vector3 move;
     public Vector2 look;
+    public float scroll;
     public bool jump;
     public bool sprint;
     public bool toggleCameraRotation;
@@ -43,18 +46,28 @@ public class PlayerController : MonoBehaviour
 
     void Awake()
     {
+        if(player == null)
+        {
+            player = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+
         playerCamera = Camera.main;
         rb = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
-
-        playerStateMachine = new PlayerStateMachine(this);
-        playerStateMachine.Initialized(playerStateMachine.playerIdleState);
-
     }
 
+    private void Start()
+    {
+        playerStateMachine.Initialized(playerStateMachine.playerIdleState);
+    }
     private void FixedUpdate()
     {
-        playerStateMachine.Update();
+        playerStateMachine.StateUpdate();
 
     }
 
@@ -82,6 +95,11 @@ public class PlayerController : MonoBehaviour
     }
 
 
+    public void OnWheel(InputValue value)
+    {
+        scroll = value.Get<float>();
+    }
+
     public void OnMove(InputValue value)
     {
         move = value.Get<Vector3>();
@@ -90,10 +108,7 @@ public class PlayerController : MonoBehaviour
 
     public void OnLook(InputValue value)
     {
-        if (cursorInputForLook)
-        {
-            look = value.Get<Vector2>();
-        }
+        look = value.Get<Vector2>();
     }
 
     public void OnJump(InputValue value)
@@ -135,5 +150,6 @@ public class PlayerController : MonoBehaviour
     private void SetCursorState(bool newState)
     {
         Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
+
     }
 }
