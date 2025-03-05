@@ -40,9 +40,6 @@ public class PlayerController : MonoBehaviour
     [Header("Movement Settings")]
     public bool analogMovement;
 
-    [Header("Mouse Cursor Settings")]
-    public bool cursorLocked = true;
-    public bool cursorInputForLook = true;
 
     void Awake()
     {
@@ -63,6 +60,7 @@ public class PlayerController : MonoBehaviour
 
     private void Start()
     {
+        Cursor.lockState = CursorLockMode.Locked;
         playerStateMachine.Initialized(playerStateMachine.playerIdleState);
     }
     private void FixedUpdate()
@@ -89,67 +87,66 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void OnCollisionEnter(Collision collision)
-    {
-        //충돌?
-    }
-
-
+    // 마우스 휠
     public void OnWheel(InputValue value)
     {
         scroll = value.Get<float>();
     }
 
+    // W A S D 키
     public void OnMove(InputValue value)
     {
         move = value.Get<Vector3>();
 
     }
 
+    // 마우스 입력
     public void OnLook(InputValue value)
     {
         look = value.Get<Vector2>();
     }
 
+    //Space Bar 입력
     public void OnJump(InputValue value)
     {
         jump = value.isPressed;
     }
 
+    // 마우스 왼쪽 클릭
     public void OnAttack(InputValue value)
     {
         attack = value.isPressed;
     }
 
+
+    //Shift 키 입력
     public void OnSprint(InputValue value)
     {
         sprint = value.isPressed;
     }
 
+    //Alt 키 입력
     public void OnFreeCam(InputValue value)
     {
         toggleCameraRotation = value.isPressed;
     }
 
+    // 마우스 우클릭
     public void OnGuard(InputValue value)
     {
         guard = value.isPressed;
     }
 
+
+    // F 키 입력
     public void OnInteraction(InputValue value)
     {
         interaction = value.isPressed;
     }
 
-
-    private void OnApplicationFocus(bool hasFocus)
+    public void OnShowMouse(InputValue value)
     {
-        SetCursorState(cursorLocked);
+        Cursor.lockState = value.isPressed ? CursorLockMode.Confined : CursorLockMode.Locked;
     }
 
-    private void SetCursorState(bool newState)
-    {
-        Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
-
-    }
 }

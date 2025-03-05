@@ -23,7 +23,7 @@ public class TaskGoToTarget : Node
     public override NodeState Evaluate()
     {
         Transform target = (Transform)GetData("target");
-        if(Vector3.Distance(_transform.position, target.position) > 6.0f)
+        if(Vector3.Distance(_transform.position, target.position) > 3.0f)
         {
             _agent.SetDestination(target.position);
             _animator.SetBool("Chase", true);
