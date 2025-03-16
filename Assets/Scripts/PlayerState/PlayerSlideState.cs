@@ -1,7 +1,7 @@
 using UnityEngine;
 public class PlayerSlideState : IState
 {
-    PlayerController player;
+    private readonly PlayerController player;
 
     public PlayerSlideState(PlayerController player)
     {

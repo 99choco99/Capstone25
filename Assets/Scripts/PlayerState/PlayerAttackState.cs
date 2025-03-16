@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class PlayerAttackState : IState
 {
-    PlayerController player;
+    private readonly PlayerController player;
     private float lastAttackTime;  //공격 쿨타임
     public PlayerAttackState(PlayerController player) { this.player = player; }
     public void Enter() {

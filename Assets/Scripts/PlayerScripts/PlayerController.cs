@@ -16,6 +16,7 @@ public class PlayerController : MonoBehaviour
 
     public float JumpTime;
     public Rigidbody rb;
+    public GameObject col;
     public Animator anim;
 
     [Header("Player Setting")]
@@ -25,6 +26,7 @@ public class PlayerController : MonoBehaviour
     public float jumpPower;
     public float moveSpeed = 5;
     public float slideSpeed = 5;
+    public float InvincibleTime = 1f;
 
     [Header("Player Input Values")]
     public Vector3 move;
@@ -65,6 +67,10 @@ public class PlayerController : MonoBehaviour
     }
     private void FixedUpdate()
     {
+        if (anim.GetCurrentAnimatorStateInfo(0).IsName("Hit"))
+        {
+            playerStateMachine.TransitionTo(playerStateMachine.playerDamagedState);
+        }
         playerStateMachine.StateUpdate();
 
     }

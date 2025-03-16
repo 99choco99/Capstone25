@@ -13,7 +13,6 @@ public class NPCInteractable : MonoBehaviour, IInteractable
     {
         anim.SetTrigger("Talk");
         transform.LookAt(player.position);
-        Debug.Log("³ª´Â NPC");
     }
 
     public string GetInteractName()

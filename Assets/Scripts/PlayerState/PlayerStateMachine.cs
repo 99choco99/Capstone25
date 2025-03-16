@@ -15,7 +15,7 @@ public class PlayerStateMachine : MonoBehaviour
     public PlayerSlideState playerSlideState;   // 슬라이드 상태
     public PlayerDamagedState playerDamagedState;
 
-    public bool isTransitionPosible; //상태 전이가 가능한가?
+    private bool isTransitionPosible; //상태 전이가 가능한가?
 
     
     //플레이어 상태들
@@ -58,7 +58,6 @@ public class PlayerStateMachine : MonoBehaviour
     {
         if (CurrentState != null)
         {
-            Debug.Log(CurrentState);
             CurrentState.Update();
         }
     }
