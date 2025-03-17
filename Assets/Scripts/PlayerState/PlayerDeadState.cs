@@ -2,18 +2,24 @@ using UnityEngine;
 
 public class PlayerDeadState : IState
 {
+    PlayerController player;
+
+    public PlayerDeadState(PlayerController player) { this.player = player; }
+
     public void Enter()
     {
-        throw new System.NotImplementedException();
+        player.anim.SetTrigger("Die");
+        player.col.tag = "Invincible";
+        player.col.gameObject.layer = 9;
     }
 
     public void Exit()
     {
-        throw new System.NotImplementedException();
+
     }
 
     public void Update()
     {
-        throw new System.NotImplementedException();
+
     }
 }

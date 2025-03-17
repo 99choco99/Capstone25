@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 public class PlayerDamagedState : IState
 {
-    PlayerController player;
+    private readonly PlayerController player;
 
     public PlayerDamagedState(PlayerController player) { this.player = player; }
     PlayerInput playerInput;
@@ -14,6 +14,7 @@ public class PlayerDamagedState : IState
         playerInput.enabled = false;
         player.col.tag = "Invincible";
         LastInvincibleTime = Time.time;
+        player.anim.SetTrigger("Hit");
     }
     public void Update()
     {
@@ -26,6 +27,7 @@ public class PlayerDamagedState : IState
     {
         playerInput.enabled = true;
         player.col.tag = "Player";
+        player.player.Ishit = false;
     }
 
 }

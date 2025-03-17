@@ -9,11 +9,11 @@ public class PlayerStateMachine : MonoBehaviour
 
     public PlayerIdleState playerIdleState;  // 가만히 있는 상태
     public PlayerMoveState playerMoveState;  // 움직이는 상태
-    public PlayerUnControllableState playerUnControllableState; // 제어 불가 상태
     public PlayerAttackState playerAttackState;   // 공격 중인 상태
     public PlayerGuardState playerGuardState;  // 가드 상태
     public PlayerSlideState playerSlideState;   // 슬라이드 상태
     public PlayerDamagedState playerDamagedState;
+    public PlayerDeadState playerDeadState;
 
     private bool isTransitionPosible; //상태 전이가 가능한가?
 
@@ -24,11 +24,11 @@ public class PlayerStateMachine : MonoBehaviour
         PlayerController player = GetComponent<PlayerController>();
         playerMoveState = new PlayerMoveState(player);
         playerIdleState = new PlayerIdleState(player);
-        playerUnControllableState = new PlayerUnControllableState(player);
         playerAttackState = new PlayerAttackState(player);
         playerGuardState = new PlayerGuardState(player);
         playerSlideState = new PlayerSlideState(player);
         playerDamagedState = new PlayerDamagedState(player);
+        playerDeadState = new PlayerDeadState(player);
     }
 
     // 상태 초기화

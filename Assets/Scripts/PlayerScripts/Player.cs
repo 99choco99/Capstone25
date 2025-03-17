@@ -4,7 +4,7 @@ using UnityEngine.UI;
 public class Player : LivingEntity
 {
     [SerializeField] Slider HpSlider;
-    [SerializeField] Animator anim;
+    public bool Ishit;
 
     private void Start()
     {
@@ -17,8 +17,7 @@ public class Player : LivingEntity
     {
         base.OnDamage(damage, hitPoint, hitDirection);
         HpSlider.value = currentHp;
-        if (dead) { anim.SetTrigger("Die"); return; }
-        anim.SetTrigger("Hit");
+        Ishit = true;
     }
 
     protected override void OnEnable()

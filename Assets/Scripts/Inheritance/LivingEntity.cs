@@ -7,7 +7,7 @@ public class LivingEntity : MonoBehaviour,IDamageable
     public float maxHp { get; protected set; }   // 최대 체력
     public float currentHp { get; protected set; }  // 현재 체력
     public float damage { get; protected set; }// 공격력
-    protected bool dead;
+    public bool dead { get; protected set; }  // 죽음
 
     protected event Action OnDeath; // 죽었을 때 이벤트
 

@@ -9,15 +9,16 @@ using UnityEngine.Windows;
 
 public class PlayerController : MonoBehaviour
 {
-    public static PlayerController player;
+    public static PlayerController playerController;
 
     public PlayerStateMachine playerStateMachine;
     Camera playerCamera;
 
     public float JumpTime;
     public Rigidbody rb;
-    public GameObject col;
     public Animator anim;
+    public GameObject col;
+    public Player player;
 
     [Header("Player Setting")]
     public float smoothness;
@@ -45,9 +46,9 @@ public class PlayerController : MonoBehaviour
 
     void Awake()
     {
-        if(player == null)
+        if(playerController == null)
         {
-            player = this;
+            playerController = this;
             DontDestroyOnLoad(gameObject);
         }
         else
@@ -58,6 +59,7 @@ public class PlayerController : MonoBehaviour
         playerCamera = Camera.main;
         rb = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
+        player = GetComponent<Player>();
     }
 
     private void Start()
@@ -67,7 +69,11 @@ public class PlayerController : MonoBehaviour
     }
     private void FixedUpdate()
     {
-        if (anim.GetCurrentAnimatorStateInfo(0).IsName("Hit"))
+        if (player.dead)
+        {
+            playerStateMachine.TransitionTo(playerStateMachine.playerDeadState);
+        }
+        else if (player.Ishit)
         {
             playerStateMachine.TransitionTo(playerStateMachine.playerDamagedState);
         }

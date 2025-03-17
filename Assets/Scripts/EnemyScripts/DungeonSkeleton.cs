@@ -13,6 +13,7 @@ public class DungeonSkeleton : LivingEntity
         anim = GetComponent<Animator>();
         SetUp(enemyData);
     }
+
     public void SetUp(EnemyData enemyData)
     {
         maxHp = enemyData.hp;
