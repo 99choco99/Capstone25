@@ -3,18 +3,14 @@ using UnityEngine;
 
 public class PlayerInteraction : MonoBehaviour
 {
-    PlayerController player;
+    [SerializeField] PlayerController player;
     IInteractable interactObject;
 
-    private int layerMask = 1 << 8;
+    private readonly int layerMask = 1 << 8;
     public float interactRange;
     Collider select;
     public int selectIndex = 0;
     public int preselectIndex = 0;
-    void Start()
-    {
-        player = GetComponent<PlayerController>();
-    }
 
     void Update()
     {
@@ -24,7 +20,6 @@ public class PlayerInteraction : MonoBehaviour
             SelectObject(hits);
             if (player.interaction)
             {
-                Debug.Log(selectIndex);
                 if (select.gameObject.TryGetComponent(out interactObject))
                 {
                     interactObject.Interact(player.transform);

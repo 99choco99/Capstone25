@@ -1,9 +1,31 @@
 fileFormatVersion: 2
 guid: 97ada40f57d401540b8eafeeba1f0e9c
+AssetOrigin:
+  serializedVersion: 1
+  productId: 288783
+  packageName: RPG_Animations_Pack_FREE
+  packageVersion: 1.1
+  assetPath: Assets/DoubleL/Model/Armature.fbx
+  uploadId: 704351
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Arms
+    second: {fileID: 2100000, guid: 42ce566efb626f841be721f605965156, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Body
+    second: {fileID: 2100000, guid: b16488a445022934e80256708342e936, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Legs
+    second: {fileID: 2100000, guid: bbf90d8dffbebe149b13792692958224, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -16,8 +38,6 @@ ModelImporter:
     optimizeGameObjects: 0
     removeConstantScaleCurves: 0
     motionNodeName: 
-    rigImportErrors: 
-    rigImportWarnings: 
     animationImportErrors: 
     animationImportWarnings: 
     animationRetargetingWarnings: 
@@ -883,10 +903,3 @@ ModelImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 288783
-  packageName: RPG_Animations_Pack_FREE
-  packageVersion: 1.1
-  assetPath: Assets/DoubleL/Model/Armature.fbx
-  uploadId: 704351

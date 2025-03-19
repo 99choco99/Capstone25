@@ -22,9 +22,7 @@ public class PlayerMoveState : IState
             Jump();
         }
 
-        // 상태 전이 조건들
-        if (player.move == Vector3.zero) { player.playerStateMachine.TransitionTo(player.playerStateMachine.playerIdleState); }
-        else if (player.attack)
+        if (player.attack)
         {
             player.playerStateMachine.TransitionTo(player.playerStateMachine.playerAttackState);
         }

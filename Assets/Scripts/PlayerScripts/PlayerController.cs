@@ -9,14 +9,15 @@ using UnityEngine.Windows;
 
 public class PlayerController : MonoBehaviour
 {
-    public static PlayerController player;
-
     public PlayerStateMachine playerStateMachine;
+    public PlayerInput playerInput;
     Camera playerCamera;
 
     public float JumpTime;
     public Rigidbody rb;
     public Animator anim;
+    public GameObject col;
+    public Player player;
 
     [Header("Player Setting")]
     public float smoothness;
@@ -25,6 +26,7 @@ public class PlayerController : MonoBehaviour
     public float jumpPower;
     public float moveSpeed = 5;
     public float slideSpeed = 5;
+    public float InvincibleTime = 1f;
 
     [Header("Player Input Values")]
     public Vector3 move;
@@ -40,33 +42,39 @@ public class PlayerController : MonoBehaviour
     [Header("Movement Settings")]
     public bool analogMovement;
 
-    [Header("Mouse Cursor Settings")]
-    public bool cursorLocked = true;
-    public bool cursorInputForLook = true;
 
     void Awake()
     {
-        if(player == null)
-        {
-            player = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-
+        playerInput = GetComponent<PlayerInput>();
         playerCamera = Camera.main;
         rb = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
+        player = GetComponent<Player>();
     }
 
     private void Start()
     {
-        playerStateMachine.Initialized(playerStateMachine.playerIdleState);
+        Cursor.lockState = CursorLockMode.Locked;
+        playerStateMachine.Initialized(playerStateMachine.playerMoveState);
+    }
+
+    private void Update()
+    {
+        if(col.CompareTag("GuardState"))
+        {
+
+        }
     }
     private void FixedUpdate()
     {
+        if (player.dead)
+        {
+            playerStateMachine.TransitionTo(playerStateMachine.playerDeadState);
+        }
+        else if (!guard && player.Ishit)
+        {
+            playerStateMachine.TransitionTo(playerStateMachine.playerDamagedState);
+        }
         playerStateMachine.StateUpdate();
 
     }
@@ -83,73 +91,72 @@ public class PlayerController : MonoBehaviour
 
 
         //플레이어 점프 착지
-        if (Physics.Raycast(rb.position, Vector3.down, 0.2f) && rb.linearVelocity.y <= 1)
+        if (Physics.Raycast(rb.position, Vector3.down, 0.4f) && rb.linearVelocity.y <= 1)
         {
             isGround = true;
         }
     }
 
-    private void OnCollisionEnter(Collision collision)
-    {
-        //충돌?
-    }
-
-
+    // 마우스 휠
     public void OnWheel(InputValue value)
     {
         scroll = value.Get<float>();
     }
 
+    // W A S D 키
     public void OnMove(InputValue value)
     {
         move = value.Get<Vector3>();
 
     }
 
+    // 마우스 입력
     public void OnLook(InputValue value)
     {
         look = value.Get<Vector2>();
     }
 
+    //Space Bar 입력
     public void OnJump(InputValue value)
     {
         jump = value.isPressed;
     }
 
+    // 마우스 왼쪽 클릭
     public void OnAttack(InputValue value)
     {
         attack = value.isPressed;
     }
 
+
+    //Shift 키 입력
     public void OnSprint(InputValue value)
     {
         sprint = value.isPressed;
     }
 
+    //Alt 키 입력
     public void OnFreeCam(InputValue value)
     {
         toggleCameraRotation = value.isPressed;
     }
 
+    // 마우스 우클릭
     public void OnGuard(InputValue value)
     {
         guard = value.isPressed;
     }
 
+
+    // F 키 입력, 상호작용 버튼
     public void OnInteraction(InputValue value)
     {
         interaction = value.isPressed;
     }
 
-
-    private void OnApplicationFocus(bool hasFocus)
+    public void OnShowMouse(InputValue value)
     {
-        SetCursorState(cursorLocked);
+        Cursor.lockState = value.isPressed ? CursorLockMode.Confined : CursorLockMode.Locked;
     }
 
-    private void SetCursorState(bool newState)
-    {
-        Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
-
-    }
 }

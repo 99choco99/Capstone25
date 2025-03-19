@@ -49,9 +49,8 @@ public class CameraMovement : MonoBehaviour
 
         finalDir = transform.TransformPoint(dirNormalized * maxDistnace);
 
-        RaycastHit hit;
 
-        if (Physics.Linecast(transform.position, finalDir, out hit))
+        if (Physics.Linecast(transform.position, finalDir, out RaycastHit hit))
         {
             finalDistance = Mathf.Clamp(hit.distance, minDistnace, maxDistnace);
         }
