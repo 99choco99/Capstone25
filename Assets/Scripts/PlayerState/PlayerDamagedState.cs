@@ -1,20 +1,32 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerDamagedState : IState
 {
-    PlayerController player;
+    private readonly PlayerController player;
 
     public PlayerDamagedState(PlayerController player) { this.player = player; }
+    float LastInvincibleTime;
     public void Enter()
     {
-
+        player.playerInput.enabled = false;
+        player.col.tag = "Invincible";
+        LastInvincibleTime = Time.time;
+        player.anim.SetTrigger("Hit");
     }
     public void Update()
     {
-
+        if(LastInvincibleTime + player.InvincibleTime < Time.time)
+        {
+            player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
+        }
     }
     public void Exit()
     {
+        player.playerInput.enabled = true;
+        player.col.tag = "Player";
+        player.player.Ishit = false;
+        player.anim.ResetTrigger("Hit");
     }
 
 }

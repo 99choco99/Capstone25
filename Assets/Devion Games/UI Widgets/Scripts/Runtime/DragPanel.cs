@@ -3,8 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using System.Collections;
 
-namespace DevionGames.UIWidgets
-{
+
 	public class DragPanel : MonoBehaviour, IPointerDownHandler, IDragHandler
 	{
 		
@@ -57,4 +56,3 @@ namespace DevionGames.UIWidgets
 			return newPointerPosition;
 		}
 	}
-}
