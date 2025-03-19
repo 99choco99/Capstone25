@@ -9,9 +9,8 @@ using UnityEngine.Windows;
 
 public class PlayerController : MonoBehaviour
 {
-    public static PlayerController playerController;
-
     public PlayerStateMachine playerStateMachine;
+    public PlayerInput playerInput;
     Camera playerCamera;
 
     public float JumpTime;
@@ -46,16 +45,7 @@ public class PlayerController : MonoBehaviour
 
     void Awake()
     {
-        if(playerController == null)
-        {
-            playerController = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-
+        playerInput = GetComponent<PlayerInput>();
         playerCamera = Camera.main;
         rb = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
@@ -65,7 +55,15 @@ public class PlayerController : MonoBehaviour
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
-        playerStateMachine.Initialized(playerStateMachine.playerIdleState);
+        playerStateMachine.Initialized(playerStateMachine.playerMoveState);
+    }
+
+    private void Update()
+    {
+        if(col.CompareTag("GuardState"))
+        {
+
+        }
     }
     private void FixedUpdate()
     {
@@ -73,7 +71,7 @@ public class PlayerController : MonoBehaviour
         {
             playerStateMachine.TransitionTo(playerStateMachine.playerDeadState);
         }
-        else if (player.Ishit)
+        else if (!guard && player.Ishit)
         {
             playerStateMachine.TransitionTo(playerStateMachine.playerDamagedState);
         }
@@ -93,7 +91,7 @@ public class PlayerController : MonoBehaviour
 
 
         //플레이어 점프 착지
-        if (Physics.Raycast(rb.position, Vector3.down, 0.2f) && rb.linearVelocity.y <= 1)
+        if (Physics.Raycast(rb.position, Vector3.down, 0.4f) && rb.linearVelocity.y <= 1)
         {
             isGround = true;
         }
@@ -150,7 +148,7 @@ public class PlayerController : MonoBehaviour
     }
 
 
-    // F 키 입력
+    // F 키 입력, 상호작용 버튼
     public void OnInteraction(InputValue value)
     {
         interaction = value.isPressed;

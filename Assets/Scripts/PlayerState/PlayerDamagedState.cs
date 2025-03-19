@@ -6,12 +6,10 @@ public class PlayerDamagedState : IState
     private readonly PlayerController player;
 
     public PlayerDamagedState(PlayerController player) { this.player = player; }
-    PlayerInput playerInput;
     float LastInvincibleTime;
     public void Enter()
     {
-        playerInput = player.GetComponent<PlayerInput>();
-        playerInput.enabled = false;
+        player.playerInput.enabled = false;
         player.col.tag = "Invincible";
         LastInvincibleTime = Time.time;
         player.anim.SetTrigger("Hit");
@@ -20,14 +18,15 @@ public class PlayerDamagedState : IState
     {
         if(LastInvincibleTime + player.InvincibleTime < Time.time)
         {
-            player.playerStateMachine.TransitionTo(player.playerStateMachine.playerIdleState);
+            player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
         }
     }
     public void Exit()
     {
-        playerInput.enabled = true;
+        player.playerInput.enabled = true;
         player.col.tag = "Player";
         player.player.Ishit = false;
+        player.anim.ResetTrigger("Hit");
     }
 
 }

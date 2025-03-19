@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class EnemyWeapon : MonoBehaviour
@@ -5,6 +6,7 @@ public class EnemyWeapon : MonoBehaviour
     [SerializeField] LivingEntity Enemy;
     Animator anim;
     Collider col;
+    bool canTrigger = true;
 
     private void Awake()
     {
@@ -19,6 +21,7 @@ public class EnemyWeapon : MonoBehaviour
     }
     private void OnTriggerEnter(Collider other)
     {
+        if (!canTrigger) { return; }
         if (other.CompareTag("Player"))
         {
             Player player = other.transform.parent.GetComponent<Player>();
@@ -27,5 +30,19 @@ public class EnemyWeapon : MonoBehaviour
             Vector3 hitnormal = transform.position - other.transform.position;
             player.OnDamage(Enemy.damage, hitPoint, hitnormal);
         }
+        if (other.CompareTag("GuardState"))
+        {
+            Player player = other.transform.parent.GetComponent<Player>();
+            player.Ishit = true;
+            canTrigger = false;
+            StartCoroutine(ResetTrigger());
+        }
     }
+
+    IEnumerator ResetTrigger()
+    {
+        yield return new WaitForSeconds(0.5f);
+        canTrigger = true;
+    }
+
 }

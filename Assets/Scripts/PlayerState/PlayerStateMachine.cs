@@ -7,8 +7,7 @@ public class PlayerStateMachine : MonoBehaviour
     public IState CurrentState { get; private set; }  // 현재 상태
     public IState PreState { get; private set; }  // 이전 상태
 
-    public PlayerIdleState playerIdleState;  // 가만히 있는 상태
-    public PlayerMoveState playerMoveState;  // 움직이는 상태
+    public PlayerMoveState playerMoveState;  // 움직임 상태
     public PlayerAttackState playerAttackState;   // 공격 중인 상태
     public PlayerGuardState playerGuardState;  // 가드 상태
     public PlayerSlideState playerSlideState;   // 슬라이드 상태
@@ -23,7 +22,6 @@ public class PlayerStateMachine : MonoBehaviour
     {
         PlayerController player = GetComponent<PlayerController>();
         playerMoveState = new PlayerMoveState(player);
-        playerIdleState = new PlayerIdleState(player);
         playerAttackState = new PlayerAttackState(player);
         playerGuardState = new PlayerGuardState(player);
         playerSlideState = new PlayerSlideState(player);
