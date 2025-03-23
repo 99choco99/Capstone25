@@ -12,6 +12,11 @@ public class PlayerInteraction : MonoBehaviour
     public int selectIndex = 0;
     public int preselectIndex = 0;
 
+    private void Awake()
+    {
+        player = GetComponent<PlayerController>();
+    }
+
     void Update()
     {
         Collider[] hits = GetInteractObject();

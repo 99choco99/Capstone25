@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Animations;
@@ -7,7 +8,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.Windows;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : NetworkBehaviour
 {
     public PlayerStateMachine playerStateMachine;
     public PlayerInput playerInput;
@@ -42,10 +43,10 @@ public class PlayerController : MonoBehaviour
     [Header("Movement Settings")]
     public bool analogMovement;
 
-
     void Awake()
     {
         playerInput = GetComponent<PlayerInput>();
+        playerStateMachine = GetComponent<PlayerStateMachine>();
         playerCamera = Camera.main;
         rb = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
@@ -60,10 +61,7 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        if(col.CompareTag("GuardState"))
-        {
-
-        }
+        col.transform.position = transform.position;
     }
     private void FixedUpdate()
     {
