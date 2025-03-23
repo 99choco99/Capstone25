@@ -5,20 +5,20 @@ using UnityEngine.UI;
 
 public class PlayerUI : MonoBehaviour
 {
-    public Slider PlayerHp;
-    public Slider EnemyHp;
+    public Slider PlayerHpUI;
+    public Slider EnemyHpUI;
     public TextMeshProUGUI EnemyName;
 
     public void ShowEnemyInfoUI()
     {
-        EnemyHp.gameObject.SetActive(true);
+        EnemyHpUI.gameObject.SetActive(true);
         EnemyName.gameObject.SetActive(true);
-        StartCoroutine("HideEnemyInfoUI");
+        StartCoroutine(HideEnemyInfoUI());
     }
     IEnumerator HideEnemyInfoUI()
     {
         yield return new WaitForSeconds(4f);
-        EnemyHp.gameObject.SetActive(false);
+        EnemyHpUI.gameObject.SetActive(false);
         EnemyName.gameObject.SetActive(false);
     }
 }
