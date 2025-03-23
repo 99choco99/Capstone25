@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Newtonsoft.Json;
 
 public class LivingEntity : MonoBehaviour,IDamageable
 {
@@ -46,4 +47,5 @@ public class LivingEntity : MonoBehaviour,IDamageable
         dead = false;
         currentHp = maxHp;
     }
+
 }

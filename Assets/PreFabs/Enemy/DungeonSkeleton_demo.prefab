@@ -106,6 +106,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8574908097425577369}
+  - component: {fileID: 6637303006884542139}
+  - component: {fileID: 7033809650985039625}
   m_Layer: 7
   m_Name: Bip001 R Hand
   m_TagString: Untagged
@@ -129,6 +131,40 @@ Transform:
   - {fileID: 4331007593949564594}
   m_Father: {fileID: 5903387219515417083}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6637303006884542139
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1760672991207728631}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b56ff2730f02dac40866c45a837b5ffc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Enemy: {fileID: 3915612876654061105}
+--- !u!65 &7033809650985039625
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1760672991207728631}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.15671813, y: 0.04353041, z: 0.92838216}
+  m_Center: {x: -0.12523149, y: 0.023771599, z: 0.56086653}
 --- !u!1 &1828131115428358137
 GameObject:
   m_ObjectHideFlags: 0
@@ -669,8 +705,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4555715723300066856}
-  - component: {fileID: 5575905500828265050}
-  - component: {fileID: 6327992579228824410}
   m_Layer: 7
   m_Name: DS_Sword
   m_TagString: Untagged
@@ -693,40 +727,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7558647787410339}
   m_LocalEulerAnglesHint: {x: -0.22, y: 7.5, z: 11.1}
---- !u!65 &5575905500828265050
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3745535894699459078}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 1
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.19, y: 0.036181826, z: 0.86664486}
-  m_Center: {x: -0.10858995, y: -0.0038885253, z: 0.52999634}
---- !u!114 &6327992579228824410
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3745535894699459078}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b56ff2730f02dac40866c45a837b5ffc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Enemy: {fileID: 3915612876654061105}
 --- !u!1 &3980222747813735003
 GameObject:
   m_ObjectHideFlags: 0

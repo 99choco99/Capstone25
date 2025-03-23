@@ -13,11 +13,11 @@ public class Weapon : MonoBehaviour
 
             Vector3 hitPoint = other.ClosestPoint(transform.position);
             Vector3 hitnormal = transform.position - other.transform.position;
+
             player.playerUI.ShowEnemyInfoUI();
             enemy.OnDamage(player.damage, hitPoint, hitnormal);
             player.playerUI.EnemyName.text = "" + enemy.gameObject.name;
-            player.playerUI.EnemyHp.value = enemy.currentHp / enemy.maxHp;
+            player.playerUI.EnemyHpUI.value = enemy.currentHp / enemy.maxHp;
         }
     }
-
 }
