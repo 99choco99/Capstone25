@@ -1,23 +1,15 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Weapon : MonoBehaviour
 {
-    [SerializeField] Player player;
-    
+    protected bool canTrigger = true;
 
-    private void OnTriggerEnter(Collider other)
+    protected IEnumerator ResetTrigger()
     {
-        if(other.CompareTag("Enemy"))
-        {
-            Enemy enemy = other.GetComponent<Enemy>();
-
-            Vector3 hitPoint = other.ClosestPoint(transform.position);
-            Vector3 hitnormal = transform.position - other.transform.position;
-
-            player.playerUI.ShowEnemyInfoUI();
-            enemy.OnDamage(player.damage, hitPoint, hitnormal);
-            player.playerUI.EnemyName.text = "" + enemy.gameObject.name;
-            player.playerUI.EnemyHpUI.value = enemy.currentHp / enemy.maxHp;
-        }
+        yield return new WaitForSeconds(0.5f);
+        canTrigger = true;
     }
+
 }

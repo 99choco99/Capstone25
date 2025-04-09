@@ -11,8 +11,10 @@ public class PlayerStateMachine : MonoBehaviour
     public PlayerAttackState playerAttackState;   // 공격 중인 상태
     public PlayerGuardState playerGuardState;  // 가드 상태
     public PlayerSlideState playerSlideState;   // 슬라이드 상태
-    public PlayerDamagedState playerDamagedState;
-    public PlayerDeadState playerDeadState;
+    public PlayerDamagedState playerDamagedState;   // 데미지를 입은 상태
+    public PlayerDeadState playerDeadState;   // 죽은 상태
+    public PlayerConversationState playerConversationState;  // 대화 상태
+
 
     private bool isTransitionPosible; //상태 전이가 가능한가?
 
@@ -27,6 +29,7 @@ public class PlayerStateMachine : MonoBehaviour
         playerSlideState = new PlayerSlideState(player);
         playerDamagedState = new PlayerDamagedState(player);
         playerDeadState = new PlayerDeadState(player);
+        playerConversationState = new PlayerConversationState(player);
     }
 
     // 상태 초기화
@@ -54,10 +57,7 @@ public class PlayerStateMachine : MonoBehaviour
     //상태 반복
     public void StateUpdate()
     {
-        if (CurrentState != null)
-        {
-            CurrentState.Update();
-        }
+        CurrentState?.Update();
     }
 }
 

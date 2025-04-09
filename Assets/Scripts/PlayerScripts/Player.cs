@@ -1,98 +1,96 @@
 using Newtonsoft.Json;
 using UnityEngine;
-using UnityEngine.UI;
 using SocketIOClient;
 using System;
 
 public class Player : LivingEntity
 {
-    public PlayerUI playerUI;
-    public PlayerDataClass setData;
-    public PlayerDataClass getData;
-    public string data;
+    SocketIOUnity socket;
+    public PlayerUIManager playerUI; //플레이어 UI
+    public PlayerDataClass setData;  // 보낼 데이터
+    public PlayerDataClass getData;  // 받은 데이터
+    public string data;  //
     public bool Ishit; // 데미지를 입었는가?
 
-
-    [Header("SocketIO Setting")]
-    private SocketIOUnity socket;
-    private string serverUrl = "http://localhost:3000";
-
-
-    private async void Awake()
+    async void Start()
     {
-        try
+        socket = SocketManager.Instance.GetSocket();
+        //소켓 연결시
+        socket.OnConnected += async (sender, e) =>
         {
-            var uri = new Uri(serverUrl);
-            socket = new SocketIOUnity(uri, new SocketIOOptions()
-            {
-                Transport = SocketIOClient.Transport.TransportProtocol.WebSocket
+            Debug.Log("Socket connected!");
+            // 연결 완료 후 playerData 이벤트 핸들러 등록
+            socket.On("playerData", (response) => {
+                try
+                {
+                    // 데이터 불러오기
+                    getData = response.GetValue<PlayerDataClass>(); //JSON 받기
+                    LoadData(getData);
+                }
+                catch (JsonException ex)
+                {
+                    Debug.LogError("JSON Deserialize Error: " + ex.Message);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError("General Error: " + ex.Message);
+                }
             });
-
-            socket.OnConnected += async (sender, e) =>
-            {
-                Debug.Log("Socket connected!");
-                socket.Emit("getPlayer");
-
-                // 연결 완료 후 playerData 이벤트 핸들러 등록
-                socket.On("playerData", (response) => {
-                    try
-                    {
-                        getData = response.GetValue<PlayerDataClass>(); //JSON 받기
-                        if(getData != null)
-                        {
-                            Debug.Log(getData.Damage);
-                            Debug.Log(damage);
-                        }
-                        else
-                        {
-                            Debug.Log("실패");
-                        }
-                    }
-                    catch (JsonException ex)
-                    {
-                        Debug.LogError("JSON Deserialize Error: " + ex.Message);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogError("General Error: " + ex.Message);
-                    }
-                });
-            };
-
-            await socket.ConnectAsync();
-        }
-        catch (Exception ex)
+        };
+        await socket.ConnectAsync();
+        // 데이터 변화시 다시 불러오기
+        socket.On("UpdateData", response =>
         {
-            Debug.LogError("Socket Connection error: " + ex.Message);
-        }
+            getData = response.GetValue<PlayerDataClass>(); //JSON 받기
+            LoadData(getData);
+        });
+        //죽었을 경우 실행
+        socket.On("Die", _ =>
+        {
+            Die();
+        });
     }
 
 
-    private void Start()
+    //플레이어 체력 변화 적용
+    private void LateUpdate()
     {
-        //OnEnable();
+        playerUI.PlayerHpUI.value = (float)(currentHp / maxHp);
     }
 
     //데미지를 입었을 때
     public override void OnDamage(float damage, Vector3 hitPoint, Vector3 hitDirection)
     {
-        base.OnDamage(damage, hitPoint, hitDirection);
-        socket.Emit("Damaged", JsonConvert.SerializeObject(getData));
-        playerUI.PlayerHpUI.value = currentHp;
+        socket.Emit("Damaged", damage);
         Ishit = true;
+    }
+
+    public void LevelUp()
+    {
+        level++;
+        QuestManager.instance.UnlockQuests(level);
     }
 
     protected override void OnEnable()
     {
-        //maxHp = getData.maxHp;
-        //damage = getData.Damage;
-        //base.OnEnable();
+
     }
 
+    //불러온 데이터 적용하기
+    private void LoadData(PlayerDataClass getData)
+    {
+        maxHp = getData.maxHp;
+        currentHp = getData.currentHp;
+        damage = getData.damage;
+    }
+    
+
+    //보내고 받을 데이터 형식
     public class PlayerDataClass
     {
         public float maxHp{ get; set; }
         public float currentHp { get; set; }
-        public float Damage { get; set; }
+        public float damage { get; set; }
+        public bool dead { get; set; }
     }
 }
