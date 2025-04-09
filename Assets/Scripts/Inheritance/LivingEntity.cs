@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 public class LivingEntity : MonoBehaviour,IDamageable
 {
-
+    public int level = 0;
     public float maxHp { get; protected set; }   // 최대 체력
     public float currentHp { get; protected set; }  // 현재 체력
     public float damage { get; protected set; }// 공격력

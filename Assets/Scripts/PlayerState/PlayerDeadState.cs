@@ -11,6 +11,8 @@ public class PlayerDeadState : IState
         player.anim.SetTrigger("Die");
         player.col.tag = "Invincible";
         player.col.gameObject.layer = 9;
+        player.playerInput.enabled = false;
+        player.isShowMouse = true;
     }
 
     public void Exit()

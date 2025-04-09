@@ -84,7 +84,7 @@
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false
+                    "initialStateCheck": true
                 },
                 {
                     "name": "Previous",
@@ -108,6 +108,15 @@
                     "name": "ShowMouse",
                     "type": "Button",
                     "id": "9a7dab7d-40c9-4520-b720-a86c4f079734",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "QuestList",
+                    "type": "Button",
+                    "id": "b54a7c9c-e197-49f5-b242-fd1925315877",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -442,6 +451,17 @@
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
                     "action": "ShowMouse",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1bbedf82-b1c1-48e1-99f7-1377db2da551",
+                    "path": "<Keyboard>/j",
+                    "interactions": "Press",
+                    "processors": "",
+                    "groups": "",
+                    "action": "QuestList",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

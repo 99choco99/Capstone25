@@ -12,7 +12,7 @@ public class PlayerInteractUI : MonoBehaviour
     [SerializeField] private GameObject InteractInfo; //주변 interactable 의 정보
     [SerializeField] private GameObject containerGameObject;  //InteractInfo 를 담기 위함
     [SerializeField] private PlayerInteraction playerInteraction; // 플레이어의 interact 참조
-    [SerializeField] private GameObject ScrollBar;
+
     private Collider[] InteractObject;//플레이어 주변의 InteractObject  저장
     private List<GameObject> InteractUIContainer;  //InteractObject를 보여주기 위한 컨테이너
     private TMP_Text InteractObjectName;  // InteractObject의 이름

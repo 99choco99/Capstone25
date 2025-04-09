@@ -11,8 +11,9 @@ using UnityEngine.Windows;
 public class PlayerController : NetworkBehaviour
 {
     public PlayerStateMachine playerStateMachine;
+    public PlayerInteraction playerInteraction;
     public PlayerInput playerInput;
-    Camera playerCamera;
+    public Camera playerCamera;
 
     public float JumpTime;
     public Rigidbody rb;
@@ -21,36 +22,40 @@ public class PlayerController : NetworkBehaviour
     public Player player;
 
     [Header("Player Setting")]
-    public float smoothness;
-    public bool isGround;
-    public float AttackTime;
-    public float jumpPower;
-    public float moveSpeed = 5;
-    public float slideSpeed = 5;
-    public float InvincibleTime = 1f;
+    public float smoothness; // alt시 카메라 회전 속도
+    public bool isGround; // 땅에 착지 했는가
+    public float AttackTime;  // 공격 간격
+    public float jumpPower;  // 점프 힘
+    public float moveSpeed = 5;  // 이동속도
+    public float slideSpeed = 5;  // 슬라이딩 속도
+    public float InvincibleTime = 1f;  // 피격시 무적 시간
 
     [Header("Player Input Values")]
-    public Vector3 move;
-    public Vector2 look;
-    public float scroll;
-    public bool jump;
-    public bool sprint;
-    public bool toggleCameraRotation;
-    public bool attack;
-    public bool guard;
-    public bool interaction;
+    public Vector3 move;  // wasd 키
+    public Vector2 look;  // 마우스
+    public float scroll;  // 마우스 휠
+    public bool jump;   // 스페이스 바 
+    public bool sprint; //슬라이딩 왼쪽 Shift
+    public bool toggleCameraRotation;  // alt키
+    public bool attack; // 마우싀 좌클릭
+    public bool guard;  // 마우스 우클릭
+    public bool interaction;  // 상호작용 F키
+    public bool isShowMouse;  // 마우스 보임, ctrl 키
 
     [Header("Movement Settings")]
     public bool analogMovement;
 
+    const float SENSEGROUND = 0.4f;
+
     void Awake()
     {
-        playerInput = GetComponent<PlayerInput>();
         playerStateMachine = GetComponent<PlayerStateMachine>();
-        playerCamera = Camera.main;
         rb = GetComponent<Rigidbody>();
-        anim = GetComponentInChildren<Animator>();
+        anim = GetComponent<Animator>();
         player = GetComponent<Player>();
+        playerInput = GetComponent<PlayerInput>();
+        playerInteraction = GetComponent<PlayerInteraction>();
+        playerCamera = Camera.main;
     }
 
     private void Start()
@@ -59,12 +64,13 @@ public class PlayerController : NetworkBehaviour
         playerStateMachine.Initialized(playerStateMachine.playerMoveState);
     }
 
-    private void Update()
-    {
-        col.transform.position = transform.position;
-    }
     private void FixedUpdate()
     {
+        //플레이어 점프 착지
+        if (Physics.Raycast(rb.position, Vector3.down, SENSEGROUND) && rb.linearVelocity.y <= 1)
+        {
+            isGround = true;
+        }
         if (player.dead)
         {
             playerStateMachine.TransitionTo(playerStateMachine.playerDeadState);
@@ -74,87 +80,90 @@ public class PlayerController : NetworkBehaviour
             playerStateMachine.TransitionTo(playerStateMachine.playerDamagedState);
         }
         playerStateMachine.StateUpdate();
-
     }
 
     private void LateUpdate()
     {
-
         // alt키 누르면 카메라 자유 회전
         if (!toggleCameraRotation)
         {
-            Vector3 playerRotate = Vector3.Scale(playerCamera.transform.forward, new Vector3(1,0,1));
+            Vector3 playerRotate = Vector3.Scale(playerCamera.transform.forward, new Vector3(1, 0, 1));
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(playerRotate), Time.deltaTime * smoothness);
-        }
-
-
-        //플레이어 점프 착지
-        if (Physics.Raycast(rb.position, Vector3.down, 0.4f) && rb.linearVelocity.y <= 1)
-        {
-            isGround = true;
         }
     }
 
     // 마우스 휠
-    public void OnWheel(InputValue value)
+    public void OnWheel(InputAction.CallbackContext context)
     {
-        scroll = value.Get<float>();
+
+        scroll = -context.ReadValue<float>();
     }
 
     // W A S D 키
-    public void OnMove(InputValue value)
+    public void OnMove(InputAction.CallbackContext context)
     {
-        move = value.Get<Vector3>();
-
+        move = context.ReadValue<Vector3>();
     }
 
+
     // 마우스 입력
-    public void OnLook(InputValue value)
+    public void OnLook(InputAction.CallbackContext context)
     {
-        look = value.Get<Vector2>();
+        if (isShowMouse) { return; } // ctrl키 누를 시 캐릭터 회전 안함.
+        look = context.ReadValue<Vector2>();
     }
 
     //Space Bar 입력
-    public void OnJump(InputValue value)
+    public void OnJump(InputAction.CallbackContext context)
     {
-        jump = value.isPressed;
+        if (context.started) { jump = true; }
+        if (context.canceled) { jump = false; }
     }
 
     // 마우스 왼쪽 클릭
-    public void OnAttack(InputValue value)
+    public void OnAttack(InputAction.CallbackContext context)
     {
-        attack = value.isPressed;
+        if (isShowMouse) { return; }
+        if (context.phase == InputActionPhase.Started) { attack = true; }
+        else if(context.phase == InputActionPhase.Canceled) { attack = false; }
+
     }
 
-
     //Shift 키 입력
-    public void OnSprint(InputValue value)
+    public void OnSprint(InputAction.CallbackContext context)
     {
-        sprint = value.isPressed;
+        if (isShowMouse) { return; }
+        if (context.phase == InputActionPhase.Started) { sprint = true; }
+        else if (context.phase == InputActionPhase.Canceled) { sprint = false; }
     }
 
     //Alt 키 입력
-    public void OnFreeCam(InputValue value)
+    public void OnFreeCam(InputAction.CallbackContext context)
     {
-        toggleCameraRotation = value.isPressed;
+        if(playerStateMachine.CurrentState == playerStateMachine.playerConversationState) { return; }
+        if (context.phase == InputActionPhase.Started) { toggleCameraRotation = true; }
+        else if (context.phase == InputActionPhase.Canceled) { toggleCameraRotation = false; }
     }
 
     // 마우스 우클릭
-    public void OnGuard(InputValue value)
+    public void OnGuard(InputAction.CallbackContext context)
     {
-        guard = value.isPressed;
+        if (isShowMouse || toggleCameraRotation) { return; }
+        if (context.phase == InputActionPhase.Started) { guard = true; }
+        else if (context.phase == InputActionPhase.Canceled) { guard = false; }
     }
-
 
     // F 키 입력, 상호작용 버튼
-    public void OnInteraction(InputValue value)
+    public void OnInteraction(InputAction.CallbackContext context)
     {
-        interaction = value.isPressed;
+        if (context.phase == InputActionPhase.Started) { Debug.Log("왜?"); interaction = true; }
+        else if (context.phase == InputActionPhase.Canceled) { interaction = false; }
     }
 
-    public void OnShowMouse(InputValue value)
+    public void OnShowMouse(InputAction.CallbackContext context)
     {
-        Cursor.lockState = value.isPressed ? CursorLockMode.Confined : CursorLockMode.Locked;
+        if (context.started) { isShowMouse = true; } if(context.canceled){ isShowMouse = false; }
+        Cursor.lockState = context.performed ? CursorLockMode.Confined : CursorLockMode.Locked;
     }
 
 }

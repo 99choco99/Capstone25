@@ -4,17 +4,19 @@ using UnityEngine;
 public class PlayerInteraction : MonoBehaviour
 {
     [SerializeField] PlayerController player;
+    [SerializeField] DialogueManager dialogueManager;
     IInteractable interactObject;
 
     private readonly int layerMask = 1 << 8;
     public float interactRange;
-    Collider select;
+    public Collider select;
     public int selectIndex = 0;
     public int preselectIndex = 0;
 
     private void Awake()
     {
         player = GetComponent<PlayerController>();
+        dialogueManager = GetComponentInChildren<DialogueManager>();
     }
 
     void Update()
@@ -27,7 +29,12 @@ public class PlayerInteraction : MonoBehaviour
             {
                 if (select.gameObject.TryGetComponent(out interactObject))
                 {
-                    interactObject.Interact(player.transform);
+                    interactObject.Interact(player.transform);  //상호작용
+                }
+                if (select.gameObject.TryGetComponent<NPC>(out NPC npc))
+                {
+                    player.playerStateMachine.TransitionTo(player.playerStateMachine.playerConversationState);  // NPC라면 대화상태 진입
+                    dialogueManager.StartConversation(npc);
                 }
             }
         }
@@ -63,7 +70,6 @@ public class PlayerInteraction : MonoBehaviour
         }
         if (selectIndex > hits.Length - 1 || selectIndex < 0) { selectIndex = 0; }
         select = hits[selectIndex];
-
     }
 
 }

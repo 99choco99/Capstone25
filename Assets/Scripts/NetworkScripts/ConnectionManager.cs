@@ -5,6 +5,7 @@ using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Multiplayer;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class ConnectionManager : MonoBehaviour
 {
@@ -14,7 +15,6 @@ public class ConnectionManager : MonoBehaviour
     private ConnectionState _state = ConnectionState.Disconnected;
     private ISession _session;
     private NetworkManager m_NetworkManager;
-
     private enum ConnectionState
     {
         Disconnected,
