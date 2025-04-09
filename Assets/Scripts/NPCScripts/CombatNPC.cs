@@ -2,9 +2,9 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class CombatNPC : MonoBehaviour, IInteractable
+public class CombatNPC : NPC
 {
-    public void Interact(Transform player)
+    public override void Interact(Transform player)
     {
         LoadingScene.LoadScene("Combat");
         transform.LookAt(player);

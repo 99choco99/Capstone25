@@ -34,7 +34,6 @@ public partial class LerpLookAtAction : Action
         }
         else
         {
-            Debug.Log(Quaternion.Angle(gameObject.Value.transform.rotation, targetRotation));
             return Status.Running; // 아직 회전 중
         }
     }
