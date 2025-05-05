@@ -16,9 +16,9 @@ public class EnemyWeapon : Weapon
     private void OnTriggerEnter(Collider other)
     {
         if (!canTrigger) { return; }
-        if (other.CompareTag("Player"))
+        if (other.CompareTag("PlayerData"))
         {
-            Player player = other.transform.parent.GetComponent<Player>();
+            PlayerData player = other.transform.parent.GetComponent<PlayerData>();
 
             Vector3 hitPoint = other.ClosestPoint(transform.position);
             Vector3 hitnormal = transform.position - other.transform.position;
@@ -28,7 +28,7 @@ public class EnemyWeapon : Weapon
         }
         else if (other.CompareTag("GuardState"))
         {
-            Player player = other.transform.parent.GetComponent<Player>();
+            PlayerData player = other.transform.parent.GetComponent<PlayerData>();
             player.Ishit = true;
             canTrigger = false;
             StartCoroutine(ResetTrigger());

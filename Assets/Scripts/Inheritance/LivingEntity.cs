@@ -5,9 +5,11 @@ using Newtonsoft.Json;
 public class LivingEntity : MonoBehaviour,IDamageable
 {
     public int level = 0;
-    public float maxHp { get; protected set; }   // 최대 체력
-    public float currentHp { get; protected set; }  // 현재 체력
-    public float damage { get; protected set; }// 공격력
+    public float maxHp;  // 최대 체력
+    public float currentHp;  // 현재 체력
+    public float damage;// 공격력
+    public float defense; //방어력
+    public float speed; //이동속도
     public bool dead { get; protected set; }  // 죽음
 
     protected event Action OnDeath; // 죽었을 때 이벤트

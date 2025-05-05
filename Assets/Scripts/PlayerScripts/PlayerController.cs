@@ -19,9 +19,9 @@ public class PlayerController : NetworkBehaviour
     public Rigidbody rb;
     public Animator anim;
     public GameObject col;
-    public Player player;
+    public PlayerData player;
 
-    [Header("Player Setting")]
+    [Header("PlayerData Setting")]
     public float smoothness; // alt시 카메라 회전 속도
     public bool isGround; // 땅에 착지 했는가
     public float AttackTime;  // 공격 간격
@@ -30,7 +30,7 @@ public class PlayerController : NetworkBehaviour
     public float slideSpeed = 5;  // 슬라이딩 속도
     public float InvincibleTime = 1f;  // 피격시 무적 시간
 
-    [Header("Player Input Values")]
+    [Header("PlayerData Input Values")]
     public Vector3 move;  // wasd 키
     public Vector2 look;  // 마우스
     public float scroll;  // 마우스 휠
@@ -52,7 +52,7 @@ public class PlayerController : NetworkBehaviour
         playerStateMachine = GetComponent<PlayerStateMachine>();
         rb = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
-        player = GetComponent<Player>();
+        player = GetComponent<PlayerData>();
         playerInput = GetComponent<PlayerInput>();
         playerInteraction = GetComponent<PlayerInteraction>();
         playerCamera = Camera.main;
@@ -156,7 +156,7 @@ public class PlayerController : NetworkBehaviour
     // F 키 입력, 상호작용 버튼
     public void OnInteraction(InputAction.CallbackContext context)
     {
-        if (context.phase == InputActionPhase.Started) { Debug.Log("왜?"); interaction = true; }
+        if (context.phase == InputActionPhase.Started) { interaction = true; }
         else if (context.phase == InputActionPhase.Canceled) { interaction = false; }
     }
 

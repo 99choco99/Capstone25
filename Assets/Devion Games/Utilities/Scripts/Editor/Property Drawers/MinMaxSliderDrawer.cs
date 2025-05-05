@@ -33,7 +33,7 @@ namespace DevionGames
 					property.vector2Value = range;
 				}
 			} else {
-				EditorGUI.LabelField (position, label, "Use only with Vector2");
+				EditorGUI.LabelField (position, label, "Apply only with Vector2");
 			}
 		}
 
