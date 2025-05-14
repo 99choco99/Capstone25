@@ -10,9 +10,10 @@ public abstract class Slot : MonoBehaviour, IPointerEnterHandler, IDropHandler, 
     public SlotType slotType;
     protected Image image;
     protected RectTransform rect;
-    protected InventoryItem currentItem;  // 현재 창을 차지하고있는 아이템
-    protected InventoryItem newItem;   // 새롭게 창을 차지할 아이템
-    protected bool hasItem;
+    public OwnedItem currentItem;  // 현재 창을 차지하고있는 아이템
+    protected OwnedItem newItem;   // 새롭게 창을 차지할 아이템
+    public bool hasItem;
+    public int SlotIndex;
 
     private void Awake()
     {

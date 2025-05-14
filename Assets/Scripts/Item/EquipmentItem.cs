@@ -1,10 +1,12 @@
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 
 public enum EquipmentType { None, helmet, top, bottom, shoes, sword, shield }
-public class EquipmentItem : InventoryItem
+public class EquipmentItem : OwnedItem
 {
-    public EquipmentItemData data;
     public override void Apply(PlayerData player)
     {
         player.damage += data.damage;
@@ -17,8 +19,4 @@ public class EquipmentItem : InventoryItem
 
     }
 
-    public override EquipmentType GetEquipmentType()
-    {
-        return data.type;
-    }
 }

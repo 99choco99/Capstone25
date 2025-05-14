@@ -90,6 +90,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &41799602233914588
 GameObject:
   m_ObjectHideFlags: 0
@@ -212,6 +213,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &85031102008068947
 GameObject:
   m_ObjectHideFlags: 0
@@ -302,6 +304,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &87608284112798615
 GameObject:
   m_ObjectHideFlags: 0
@@ -392,6 +395,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &152991641112689275
 GameObject:
   m_ObjectHideFlags: 0
@@ -1010,6 +1014,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &561097438051200453
 GameObject:
   m_ObjectHideFlags: 0
@@ -1101,6 +1106,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &575982145425871002
 GameObject:
   m_ObjectHideFlags: 0
@@ -1268,6 +1274,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &586861110146837554
 GameObject:
   m_ObjectHideFlags: 0
@@ -1358,6 +1365,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &602752808362320774
 GameObject:
   m_ObjectHideFlags: 0
@@ -1523,6 +1531,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &627033411641762277
 GameObject:
   m_ObjectHideFlags: 0
@@ -1644,6 +1653,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &670564792983836272
 GameObject:
   m_ObjectHideFlags: 0
@@ -1733,7 +1743,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43668ce9087c2a64eacaef74da5ccbcb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemType: 1
+  data: {fileID: 11400000, guid: 787925ee56a6a584ba844af520bb2001, type: 2}
   previousSlot: {fileID: 0}
 --- !u!225 &1757650583621792091
 CanvasGroup:
@@ -2311,6 +2321,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DropItems: {fileID: 0}
+  player: {fileID: 6856710574634217130}
 --- !u!225 &4309843779364830383
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -2413,6 +2424,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &941197086997174557
 GameObject:
   m_ObjectHideFlags: 0
@@ -2503,6 +2515,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &963167375614620684
 GameObject:
   m_ObjectHideFlags: 0
@@ -3137,6 +3150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &1161999175455049733
 GameObject:
   m_ObjectHideFlags: 0
@@ -3341,6 +3355,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &1436761793826558389
 GameObject:
   m_ObjectHideFlags: 0
@@ -3431,6 +3446,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &1468481240856745441
 GameObject:
   m_ObjectHideFlags: 0
@@ -3711,7 +3727,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1aa08ab6e0800fa44ae55d278d1423e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Content: {fileID: 277765090391251897}
+  m_Content: {fileID: 488499260528713553}
   m_Horizontal: 0
   m_Vertical: 1
   m_MovementType: 2
@@ -3771,7 +3787,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 609857aa5d9babe4d81ef74ccd6a6bb9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ItemDescritpion: {fileID: 4279131104843498622}
+  ItemDescription: {fileID: 3219074529463330204}
+  EquipmentInventory: {fileID: 488499260528713553}
+  ConsumptionInventory: {fileID: 277765090391251897}
+  OtherInventory: {fileID: 5655786209298686021}
 --- !u!1 &1532683311448753919
 GameObject:
   m_ObjectHideFlags: 0
@@ -3862,7 +3881,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
-  equipmentSlotType: 4
+  hasItem: 0
+  EquipmentType: 4
 --- !u!1 &1565287321524463922
 GameObject:
   m_ObjectHideFlags: 0
@@ -4021,6 +4041,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &1661758935300900413
 GameObject:
   m_ObjectHideFlags: 0
@@ -4478,6 +4499,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &1903411480541139893
 GameObject:
   m_ObjectHideFlags: 0
@@ -4599,6 +4621,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &1952443943684473925
 GameObject:
   m_ObjectHideFlags: 0
@@ -4689,6 +4712,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &2035480581146633902
 GameObject:
   m_ObjectHideFlags: 0
@@ -4779,6 +4803,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &2082658902958534617
 GameObject:
   m_ObjectHideFlags: 0
@@ -5058,6 +5083,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &2135885636304357920
 GameObject:
   m_ObjectHideFlags: 0
@@ -5148,6 +5174,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &2150958578910282391
 GameObject:
   m_ObjectHideFlags: 0
@@ -5357,6 +5384,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &2218798444019833069
 GameObject:
   m_ObjectHideFlags: 0
@@ -5554,7 +5582,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
-  equipmentSlotType: 2
+  hasItem: 0
+  EquipmentType: 2
 --- !u!1 &2259198724388752570
 GameObject:
   m_ObjectHideFlags: 0
@@ -6371,6 +6400,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &2661767422940718531
 GameObject:
   m_ObjectHideFlags: 0
@@ -6461,6 +6491,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &2726338484165806685
 GameObject:
   m_ObjectHideFlags: 0
@@ -6773,6 +6804,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &2783913873305970152
 GameObject:
   m_ObjectHideFlags: 0
@@ -7128,6 +7160,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &2845331491830696694
 GameObject:
   m_ObjectHideFlags: 0
@@ -7248,7 +7281,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43668ce9087c2a64eacaef74da5ccbcb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemType: 1
+  data: {fileID: 11400000, guid: 787925ee56a6a584ba844af520bb2001, type: 2}
   previousSlot: {fileID: 0}
 --- !u!225 &8562387641569919071
 CanvasGroup:
@@ -7427,6 +7460,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &2987946535886967154
 GameObject:
   m_ObjectHideFlags: 0
@@ -7517,6 +7551,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &3016028498227538298
 GameObject:
   m_ObjectHideFlags: 0
@@ -7682,7 +7717,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
-  equipmentSlotType: 5
+  hasItem: 0
+  EquipmentType: 5
 --- !u!1 &3068733121963640250
 GameObject:
   m_ObjectHideFlags: 0
@@ -7881,6 +7917,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &3219074529463330204
 GameObject:
   m_ObjectHideFlags: 0
@@ -8060,6 +8097,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &3311160170318059448
 GameObject:
   m_ObjectHideFlags: 0
@@ -8150,6 +8188,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &3327608507525880815
 GameObject:
   m_ObjectHideFlags: 0
@@ -8240,6 +8279,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &3354734930930199165
 GameObject:
   m_ObjectHideFlags: 0
@@ -8693,6 +8733,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &3452497820986492078
 GameObject:
   m_ObjectHideFlags: 0
@@ -9271,6 +9312,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &3649306827174384477
 GameObject:
   m_ObjectHideFlags: 0
@@ -9392,6 +9434,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &3697550284707680850
 GameObject:
   m_ObjectHideFlags: 0
@@ -9482,6 +9525,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &3708827665028222937
 GameObject:
   m_ObjectHideFlags: 0
@@ -9572,6 +9616,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &3763340973681198188
 GameObject:
   m_ObjectHideFlags: 0
@@ -9798,6 +9843,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &3828646254167891201
 GameObject:
   m_ObjectHideFlags: 0
@@ -9888,6 +9934,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &3832954019434649335
 GameObject:
   m_ObjectHideFlags: 0
@@ -10784,6 +10831,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &4029243752371061406
 GameObject:
   m_ObjectHideFlags: 0
@@ -10910,6 +10958,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &4123205810165089186
 GameObject:
   m_ObjectHideFlags: 0
@@ -11000,6 +11049,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &4179425611416133313
 GameObject:
   m_ObjectHideFlags: 0
@@ -11090,6 +11140,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &4186091255332695293
 GameObject:
   m_ObjectHideFlags: 0
@@ -11591,8 +11642,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 84b2a7f7e1ee71f49a681f541428f521, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerData: {fileID: 0}
+  playerData: {fileID: 7971501461378024631}
   slotType: 0
+  hasItem: 0
 --- !u!1 &4343015166479422596
 GameObject:
   m_ObjectHideFlags: 0
@@ -11683,6 +11735,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &4395320677521835515
 GameObject:
   m_ObjectHideFlags: 0
@@ -11773,6 +11826,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &4449898341771205559
 GameObject:
   m_ObjectHideFlags: 0
@@ -11863,6 +11917,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &4474754250973257893
 GameObject:
   m_ObjectHideFlags: 0
@@ -12089,6 +12144,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &4494123225631741431
 GameObject:
   m_ObjectHideFlags: 0
@@ -12644,6 +12700,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &4788928835067557210
 GameObject:
   m_ObjectHideFlags: 0
@@ -12813,6 +12870,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &4839052897586496685
 GameObject:
   m_ObjectHideFlags: 0
@@ -12904,6 +12962,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &4930671595251608133
 GameObject:
   m_ObjectHideFlags: 0
@@ -13838,6 +13897,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &5320661366379543371
 GameObject:
   m_ObjectHideFlags: 0
@@ -14097,6 +14157,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &5391719405866742930
 GameObject:
   m_ObjectHideFlags: 0
@@ -14188,6 +14249,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &5461644822714330520
 GameObject:
   m_ObjectHideFlags: 0
@@ -14314,7 +14376,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
-  equipmentSlotType: 6
+  hasItem: 0
+  EquipmentType: 6
 --- !u!1 &5509644696321441681
 GameObject:
   m_ObjectHideFlags: 0
@@ -14525,6 +14588,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &5556927541333200256
 GameObject:
   m_ObjectHideFlags: 0
@@ -14904,6 +14968,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &5619528887766579270
 GameObject:
   m_ObjectHideFlags: 0
@@ -14994,6 +15059,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &5621406310380255823
 GameObject:
   m_ObjectHideFlags: 0
@@ -15152,6 +15218,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &5652997928466449287
 GameObject:
   m_ObjectHideFlags: 0
@@ -15442,6 +15509,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &5891601992694702101
 GameObject:
   m_ObjectHideFlags: 0
@@ -15719,6 +15787,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &6022004495420017608
 GameObject:
   m_ObjectHideFlags: 0
@@ -15809,6 +15878,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &6077796239177305705
 GameObject:
   m_ObjectHideFlags: 0
@@ -15897,8 +15967,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fbaec27a91a30d54893bde4c78882682, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerData: {fileID: 0}
-  slotType: 0
+  playerData: {fileID: 7971501461378024631}
+  slotType: 1
+  hasItem: 0
 --- !u!1 &6084174685311788948
 GameObject:
   m_ObjectHideFlags: 0
@@ -16128,6 +16199,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &6113254255849224506
 GameObject:
   m_ObjectHideFlags: 0
@@ -16369,6 +16441,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &6289251667608125672
 GameObject:
   m_ObjectHideFlags: 0
@@ -16650,6 +16723,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &6354935978266948500
 GameObject:
   m_ObjectHideFlags: 0
@@ -17049,7 +17123,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
-  equipmentSlotType: 3
+  hasItem: 0
+  EquipmentType: 3
 --- !u!1 &6504033275887514881
 GameObject:
   m_ObjectHideFlags: 0
@@ -17140,6 +17215,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &6533281201256180117
 GameObject:
   m_ObjectHideFlags: 0
@@ -17554,6 +17630,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &6713360351599531089
 GameObject:
   m_ObjectHideFlags: 0
@@ -17644,6 +17721,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &6714662600481903711
 GameObject:
   m_ObjectHideFlags: 0
@@ -17968,6 +18046,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &6936213103197628672
 GameObject:
   m_ObjectHideFlags: 0
@@ -18170,6 +18249,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &7003399646659691498
 GameObject:
   m_ObjectHideFlags: 0
@@ -18260,6 +18340,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &7044146390340591133
 GameObject:
   m_ObjectHideFlags: 0
@@ -18488,6 +18569,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &7104071447564975623
 GameObject:
   m_ObjectHideFlags: 0
@@ -18645,6 +18727,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &7191068163916715419
 GameObject:
   m_ObjectHideFlags: 0
@@ -18876,6 +18959,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &7266420219110565913
 GameObject:
   m_ObjectHideFlags: 0
@@ -19032,7 +19116,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8176249917111002778}
   m_HandleRect: {fileID: 2310288804779501817}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 0.5
   m_Size: 0.8563218
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -19159,6 +19243,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &7324199297404541983
 GameObject:
   m_ObjectHideFlags: 0
@@ -19418,6 +19503,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &7415427415571714574
 GameObject:
   m_ObjectHideFlags: 0
@@ -19508,6 +19594,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &7422574416620617679
 GameObject:
   m_ObjectHideFlags: 0
@@ -19844,6 +19931,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &7536188622993830458
 GameObject:
   m_ObjectHideFlags: 0
@@ -20200,6 +20288,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &7616231314701196312
 GameObject:
   m_ObjectHideFlags: 0
@@ -20391,6 +20480,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &7629981901707762473
 GameObject:
   m_ObjectHideFlags: 0
@@ -20513,6 +20603,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &7734640688854091336
 GameObject:
   m_ObjectHideFlags: 0
@@ -20772,7 +20863,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
-  equipmentSlotType: 1
+  hasItem: 0
+  EquipmentType: 1
 --- !u!1 &7830577802750126075
 GameObject:
   m_ObjectHideFlags: 0
@@ -20983,6 +21075,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &7903259927402297222
 GameObject:
   m_ObjectHideFlags: 0
@@ -21209,6 +21302,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &7952328770249684721
 GameObject:
   m_ObjectHideFlags: 0
@@ -21299,6 +21393,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &7995366658690217551
 GameObject:
   m_ObjectHideFlags: 0
@@ -21526,6 +21621,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &8053796704856261072
 GameObject:
   m_ObjectHideFlags: 0
@@ -21616,6 +21712,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &8091591385845543255
 GameObject:
   m_ObjectHideFlags: 0
@@ -21814,6 +21911,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &8238635148547207356
 GameObject:
   m_ObjectHideFlags: 0
@@ -21984,6 +22082,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &8297498101154466633
 GameObject:
   m_ObjectHideFlags: 0
@@ -22183,6 +22282,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &8337592193156700772
 GameObject:
   m_ObjectHideFlags: 0
@@ -22509,6 +22609,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &8548918448556563012
 GameObject:
   m_ObjectHideFlags: 0
@@ -22749,6 +22850,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 2
+  hasItem: 0
 --- !u!1 &8744465422629388966
 GameObject:
   m_ObjectHideFlags: 0
@@ -23155,6 +23257,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1 &8852158515126270644
 GameObject:
   m_ObjectHideFlags: 0
@@ -23517,6 +23620,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &8992529956169725572
 GameObject:
   m_ObjectHideFlags: 0
@@ -23707,6 +23811,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &9150745454240558260
 GameObject:
   m_ObjectHideFlags: 0
@@ -23832,6 +23937,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 1
+  hasItem: 0
 --- !u!1 &9206660629921960518
 GameObject:
   m_ObjectHideFlags: 0
@@ -23922,6 +24028,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerData: {fileID: 0}
   slotType: 0
+  hasItem: 0
 --- !u!1001 &8197970926248800675
 PrefabInstance:
   m_ObjectHideFlags: 0

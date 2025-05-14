@@ -4,15 +4,14 @@ using UnityEngine.EventSystems;
 
 public class EquipmentSlot : Slot
 {
-    public EquipmentType equipmentSlotType;
+    public EquipmentType EquipmentType;
 
     override public void OnDrop(PointerEventData eventData)
     {
-        eventData.pointerDrag.TryGetComponent<InventoryItem>(out newItem);
+        eventData.pointerDrag.TryGetComponent<OwnedItem>(out newItem);
 
-        if (newItem.itemType == ItemType.Equipment && slotType == SlotType.Equipment)
+        if (newItem.data.type == ItemType.Equipment && newItem.data.equipmentType == EquipmentType)
         {
-            if ((int)newItem.GetEquipmentType() != (int)equipmentSlotType) { return; }
             newItem.Apply(playerData);
             base.OnDrop(eventData);
         }

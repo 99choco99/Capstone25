@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class otherItem : InventoryItem
+public class otherItem : OwnedItem
 {
 
 }

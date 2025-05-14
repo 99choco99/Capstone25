@@ -4,13 +4,12 @@ using UnityEngine.EventSystems;
 
 public class QuickSlot : Slot
 {
-
-    public void Awake()
-    {
-        rect = GetComponent<RectTransform>();
-    }
     public override void OnDrop(PointerEventData eventData)
     {
-        base.OnDrop(eventData);
+        eventData.pointerDrag.TryGetComponent<OwnedItem>(out newItem);
+        if ((int)slotType == (int)newItem.data.type)
+        {
+            base.OnDrop(eventData);
+        }
     }
 }

@@ -1,11 +1,12 @@
+using Unity.Android.Gradle.Manifest;
 using UnityEngine;
 
 public class DropItem : Item, IInteractable
 {
-    ItemType type;
-
     public void Interact(Transform player)
     {
-        Debug.Log("드롭된 아이템");
+        ItemSlot slot = InventoryManager.instance.FindEmptySlot(data.type);
+        slot.currentItem = Instantiate(data.OwnedStatePrefab, slot.transform).GetComponent<OwnedItem>();
+        Destroy(gameObject);
     }
 }

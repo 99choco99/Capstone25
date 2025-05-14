@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class ConsumptionItem : InventoryItem
+public class ConsumptionItem : OwnedItem
 {
 
     void consume()
