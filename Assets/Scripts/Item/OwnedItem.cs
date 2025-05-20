@@ -8,7 +8,7 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
 {
     RectTransform rect;
     CanvasGroup canvasGroup;
-    Transform canvas;
+    protected Transform canvas;
     TextMeshProUGUI ItemDescriptionText;
     public Slot previousSlot;
     protected InventoryManager inventory;
@@ -20,10 +20,6 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
         canvasGroup = GetComponent<CanvasGroup>();
         inventory = GetComponentInParent<InventoryManager>();
         ItemDescriptionText = inventory.ItemDescription.GetComponentInChildren<TextMeshProUGUI>(true);
-    }
-    public virtual void Apply(PlayerData player)
-    {
-
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -42,7 +38,7 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
         rect.position = eventData.position;
     }
 
-    public void OnEndDrag(PointerEventData eventData)
+    public virtual void OnEndDrag(PointerEventData eventData)
     {
         if (transform.parent == canvas)
         {

@@ -16,7 +16,7 @@ public class EnemyWeapon : Weapon
     private void OnTriggerEnter(Collider other)
     {
         if (!canTrigger) { return; }
-        if (other.CompareTag("PlayerData"))
+        if (other.CompareTag("Player"))
         {
             PlayerData player = other.transform.parent.GetComponent<PlayerData>();
 

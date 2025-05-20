@@ -22,5 +22,8 @@ public class DropArea : MonoBehaviour,IDropHandler
             dropItem.transform.position = player.transform.position;
             Destroy(selectedItem.gameObject);
         }
+        if (eventData.pointerDrag.TryGetComponent(out EquipmentItem item) && item.previousSlot.slotType == SlotType.Profile) {
+            item.TakeOff(item.previousSlot.playerData);
+        }
     }
 }

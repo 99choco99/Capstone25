@@ -5,8 +5,9 @@ public class DropItem : Item, IInteractable
 {
     public void Interact(Transform player)
     {
-        ItemSlot slot = InventoryManager.instance.FindEmptySlot(data.type);
+        Slot slot = InventoryManager.instance.FindEmptySlot(data.type);
         slot.currentItem = Instantiate(data.OwnedStatePrefab, slot.transform).GetComponent<OwnedItem>();
+        slot.ItemCount += data.count;
         Destroy(gameObject);
     }
 }

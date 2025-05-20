@@ -6,6 +6,7 @@ using System;
 public class PlayerData : LivingEntity
 {
     public PlayerUIManager playerUI; //플레이어 UI
+    public event Action OnStatsChanged;  // 스탯 변경사항 적용
     public bool Ishit; // 데미지를 입었는가?
 
     //플레이어 체력 변화 적용
@@ -27,9 +28,21 @@ public class PlayerData : LivingEntity
         QuestManager.instance.UnlockQuests(level);
     }
 
-    protected override void OnEnable()
+    public void ApplyStatChanges(float damageChange, float healthChange, float defenseChange, float speedChange)
     {
+        // 스탯 값 변경 로직
+        D_damage += damageChange;
+        D_health += healthChange;
+        D_defense += defenseChange;
+        D_speed += speedChange;
 
+
+        damage += damageChange;
+        maxHp += healthChange;
+        defense += defenseChange;
+        speed += speedChange;
+
+        OnStatsChanged?.Invoke();
     }
 
     //불러온 데이터 적용하기

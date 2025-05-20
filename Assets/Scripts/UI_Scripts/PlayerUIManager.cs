@@ -21,6 +21,7 @@ public class PlayerUIManager : MonoBehaviour
     public bool isInventoryOpen;
     public GameObject Setting;
     public bool isSettingOpen;
+
     public void ShowEnemyInfoUI()
     {
         EnemyHpUI.gameObject.SetActive(true);

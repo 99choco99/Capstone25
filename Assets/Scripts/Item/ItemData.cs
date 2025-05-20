@@ -5,13 +5,14 @@ public class ItemData : ScriptableObject
 {
     public GameObject DropStatePrefab;
     public GameObject OwnedStatePrefab;
-    public ItemType type;
+    public SlotType type;
     public EquipmentType equipmentType;
 
     public float damage;
     public float defense;
     public float speed;
     public float hp;
+    public int count;
 
     public string script;
 }

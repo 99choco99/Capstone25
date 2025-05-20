@@ -11,7 +11,7 @@ public class InventoryManager : MonoBehaviour
     public Transform ConsumptionInventory;
     public Transform OtherInventory;
 
-    public Dictionary<ItemType, Tuple<List<ItemSlot>, SortedList<int,int>>> Inventory;
+    public Dictionary<SlotType, Tuple<List<Slot>, SortedList<int,int>>> Inventory;
 
 
     public static InventoryManager instance;
@@ -27,10 +27,11 @@ public class InventoryManager : MonoBehaviour
             Destroy(this);
         }
         ScrollRect = GetComponent<ScrollRect>();
-        Inventory = new Dictionary<ItemType, Tuple<List<ItemSlot>, SortedList<int,int>>>();
-        Init(ItemType.Equipment, EquipmentInventory);
-        Init(ItemType.Consumption, ConsumptionInventory);
-        Init(ItemType.Other, OtherInventory);
+        Inventory = new Dictionary<SlotType, Tuple<List<Slot>, SortedList<int,int>>>();
+        Init(SlotType.Equipment, EquipmentInventory);
+        Init(SlotType.Consumption, ConsumptionInventory);
+        Init(SlotType.Other, OtherInventory);
+        transform.parent.gameObject.SetActive(false);
     }
 
     public void ShowInvenType(RectTransform InventoryType)
@@ -38,9 +39,9 @@ public class InventoryManager : MonoBehaviour
         ScrollRect.content = InventoryType;
     }
 
-    void Init(ItemType type, Transform InventoryTransform)
+    void Init(SlotType type, Transform InventoryTransform)
     {
-        List<ItemSlot> itemSlots = new(InventoryTransform.GetComponentsInChildren<ItemSlot>());
+        List<Slot> itemSlots = new(InventoryTransform.GetComponentsInChildren<Slot>());
         SortedList<int,int> emptySlots = new();
         for(int i = 0; i < itemSlots.Count; i++)
         {
@@ -50,11 +51,11 @@ public class InventoryManager : MonoBehaviour
                 emptySlots.Add(i,i);
             }
         }
-        Tuple<List<ItemSlot>, SortedList<int,int>> InventoryTuple = new(itemSlots, emptySlots);
+        Tuple<List<Slot>, SortedList<int,int>> InventoryTuple = new(itemSlots, emptySlots);
         Inventory.Add(type, InventoryTuple);
     }
 
-    public ItemSlot FindEmptySlot(ItemType type)
+    public Slot FindEmptySlot(SlotType type)
     {
         if(Inventory[type].Item2.Count > 0)
         {
