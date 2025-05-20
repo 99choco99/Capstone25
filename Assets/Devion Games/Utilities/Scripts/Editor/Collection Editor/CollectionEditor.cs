@@ -304,7 +304,7 @@ namespace DevionGames{
 		/// <summary>
 		/// Select an item.
 		/// </summary>
-		/// <param name="item">Item.</param>
+		/// <param name="item">OwnedItem.</param>
 		protected virtual void Select(T item){
 			int index = Items.IndexOf(item);
 			if (this.m_SelectedItemIndex != index)
@@ -331,7 +331,7 @@ namespace DevionGames{
 		/// <summary>
 		/// Remove the specified item from collection.
 		/// </summary>
-		/// <param name="item">Item.</param>
+		/// <param name="item">OwnedItem.</param>
 		protected virtual void Remove(T item){}
 
 		/// <summary>
@@ -394,7 +394,7 @@ namespace DevionGames{
 		/// <summary>
 		/// Draws the item properties.
 		/// </summary>
-		/// <param name="item">Item.</param>
+		/// <param name="item">OwnedItem.</param>
 		protected virtual void DrawItem(T item){}
 
 		protected virtual void DrawItemLabel(int index, T item) {
@@ -405,7 +405,7 @@ namespace DevionGames{
 		/// Gets the sidebar label displayed in sidebar.
 		/// </summary>
 		/// <returns>The sidebar label.</returns>
-		/// <param name="item">Item.</param>
+		/// <param name="item">OwnedItem.</param>
 		protected abstract string GetSidebarLabel(T item);
 
 		protected virtual string ButtonLabel(int index, T item)
@@ -417,7 +417,7 @@ namespace DevionGames{
 		/// Checks for search.
 		/// </summary>
 		/// <returns><c>true</c>, if search was matchesed, <c>false</c> otherwise.</returns>
-		/// <param name="item">Item.</param>
+		/// <param name="item">OwnedItem.</param>
 		/// <param name="search">Search.</param>
 		protected abstract bool MatchesSearch (T item, string search);
 

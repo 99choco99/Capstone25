@@ -5,7 +5,7 @@ using UnityEngine;
 public class Door : MonoBehaviour {
 	public Animator anim;
 
-	// Use this for initialization
+	// Apply this for initialization
 	void Start () {
 		anim = GetComponent<Animator> ();
 	}
