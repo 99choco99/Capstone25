@@ -115,12 +115,14 @@ public class QuestManager : MonoBehaviour
         currentQuest.SetQuestState(Quest.QuestState.running);
     }
 
+    //J 버튼을 통해 퀘스트 UI 실행
     public void OnQuestList(InputAction.CallbackContext context)
     {
         if (context.phase == InputActionPhase.Started)
         {
             isQuestListActive = !isQuestListActive;
             questUI.gameObject.SetActive(isQuestListActive);
+            Cursor.lockState = isQuestListActive ? CursorLockMode.Confined : CursorLockMode.Locked;
         }
     }
 

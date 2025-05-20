@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PlayerWeapon : Weapon
 {
-    [SerializeField] Player player;
+    [SerializeField] PlayerData player;
     
 
     private void OnTriggerEnter(Collider other)

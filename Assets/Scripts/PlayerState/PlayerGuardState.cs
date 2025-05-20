@@ -38,6 +38,6 @@ public class PlayerGuardState : IState
         player.anim.SetBool("Guard",false);
         player.anim.ResetTrigger("GuardHit");
         player.player.Ishit = false;
-        player.col.tag = "Player";
+        player.col.tag = "PlayerData";
     }
 }

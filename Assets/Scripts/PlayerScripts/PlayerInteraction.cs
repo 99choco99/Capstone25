@@ -1,3 +1,4 @@
+using System.Collections;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -13,6 +14,8 @@ public class PlayerInteraction : MonoBehaviour
     public int selectIndex = 0;
     public int preselectIndex = 0;
 
+    bool isWorking;
+
     private void Awake()
     {
         player = GetComponent<PlayerController>();
@@ -25,8 +28,9 @@ public class PlayerInteraction : MonoBehaviour
         if (hits.Length > 0)
         {
             SelectObject(hits);
-            if (player.interaction)
+            if (!isWorking && player.interaction)
             {
+                isWorking = true;
                 if (select.gameObject.TryGetComponent(out interactObject))
                 {
                     interactObject.Interact(player.transform);  //상호작용
@@ -36,6 +40,7 @@ public class PlayerInteraction : MonoBehaviour
                     player.playerStateMachine.TransitionTo(player.playerStateMachine.playerConversationState);  // NPC라면 대화상태 진입
                     dialogueManager.StartConversation(npc);
                 }
+                StartCoroutine("WaitTime", 0.5f);
             }
         }
     }
@@ -72,4 +77,10 @@ public class PlayerInteraction : MonoBehaviour
         select = hits[selectIndex];
     }
 
+
+    IEnumerator WaitTime(float time)
+    {
+        yield return new WaitForSeconds(time);
+        isWorking = false;
+    }
 }

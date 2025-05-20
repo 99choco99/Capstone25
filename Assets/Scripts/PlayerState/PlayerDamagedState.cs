@@ -24,7 +24,7 @@ public class PlayerDamagedState : IState
     public void Exit()
     {
         player.playerInput.enabled = true;
-        player.col.tag = "Player";
+        player.col.tag = "PlayerData";
         player.player.Ishit = false;
         player.anim.ResetTrigger("Hit");
     }

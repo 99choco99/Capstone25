@@ -77,7 +77,7 @@ namespace DevionGames
 
 		protected override void Remove (T item)
 		{
-			if (EditorUtility.DisplayDialog ("Delete Item", "Are you sure you want to delete " + item.Name + "?", "Yes", "No")) {
+			if (EditorUtility.DisplayDialog ("Delete OwnedItem", "Are you sure you want to delete " + item.Name + "?", "Yes", "No")) {
 				GameObject.DestroyImmediate (item, true);
 				AssetDatabase.SaveAssets ();
 				AssetDatabase.Refresh ();
