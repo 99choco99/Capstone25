@@ -4,12 +4,14 @@ using UnityEngine.EventSystems;
 
 public class ProfileSlot : Slot
 {
+    PlayerData playerData;
     public EquipmentType EquipmentType;
     public PlayerProfile PlayerProfile;
     EquipmentItem currentEquippedItem;
 
     private void Start()
     {
+        playerData = GetComponentInParent<PlayerData>();
         PlayerProfile = GetComponentInParent<PlayerProfile>();
     }
     override public void OnDrop(PointerEventData eventData)

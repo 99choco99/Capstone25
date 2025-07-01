@@ -9,8 +9,8 @@ public class PlayerInteraction : MonoBehaviour
     IInteractable interactObject;
 
     private readonly int layerMask = 1 << 8;
-    public float interactRange;
     public Collider select;
+    Collider[] hits;
     public int selectIndex = 0;
     public int preselectIndex = 0;
 
@@ -24,7 +24,7 @@ public class PlayerInteraction : MonoBehaviour
 
     void Update()
     {
-        Collider[] hits = GetInteractObject();
+        hits = GetInteractObject();
         if (hits.Length > 0)
         {
             SelectObject(hits);
@@ -35,9 +35,9 @@ public class PlayerInteraction : MonoBehaviour
                 {
                     interactObject.Interact(player.transform);  //상호작용
                 }
-                if (select.gameObject.TryGetComponent<NPC>(out NPC npc))
+                if (select.gameObject.TryGetComponent<QuestNPC>(out QuestNPC npc))
                 {
-                    player.playerStateMachine.TransitionTo(player.playerStateMachine.playerConversationState);  // NPC라면 대화상태 진입
+                    // NPC라면 대화상태 진입
                     dialogueManager.StartConversation(npc);
                 }
                 StartCoroutine("WaitTime", 0.5f);
@@ -47,7 +47,7 @@ public class PlayerInteraction : MonoBehaviour
 
     public Collider[] GetInteractObject()
     {
-        Collider[] hits = Physics.OverlapSphere(transform.position, interactRange, layerMask);
+        hits = Physics.OverlapSphere(transform.position, player.interactRange,layerMask);
         if (hits != null)
         {
             return hits;

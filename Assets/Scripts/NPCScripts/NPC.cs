@@ -11,6 +11,7 @@ public class NPC : MonoBehaviour, IInteractable
 
     private void Start()
     {
+        NPCName = GetComponentInChildren<TextMeshProUGUI>();
         NPCName.text = transform.name;
     }
 

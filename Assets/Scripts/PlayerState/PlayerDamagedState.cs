@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PlayerDamagedState : IState
+public class PlayerDamagedState : StateMachineBehaviour
 {
     private readonly PlayerController player;
 
@@ -18,7 +18,7 @@ public class PlayerDamagedState : IState
     {
         if(LastInvincibleTime + player.InvincibleTime < Time.time)
         {
-            player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
+            
         }
     }
     public void Exit()

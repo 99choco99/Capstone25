@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerJumpState : IState
+public class PlayerJumpState : StateMachineBehaviour
 {
     PlayerController player;
     public PlayerJumpState(PlayerController player) { this.player = player; }

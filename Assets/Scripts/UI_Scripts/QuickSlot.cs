@@ -6,12 +6,14 @@ using System.Collections;
 
 public class QuickSlot : Slot
 {
+    PlayerData playerData;
     Slider slider;
     ConsumptionItem quickItem;
     bool isCoolingDown = false;
 
     private void Start()
     {
+        playerData = GetComponentInParent<PlayerData>();
         slider = GetComponentInChildren<Slider>();
     }
     public override void OnDrop(PointerEventData eventData)
@@ -31,8 +33,8 @@ public class QuickSlot : Slot
         }
         if (quickItem = GetComponentInChildren<ConsumptionItem>())
         {
-            ItemCount -= 1;
-            if(ItemCount <= 0)
+            itemCount -= 1;
+            if(itemCount <= 0)
             {
                 Destroy(quickItem.gameObject);
                 hasItem = false;

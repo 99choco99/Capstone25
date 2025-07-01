@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerGuardState : IState
+public class PlayerGuardState : StateMachineBehaviour
 {
     PlayerController player;
 
@@ -15,7 +15,7 @@ public class PlayerGuardState : IState
             if (player.anim.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.8f)
             {
                 player.anim.SetTrigger("Parry");
-                player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
+                
             }
             else
             {
@@ -30,7 +30,7 @@ public class PlayerGuardState : IState
         }
         else if (!player.guard)
         {
-            player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
+            
             return;
         }
     }

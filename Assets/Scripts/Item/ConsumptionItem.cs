@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class ConsumptionItem : OwnedItem
@@ -5,16 +6,12 @@ public class ConsumptionItem : OwnedItem
 
     public void consume(PlayerData playerData)
     {
+        playerData.ApplyStatChanges(data.damage, data.hp, data.defense, data.speed);
+    }
 
-        playerData.currentHp += data.hp;
-        playerData.damage += data.damage;
-        playerData.defense += data.defense;
-        playerData.speed += data.speed;
-        if(playerData.maxHp < playerData.currentHp)
-        {
-            playerData.currentHp = playerData.maxHp;
-        }
-
+    IEnumerator buff_duration(float duration)
+    {
+        yield break;
     }
 
 }
