@@ -8,14 +8,12 @@ public class PlayerAttackState : StateMachineBehaviour
     private const int MAX_ATTACK_ANIMATIONS = 5; // 사용할 공격 애니메이션의 총 개수
 
     private bool hasQueuedAttackInput = false;  //사용자 입력 버퍼
-    private bool canCombo = true;               // 
     public float lastAttackTime;  // 마지막 공격 시간
-    public int currentAttackIndex = 0; // 현재 재생할 공격 애니메이션의 인덱스
+    public int currentAttackIndex = -1; // 현재 재생할 공격 애니메이션의 인덱스
     public override void OnStateMachineEnter(UnityEngine.Animator animator, int stateMachinePathHash)
     {
-        player.currentState = PlayerState.Attack;
-        hasQueuedAttackInput = false;
         Attack();
+        player.currentState = PlayerState.Attack;
     }
 
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
@@ -23,15 +21,12 @@ public class PlayerAttackState : StateMachineBehaviour
         if (player == null)
         {
             player = animator.GetComponent<PlayerController>();
-            if (player == null)
-            {
-                Debug.LogError("PlayerController를 찾을 수 없습니다. Animator와 동일한 GameObject에 있는지 확인하세요.", animator.gameObject);
-            }
         }
         player.currentState = PlayerState.Attack;
         if (!player.anim.GetCurrentAnimatorStateInfo(0).IsName("AttackIdle"))
         {
             currentAttackIndex = (currentAttackIndex + 1) % MAX_ATTACK_ANIMATIONS;
+            player.anim.SetInteger("AttackCount", currentAttackIndex);
         }
     }
 
@@ -41,6 +36,9 @@ public class PlayerAttackState : StateMachineBehaviour
         if (player.attack)
         {
             hasQueuedAttackInput = true;
+        }
+        if (player.isAttackPress)
+        {
             player.pressedTime += Time.deltaTime;
         }
 
@@ -50,41 +48,50 @@ public class PlayerAttackState : StateMachineBehaviour
             player.anim.SetBool("isMove", false);
             player.pressedTime = 0;
         }
-
-        canCombo = true;
         // 공격 조건
-        if (!player.attack && hasQueuedAttackInput && canCombo)
+        if (hasQueuedAttackInput)
         {
             Attack();
         }
 
         //종료조건
         if (player.anim.GetCurrentAnimatorStateInfo(0).IsName("AttackIdle")
-            && player.anim.GetCurrentAnimatorStateInfo(0).normalizedTime >= 0.5f 
-            && !player.attack 
+            && Time.time >= lastAttackTime + 1.0f
+            && !player.attack
             && !hasQueuedAttackInput)
         {
             player.currentState = PlayerState.Move;
+        }
+
+        if (player.anim.GetCurrentAnimatorStateInfo(0).IsName("AttackIdle") && player.jump)
+        {
+            player.currentState = PlayerState.Move;
+        }
+        if (player.anim.GetCurrentAnimatorStateInfo(0).IsName("AttackIdle") && player.guard)
+        {
+            player.currentState = PlayerState.Guard;
+            player.anim.SetBool("Guard", true);
         }
     }
     public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)
     {
         player.attack = false;
-        canCombo = true;
         hasQueuedAttackInput = false;
-        currentAttackIndex = 0;
+        currentAttackIndex = -1;
         player.anim.SetInteger("AttackCount", 0);
         player.anim.ResetTrigger("Attack");
+        player.anim.ResetTrigger("HeavyAttack");
 
     }
 
     void Attack()
     {
+        player.currentState = PlayerState.Attack;
         player.anim.SetTrigger("Attack");
-        player.anim.SetInteger("AttackCount", currentAttackIndex);
         player.anim.SetBool("isMove", false);
         hasQueuedAttackInput = false;
-        canCombo = false;
+        player.anim.ResetTrigger("HeavyAttack");
+        player.attack = false;
         lastAttackTime = Time.time;
     }
 }

@@ -5,24 +5,32 @@ using UnityEngine.UI;
 public class PlayerBehaviour : MonoBehaviour
 {
     PlayerController player;
+    const float SENSEGROUND = 0.4f;
     private Vector3 moveDirection;
     public bool isInRange;
-
+    float tmpSpeed;
 
     void Start()
     {
         player = GetComponent<PlayerController>();
+        tmpSpeed = player.moveSpeed;
     }
 
-
-    private void Update()
-    {
-    }
 
     //타겟 조준, 카메라 회전 등 구현 해야됨
 
     void FixedUpdate()
     {
+        //플레이어 점프 착지
+        if (Physics.Raycast(player.rb.position, Vector3.down, SENSEGROUND) && player.rb.linearVelocity.y <= 0)
+        {
+            player.isGround = true;
+        }
+        if (player.player.Ishit)
+        {
+            player.anim.SetTrigger("Hit");
+            player.player.Ishit = false;
+        }
         switch (player.currentState)
         {
             case PlayerState.Move:
@@ -34,7 +42,15 @@ public class PlayerBehaviour : MonoBehaviour
                 {
                     player.anim.SetBool("Jump", false);
                 }
-                Move();
+                if (player.sprint)
+                {
+                    player.moveSpeed = player.sprintSpeed;
+                }
+                else
+                {
+                    player.moveSpeed = tmpSpeed;
+                }
+                    Move();
                 break;
             case PlayerState.Attack:
                 if (player.playerDetectEnemy.currentTarget != null)
@@ -53,8 +69,22 @@ public class PlayerBehaviour : MonoBehaviour
                     }
                 }
                 break;
+            case PlayerState.Guard:
+                Move();
+                break;
+            case PlayerState.Damaged:
+
+                break;
         }
     }
+
+
+
+    public void Guard()
+    {
+
+    }
+
 
     // 플레이어 움직임 구현  
     public void Move()

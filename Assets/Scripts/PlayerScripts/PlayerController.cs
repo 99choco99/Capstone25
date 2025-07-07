@@ -9,7 +9,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.Windows;
 
 
-public enum PlayerState { Idle,Move,Jump,Attack,Guard}
+public enum PlayerState { Idle,Move,Jump,Attack,Guard,Damaged}
 public class PlayerController : NetworkBehaviour
 {
     public PlayerInteraction playerInteraction;
@@ -48,17 +48,14 @@ public class PlayerController : NetworkBehaviour
     public Vector2 look;  // 마우스
     public float scroll;  // 마우스 휠
     public bool jump;   // 스페이스 바 
-    public bool sprint; //슬라이딩 왼쪽 Shift
+    public bool sprint; //왼쪽 Shift
     public bool toggleCameraRotation;  // alt키
     public bool attack; // 마우싀 좌클릭
     public bool guard;  // 마우스 우클릭
     public bool interaction;  // 상호작용 F키
     public bool crouch;  // 숙이기 ctrl
+    public bool isAttackPress;
 
-    [Header("Movement Settings")]
-    public bool analogMovement;
-
-    const float SENSEGROUND = 0.4f;
 
     void Awake()
     {
@@ -77,16 +74,6 @@ public class PlayerController : NetworkBehaviour
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
-    }
-
-    private void FixedUpdate()
-    {
-        //플레이어 점프 착지
-        if (Physics.Raycast(rb.position, Vector3.down, SENSEGROUND) && rb.linearVelocity.y <= 1)
-        {
-            isGround = true;
-        }
-
     }
     // 마우스 휠
     public void OnWheel(InputAction.CallbackContext context)
@@ -119,12 +106,21 @@ public class PlayerController : NetworkBehaviour
     {
         if (context.phase == InputActionPhase.Started) { 
             attack = true;
+            isAttackPress = true;
         }
-        else if(context.phase == InputActionPhase.Canceled) { 
+        else if (context.phase == InputActionPhase.Canceled) {
             attack = false;
+            isAttackPress = false;
             pressedTime = 0;
         }
 
+    }
+
+    // 마우스 우클릭
+    public void OnGuard(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started) { guard = true; }
+        else if (context.phase == InputActionPhase.Canceled) { guard = false; }
     }
 
     //Shift 키 입력
@@ -141,12 +137,6 @@ public class PlayerController : NetworkBehaviour
         else if (context.phase == InputActionPhase.Canceled) { toggleCameraRotation = false; }
     }
 
-    // 마우스 우클릭
-    public void OnGuard(InputAction.CallbackContext context)
-    {
-        if (context.phase == InputActionPhase.Started) { guard = true; }
-        else if (context.phase == InputActionPhase.Canceled) { guard = false; }
-    }
 
     // F 키 입력, 상호작용 버튼
     public void OnInteraction(InputAction.CallbackContext context)

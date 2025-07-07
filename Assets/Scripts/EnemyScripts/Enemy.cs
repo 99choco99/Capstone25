@@ -39,30 +39,7 @@ public class Enemy: LivingEntity
 
     private void Update()
     {
-        if (Physics.OverlapSphereNonAlloc(transform.position, sightRange, hits, targetLayer) > 0) {
-            Transform playerTransform = hits[0].transform;
-            directionToTarget = (playerTransform.position - transform.position).normalized;
-            if(Vector3.Dot(directionToTarget, transform.forward) < sightAngle){ return; }
-
-
-            if(Physics.Raycast(transform.position, directionToTarget, out target, sightRange, obstacleLayer))
-            {
-                Debug.Log("»ç¶óÁü");
-                isTargetDetected = false;
-                isVulnerable = true;
-            }
-            else
-            {
-                Debug.Log("¹ß°ß");
-                isTargetDetected= true;
-                isVulnerable = false;
-            }
-        }
-        else
-        {
-            isTargetDetected = false;
-            isVulnerable = true;
-        }
+        DetectPlayer();
     }
 
     public void SetUp(EnemyData enemyData)
@@ -75,10 +52,41 @@ public class Enemy: LivingEntity
         OnDeath += Dead;
     }
 
+
+    public void DetectPlayer()
+    {
+        if (Physics.OverlapSphereNonAlloc(transform.position, sightRange, hits, targetLayer) > 0)
+        {
+            Transform playerTransform = hits[0].transform;
+            directionToTarget = (playerTransform.position - transform.position).normalized;
+            if (Vector3.Dot(directionToTarget, transform.forward) < sightAngle) { return; }
+
+
+            if (Physics.Raycast(transform.position, directionToTarget, out target, sightRange, obstacleLayer))
+            {
+                BehaviourAgent.BlackboardReference.SetVariableValue("isTargetDetected", false);
+                isVulnerable = true;
+            }
+            else
+            {
+                BehaviourAgent.BlackboardReference.SetVariableValue("isTargetDetected", true);
+                isVulnerable = false;
+            }
+        }
+        else
+        {
+            BehaviourAgent.BlackboardReference.SetVariableValue("isTargetDetected", false);
+            isVulnerable = true;
+        }
+    }
+
+
     public override void OnDamage(float damage, Vector3 hitPoint, Vector3 hitNormal)
     {
         base.OnDamage(damage, hitPoint, hitNormal);
     }
+
+
 
     void Dead()
     {

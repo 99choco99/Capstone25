@@ -31,13 +31,23 @@ public class PlayerMoveState : StateMachineBehaviour
         {
             player.anim.SetTrigger("Execute");
         }
+        else if (player.attack && player.sprint)
+        {
+            player.currentState = PlayerState.Attack;
+            player.anim.SetTrigger("SprintAttack");
+        }
         else if (player.attack && player.isGround)
         {
+            player.currentState = PlayerState.Attack;
             player.anim.SetTrigger("Attack");
-        }else if (player.guard)
-        {
-
         }
+
+        if (player.guard)
+        {
+            player.currentState = PlayerState.Guard;
+            player.anim.SetBool("Guard", true);
+        }
+
         if (player.isGround)
         {
             player.anim.SetBool("Jump", false);

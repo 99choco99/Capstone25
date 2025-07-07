@@ -9553,10 +9553,10 @@ GameObject:
   - component: {fileID: 8314402982519374624}
   - component: {fileID: 7971501461378024631}
   - component: {fileID: 4207445972659044882}
+  - component: {fileID: 7415945461860882716}
   - component: {fileID: 4037203719242549962}
   - component: {fileID: -2582005302330313652}
   - component: {fileID: 1736980902497440973}
-  - component: {fileID: 7415945461860882716}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -9993,7 +9993,7 @@ MonoBehaviour:
   guard: 0
   interaction: 0
   crouch: 0
-  analogMovement: 0
+  isAttackPress: 0
 --- !u!95 &3342833972376375299
 Animator:
   serializedVersion: 7
@@ -10099,8 +10099,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentTarget: {fileID: 0}
   currentEnemy: {fileID: 0}
+  markPosition: {fileID: 0}
   executeMark: {fileID: 3830447435505896139}
   currentTargetMark: {fileID: 8274949577290978529}
+--- !u!114 &7415945461860882716
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3837476945414656877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb7c7df85e3a6a4a8ebec6b016e72e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isInRange: 0
 --- !u!114 &4037203719242549962
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10214,18 +10228,6 @@ MonoBehaviour:
   UseRigidBodyForMotion: 0
   AutoUpdateKinematicState: 0
   AutoSetKinematicOnDespawn: 1
---- !u!114 &7415945461860882716
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3837476945414656877}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bbb7c7df85e3a6a4a8ebec6b016e72e9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &3880524208840167112
 GameObject:
   m_ObjectHideFlags: 0
