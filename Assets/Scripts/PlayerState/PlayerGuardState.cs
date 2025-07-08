@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerGuardState : IState
+public class PlayerGuardState : StateMachineBehaviour
 {
     PlayerController player;
 
@@ -11,20 +11,7 @@ public class PlayerGuardState : IState
     {
         if (player == null)
         {
-<<<<<<< HEAD
             player = animator.GetComponent<PlayerController>();
-=======
-            if (player.anim.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.8f)
-            {
-                player.anim.SetTrigger("Parry");
-                player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
-            }
-            else
-            {
-                player.anim.SetTrigger("GuardHit");
-                player.player.Ishit = false;
-            }
->>>>>>> parent of c1af48d (250701)
         }
         player.currentState = PlayerState.Guard;
     }
@@ -57,13 +44,8 @@ public class PlayerGuardState : IState
 
         if (!player.guard)
         {
-<<<<<<< HEAD
             player.anim.SetBool("Guard", false);
             player.currentState = PlayerState.Move;
-=======
-            player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
-            return;
->>>>>>> parent of c1af48d (250701)
         }
     }
 

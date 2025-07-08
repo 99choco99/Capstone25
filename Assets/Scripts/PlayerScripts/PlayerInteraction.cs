@@ -37,7 +37,7 @@ public class PlayerInteraction : MonoBehaviour
                 }
                 if (select.gameObject.TryGetComponent<NPC>(out NPC npc))
                 {
-                    player.playerStateMachine.TransitionTo(player.playerStateMachine.playerConversationState);  // NPC라면 대화상태 진입
+                    //player.playerStateMachine.TransitionTo(player.playerStateMachine.playerConversationState);  // NPC라면 대화상태 진입
                     dialogueManager.StartConversation(npc);
                 }
                 StartCoroutine("WaitTime", 0.5f);

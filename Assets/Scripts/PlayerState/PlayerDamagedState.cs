@@ -1,18 +1,14 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PlayerDamagedState : IState
+public class PlayerDamagedState : StateMachineBehaviour
 {
     private PlayerController player;
     public override void OnStateMachineEnter(Animator animator, int stateMachinePathHash)
     {
         if(player == null)
         {
-<<<<<<< HEAD
             player = animator.GetComponent<PlayerController>();
-=======
-            player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
->>>>>>> parent of c1af48d (250701)
         }
         player.currentState = PlayerState.Damaged;
     }

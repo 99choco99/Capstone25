@@ -41,7 +41,7 @@ public class PlayerConversationState : IState
                 cameraMovement.objectToFollow.transform.DOMove(player.transform.position + new Vector3(0, 1.3f, 0), 0.5f).OnComplete(() =>
                 {
                     cameraMovement.maxDistance = cameraMovement.RevertDistance;
-                    player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
+                    //player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
                 });
             }
             player.interaction = false;

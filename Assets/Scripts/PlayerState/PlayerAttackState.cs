@@ -1,8 +1,7 @@
 using UnityEngine;
 
-public class PlayerAttackState : IState
+public class PlayerAttackState : StateMachineBehaviour
 {
-<<<<<<< HEAD
     private PlayerController player;
     private const int MAX_ATTACK_ANIMATIONS = 5; // 사용할 공격 애니메이션의 총 개수
 
@@ -91,22 +90,6 @@ public class PlayerAttackState : IState
         hasQueuedAttackInput = false;
         player.anim.ResetTrigger("HeavyAttack");
         player.attack = false;
-=======
-    private readonly PlayerController player;
-    private float lastAttackTime;  //공격 쿨타임
-    int attackCount { get => player.anim.GetInteger("AttackCount"); set => player.anim.SetInteger("AttackCount", value); }
-    public PlayerAttackState(PlayerController player) { this.player = player; }
-    public void Enter() {
-        player.anim.SetTrigger("Attack");
-        attackCount = player.anim.GetInteger("AttackCount");
->>>>>>> parent of c1af48d (250701)
         lastAttackTime = Time.time;
-    }
-    public void Update() { 
-        if(Time.time <= lastAttackTime + player.AttackTime) { return; }
-        player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
-    }
-    public void Exit() {
-        player.anim.ResetTrigger("Attack");
     }
 }
