@@ -177,7 +177,7 @@ AnimatorStateMachine:
     m_Position: {x: 370, y: -10, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -2838334691156556763}
-    m_Position: {x: 110, y: 80, z: 0}
+    m_Position: {x: 100, y: 80, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -8333636997071212318}
     m_Position: {x: -70, y: 10, z: 0}
@@ -2442,7 +2442,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbb7c7df85e3a6a4a8ebec6b016e72e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isInRange: 0
+  playerMoveState: {fileID: 0}
+  playerAttackState: {fileID: 0}
+  playerGuardState: {fileID: 0}
+  playerSlideState: {fileID: 0}
+  playerDamagedState: {fileID: 0}
+  playerDeadState: {fileID: 0}
+  playerConversationState: {fileID: 0}
 --- !u!1107 &4922105157802639826
 AnimatorStateMachine:
   serializedVersion: 6

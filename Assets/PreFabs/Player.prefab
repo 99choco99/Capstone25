@@ -769,7 +769,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 431302576258120374}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -300}
+  m_LocalPosition: {x: 0, y: 0, z: 300}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -779,8 +779,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 630, y: 534}
-  m_SizeDelta: {x: 1920, y: 1080}
+  m_AnchoredPosition: {x: 330, y: 6}
+  m_SizeDelta: {x: 1, y: 1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!223 &6594729079007131684
 Canvas:
@@ -4602,7 +4602,8 @@ Transform:
   m_LocalPosition: {x: 0, y: -0.1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 8281868278578207823}
   m_Father: {fileID: 6856710574634217130}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &7616652393790243645
@@ -7191,6 +7192,59 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &3115523419789751644
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8281868278578207823}
+  - component: {fileID: 4236117221600879803}
+  m_Layer: 6
+  m_Name: GuardBox
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8281868278578207823
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3115523419789751644}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.07, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6202879860088516041}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &4236117221600879803
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3115523419789751644}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.38, y: 1.5, z: 0.13}
+  m_Center: {x: 0, y: 0, z: 0.55}
 --- !u!1 &3156516781172202556
 GameObject:
   m_ObjectHideFlags: 0
@@ -9553,10 +9607,10 @@ GameObject:
   - component: {fileID: 8314402982519374624}
   - component: {fileID: 7971501461378024631}
   - component: {fileID: 4207445972659044882}
-  - component: {fileID: 7415945461860882716}
   - component: {fileID: 4037203719242549962}
   - component: {fileID: -2582005302330313652}
   - component: {fileID: 1736980902497440973}
+  - component: {fileID: 4900611398763563848}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -9975,13 +10029,13 @@ MonoBehaviour:
   smoothness: 20
   isGround: 1
   AttackDuration: 1
-  jumpPower: 5
+  jumpPower: 7.5
   moveSpeed: 6
-  sprintSpeed: 5
+  sprintSpeed: 7.5
   InvincibleTime: 0.4
   pressedTime: 0
   interactRange: 7
-  AttackRange: 0
+  AttackRange: 1
   currentState: 0
   move: {x: 0, y: 0, z: 0}
   look: {x: 0, y: 0}
@@ -10084,6 +10138,7 @@ MonoBehaviour:
   D_defense: 0
   playerUI: {fileID: 3245047665053180195, guid: 4ab701d3d47af7c4fbb318fd141a94c0,
     type: 3}
+  anim: {fileID: 0}
   Ishit: 0
 --- !u!114 &4207445972659044882
 MonoBehaviour:
@@ -10099,22 +10154,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentTarget: {fileID: 0}
   currentEnemy: {fileID: 0}
-  markPosition: {fileID: 0}
+  markPosition: {fileID: 6594729079007131684}
   executeMark: {fileID: 3830447435505896139}
   currentTargetMark: {fileID: 8274949577290978529}
---- !u!114 &7415945461860882716
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3837476945414656877}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bbb7c7df85e3a6a4a8ebec6b016e72e9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  isInRange: 0
 --- !u!114 &4037203719242549962
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10228,6 +10270,19 @@ MonoBehaviour:
   UseRigidBodyForMotion: 0
   AutoUpdateKinematicState: 0
   AutoSetKinematicOnDespawn: 1
+--- !u!114 &4900611398763563848
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3837476945414656877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 148b448b8f3c8674b987537353851877, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isInRange: 0
 --- !u!1 &3880524208840167112
 GameObject:
   m_ObjectHideFlags: 0
@@ -13163,7 +13218,7 @@ GameObject:
   - component: {fileID: 8947195460158678099}
   - component: {fileID: 888040384768749783}
   m_Layer: 8
-  m_Name: WorldSpaceUI
+  m_Name: Name
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -19374,7 +19429,6 @@ GameObject:
   - component: {fileID: 2963573515871161054}
   - component: {fileID: 2474462658853390800}
   - component: {fileID: 9098126094372865255}
-  - component: {fileID: 979636651045493120}
   m_Layer: 6
   m_Name: InventoryUI
   m_TagString: Untagged
@@ -19451,18 +19505,6 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
---- !u!114 &979636651045493120
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7616231314701196312}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 961f6c97c1d04404c96edf1505444555, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &7617525571875316425
 GameObject:
   m_ObjectHideFlags: 0
