@@ -8,6 +8,11 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.Windows;
 
+<<<<<<< HEAD
+
+public enum PlayerState { Idle,Move,Jump,Attack,Guard,Damaged}
+=======
+>>>>>>> parent of c1af48d (250701)
 public class PlayerController : NetworkBehaviour
 {
     public PlayerStateMachine playerStateMachine;
@@ -35,17 +40,18 @@ public class PlayerController : NetworkBehaviour
     public Vector2 look;  // 마우스
     public float scroll;  // 마우스 휠
     public bool jump;   // 스페이스 바 
-    public bool sprint; //슬라이딩 왼쪽 Shift
+    public bool sprint; //왼쪽 Shift
     public bool toggleCameraRotation;  // alt키
     public bool attack; // 마우싀 좌클릭
     public bool guard;  // 마우스 우클릭
     public bool interaction;  // 상호작용 F키
+<<<<<<< HEAD
+    public bool crouch;  // 숙이기 ctrl
+    public bool isAttackPress;
+=======
     public bool isShowMouse;  // 마우스 보임, ctrl 키
+>>>>>>> parent of c1af48d (250701)
 
-    [Header("Movement Settings")]
-    public bool analogMovement;
-
-    const float SENSEGROUND = 0.4f;
 
     void Awake()
     {
@@ -63,6 +69,8 @@ public class PlayerController : NetworkBehaviour
         Cursor.lockState = CursorLockMode.Locked;
         playerStateMachine.Initialized(playerStateMachine.playerMoveState);
     }
+<<<<<<< HEAD
+=======
 
     private void FixedUpdate()
     {
@@ -92,6 +100,7 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
+>>>>>>> parent of c1af48d (250701)
     // 마우스 휠
     public void OnWheel(InputAction.CallbackContext context)
     {
@@ -123,10 +132,29 @@ public class PlayerController : NetworkBehaviour
     // 마우스 왼쪽 클릭
     public void OnAttack(InputAction.CallbackContext context)
     {
+<<<<<<< HEAD
+        if (context.phase == InputActionPhase.Started) { 
+            attack = true;
+            isAttackPress = true;
+        }
+        else if (context.phase == InputActionPhase.Canceled) {
+            attack = false;
+            isAttackPress = false;
+            pressedTime = 0;
+        }
+=======
         if (isShowMouse) { return; }
         if (context.phase == InputActionPhase.Started) { attack = true; }
         else if(context.phase == InputActionPhase.Canceled) { attack = false; }
+>>>>>>> parent of c1af48d (250701)
 
+    }
+
+    // 마우스 우클릭
+    public void OnGuard(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started) { guard = true; }
+        else if (context.phase == InputActionPhase.Canceled) { guard = false; }
     }
 
     //Shift 키 입력
@@ -145,6 +173,8 @@ public class PlayerController : NetworkBehaviour
         else if (context.phase == InputActionPhase.Canceled) { toggleCameraRotation = false; }
     }
 
+<<<<<<< HEAD
+=======
     // 마우스 우클릭
     public void OnGuard(InputAction.CallbackContext context)
     {
@@ -152,6 +182,7 @@ public class PlayerController : NetworkBehaviour
         if (context.phase == InputActionPhase.Started) { guard = true; }
         else if (context.phase == InputActionPhase.Canceled) { guard = false; }
     }
+>>>>>>> parent of c1af48d (250701)
 
     // F 키 입력, 상호작용 버튼
     public void OnInteraction(InputAction.CallbackContext context)

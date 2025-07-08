@@ -26,12 +26,35 @@ public class PlayerMoveState : IState
         {
             player.playerStateMachine.TransitionTo(player.playerStateMachine.playerAttackState);
         }
+<<<<<<< HEAD
+        else if (player.attack && player.sprint)
+        {
+            player.currentState = PlayerState.Attack;
+            player.anim.SetTrigger("SprintAttack");
+        }
+        else if (player.attack && player.isGround)
+        {
+            player.currentState = PlayerState.Attack;
+            player.anim.SetTrigger("Attack");
+        }
+
+        if (player.guard)
+        {
+            player.currentState = PlayerState.Guard;
+            player.anim.SetBool("Guard", true);
+        }
+
+        if (player.isGround)
+        {
+            player.anim.SetBool("Jump", false);
+=======
         else if(player.sprint)
         {
             player.playerStateMachine.TransitionTo(player.playerStateMachine.playerSlideState);
         }else if (player.guard)
         {
             player.playerStateMachine.TransitionTo(player.playerStateMachine.playerGuardState);
+>>>>>>> parent of c1af48d (250701)
         }
         Move();
     }

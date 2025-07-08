@@ -4,14 +4,16 @@ public class PlayerGuardState : IState
 {
     PlayerController player;
 
-    public PlayerGuardState(PlayerController player) { this.player = player; }
-    public void Enter() {
-        player.anim.SetBool("Guard",true);
-        player.col.tag = "GuardState";
-    }
-    public void Update() {
-        if (player.anim.GetCurrentAnimatorStateInfo(0).IsName("Guard") && player.player.Ishit)
+    public float guardDuration;
+
+
+    public override void OnStateMachineEnter(Animator animator, int stateMachinePathHash)
+    {
+        if (player == null)
         {
+<<<<<<< HEAD
+            player = animator.GetComponent<PlayerController>();
+=======
             if (player.anim.GetCurrentAnimatorStateInfo(0).normalizedTime < 0.8f)
             {
                 player.anim.SetTrigger("Parry");
@@ -22,22 +24,52 @@ public class PlayerGuardState : IState
                 player.anim.SetTrigger("GuardHit");
                 player.player.Ishit = false;
             }
+>>>>>>> parent of c1af48d (250701)
         }
-        else if (player.player.Ishit)
+        player.currentState = PlayerState.Guard;
+    }
+    public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+    {
+        if (player == null)
+        {
+            player = animator.GetComponent<PlayerController>();
+        }
+        player.currentState = PlayerState.Guard;
+    }
+
+
+    public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+    {
+        if (player.guard)
+        {
+            guardDuration = Time.deltaTime;
+        }
+
+        if (guardDuration <= 0.5f && player.player.Ishit)
+        {
+            player.anim.SetTrigger("Parry");
+        }
+        else
         {
             player.anim.SetTrigger("GuardHit");
             player.player.Ishit = false;
         }
-        else if (!player.guard)
+
+        if (!player.guard)
         {
+<<<<<<< HEAD
+            player.anim.SetBool("Guard", false);
+            player.currentState = PlayerState.Move;
+=======
             player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
             return;
+>>>>>>> parent of c1af48d (250701)
         }
     }
-    public void Exit() {
-        player.anim.SetBool("Guard",false);
-        player.anim.ResetTrigger("GuardHit");
-        player.player.Ishit = false;
-        player.col.tag = "PlayerData";
+
+    public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)
+    {
+        player.currentState = PlayerState.Move;
+        player.guard = false;
     }
 }

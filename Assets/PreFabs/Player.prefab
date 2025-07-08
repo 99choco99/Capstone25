@@ -10117,6 +10117,11 @@ GameObject:
   - component: {fileID: 8314402982519374624}
   - component: {fileID: 792794977105993693}
   - component: {fileID: 7971501461378024631}
+<<<<<<< HEAD
+  - component: {fileID: 4207445972659044882}
+  - component: {fileID: 7415945461860882716}
+=======
+>>>>>>> parent of c1af48d (250701)
   - component: {fileID: 4037203719242549962}
   - component: {fileID: -2582005302330313652}
   - component: {fileID: 1736980902497440973}
@@ -10553,8 +10558,35 @@ MonoBehaviour:
   attack: 0
   guard: 0
   interaction: 0
+<<<<<<< HEAD
+  crouch: 0
+  isAttackPress: 0
+--- !u!95 &3342833972376375299
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3837476945414656877}
+  m_Enabled: 1
+  m_Avatar: {fileID: 9000000, guid: cf820e3702004da4cb0188372db7bc37, type: 3}
+  m_Controller: {fileID: 9100000, guid: 043765f8a01c47a4c800f8e312d42e07, type: 2}
+  m_CullingMode: 1
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 1
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+=======
   isShowMouse: 0
   analogMovement: 0
+>>>>>>> parent of c1af48d (250701)
 --- !u!54 &831829456395092152
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -10637,6 +10669,39 @@ MonoBehaviour:
   playerUI: {fileID: 3245047665053180195, guid: 4ab701d3d47af7c4fbb318fd141a94c0,
     type: 3}
   Ishit: 0
+<<<<<<< HEAD
+--- !u!114 &4207445972659044882
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3837476945414656877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0883e760a33524843aa2653937f33547, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentTarget: {fileID: 0}
+  currentEnemy: {fileID: 0}
+  markPosition: {fileID: 0}
+  executeMark: {fileID: 3830447435505896139}
+  currentTargetMark: {fileID: 8274949577290978529}
+--- !u!114 &7415945461860882716
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3837476945414656877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb7c7df85e3a6a4a8ebec6b016e72e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isInRange: 0
+=======
+>>>>>>> parent of c1af48d (250701)
 --- !u!114 &4037203719242549962
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10750,6 +10815,8 @@ MonoBehaviour:
   UseRigidBodyForMotion: 0
   AutoUpdateKinematicState: 0
   AutoSetKinematicOnDespawn: 1
+<<<<<<< HEAD
+=======
 --- !u!1 &3879842352737782385
 GameObject:
   m_ObjectHideFlags: 0
@@ -10781,6 +10848,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1398777950231935745}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+>>>>>>> parent of c1af48d (250701)
 --- !u!1 &3880524208840167112
 GameObject:
   m_ObjectHideFlags: 0
