@@ -5,11 +5,11 @@ public class CameraMovement : MonoBehaviour
     PlayerController playerController;  // 사용자 입력
     public Transform objectToFollow;  // 카메라가 따라갈 대상
     public float followSpeed = 10f;  // 카메라 이동속도
-    public float sensitivity = 100f;  // 카메라 감도
+    public float sensitivity = 50f;  // 카메라 감도
     public float clampAngle = 70f;  // 각도 제한
 
     private float rotX;   // 카메라 X축 회전
-    private float rotY;  // 카메라 Y축 회전
+    public float rotY;  // 카메라 Y축 회전
 
     public Transform realCamera;   // 실제 카메라
     public Vector3 dirNormalized;  //실제 카메라가 있는 곳의 방향

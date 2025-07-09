@@ -6,20 +6,22 @@ using UnityEngine.UI;
 
 public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerEnterHandler,IPointerExitHandler
 {
-    RectTransform rect;
+    public RectTransform rect;
+    public Image icon;
     CanvasGroup canvasGroup;
     protected Transform canvas;
+    GameObject ItemDescription;
     TextMeshProUGUI ItemDescriptionText;
     public Slot previousSlot;
-    protected InventoryManager inventory;
 
     public void Awake()
     {
+        ItemDescription = InventoryManager.instance.ItemDescription;
+        icon = GetComponent<Image>();
         rect = GetComponent<RectTransform>();
         canvas = GetComponentInParent<Canvas>().transform;
         canvasGroup = GetComponent<CanvasGroup>();
-        inventory = GetComponentInParent<InventoryManager>();
-        ItemDescriptionText = inventory.ItemDescription.GetComponentInChildren<TextMeshProUGUI>(true);
+        ItemDescriptionText = ItemDescription.GetComponentInChildren<TextMeshProUGUI>(true);
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -53,12 +55,12 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
     public virtual void OnPointerEnter(PointerEventData eventData)
     {
         ItemDescriptionText.text = data.script;
-        inventory.ItemDescription.transform.position = transform.position + Vector3.down * 50;
-        inventory.ItemDescription.SetActive(true);
+        ItemDescription.transform.position = transform.position + Vector3.down * 50;
+        ItemDescription.SetActive(true);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        inventory.ItemDescription.SetActive(false);
+        ItemDescription.SetActive(false);
     }
 }

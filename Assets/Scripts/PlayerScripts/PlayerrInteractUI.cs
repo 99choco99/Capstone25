@@ -20,6 +20,7 @@ public class PlayerInteractUI : MonoBehaviour
 
     private void Start()
     {
+        InteractObject = new Collider[10];
         InteractUIContainer = new List<GameObject>();
     }
 
@@ -39,6 +40,7 @@ public class PlayerInteractUI : MonoBehaviour
         // 여유 Container가 없으면 생성, 있으면 Active해서 활용
         for (int i = 0; i < InteractObject.Length; i++)
         {
+            if (InteractObject[i] == null) { break; }
             GameObject select;
 
             if (i < InteractUIContainer.Count)

@@ -23,12 +23,7 @@ public class PlayerStateMachine : MonoBehaviour
     private void Awake()
     {
         PlayerController player = GetComponent<PlayerController>();
-        playerMoveState = new PlayerMoveState(player);
-        playerAttackState = new PlayerAttackState(player);
-        playerGuardState = new PlayerGuardState(player);
-        playerSlideState = new PlayerSlideState(player);
-        playerDamagedState = new PlayerDamagedState(player);
-        playerDeadState = new PlayerDeadState(player);
+
         playerConversationState = new PlayerConversationState(player);
     }
 

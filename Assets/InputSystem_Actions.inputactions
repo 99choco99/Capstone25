@@ -105,7 +105,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "ShowMouse",
+                    "name": "Crouch",
                     "type": "Button",
                     "id": "9a7dab7d-40c9-4520-b720-a86c4f079734",
                     "expectedControlType": "",
@@ -153,6 +153,15 @@
                     "name": "UseItem",
                     "type": "Button",
                     "id": "777486b2-a65f-4450-9ce1-b20a1141d582",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ChangeTarget",
+                    "type": "Button",
+                    "id": "9435af11-3f24-42d2-be08-cc6350c7b998",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -486,7 +495,7 @@
                     "interactions": "Press(pressPoint=0.1,behavior=2)",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
-                    "action": "ShowMouse",
+                    "action": "Crouch",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -553,6 +562,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "UseItem",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "02612cb3-b5b3-4e2f-8c21-7adef8ebf16a",
+                    "path": "<Mouse>/middleButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ChangeTarget",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

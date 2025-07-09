@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 using SocketIOClient;
 using System;
 using UnityEngine;
-using static PlayerData;
+using static PlayerSetting;
 
 public class SocketManager : MonoBehaviour
 {

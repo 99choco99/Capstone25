@@ -1,60 +1,61 @@
+using Unity.AppUI.Core;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
-public class PlayerMoveState : IState
+public class PlayerMoveState : StateMachineBehaviour
 {
     PlayerController player;
-    private Vector3 moveDirection;
 
-    public PlayerMoveState(PlayerController player) { this.player = player; }
 
-    public void Enter()
+    public override void OnStateMachineEnter(Animator animator, int stateMachinePathHash)
     {
-        player.anim.SetBool("isMove", true);
-    }
-    public void Update()
-    {
-        // 플레이어 점프
-        if (player.jump && player.isGround)
+        if (player == null)
         {
-            Jump();
+            player = animator.GetComponent<PlayerController>();
+        }
+        player.anim.SetBool("isMove", false);
+        player.currentState = PlayerState.Move;
+    }
+    public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+    {
+        if (player == null)
+        {
+            player = animator.GetComponent<PlayerController>();
+        }
+    }
+    public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+    {
+        if (player.playerBehaviour.isInRange && player.attack && player.canExecute)
+        {
+            player.anim.SetTrigger("Execute");
+        }
+        else if (player.attack && player.sprint)
+        {
+            player.currentState = PlayerState.Attack;
+            player.anim.SetTrigger("SprintAttack");
+        }
+        else if (player.attack && player.isGround)
+        {
+            player.currentState = PlayerState.Attack;
+            player.anim.SetTrigger("Attack");
         }
 
-        if (player.attack)
+        if (player.guard)
         {
-            player.playerStateMachine.TransitionTo(player.playerStateMachine.playerAttackState);
+            player.currentState = PlayerState.Guard;
+            player.anim.SetBool("Guard", true);
         }
-        else if(player.sprint)
+
+        if (player.isGround)
         {
-            player.playerStateMachine.TransitionTo(player.playerStateMachine.playerSlideState);
-        }else if (player.guard)
-        {
-            player.playerStateMachine.TransitionTo(player.playerStateMachine.playerGuardState);
+            player.anim.SetBool("Jump", false);
         }
-        Move();
     }
 
-    public void Exit() { player.anim.SetBool("isMove", false);}
-
-    
-    // 플레이어 움직임 구현
-    public void Move()
-    {
-        moveDirection = player.transform.forward * player.move.z + player.transform.right * player.move.x;
-        player.anim.SetFloat("xDir", player.move.x);
-        player.anim.SetFloat("zDir", player.move.z);
-        Vector3 newPosition = player.rb.position + player.moveSpeed * Time.deltaTime * moveDirection.normalized;
-        player.rb.MovePosition(newPosition);
-    }
-
-    //플레이어 점프 구현
-    public void Jump()
-    {
-        player.anim.SetTrigger("Jump");
-        player.rb.AddForce(Vector3.up * player.jumpPower, ForceMode.Impulse);
-        player.isGround = false;
-        player.jump = false;
+    public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)
+    { 
+        player.anim.SetBool("isMove", false);
     }
 }

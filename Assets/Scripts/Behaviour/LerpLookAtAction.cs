@@ -21,19 +21,21 @@ public partial class LerpLookAtAction : Action
     {
         if(Target == null) { return Status.Failure; }
         // 타겟의 위치를 향하는 방향 계산
-        Vector3 direction = Target.Value.transform.position - gameObject.Value.transform.position;
+        Vector3 direction = (Target.Value.transform.position - gameObject.Value.transform.position).normalized;
         Quaternion targetRotation = Quaternion.LookRotation(direction);
 
-        // Lerp를 통해 회전 적용
-        gameObject.Value.transform.rotation = Quaternion.Slerp(gameObject.Value.transform.rotation, targetRotation, Value * Time.deltaTime);
+        
 
-        // 회전 완료 체크 (20도 이내 차이)
-        if (Quaternion.Angle(gameObject.Value.transform.rotation, targetRotation) < 20.0f)
+        // 회전 완료 체크 
+        if (Vector3.Dot(gameObject.Value.transform.forward, direction) > 0.9f)
         {
             return Status.Success; // 회전 완료
         }
         else
         {
+            // Lerp를 통해 회전 적용
+            gameObject.Value.transform.rotation = Quaternion.Slerp(gameObject.Value.transform.rotation, targetRotation, Value.Value * Time.deltaTime);
+            Quaternion.LookRotation(direction);
             return Status.Running; // 아직 회전 중
         }
     }

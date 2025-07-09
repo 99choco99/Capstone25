@@ -2,7 +2,7 @@ using DG.Tweening;
 using System;
 using UnityEngine;
 
-public class PlayerConversationState : IState
+public class PlayerConversationState : StateMachineBehaviour
 {
     bool isAction;
 
@@ -17,7 +17,7 @@ public class PlayerConversationState : IState
     {
         isAction = false;
         player.toggleCameraRotation = true;
-        player.playerInteraction.interactRange = 0;
+        player.interactRange = 0;
         player.anim.SetFloat("xDir",0);
         player.anim.SetFloat("zDir", 0);
         player.interaction = false; // 바로 다음으로 넘어가는거 방지
@@ -41,7 +41,7 @@ public class PlayerConversationState : IState
                 cameraMovement.objectToFollow.transform.DOMove(player.transform.position + new Vector3(0, 1.3f, 0), 0.5f).OnComplete(() =>
                 {
                     cameraMovement.maxDistance = cameraMovement.RevertDistance;
-                    player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
+                    
                 });
             }
             player.interaction = false;
@@ -51,6 +51,6 @@ public class PlayerConversationState : IState
     {
         playerUI.HideDialogUI();
         player.toggleCameraRotation = false;
-        player.playerInteraction.interactRange = 3;
+        player.interactRange = 3;
     }
 }

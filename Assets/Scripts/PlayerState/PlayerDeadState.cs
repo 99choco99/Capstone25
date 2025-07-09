@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerDeadState : IState
+public class PlayerDeadState : StateMachineBehaviour
 {
     PlayerController player;
 
@@ -12,7 +12,6 @@ public class PlayerDeadState : IState
         player.col.tag = "Invincible";
         player.col.gameObject.layer = 9;
         player.playerInput.enabled = false;
-        player.isShowMouse = true;
     }
 
     public void Exit()

@@ -48,7 +48,6 @@ public class DialogueManager : MonoBehaviour
         playerUIManager.SetNpcName(npc.transform.name);
 
         dialogIndex = npc.id + questManager.GetQuest(npc.id);
-        Debug.Log(dialogIndex);
         if (dialogue.ContainsKey(dialogIndex))
         {
             currentText = GetDialog(dialogIndex, 0);
