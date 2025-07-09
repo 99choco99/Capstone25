@@ -6,7 +6,7 @@ using UnityEngine.AI;
 
 public class Enemy: LivingEntity
 {
-    protected NavMeshAgent agent;
+    protected NavMeshAgent NavAgent;
     protected Animator anim;
     protected BehaviorGraphAgent BehaviourAgent;
     [SerializeField] protected EnemyData enemyData;
@@ -14,21 +14,24 @@ public class Enemy: LivingEntity
     public Vector3 directionToTarget;
 
     [Header("EnemyData")]
-    public float sightRange;
+    public float normalSightRange;
+    public float detectSightRange;
     public float sightAngle;
     public LayerMask targetLayer = 1 << 6;
     public LayerMask obstacleLayer = 1 << 13;
-    Collider[] hits;
-    RaycastHit target;
 
     [Header("EnemyState")]
-    public bool isTargetDetected;
-    public bool isChasing;
+    Collider[] hits;
+    RaycastHit target;
+    Transform playerTransform;
     public bool isVulnerable = true;
+    public bool isTargetDetected;
+    float currentSightRange;
+    public bool canTrigger = true;
 
     private void Awake()
     {
-        agent = GetComponent<NavMeshAgent>();
+        NavAgent = GetComponent<NavMeshAgent>();
         anim = GetComponent<Animator>();
         BehaviourAgent = GetComponent<BehaviorGraphAgent>();
     }
@@ -40,6 +43,10 @@ public class Enemy: LivingEntity
     private void Update()
     {
         DetectPlayer();
+        if (!anim.GetCurrentAnimatorStateInfo(0).IsName("Start"))
+        {
+            anim.SetInteger("pattern", 0);
+        }
     }
 
     public void SetUp(EnemyData enemyData)
@@ -47,7 +54,7 @@ public class Enemy: LivingEntity
         hits = new Collider[1];
         maxHp = enemyData.hp;
         damage = enemyData.damage;
-        agent.speed = enemyData.speed;
+        NavAgent.speed = enemyData.speed;
         base.OnEnable();
         OnDeath += Dead;
     }
@@ -55,29 +62,44 @@ public class Enemy: LivingEntity
 
     public void DetectPlayer()
     {
-        if (Physics.OverlapSphereNonAlloc(transform.position, sightRange, hits, targetLayer) > 0)
+        if (Physics.OverlapSphereNonAlloc(transform.position, currentSightRange, hits, targetLayer) > 0)
         {
-            Transform playerTransform = hits[0].transform;
+            playerTransform = hits[0].transform;
             directionToTarget = (playerTransform.position - transform.position).normalized;
-            if (Vector3.Dot(directionToTarget, transform.forward) < sightAngle) { return; }
 
+            float distance = Vector3.Distance(transform.position, playerTransform.position);
+            BehaviourAgent.BlackboardReference.SetVariableValue<float>("CurrentDistance", distance);
 
-            if (Physics.Raycast(transform.position, directionToTarget, out target, sightRange, obstacleLayer))
+            //장애물에 숨어있을 때
+            if (Physics.Raycast(transform.position, directionToTarget, out target, currentSightRange, obstacleLayer)){
+                SetDetectState(false);
+                return;
+            }
+            if (Vector3.Dot(directionToTarget, transform.forward) > Mathf.Cos(sightAngle * 0.5f * Mathf.Deg2Rad) || isTargetDetected)
             {
-                BehaviourAgent.BlackboardReference.SetVariableValue("isTargetDetected", false);
-                isVulnerable = true;
+                BehaviourAgent.BlackboardReference.SetVariableValue<GameObject>("Target", hits[0].gameObject);
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(directionToTarget), 5 * Time.deltaTime);
+                SetDetectState(true);
+                currentSightRange = detectSightRange;
             }
             else
             {
-                BehaviourAgent.BlackboardReference.SetVariableValue("isTargetDetected", true);
-                isVulnerable = false;
+                SetDetectState(false);
             }
         }
         else
         {
-            BehaviourAgent.BlackboardReference.SetVariableValue("isTargetDetected", false);
-            isVulnerable = true;
+            SetDetectState(false);
+            currentSightRange = normalSightRange;
         }
+
+    }
+
+    public void SetDetectState(bool isDetect)
+    {
+        BehaviourAgent.BlackboardReference.SetVariableValue<bool>("IsTargetDetected", isDetect);
+        isTargetDetected = isDetect;
+        isVulnerable = !isDetect;
     }
 
 
@@ -101,4 +123,12 @@ public class Enemy: LivingEntity
         yield return new WaitForSeconds(2.5f);
         Destroy(gameObject);
     }
+
+    // 몬스터당 공격가능 시간
+    public IEnumerator ResetTrigger()
+    {
+        yield return new WaitForSeconds(0.5f);
+        canTrigger = true;
+    }
+
 }

@@ -7202,7 +7202,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8281868278578207823}
   - component: {fileID: 4236117221600879803}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: GuardBox
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9605,12 +9605,12 @@ GameObject:
   - component: {fileID: 3342833972376375299}
   - component: {fileID: 831829456395092152}
   - component: {fileID: 8314402982519374624}
-  - component: {fileID: 7971501461378024631}
   - component: {fileID: 4207445972659044882}
   - component: {fileID: 4037203719242549962}
   - component: {fileID: -2582005302330313652}
   - component: {fileID: 1736980902497440973}
   - component: {fileID: 4900611398763563848}
+  - component: {fileID: 6595386773883998719}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -10114,32 +10114,6 @@ MonoBehaviour:
   select: {fileID: 0}
   selectIndex: 0
   preselectIndex: 0
---- !u!114 &7971501461378024631
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3837476945414656877}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a754120e868fd3d4db7804a6b0d6ed48, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  level: 0
-  maxHp: 0
-  currentHp: 0
-  damage: 0
-  defense: 0
-  speed: 0
-  D_health: 0
-  D_speed: 0
-  D_damage: 0
-  D_defense: 0
-  playerUI: {fileID: 3245047665053180195, guid: 4ab701d3d47af7c4fbb318fd141a94c0,
-    type: 3}
-  anim: {fileID: 0}
-  Ishit: 0
 --- !u!114 &4207445972659044882
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10152,6 +10126,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0883e760a33524843aa2653937f33547, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TargetDirection: {x: 0, y: 0, z: 0}
   currentTarget: {fileID: 0}
   currentEnemy: {fileID: 0}
   markPosition: {fileID: 6594729079007131684}
@@ -10283,6 +10258,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isInRange: 0
+--- !u!114 &6595386773883998719
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3837476945414656877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 196cdca184ce69148b5a089c3cbaf708, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  level: 0
+  maxHp: 0
+  currentHp: 0
+  damage: 0
+  defense: 0
+  speed: 5
+  D_health: 0
+  D_speed: 0
+  D_damage: 0
+  D_defense: 0
+  playerUI: {fileID: 0}
+  anim: {fileID: 0}
+  Ishit: 0
 --- !u!1 &3880524208840167112
 GameObject:
   m_ObjectHideFlags: 0

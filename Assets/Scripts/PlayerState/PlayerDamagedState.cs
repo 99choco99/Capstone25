@@ -20,8 +20,7 @@ public class PlayerDamagedState : StateMachineBehaviour
             player = animator.GetComponent<PlayerController>();
         }
         player.currentState = PlayerState.Damaged;
-        animator.SetTrigger("Hit");
-
     }
-
+    
+    
 }

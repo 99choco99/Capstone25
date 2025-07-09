@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using Newtonsoft.Json;
+using System.Collections;
 
 public class LivingEntity : MonoBehaviour,IDamageable
 {

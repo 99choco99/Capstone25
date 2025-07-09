@@ -3,13 +3,13 @@ using UnityEngine.EventSystems;
 
 public class DropArea : MonoBehaviour,IDropHandler
 {
-    PlayerData playerData;
+    PlayerSetting playerData;
     [SerializeField] GameObject DropItems; //드롭 아이템 모음
     OwnedItem selectedItem;  //인벤토리에서 선택한 아이템
     [SerializeField] Transform player;
     private void Start()
     {
-        playerData = GetComponentInParent<PlayerData>();
+        playerData = GetComponentInParent<PlayerSetting>();
     }
     public void OnDrop(PointerEventData eventData)
     {

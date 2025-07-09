@@ -8,6 +8,7 @@ public class PlayerDetectEnemy : MonoBehaviour
 
 
     Collider[] targets; // 주변에 있는 몬스터들
+    public Vector3 TargetDirection;  //목표 방향
     public Collider currentTarget; // 목표 타겟
     public Enemy currentEnemy; // 현재 타겟의 Enemy 컴포넌트
     int currentTargetIndex = 0;
@@ -37,6 +38,7 @@ public class PlayerDetectEnemy : MonoBehaviour
 
         if (currentTarget != null)
         {
+            TargetDirection = (currentTarget.transform.position - transform.position).normalized;
             markPosition.transform.position = currentTarget.transform.position;
             currentTargetMark.transform.position = currentTarget.transform.position + Vector3.up * 2;
             currentTargetMark.gameObject.SetActive(true);

@@ -23,13 +23,13 @@ public class PlayerController : NetworkBehaviour
     public Rigidbody rb;
     public Animator anim;
     public GameObject col;
-    public PlayerData player;
+    public PlayerSetting player;
 
     [Header("PlayerState")]
     public bool canExecute;
 
 
-    [Header("PlayerData Setting")]
+    [Header("PlayerSetting Setting")]
     public float smoothness; // alt시 카메라 회전 속도
     public bool isGround; // 땅에 착지 했는가
     public float AttackDuration = 1f;  // 공격 지속시간
@@ -43,7 +43,7 @@ public class PlayerController : NetworkBehaviour
     public PlayerState currentState;
 
 
-    [Header("PlayerData Input Values")]
+    [Header("PlayerSetting Input Values")]
     public Vector3 move;  // wasd 키
     public Vector2 look;  // 마우스
     public float scroll;  // 마우스 휠
@@ -61,7 +61,7 @@ public class PlayerController : NetworkBehaviour
     {
         rb = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
-        player = GetComponent<PlayerData>();
+        player = GetComponent<PlayerSetting>();
         playerInput = GetComponent<PlayerInput>();
         playerInteraction = GetComponent<PlayerInteraction>();
         playerBehaviour = GetComponent<PlayerBehaviour>();

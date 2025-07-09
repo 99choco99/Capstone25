@@ -4,7 +4,7 @@ using UnityEngine;
 public class ConsumptionItem : OwnedItem
 {
 
-    public void consume(PlayerData playerData)
+    public void consume(PlayerSetting playerData)
     {
         playerData.ApplyStatChanges(data.damage, data.hp, data.defense, data.speed);
     }

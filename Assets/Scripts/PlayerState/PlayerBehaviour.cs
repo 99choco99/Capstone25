@@ -7,6 +7,8 @@ public class PlayerBehaviour : MonoBehaviour
     PlayerController player;
     const float SENSEGROUND = 0.4f;
     private Vector3 moveDirection;
+    public Vector3 hitPoint;
+    public Vector3 hitDirection;
     public bool isInRange;
     float tmpSpeed;
 
@@ -25,11 +27,6 @@ public class PlayerBehaviour : MonoBehaviour
         if (Physics.Raycast(player.rb.position, Vector3.down, SENSEGROUND) && player.rb.linearVelocity.y <= 0)
         {
             player.isGround = true;
-        }
-        if (player.player.Ishit)
-        {
-            player.anim.SetTrigger("Hit");
-            player.player.Ishit = false;
         }
         switch (player.currentState)
         {
@@ -85,7 +82,6 @@ public class PlayerBehaviour : MonoBehaviour
 
     }
 
-
     // 플레이어 움직임 구현  
     public void Move()
     {
@@ -97,7 +93,7 @@ public class PlayerBehaviour : MonoBehaviour
             if (player.playerDetectEnemy.currentTarget != null)
             {
                 player.transform.rotation = Quaternion.Slerp(player.transform.rotation, 
-                    Quaternion.LookRotation(-player.playerDetectEnemy.currentEnemy.directionToTarget),
+                    Quaternion.LookRotation(player.playerDetectEnemy.TargetDirection),
                     Time.fixedDeltaTime * player.moveSpeed);
             }
             else

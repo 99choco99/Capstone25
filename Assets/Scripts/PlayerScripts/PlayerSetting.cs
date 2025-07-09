@@ -3,51 +3,46 @@ using UnityEngine;
 using SocketIOClient;
 using System;
 
-public class PlayerData : LivingEntity
+public class PlayerSetting : LivingEntity
 {
+    PlayerController player;
     public PlayerUIManager playerUI; //플레이어 UI
     public Animator anim;
     public event Action OnStatsChanged;  // 스탯 변경사항 적용
     public bool Ishit; // 데미지를 입었는가?
-    int EnemyWeaponLayer = 1 << 10;
+
+    private void Awake()
+    {
+        anim = GetComponent<Animator>();
+        player = GetComponent<PlayerController>();
+        playerUI = GetComponentInChildren<PlayerUIManager>();
+    }
+
 
     //플레이어 체력 변화 적용
-    private void LateUpdate()
-    {
-        playerUI.PlayerHpUI.value = (float)(currentHp / maxHp);
-        anim = GetComponent<Animator>();
-    }
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        if(collision.collider.gameObject.layer == EnemyWeaponLayer)
-        {
-            Vector3 hitPoint = collision.contacts[0].point;
-            Vector3 hitDirection = (collision.transform.position - transform.position).normalized;
-            OnDamage(5, hitPoint, hitDirection);
-        }
-    }
-
+    //private void LateUpdate()
+    //{
+    //    playerUI.PlayerHpUI.value = (float)(currentHp / maxHp);
+    //}
 
     //데미지를 입었을 때
     public override void OnDamage(float damage, Vector3 hitPoint, Vector3 hitDirection)
     {
         Ishit = true;
-
+        player.currentState = PlayerState.Damaged;
         //정면을 맞았을 때
         if (Vector3.Dot(hitDirection, transform.forward) > 0.1)
         {
-            transform.rotation = Quaternion.LookRotation(hitDirection);
-            anim.SetFloat("hitDirX", Vector3.Dot(hitDirection, transform.right)); // 맞은 방향의 좌우를 구분
+            player.anim.SetTrigger("Hit");
+            player.anim.SetFloat("hitDirX", Vector3.Dot(hitDirection, transform.right)); // 맞은 방향의 좌우를 구분
         }
-        else
+        else //뒤로 맞았을 때
         {
-
+            player.anim.SetTrigger("BackHit");
         }
-
-
-
+        //넉백 구현
     }
+
 
     public void LevelUp()
     {

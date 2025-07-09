@@ -6,7 +6,7 @@ using UnityEngine;
 public class PlayerProfile : MonoBehaviour
 {
     enum Ability { damage,hp,speed,defense};
-    PlayerData player;
+    PlayerSetting player;
     public int AbilityPoint;
     [SerializeField] TextMeshProUGUI abilityText;
     [SerializeField] TextMeshProUGUI healthText;
@@ -16,7 +16,7 @@ public class PlayerProfile : MonoBehaviour
 
     private void Start()
     {
-        player = GetComponentInParent<PlayerData>();
+        player = GetComponentInParent<PlayerSetting>();
         player.OnStatsChanged += UpdateUI;
         UpdateUI();
     }
