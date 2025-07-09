@@ -1,32 +1,26 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PlayerDamagedState : IState
+public class PlayerDamagedState : StateMachineBehaviour
 {
-    private readonly PlayerController player;
-
-    public PlayerDamagedState(PlayerController player) { this.player = player; }
-    float LastInvincibleTime;
-    public void Enter()
+    private PlayerController player;
+    public override void OnStateMachineEnter(Animator animator, int stateMachinePathHash)
     {
-        player.playerInput.enabled = false;
-        player.col.tag = "Invincible";
-        LastInvincibleTime = Time.time;
-        player.anim.SetTrigger("Hit");
-    }
-    public void Update()
-    {
-        if(LastInvincibleTime + player.InvincibleTime < Time.time)
+        if(player == null)
         {
-            player.playerStateMachine.TransitionTo(player.playerStateMachine.playerMoveState);
+            player = animator.GetComponent<PlayerController>();
         }
-    }
-    public void Exit()
-    {
-        player.playerInput.enabled = true;
-        player.col.tag = "PlayerData";
-        player.player.Ishit = false;
-        player.anim.ResetTrigger("Hit");
+        player.currentState = PlayerState.Damaged;
     }
 
+    public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
+    {
+        if (player == null)
+        {
+            player = animator.GetComponent<PlayerController>();
+        }
+        player.currentState = PlayerState.Damaged;
+    }
+    
+    
 }

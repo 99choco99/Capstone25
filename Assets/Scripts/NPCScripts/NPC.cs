@@ -1,4 +1,3 @@
-using Mono.Cecil;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -11,6 +10,7 @@ public class NPC : MonoBehaviour, IInteractable
 
     private void Start()
     {
+        NPCName = GetComponentInChildren<TextMeshProUGUI>();
         NPCName.text = transform.name;
     }
 

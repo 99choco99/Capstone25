@@ -1,5 +1,5 @@
 using UnityEngine;
-public class PlayerSlideState : IState
+public class PlayerSlideState : StateMachineBehaviour
 {
     private readonly PlayerController player;
 
@@ -16,7 +16,7 @@ public class PlayerSlideState : IState
     public void Update()
     {
         if (!player.anim.GetCurrentAnimatorStateInfo(0).IsName("Dodge")) {
-            player.playerStateMachine.TransitionTo(player.playerStateMachine.PreState);
+
         }
     }
 

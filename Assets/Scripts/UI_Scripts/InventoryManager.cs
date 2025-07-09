@@ -18,15 +18,12 @@ public class InventoryManager : MonoBehaviour
 
     private void Awake()
     {
-        if (instance == null)
+        if(instance == null)
         {
             instance = this;
         }
-        else
-        {
-            Destroy(this);
-        }
         ScrollRect = GetComponent<ScrollRect>();
+        //슬롯타입, 전체슬롯, 빈슬롯
         Inventory = new Dictionary<SlotType, Tuple<List<Slot>, SortedList<int,int>>>();
         Init(SlotType.Equipment, EquipmentInventory);
         Init(SlotType.Consumption, ConsumptionInventory);
@@ -34,7 +31,7 @@ public class InventoryManager : MonoBehaviour
         transform.parent.gameObject.SetActive(false);
     }
 
-    public void ShowInvenType(RectTransform InventoryType)
+    public void SetInvenType(RectTransform InventoryType)
     {
         ScrollRect.content = InventoryType;
     }
@@ -45,7 +42,7 @@ public class InventoryManager : MonoBehaviour
         SortedList<int,int> emptySlots = new();
         for(int i = 0; i < itemSlots.Count; i++)
         {
-            itemSlots[i].SlotIndex = i;
+            itemSlots[i].slotIndex = i;
             if (!itemSlots[i].hasItem)
             {
                 emptySlots.Add(i,i);
@@ -55,6 +52,7 @@ public class InventoryManager : MonoBehaviour
         Inventory.Add(type, InventoryTuple);
     }
 
+    //비어있는 인벤토리 슬롯 찾아서 반환
     public Slot FindEmptySlot(SlotType type)
     {
         if(Inventory[type].Item2.Count > 0)
@@ -66,5 +64,31 @@ public class InventoryManager : MonoBehaviour
         }
         Debug.Log("인벤토리 공간 없음");
         return null;
+    }
+
+    //현재 아이템 가져오기
+    public void GetItemSlot(SlotType type, Transform InventorySlots)
+    {
+        List<Slot> targetSlots = new(InventorySlots.GetComponentsInChildren<Slot>());
+        List<Slot> itemSlots = Inventory[type].Item1;
+        for(int i = 0; i< itemSlots.Count; i++)
+        {
+            if (itemSlots[i].hasItem)
+            {
+                targetSlots[i].currentItem = itemSlots[i].currentItem;
+                Instantiate(targetSlots[i].currentItem.gameObject, targetSlots[i].transform);
+                targetSlots[i].itemCount = itemSlots[i].itemCount;
+                targetSlots[i].hasItem = true;
+            }
+            targetSlots[i].slotIndex = i;
+        }
+    }
+
+    public void GetSingleItemSlot(SlotType type, Slot currentSlot ,Slot targetSlot)
+    {
+        targetSlot.currentItem = currentSlot.currentItem;
+        Instantiate(targetSlot.currentItem.gameObject, targetSlot.transform);
+        targetSlot.itemCount = currentSlot.itemCount;
+        targetSlot.hasItem = true;
     }
 }
