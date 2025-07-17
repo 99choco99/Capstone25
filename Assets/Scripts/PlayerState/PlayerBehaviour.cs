@@ -1,3 +1,5 @@
+using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -6,11 +8,17 @@ public class PlayerBehaviour : MonoBehaviour
 {
     PlayerController player;
     const float SENSEGROUND = 0.4f;
+
     private Vector3 moveDirection;
-    public Vector3 hitPoint;
-    public Vector3 hitDirection;
     public bool isInRange;
     float tmpSpeed;
+
+    [SerializeField] private float knockBackDuration;
+    Vector3 knockBackDirection;
+    bool isKnockBack;
+    AnimationCurve knockBackCurve;
+    Vector3 startPosition;
+    Vector3 targetPosition;
 
     void Start()
     {
@@ -70,17 +78,44 @@ public class PlayerBehaviour : MonoBehaviour
                 Move();
                 break;
             case PlayerState.Damaged:
-
+                KnockBack();
+                player.transform.rotation = Quaternion.LookRotation(-knockBackDirection);
                 break;
         }
     }
 
-
-
-    public void Guard()
+    public void KnockBackInit(float knockBackForce)
     {
-
+        knockBackDirection = player.playerSetting.hitDirection.normalized;
+        startPosition = player.transform.position;
+        targetPosition = knockBackDirection * knockBackForce;
+        player.rb.linearVelocity = default;
+        isKnockBack = true;
+        StartCoroutine(KnockBackCoroutine());
     }
+
+    public void KnockBack()
+    {
+        if (isKnockBack)
+        {
+            player.rb.AddForce(targetPosition, ForceMode.Impulse);
+            //if (player.anim.GetBool("AirBornState"))
+            //{
+            //    player.rb.AddForce((transform.up - transform.forward).normalized, ForceMode.Impulse);
+            //}
+        }
+    }
+    IEnumerator KnockBackCoroutine()
+    {
+        float timer = 0f;
+        while(timer < knockBackDuration){
+            timer += Time.deltaTime;
+            yield return null;
+        }
+        isKnockBack = false;
+    }
+
+
 
     // 플레이어 움직임 구현  
     public void Move()

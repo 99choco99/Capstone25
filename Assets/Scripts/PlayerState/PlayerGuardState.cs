@@ -32,14 +32,14 @@ public class PlayerGuardState : StateMachineBehaviour
             guardDuration = Time.deltaTime;
         }
 
-        if (guardDuration <= 0.5f && player.player.Ishit)
+        if (guardDuration <= 0.5f && player.playerSetting.Ishit)
         {
             player.anim.SetTrigger("Parry");
         }
         else
         {
             player.anim.SetTrigger("GuardHit");
-            player.player.Ishit = false;
+            player.playerSetting.Ishit = false;
         }
 
         if (!player.guard)

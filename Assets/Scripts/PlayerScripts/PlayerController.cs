@@ -23,7 +23,7 @@ public class PlayerController : NetworkBehaviour
     public Rigidbody rb;
     public Animator anim;
     public GameObject col;
-    public PlayerSetting player;
+    public PlayerSetting playerSetting;
 
     [Header("PlayerState")]
     public bool canExecute;
@@ -61,7 +61,7 @@ public class PlayerController : NetworkBehaviour
     {
         rb = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
-        player = GetComponent<PlayerSetting>();
+        playerSetting = GetComponent<PlayerSetting>();
         playerInput = GetComponent<PlayerInput>();
         playerInteraction = GetComponent<PlayerInteraction>();
         playerBehaviour = GetComponent<PlayerBehaviour>();

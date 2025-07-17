@@ -17,11 +17,12 @@ public class LivingEntity : MonoBehaviour,IDamageable
     public float D_damage;
     public float D_defense;
     public bool dead { get; protected set; }  // 죽음
+    public Vector3 hitDirection;
 
     protected event Action OnDeath; // 죽었을 때 이벤트
 
     //데미지 입었을 때
-    public virtual void OnDamage(float damage, Vector3 hitPoint, Vector3 hitNormal) {
+    public virtual void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitNormal) {
         currentHp -= damage;
         if(currentHp <= 0 && !dead)
         {

@@ -7,26 +7,28 @@ using UnityEngine.AI;
 public class Enemy: LivingEntity
 {
     protected NavMeshAgent NavAgent;
-    protected Animator anim;
+    public Animator anim;
     protected BehaviorGraphAgent BehaviourAgent;
+    public EnemyAttack enemyAttack;
     [SerializeField] protected EnemyData enemyData;
 
-    public Vector3 directionToTarget;
-
     [Header("EnemyData")]
+    float currentSightRange;
     public float normalSightRange;
     public float detectSightRange;
     public float sightAngle;
+    public float currentAttackDamage;
+
+    [Header("EnemyDetectData")]
+    Collider[] hits;
+    Transform playerTransform;
+    public Vector3 directionToTarget;
     public LayerMask targetLayer = 1 << 6;
     public LayerMask obstacleLayer = 1 << 13;
 
     [Header("EnemyState")]
-    Collider[] hits;
-    RaycastHit target;
-    Transform playerTransform;
     public bool isVulnerable = true;
     public bool isTargetDetected;
-    float currentSightRange;
     public bool canTrigger = true;
 
     private void Awake()
@@ -34,6 +36,7 @@ public class Enemy: LivingEntity
         NavAgent = GetComponent<NavMeshAgent>();
         anim = GetComponent<Animator>();
         BehaviourAgent = GetComponent<BehaviorGraphAgent>();
+        enemyAttack = GetComponent<EnemyAttack>();
     }
     private void Start()
     {
@@ -43,10 +46,6 @@ public class Enemy: LivingEntity
     private void Update()
     {
         DetectPlayer();
-        if (!anim.GetCurrentAnimatorStateInfo(0).IsName("Start"))
-        {
-            anim.SetInteger("pattern", 0);
-        }
     }
 
     public void SetUp(EnemyData enemyData)
@@ -60,6 +59,7 @@ public class Enemy: LivingEntity
     }
 
 
+    //플레이어 발견 로직
     public void DetectPlayer()
     {
         if (Physics.OverlapSphereNonAlloc(transform.position, currentSightRange, hits, targetLayer) > 0)
@@ -71,7 +71,7 @@ public class Enemy: LivingEntity
             BehaviourAgent.BlackboardReference.SetVariableValue<float>("CurrentDistance", distance);
 
             //장애물에 숨어있을 때
-            if (Physics.Raycast(transform.position, directionToTarget, out target, currentSightRange, obstacleLayer)){
+            if (Physics.Raycast(transform.position, directionToTarget, currentSightRange, obstacleLayer)){
                 SetDetectState(false);
                 return;
             }
@@ -103,9 +103,9 @@ public class Enemy: LivingEntity
     }
 
 
-    public override void OnDamage(float damage, Vector3 hitPoint, Vector3 hitNormal)
+    public override void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitNormal)
     {
-        base.OnDamage(damage, hitPoint, hitNormal);
+
     }
 
 
@@ -127,7 +127,7 @@ public class Enemy: LivingEntity
     // 몬스터당 공격가능 시간
     public IEnumerator ResetTrigger()
     {
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(1f);
         canTrigger = true;
     }
 

@@ -26,21 +26,28 @@ public class PlayerSetting : LivingEntity
     //}
 
     //데미지를 입었을 때
-    public override void OnDamage(float damage, Vector3 hitPoint, Vector3 hitDirection)
+    public override void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitDirection)
     {
         Ishit = true;
-        player.currentState = PlayerState.Damaged;
-        //정면을 맞았을 때
-        if (Vector3.Dot(hitDirection, transform.forward) > 0.1)
+        this.hitDirection = hitDirection;
+        player.playerBehaviour.KnockBackInit(currentPattern.knockbackPower[currentAnimationIndex]);
+
+        if (currentPattern.isheavyAttack)
         {
-            player.anim.SetTrigger("Hit");
-            player.anim.SetFloat("hitDirX", Vector3.Dot(hitDirection, transform.right)); // 맞은 방향의 좌우를 구분
+            player.anim.SetBool("AirBornState",true);
+            player.anim.SetTrigger("AirBorne");
+        }
+        //정면을 맞았을 때
+        if (player.playerSetting.Ishit && Vector3.Dot(hitDirection, player.transform.forward) > 0.1)
+        {
+            anim.SetTrigger("Hit");
+            anim.SetFloat("hitDirX", Vector3.Dot(hitDirection, player.transform.right)); // 맞은 방향의 좌우를 구분
         }
         else //뒤로 맞았을 때
         {
-            player.anim.SetTrigger("BackHit");
+            anim.SetTrigger("BackHit");
         }
-        //넉백 구현
+        player.currentState = PlayerState.Damaged;
     }
 
 
