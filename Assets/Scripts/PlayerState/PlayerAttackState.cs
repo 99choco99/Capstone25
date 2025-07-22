@@ -5,7 +5,7 @@ using UnityEngine.Animations;
 public class PlayerAttackState : StateMachineBehaviour
 {
     private PlayerController player;
-    private const int MAX_ATTACK_ANIMATIONS = 5; // 사용할 공격 애니메이션의 총 개수
+    private const int MAX_ATTACK_ANIMATIONS = 4; // 사용할 공격 애니메이션의 총 개수
 
     private bool hasQueuedAttackInput = false;  //사용자 입력 버퍼
     public float lastAttackTime;  // 마지막 공격 시간

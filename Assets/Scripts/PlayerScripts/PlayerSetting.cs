@@ -93,4 +93,9 @@ public class PlayerSetting : LivingEntity
         public int level { get; set; }
         public bool dead { get; set; }
     }
+
+    public void Test()
+    {
+        Debug.Log("Animation Event ¿€µø«‘");
+    }
 }

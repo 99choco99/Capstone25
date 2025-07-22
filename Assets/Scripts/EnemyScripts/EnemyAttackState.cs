@@ -17,22 +17,21 @@ public class EnemyAttackState : StateMachineBehaviour
             currentPatternIndex = animator.GetInteger("pattern") - 1;
             animator.SetInteger("index", ++currentAnimationIndex);
             self.currentPattern = self.attacks[currentPatternIndex];
-        }
-        else
-        {
-            animator.SetInteger("pattern", 0);
-            animator.SetInteger("index", -1);
 
         }
     }
+
 
     public override void OnStateMachineEnter(Animator animator, int stateMachinePathHash)
     {
-
+        self.enemy.freezeRotation = true;
     }
     public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)
     {
-
+        self.enemy.freezeRotation = false;
+        animator.SetBool("Attack", false);
+        animator.SetInteger("pattern", 0);
+        animator.SetInteger("index", -1);
     }
 
 }

@@ -4,8 +4,7 @@ public class PlayerGuardState : StateMachineBehaviour
 {
     PlayerController player;
 
-    public float guardDuration;
-
+    public float canParryTime;
 
     public override void OnStateMachineEnter(Animator animator, int stateMachinePathHash)
     {
@@ -27,18 +26,13 @@ public class PlayerGuardState : StateMachineBehaviour
 
     public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        if (player.guard)
-        {
-            guardDuration = Time.deltaTime;
-        }
-
-        if (guardDuration <= 0.5f && player.playerSetting.Ishit)
+        if (player.playerBehaviour.guardDuration <= canParryTime && player.playerSetting.Ishit)
         {
             player.anim.SetTrigger("Parry");
         }
-        else
+        else if(player.playerSetting.Ishit)
         {
-            player.anim.SetTrigger("GuardHit");
+            player.anim.SetTrigger("Hit");
             player.playerSetting.Ishit = false;
         }
 

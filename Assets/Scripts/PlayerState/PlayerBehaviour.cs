@@ -7,11 +7,15 @@ using UnityEngine.UI;
 public class PlayerBehaviour : MonoBehaviour
 {
     PlayerController player;
+    public GameObject weapon;
+    Collider weaponCollider;
     const float SENSEGROUND = 0.4f;
 
     private Vector3 moveDirection;
     public bool isInRange;
     float tmpSpeed;
+
+    public float guardDuration;
 
     [SerializeField] private float knockBackDuration;
     Vector3 knockBackDirection;
@@ -22,6 +26,7 @@ public class PlayerBehaviour : MonoBehaviour
 
     void Start()
     {
+        weaponCollider = weapon.GetComponentInChildren<Collider>();
         player = GetComponent<PlayerController>();
         tmpSpeed = player.moveSpeed;
     }
@@ -61,21 +66,12 @@ public class PlayerBehaviour : MonoBehaviour
                 if (player.playerDetectEnemy.currentTarget != null)
                 {
                     Transform currentTargetTransform = player.playerDetectEnemy.currentTarget.transform;
-                    if (Vector3.Distance(currentTargetTransform.position, transform.position) <= player.AttackRange)
-                    {
-                        isInRange = true;
-                        Vector3 newPosition = (transform.position - currentTargetTransform.position).normalized;
-                        player.rb.MovePosition(transform.position + newPosition);
-                    }
-                    else
-                    {
-                        transform.rotation = Quaternion.LookRotation((currentTargetTransform.position - transform.position).normalized);
-                        isInRange = false;
-                    }
+                    transform.rotation = Quaternion.LookRotation((currentTargetTransform.position - transform.position).normalized);
                 }
                 break;
             case PlayerState.Guard:
                 Move();
+                guardDuration += Time.deltaTime;
                 break;
             case PlayerState.Damaged:
                 KnockBack();
@@ -86,6 +82,7 @@ public class PlayerBehaviour : MonoBehaviour
 
     public void KnockBackInit(float knockBackForce)
     {
+        Debug.Log(knockBackForce);
         knockBackDirection = player.playerSetting.hitDirection.normalized;
         startPosition = player.transform.position;
         targetPosition = knockBackDirection * knockBackForce;
@@ -159,4 +156,14 @@ public class PlayerBehaviour : MonoBehaviour
         player.jump = true;
     }
 
+
+
+    public void AE_playerAttackStart()
+    {
+        weaponCollider.enabled = true;
+    }
+    public void AE_playerAttackEnd()
+    {
+        weaponCollider.enabled = false;
+    }
 }

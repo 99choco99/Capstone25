@@ -3,8 +3,6 @@ using UnityEngine;
 
 public class PlayerWeapon : Weapon
 {
-    [SerializeField] PlayerSetting player;
-    
 
     //private void OnTriggerEnter(Collider other)
     //{

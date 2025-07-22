@@ -17,18 +17,6 @@ public class EnemyWeapon : Weapon
         col = GetComponent<Collider>();
     }
 
-    private void Update()
-    {
-        if (!self.anim.GetCurrentAnimatorStateInfo(0).IsName("Start"))
-        {
-            col.enabled = true;
-        }
-        else
-        {
-            col.enabled = false;
-        }
-    }
-
     private void OnTriggerEnter(Collider other)
     {
         if(!self.canTrigger) { return; }

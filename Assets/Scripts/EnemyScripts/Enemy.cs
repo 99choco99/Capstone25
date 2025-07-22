@@ -6,7 +6,8 @@ using UnityEngine.AI;
 
 public class Enemy: LivingEntity
 {
-    protected NavMeshAgent NavAgent;
+    public Rigidbody rb;
+    public NavMeshAgent NavAgent;
     public Animator anim;
     protected BehaviorGraphAgent BehaviourAgent;
     public EnemyAttack enemyAttack;
@@ -27,9 +28,11 @@ public class Enemy: LivingEntity
     public LayerMask obstacleLayer = 1 << 13;
 
     [Header("EnemyState")]
+    public bool freezeRotation = false;
     public bool isVulnerable = true;
     public bool isTargetDetected;
     public bool canTrigger = true;
+    public Coroutine knockbackCoroutine;
 
     private void Awake()
     {
@@ -37,6 +40,7 @@ public class Enemy: LivingEntity
         anim = GetComponent<Animator>();
         BehaviourAgent = GetComponent<BehaviorGraphAgent>();
         enemyAttack = GetComponent<EnemyAttack>();
+        rb = GetComponent<Rigidbody>();
     }
     private void Start()
     {
@@ -78,7 +82,10 @@ public class Enemy: LivingEntity
             if (Vector3.Dot(directionToTarget, transform.forward) > Mathf.Cos(sightAngle * 0.5f * Mathf.Deg2Rad) || isTargetDetected)
             {
                 BehaviourAgent.BlackboardReference.SetVariableValue<GameObject>("Target", hits[0].gameObject);
-                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(directionToTarget), 5 * Time.deltaTime);
+                if (!freezeRotation)
+                {
+                    transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(directionToTarget), 5 * Time.deltaTime);
+                }
                 SetDetectState(true);
                 currentSightRange = detectSightRange;
             }
@@ -129,6 +136,26 @@ public class Enemy: LivingEntity
     {
         yield return new WaitForSeconds(1f);
         canTrigger = true;
+    }
+
+    // EnemyGuard.cs에서 호출할 넉백 루틴
+    public IEnumerator KnockbackRoutine(float duration)
+    {
+        if (NavAgent != null && NavAgent.isOnNavMesh)
+        {
+            NavAgent.isStopped = true; // 넉백 동안 NavMeshAgent 멈춤
+            // NavAgent.enabled = false; // 완전히 비활성화할 수도 있음 (더 강력한 제어)
+        }
+
+        // rb.linearVelocity = Vector3.zero; // 넉백 시작 시 기존 속도 초기화 (필요시)
+
+        float timer = 0f;
+        while (timer < duration)
+        {
+            // 넉백 중에는 Rigidbody가 물리적으로 이동
+            timer += Time.deltaTime;
+            yield return null;
+        }
     }
 
 }
