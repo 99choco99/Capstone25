@@ -31,7 +31,6 @@ public class Enemy: LivingEntity
     public bool freezeRotation = false;
     public bool isVulnerable = true;
     public bool isTargetDetected;
-    public bool canTrigger = true;
     public Coroutine knockbackCoroutine;
 
     private void Awake()
@@ -131,20 +130,12 @@ public class Enemy: LivingEntity
         Destroy(gameObject);
     }
 
-    // 몬스터당 공격가능 시간
-    public IEnumerator ResetTrigger()
-    {
-        yield return new WaitForSeconds(1f);
-        canTrigger = true;
-    }
-
     // EnemyGuard.cs에서 호출할 넉백 루틴
     public IEnumerator KnockbackRoutine(float duration)
     {
         if (NavAgent != null && NavAgent.isOnNavMesh)
         {
             NavAgent.isStopped = true; // 넉백 동안 NavMeshAgent 멈춤
-            // NavAgent.enabled = false; // 완전히 비활성화할 수도 있음 (더 강력한 제어)
         }
 
         // rb.linearVelocity = Vector3.zero; // 넉백 시작 시 기존 속도 초기화 (필요시)

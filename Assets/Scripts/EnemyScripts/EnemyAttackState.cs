@@ -24,6 +24,10 @@ public class EnemyAttackState : StateMachineBehaviour
 
     public override void OnStateMachineEnter(Animator animator, int stateMachinePathHash)
     {
+        if (self == null)
+        {
+            self = animator.GetComponent<EnemyAttack>();
+        }
         self.enemy.freezeRotation = true;
     }
     public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)

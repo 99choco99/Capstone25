@@ -30,7 +30,8 @@ public class PlayerSetting : LivingEntity
     {
         Ishit = true;
         this.hitDirection = hitDirection;
-        player.playerBehaviour.KnockBackInit(currentPattern.knockbackPower[currentAnimationIndex]);
+        player.playerBehaviour.KnockBackInit(currentPattern.knockbackPower[currentAnimationIndex], currentPattern.knockbackDuration);
+        player.currentState = PlayerState.Damaged;
 
         if (currentPattern.isheavyAttack)
         {
@@ -38,7 +39,7 @@ public class PlayerSetting : LivingEntity
             player.anim.SetTrigger("AirBorne");
         }
         //정면을 맞았을 때
-        if (player.playerSetting.Ishit && Vector3.Dot(hitDirection, player.transform.forward) > 0.1)
+        if (Vector3.Dot(hitDirection, player.transform.forward) < 0)
         {
             anim.SetTrigger("Hit");
             anim.SetFloat("hitDirX", Vector3.Dot(hitDirection, player.transform.right)); // 맞은 방향의 좌우를 구분
@@ -47,7 +48,6 @@ public class PlayerSetting : LivingEntity
         {
             anim.SetTrigger("BackHit");
         }
-        player.currentState = PlayerState.Damaged;
     }
 
 

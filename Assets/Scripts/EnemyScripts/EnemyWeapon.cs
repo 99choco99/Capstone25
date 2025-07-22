@@ -19,14 +19,12 @@ public class EnemyWeapon : Weapon
 
     private void OnTriggerEnter(Collider other)
     {
-        if(!self.canTrigger) { return; }
         if((1 << other.gameObject.layer) == playerLayer && target == null)
         {
            target = other.transform.parent.GetComponent<PlayerController>();
         }
         if ((1 << other.gameObject.layer) == playerLayer)
         {
-            Debug.Log("ÇÇ°Ý");
             hitPoint = other.ClosestPoint(transform.position);
             hitDirection = (target.transform.position - self.transform.position);
             hitDirection.y = 0;
@@ -36,8 +34,6 @@ public class EnemyWeapon : Weapon
                 self.enemyAttack.currentPattern, 
                 self.enemyAttack.currentAnimationIndex, 
                 hitDirection);
-            self.canTrigger = false;
-            StartCoroutine(self.ResetTrigger());
         }
 
         //if (other.CompareTag("GuardState"))

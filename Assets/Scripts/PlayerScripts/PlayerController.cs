@@ -34,9 +34,8 @@ public class PlayerController : NetworkBehaviour
     public bool isGround; // 땅에 착지 했는가
     public float AttackDuration = 1f;  // 공격 지속시간
     public float jumpPower;  // 점프 힘
-    public float moveSpeed = 3;  // 이동속도
-    public float sprintSpeed = 5f;  // 이동속도 * 달리기계수
-    public float InvincibleTime = 1f;  // 피격시 무적 시간
+    public float moveSpeed; // 이동속도
+    public float sprintSpeed;  // 이동속도 * 달리기계수
     public float pressedTime; // 마우스 왼클릭 지속 시간
     public float interactRange;  // 상호작용 범위
     public float AttackRange;

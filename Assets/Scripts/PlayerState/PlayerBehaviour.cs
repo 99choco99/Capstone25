@@ -1,5 +1,6 @@
 using System.Collections;
 using TMPro;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -11,6 +12,7 @@ public class PlayerBehaviour : MonoBehaviour
     Collider weaponCollider;
     const float SENSEGROUND = 0.4f;
 
+    private bool canRotation;
     private Vector3 moveDirection;
     public bool isInRange;
     float tmpSpeed;
@@ -19,8 +21,6 @@ public class PlayerBehaviour : MonoBehaviour
 
     [SerializeField] private float knockBackDuration;
     Vector3 knockBackDirection;
-    bool isKnockBack;
-    AnimationCurve knockBackCurve;
     Vector3 startPosition;
     Vector3 targetPosition;
 
@@ -68,6 +68,12 @@ public class PlayerBehaviour : MonoBehaviour
                     Transform currentTargetTransform = player.playerDetectEnemy.currentTarget.transform;
                     transform.rotation = Quaternion.LookRotation((currentTargetTransform.position - transform.position).normalized);
                 }
+                Vector3 forwardDir = Quaternion.Euler(0, player.CameraMovement.rotY, 0) * Vector3.forward;
+                moveDirection = forwardDir * player.move.z + Quaternion.Euler(0, 90, 0) * forwardDir * player.move.x;
+                if (canRotation && player.playerDetectEnemy.currentTarget == null)
+                {
+                    player.transform.rotation = Quaternion.LookRotation(moveDirection.normalized);
+                }
                 break;
             case PlayerState.Guard:
                 Move();
@@ -80,27 +86,19 @@ public class PlayerBehaviour : MonoBehaviour
         }
     }
 
-    public void KnockBackInit(float knockBackForce)
+    public void KnockBackInit(float knockBackForce, float knockBackDuration)
     {
-        Debug.Log(knockBackForce);
+        this.knockBackDuration = knockBackDuration;
         knockBackDirection = player.playerSetting.hitDirection.normalized;
         startPosition = player.transform.position;
         targetPosition = knockBackDirection * knockBackForce;
         player.rb.linearVelocity = default;
-        isKnockBack = true;
         StartCoroutine(KnockBackCoroutine());
     }
 
     public void KnockBack()
     {
-        if (isKnockBack)
-        {
-            player.rb.AddForce(targetPosition, ForceMode.Impulse);
-            //if (player.anim.GetBool("AirBornState"))
-            //{
-            //    player.rb.AddForce((transform.up - transform.forward).normalized, ForceMode.Impulse);
-            //}
-        }
+        player.rb.AddForce(targetPosition, ForceMode.Impulse);
     }
     IEnumerator KnockBackCoroutine()
     {
@@ -109,7 +107,7 @@ public class PlayerBehaviour : MonoBehaviour
             timer += Time.deltaTime;
             yield return null;
         }
-        isKnockBack = false;
+        player.currentState = PlayerState.Move;
     }
 
 
@@ -165,5 +163,14 @@ public class PlayerBehaviour : MonoBehaviour
     public void AE_playerAttackEnd()
     {
         weaponCollider.enabled = false;
+    }
+
+    public void AE_playerAttackRotationEnable()
+    {
+        canRotation = true;
+    }
+    public void AE_playerAttackRotationDisable()
+    {
+        canRotation = false;
     }
 }
