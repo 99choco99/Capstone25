@@ -35,14 +35,6 @@ public class EnemyWeapon : Weapon
                 self.enemyAttack.currentAnimationIndex, 
                 hitDirection);
         }
-
-        //if (other.CompareTag("GuardState"))
-        //{
-        //    PlayerSetting playerSetting = other.transform.parent.GetComponent<PlayerSetting>();
-        //    playerSetting.Ishit = true;
-        //    canTrigger = false;
-        //    StartCoroutine(ResetTrigger());
-        //}
     }
 
 }

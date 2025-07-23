@@ -28,4 +28,9 @@ public class EnemyAttack : MonoBehaviour
             weapon.enabled = false;
         }
     }
+
+    public void AE_EnemyParryAndAttack()
+    {
+        enemy.anim.SetInteger("pattern", (int)Random.value);
+    }
 }

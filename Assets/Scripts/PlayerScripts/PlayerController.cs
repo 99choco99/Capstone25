@@ -29,9 +29,9 @@ public class PlayerController : NetworkBehaviour
     public bool canExecute;
 
 
-    [Header("PlayerSetting Setting")]
+    [Header("PlayerSetting")]
     public float smoothness; // alt시 카메라 회전 속도
-    public bool isGround; // 땅에 착지 했는가
+    public bool isGround; // 땅에 착지 했는지
     public float AttackDuration = 1f;  // 공격 지속시간
     public float jumpPower;  // 점프 힘
     public float moveSpeed; // 이동속도
@@ -54,6 +54,7 @@ public class PlayerController : NetworkBehaviour
     public bool interaction;  // 상호작용 F키
     public bool crouch;  // 숙이기 ctrl
     public bool isAttackPress;
+    public bool escape; // 나가기 esc키
 
 
     void Awake()
@@ -72,8 +73,9 @@ public class PlayerController : NetworkBehaviour
 
     private void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.lockState = CursorLockMode.None;
     }
+
     // 마우스 휠
     public void OnWheel(InputAction.CallbackContext context)
     {
@@ -154,6 +156,16 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
+    public void OnEscape(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            escape = true;
+        }else if(context.phase == InputActionPhase.Performed)
+        {
+            escape = false;
+        }
+    }
 
     public void OnChangeTarget(InputAction.CallbackContext context)
     {

@@ -70,7 +70,7 @@ public class PlayerBehaviour : MonoBehaviour
                 }
                 Vector3 forwardDir = Quaternion.Euler(0, player.CameraMovement.rotY, 0) * Vector3.forward;
                 moveDirection = forwardDir * player.move.z + Quaternion.Euler(0, 90, 0) * forwardDir * player.move.x;
-                if (canRotation && player.playerDetectEnemy.currentTarget == null)
+                if (canRotation && player.playerDetectEnemy.currentTarget == null && moveDirection.sqrMagnitude > 0.01f)
                 {
                     player.transform.rotation = Quaternion.LookRotation(moveDirection.normalized);
                 }
@@ -78,6 +78,11 @@ public class PlayerBehaviour : MonoBehaviour
             case PlayerState.Guard:
                 Move();
                 guardDuration += Time.deltaTime;
+                if (player.playerSetting.Ishit)
+                {
+                    KnockBack();
+                    player.transform.rotation = Quaternion.LookRotation(-knockBackDirection);
+                }
                 break;
             case PlayerState.Damaged:
                 KnockBack();
@@ -106,6 +111,11 @@ public class PlayerBehaviour : MonoBehaviour
         while(timer < knockBackDuration){
             timer += Time.deltaTime;
             yield return null;
+        }
+        player.playerSetting.Ishit = false;
+        if (player.guard)
+        {
+            player.currentState = PlayerState.Guard; //임시조치
         }
         player.currentState = PlayerState.Move;
     }

@@ -17,7 +17,6 @@ public class EnemyAttackState : StateMachineBehaviour
             currentPatternIndex = animator.GetInteger("pattern") - 1;
             animator.SetInteger("index", ++currentAnimationIndex);
             self.currentPattern = self.attacks[currentPatternIndex];
-
         }
     }
 

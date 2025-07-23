@@ -27,6 +27,7 @@ public class PlayerAttackState : StateMachineBehaviour
         {
             currentAttackIndex = (currentAttackIndex + 1) % MAX_ATTACK_ANIMATIONS;
             player.anim.SetInteger("AttackCount", currentAttackIndex);
+            player.playerSetting.currentAttack = player.playerSetting.playerNormalAttack[currentAttackIndex];
         }
     }
 

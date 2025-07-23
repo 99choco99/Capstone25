@@ -12,10 +12,6 @@ public class LivingEntity : MonoBehaviour,IDamageable
     public float defense; //방어력
     public float speed; //이동속도
 
-    public float D_health;
-    public float D_speed;
-    public float D_damage;
-    public float D_defense;
     public bool dead { get; protected set; }  // 죽음
     public Vector3 hitDirection;
 

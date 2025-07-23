@@ -11,9 +11,11 @@ public class Enemy: LivingEntity
     public Animator anim;
     protected BehaviorGraphAgent BehaviourAgent;
     public EnemyAttack enemyAttack;
+    EnemyKnockBack enemyGuard;
     [SerializeField] protected EnemyData enemyData;
 
     [Header("EnemyData")]
+    [SerializeField] private float guardChance = 0.9f;
     float currentSightRange;
     public float normalSightRange;
     public float detectSightRange;
@@ -27,7 +29,7 @@ public class Enemy: LivingEntity
     public LayerMask targetLayer = 1 << 6;
     public LayerMask obstacleLayer = 1 << 13;
 
-    [Header("EnemyState")]
+    [Header("EnemyBoolState")]
     public bool freezeRotation = false;
     public bool isVulnerable = true;
     public bool isTargetDetected;
@@ -39,6 +41,7 @@ public class Enemy: LivingEntity
         anim = GetComponent<Animator>();
         BehaviourAgent = GetComponent<BehaviorGraphAgent>();
         enemyAttack = GetComponent<EnemyAttack>();
+        enemyGuard = GetComponent<EnemyKnockBack>();
         rb = GetComponent<Rigidbody>();
     }
     private void Start()
@@ -109,9 +112,29 @@ public class Enemy: LivingEntity
     }
 
 
-    public override void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitNormal)
+    public override void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitDirection)
     {
-
+        this.hitDirection = hitDirection;
+        //뒤로 공격 받음
+        if (Vector3.Dot(hitDirection, transform.forward) > 0)
+        {
+            anim.SetTrigger("BackHit");
+            //base.OnDamage(currentPattern, currentAnimationIndex, hitDirection);
+            return;
+        }
+        Debug.Log("정면");
+        //정면 공격 받음
+        float randomValue = UnityEngine.Random.value;
+        if (randomValue <= guardChance)
+        {
+            anim.SetTrigger("Guard");
+        }
+        else
+        {
+            anim.SetTrigger("Hit");
+            //base.OnDamage(currentPattern,currentAnimationIndex,this.hitDirection);
+        }
+        //enemyGuard.KnockBack(); 넉백 문제 해결 필요
     }
 
 
@@ -128,25 +151,6 @@ public class Enemy: LivingEntity
     {
         yield return new WaitForSeconds(2.5f);
         Destroy(gameObject);
-    }
-
-    // EnemyGuard.cs에서 호출할 넉백 루틴
-    public IEnumerator KnockbackRoutine(float duration)
-    {
-        if (NavAgent != null && NavAgent.isOnNavMesh)
-        {
-            NavAgent.isStopped = true; // 넉백 동안 NavMeshAgent 멈춤
-        }
-
-        // rb.linearVelocity = Vector3.zero; // 넉백 시작 시 기존 속도 초기화 (필요시)
-
-        float timer = 0f;
-        while (timer < duration)
-        {
-            // 넉백 중에는 Rigidbody가 물리적으로 이동
-            timer += Time.deltaTime;
-            yield return null;
-        }
     }
 
 }

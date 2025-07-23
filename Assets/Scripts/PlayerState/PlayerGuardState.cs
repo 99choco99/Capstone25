@@ -32,8 +32,7 @@ public class PlayerGuardState : StateMachineBehaviour
         }
         else if(player.playerSetting.Ishit)
         {
-            player.anim.SetTrigger("Hit");
-            player.playerSetting.Ishit = false;
+            player.anim.SetTrigger("GuardHit");
         }
 
         if (!player.guard)
