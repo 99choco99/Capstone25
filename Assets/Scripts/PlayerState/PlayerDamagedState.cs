@@ -1,9 +1,13 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerDamagedState : StateMachineBehaviour
 {
     private PlayerController player;
+
+
+
     public override void OnStateMachineEnter(Animator animator, int stateMachinePathHash)
     {
         if(player == null)
@@ -21,6 +25,12 @@ public class PlayerDamagedState : StateMachineBehaviour
         }
         player.currentState = PlayerState.Damaged;
     }
-    
-    
+
+    public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)
+    {
+        animator.SetBool("AirBornState", false);
+        player.playerSetting.Ishit = false;
+        player.currentState = PlayerState.Move;
+    }
+
 }

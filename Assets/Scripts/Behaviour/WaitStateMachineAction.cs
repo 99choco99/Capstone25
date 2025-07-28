@@ -3,16 +3,12 @@ using Unity.Behavior;
 using UnityEngine;
 using Action = Unity.Behavior.Action;
 using Unity.Properties;
-using UnityEngine.UI;
 
 [Serializable, GeneratePropertyBag]
-[NodeDescription(name: "Wander", story: "[Self] Navigation To WanderPosition", category: "Action", id: "83a8d5556c148c3b5ead070a813b1da6")]
-public partial class WanderAction : Action
+[NodeDescription(name: "Wait StateMachine", story: "Wait ExitStateMachine of [gameObject]", category: "Action/Delay", id: "bd8613fdc0d43eeca2b565f59a8c14a1")]
+public partial class WaitStateMachineAction : Action
 {
-    [SerializeReference] public BlackboardVariable<GameObject> Self;
-
-    private UnityEngine.AI.NavMeshAgent agent;
-
+    [SerializeReference] public BlackboardVariable<GameObject> gameObject;
 
     protected override Status OnStart()
     {
@@ -26,6 +22,7 @@ public partial class WanderAction : Action
 
     protected override void OnEnd()
     {
+
     }
 }
 

@@ -23,20 +23,21 @@ public class PlayerController : NetworkBehaviour
     public Rigidbody rb;
     public Animator anim;
     public GameObject col;
-    public PlayerSetting player;
+    public PlayerSetting playerSetting;
 
     [Header("PlayerState")]
     public bool canExecute;
 
 
-    [Header("PlayerSetting Setting")]
+    [Header("PlayerSetting")]
     public float smoothness; // alt시 카메라 회전 속도
-    public bool isGround; // 땅에 착지 했는가
+    public bool isGround; // 땅에 착지 했는지
     public float AttackDuration = 1f;  // 공격 지속시간
     public float jumpPower;  // 점프 힘
-    public float moveSpeed = 3;  // 이동속도
-    public float sprintSpeed = 5f;  // 이동속도 * 달리기계수
-    public float InvincibleTime = 1f;  // 피격시 무적 시간
+    public float currentSpeed; //현재 이동속도
+    public float moveSpeed; // 기본 이동속도
+    public float guardMoveSpeed; //가드시 이동속도
+    public float sprintSpeed;  // 이동속도 * 달리기계수
     public float pressedTime; // 마우스 왼클릭 지속 시간
     public float interactRange;  // 상호작용 범위
     public float AttackRange;
@@ -55,13 +56,14 @@ public class PlayerController : NetworkBehaviour
     public bool interaction;  // 상호작용 F키
     public bool crouch;  // 숙이기 ctrl
     public bool isAttackPress;
+    public bool escape; // 나가기 esc키
 
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
         anim = GetComponentInChildren<Animator>();
-        player = GetComponent<PlayerSetting>();
+        playerSetting = GetComponent<PlayerSetting>();
         playerInput = GetComponent<PlayerInput>();
         playerInteraction = GetComponent<PlayerInteraction>();
         playerBehaviour = GetComponent<PlayerBehaviour>();
@@ -75,6 +77,7 @@ public class PlayerController : NetworkBehaviour
     {
         Cursor.lockState = CursorLockMode.Locked;
     }
+
     // 마우스 휠
     public void OnWheel(InputAction.CallbackContext context)
     {
@@ -119,7 +122,9 @@ public class PlayerController : NetworkBehaviour
     // 마우스 우클릭
     public void OnGuard(InputAction.CallbackContext context)
     {
-        if (context.phase == InputActionPhase.Started) { guard = true; }
+        if (context.phase == InputActionPhase.Started) { 
+            guard = true;
+        }
         else if (context.phase == InputActionPhase.Canceled) { guard = false; }
     }
 
@@ -155,6 +160,16 @@ public class PlayerController : NetworkBehaviour
         }
     }
 
+    public void OnEscape(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            escape = true;
+        }else if(context.phase == InputActionPhase.Performed)
+        {
+            escape = false;
+        }
+    }
 
     public void OnChangeTarget(InputAction.CallbackContext context)
     {

@@ -3,27 +3,25 @@ using UnityEngine;
 
 public class PlayerWeapon : Weapon
 {
-    [SerializeField] PlayerSetting player;
-    
+    [SerializeField] LayerMask layerMask;
+    PlayerSetting player;
 
-    //private void OnTriggerEnter(Collider other)
-    //{
-    //    if(other.CompareTag("Enemy"))
-    //    {
-    //        if (!canTrigger) { return; }
-    //        Enemy enemy = other.GetComponent<Enemy>();
+    private void Awake()
+    {
+        player = GetComponentInParent<PlayerSetting>();
+    }
 
-    //        Vector3 hitPoint = other.ClosestPoint(transform.position);
-    //        Vector3 hitnormal = transform.position - other.transform.position;
-
-    //        player.playerUI.ShowEnemyInfoUI();
-    //        enemy.OnDamage(player.damage, hitPoint, hitnormal);
-    //        player.playerUI.EnemyName.text = "" + enemy.gameObject.name;
-    //        player.playerUI.EnemyHpUI.value = enemy.currentHp / enemy.maxHp;
-    //        canTrigger = false;
-    //        StartCoroutine(ResetTrigger());
-    //    }
-    //}
+    private void OnTriggerEnter(Collider other)
+    {
+        if ((1 << other.gameObject.layer) == layerMask)
+        {
+            if (!other.TryGetComponent<Enemy>(out var target)) { Debug.Log("Enemy Component를 찾을 수 없음");  return; }
+            Vector3 hitPoint = other.ClosestPoint(transform.position);
+            Vector3 hitDirection = (other.transform.position - transform.forward).normalized;
+            hitDirection.y = 0;
+            target.OnDamage(player.currentAttack, player.currentAnimationIndex, hitDirection);
+        }
+    }
 
 
 }
