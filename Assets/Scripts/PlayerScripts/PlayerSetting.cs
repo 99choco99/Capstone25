@@ -11,6 +11,18 @@ public class PlayerSetting : LivingEntity
     public event Action OnStatsChanged;  // 스탯 변경사항 적용
     public bool Ishit; // 데미지를 입었는가?
 
+    [Header("PlayerStatChanges")]
+    public float D_health;
+    public float D_speed;
+    public float D_damage;
+    public float D_defense;
+
+    [Header("PlayerAttackSetting")]
+    public Attack [] playerNormalAttack;
+    public Attack playerHeavyAttack;
+    public Attack currentAttack;
+    public int currentAnimationIndex;
+
     private void Awake()
     {
         anim = GetComponent<Animator>();
@@ -19,28 +31,37 @@ public class PlayerSetting : LivingEntity
     }
 
 
-    //플레이어 체력 변화 적용
-    //private void LateUpdate()
-    //{
-    //    playerUI.PlayerHpUI.value = (float)(currentHp / maxHp);
-    //}
-
     //데미지를 입었을 때
-    public override void OnDamage(float damage, Vector3 hitPoint, Vector3 hitDirection)
+    public override void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitDirection)
     {
         Ishit = true;
-        player.currentState = PlayerState.Damaged;
-        //정면을 맞았을 때
-        if (Vector3.Dot(hitDirection, transform.forward) > 0.1)
+        this.hitDirection = hitDirection;
+        player.playerBehaviour.KnockBackInit(currentPattern.knockbackPower[currentAnimationIndex], currentPattern.knockbackDuration);
+
+        if (!currentPattern.canGuard)
         {
-            player.anim.SetTrigger("Hit");
-            player.anim.SetFloat("hitDirX", Vector3.Dot(hitDirection, transform.right)); // 맞은 방향의 좌우를 구분
+            anim.SetBool("AirBornState", true);
+            anim.SetTrigger("AirBorne");
         }
-        else //뒤로 맞았을 때
+        if (player.guard)
         {
-            player.anim.SetTrigger("BackHit");
+            player.currentState = PlayerState.Guard;
         }
-        //넉백 구현
+        else
+        {
+            player.currentState = PlayerState.Damaged;
+            //정면을 맞았을 때
+            if (Vector3.Dot(hitDirection, transform.forward) < 0)
+            {
+                anim.SetTrigger("Hit");
+                anim.SetFloat("hitDirX", Vector3.Dot(hitDirection, transform.right)); // 맞은 방향의 좌우를 구분
+            }
+            else //뒤로 맞았을 때
+            {
+                anim.SetTrigger("BackHit");
+            }
+        }
+
     }
 
 
@@ -66,14 +87,6 @@ public class PlayerSetting : LivingEntity
 
         OnStatsChanged?.Invoke();
     }
-
-    //불러온 데이터 적용하기
-    private void LoadData(PlayerDataClass getData)
-    {
-        maxHp = getData.maxHp;
-        currentHp = getData.currentHp;
-        damage = getData.damage;
-    }
     
 
     //보내고 받을 데이터 형식
@@ -86,4 +99,5 @@ public class PlayerSetting : LivingEntity
         public int level { get; set; }
         public bool dead { get; set; }
     }
+
 }

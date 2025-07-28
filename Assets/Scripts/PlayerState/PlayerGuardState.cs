@@ -1,11 +1,12 @@
+using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerGuardState : StateMachineBehaviour
 {
     PlayerController player;
 
-    public float guardDuration;
-
+    public float canParryTime;
 
     public override void OnStateMachineEnter(Animator animator, int stateMachinePathHash)
     {
@@ -14,6 +15,9 @@ public class PlayerGuardState : StateMachineBehaviour
             player = animator.GetComponent<PlayerController>();
         }
         player.currentState = PlayerState.Guard;
+        player.currentSpeed = player.guardMoveSpeed;
+        player.playerBehaviour.canMove = false;
+        player.anim.SetBool("isMove", false);
     }
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
@@ -27,25 +31,18 @@ public class PlayerGuardState : StateMachineBehaviour
 
     public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        if (player.guard)
-        {
-            guardDuration = Time.deltaTime;
-        }
-
-        if (guardDuration <= 0.5f && player.player.Ishit)
+        if (player.playerBehaviour.guardDuration <= canParryTime && player.playerSetting.Ishit)
         {
             player.anim.SetTrigger("Parry");
         }
-        else
+        else if(player.playerSetting.Ishit)
         {
             player.anim.SetTrigger("GuardHit");
-            player.player.Ishit = false;
         }
 
         if (!player.guard)
         {
             player.anim.SetBool("Guard", false);
-            player.currentState = PlayerState.Move;
         }
     }
 

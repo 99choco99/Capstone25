@@ -6,34 +6,43 @@ using UnityEngine.AI;
 
 public class Enemy: LivingEntity
 {
-    protected NavMeshAgent NavAgent;
-    protected Animator anim;
+    public Rigidbody rb;
+    public NavMeshAgent NavAgent;
+    public Animator anim;
     protected BehaviorGraphAgent BehaviourAgent;
+    public EnemyAttack enemyAttack;
+    EnemyKnockBack enemyGuard;
     [SerializeField] protected EnemyData enemyData;
 
-    public Vector3 directionToTarget;
-
     [Header("EnemyData")]
+    [SerializeField] private float guardChance = 0.9f;
+    float currentSightRange;
     public float normalSightRange;
     public float detectSightRange;
     public float sightAngle;
+    public float currentAttackDamage;
+
+    [Header("EnemyDetectData")]
+    Collider[] hits;
+    Transform playerTransform;
+    public Vector3 directionToTarget;
     public LayerMask targetLayer = 1 << 6;
     public LayerMask obstacleLayer = 1 << 13;
 
-    [Header("EnemyState")]
-    Collider[] hits;
-    RaycastHit target;
-    Transform playerTransform;
+    [Header("EnemyBoolState")]
+    public bool freezeRotation = false;
     public bool isVulnerable = true;
     public bool isTargetDetected;
-    float currentSightRange;
-    public bool canTrigger = true;
+    public Coroutine knockbackCoroutine;
 
     private void Awake()
     {
         NavAgent = GetComponent<NavMeshAgent>();
         anim = GetComponent<Animator>();
         BehaviourAgent = GetComponent<BehaviorGraphAgent>();
+        enemyAttack = GetComponent<EnemyAttack>();
+        enemyGuard = GetComponent<EnemyKnockBack>();
+        rb = GetComponent<Rigidbody>();
     }
     private void Start()
     {
@@ -43,10 +52,6 @@ public class Enemy: LivingEntity
     private void Update()
     {
         DetectPlayer();
-        if (!anim.GetCurrentAnimatorStateInfo(0).IsName("Start"))
-        {
-            anim.SetInteger("pattern", 0);
-        }
     }
 
     public void SetUp(EnemyData enemyData)
@@ -60,6 +65,7 @@ public class Enemy: LivingEntity
     }
 
 
+    //플레이어 발견 로직
     public void DetectPlayer()
     {
         if (Physics.OverlapSphereNonAlloc(transform.position, currentSightRange, hits, targetLayer) > 0)
@@ -71,14 +77,17 @@ public class Enemy: LivingEntity
             BehaviourAgent.BlackboardReference.SetVariableValue<float>("CurrentDistance", distance);
 
             //장애물에 숨어있을 때
-            if (Physics.Raycast(transform.position, directionToTarget, out target, currentSightRange, obstacleLayer)){
+            if (Physics.Raycast(transform.position, directionToTarget, currentSightRange, obstacleLayer)){
                 SetDetectState(false);
                 return;
             }
             if (Vector3.Dot(directionToTarget, transform.forward) > Mathf.Cos(sightAngle * 0.5f * Mathf.Deg2Rad) || isTargetDetected)
             {
                 BehaviourAgent.BlackboardReference.SetVariableValue<GameObject>("Target", hits[0].gameObject);
-                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(directionToTarget), 5 * Time.deltaTime);
+                if (!freezeRotation)
+                {
+                    transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(directionToTarget), 5 * Time.deltaTime);
+                }
                 SetDetectState(true);
                 currentSightRange = detectSightRange;
             }
@@ -103,9 +112,38 @@ public class Enemy: LivingEntity
     }
 
 
-    public override void OnDamage(float damage, Vector3 hitPoint, Vector3 hitNormal)
+    public override void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitDirection)
     {
-        base.OnDamage(damage, hitPoint, hitNormal);
+        this.hitDirection = hitDirection;
+        enemyGuard.KnockBack();
+        //뒤로 공격 받음
+        if (Vector3.Dot(hitDirection, transform.forward) > 0)
+        {
+            anim.SetTrigger("BackHit");
+            //base.OnDamage(currentPattern, currentAnimationIndex, hitDirection);
+            return;
+        }
+        Debug.Log("정면");
+        if (NavAgent.isStopped)
+        {
+            Debug.Log("멈춤");
+        }
+        else
+        {
+            Debug.Log("움직임");
+        }
+
+            //정면 공격 받음
+            float randomValue = UnityEngine.Random.value;
+        if (randomValue <= guardChance)
+        {
+            anim.SetTrigger("Guard");
+        }
+        else
+        {
+            anim.SetTrigger("Hit");
+            //base.OnDamage(currentPattern,currentAnimationIndex,this.hitDirection);
+        }
     }
 
 
@@ -122,13 +160,6 @@ public class Enemy: LivingEntity
     {
         yield return new WaitForSeconds(2.5f);
         Destroy(gameObject);
-    }
-
-    // 몬스터당 공격가능 시간
-    public IEnumerator ResetTrigger()
-    {
-        yield return new WaitForSeconds(0.5f);
-        canTrigger = true;
     }
 
 }
