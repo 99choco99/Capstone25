@@ -34,7 +34,9 @@ public class PlayerController : NetworkBehaviour
     public bool isGround; // 땅에 착지 했는지
     public float AttackDuration = 1f;  // 공격 지속시간
     public float jumpPower;  // 점프 힘
-    public float moveSpeed; // 이동속도
+    public float currentSpeed; //현재 이동속도
+    public float moveSpeed; // 기본 이동속도
+    public float guardMoveSpeed; //가드시 이동속도
     public float sprintSpeed;  // 이동속도 * 달리기계수
     public float pressedTime; // 마우스 왼클릭 지속 시간
     public float interactRange;  // 상호작용 범위
@@ -73,7 +75,7 @@ public class PlayerController : NetworkBehaviour
 
     private void Start()
     {
-        Cursor.lockState = CursorLockMode.None;
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
     // 마우스 휠
@@ -120,7 +122,9 @@ public class PlayerController : NetworkBehaviour
     // 마우스 우클릭
     public void OnGuard(InputAction.CallbackContext context)
     {
-        if (context.phase == InputActionPhase.Started) { guard = true; }
+        if (context.phase == InputActionPhase.Started) { 
+            guard = true;
+        }
         else if (context.phase == InputActionPhase.Canceled) { guard = false; }
     }
 

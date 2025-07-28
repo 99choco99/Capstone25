@@ -16,6 +16,9 @@ public class PlayerMoveState : StateMachineBehaviour
             player = animator.GetComponent<PlayerController>();
         }
         player.anim.SetBool("isMove", false);
+        player.anim.SetBool("Attack", false);
+        player.anim.ResetTrigger("Attack");
+        player.anim.ResetTrigger("HeavyAttack");
         player.currentState = PlayerState.Move;
     }
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
@@ -23,6 +26,15 @@ public class PlayerMoveState : StateMachineBehaviour
         if (player == null)
         {
             player = animator.GetComponent<PlayerController>();
+        }
+        player.currentState = PlayerState.Move;
+        if (player.sprint)
+        {
+            player.currentSpeed = player.sprintSpeed;
+        }
+        else
+        {
+            player.currentSpeed = player.moveSpeed;
         }
     }
     public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
@@ -36,7 +48,7 @@ public class PlayerMoveState : StateMachineBehaviour
             player.currentState = PlayerState.Attack;
             player.anim.SetTrigger("SprintAttack");
         }
-        else if (player.attack && player.isGround)
+        else if (!player.sprint && player.attack && player.isGround)
         {
             player.currentState = PlayerState.Attack;
             player.anim.SetTrigger("Attack");

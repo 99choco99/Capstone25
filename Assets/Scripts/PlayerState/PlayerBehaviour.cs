@@ -13,22 +13,20 @@ public class PlayerBehaviour : MonoBehaviour
     const float SENSEGROUND = 0.4f;
 
     private bool canRotation;
+    public bool canMove;
     private Vector3 moveDirection;
     public bool isInRange;
-    float tmpSpeed;
 
     public float guardDuration;
 
     [SerializeField] private float knockBackDuration;
     Vector3 knockBackDirection;
-    Vector3 startPosition;
     Vector3 targetPosition;
 
     void Start()
     {
         weaponCollider = weapon.GetComponentInChildren<Collider>();
         player = GetComponent<PlayerController>();
-        tmpSpeed = player.moveSpeed;
     }
 
 
@@ -41,6 +39,7 @@ public class PlayerBehaviour : MonoBehaviour
         {
             player.isGround = true;
         }
+
         switch (player.currentState)
         {
             case PlayerState.Move:
@@ -52,17 +51,13 @@ public class PlayerBehaviour : MonoBehaviour
                 {
                     player.anim.SetBool("Jump", false);
                 }
-                if (player.sprint)
+                if (canMove)
                 {
-                    player.moveSpeed = player.sprintSpeed;
-                }
-                else
-                {
-                    player.moveSpeed = tmpSpeed;
-                }
                     Move();
+                }
                 break;
             case PlayerState.Attack:
+                //공격 동시에 방향 조절
                 if (player.playerDetectEnemy.currentTarget != null)
                 {
                     Transform currentTargetTransform = player.playerDetectEnemy.currentTarget.transform;
@@ -76,7 +71,10 @@ public class PlayerBehaviour : MonoBehaviour
                 }
                 break;
             case PlayerState.Guard:
-                Move();
+                if (canMove)
+                {
+                    Move();
+                }
                 guardDuration += Time.deltaTime;
                 if (player.playerSetting.Ishit)
                 {
@@ -95,7 +93,6 @@ public class PlayerBehaviour : MonoBehaviour
     {
         this.knockBackDuration = knockBackDuration;
         knockBackDirection = player.playerSetting.hitDirection.normalized;
-        startPosition = player.transform.position;
         targetPosition = knockBackDirection * knockBackForce;
         player.rb.linearVelocity = default;
         StartCoroutine(KnockBackCoroutine());
@@ -150,7 +147,7 @@ public class PlayerBehaviour : MonoBehaviour
         }
         player.anim.SetFloat("xDir", player.move.x);
         player.anim.SetFloat("zDir", player.move.z);
-        Vector3 newPosition = player.rb.position + player.moveSpeed * Time.deltaTime * moveDirection.normalized;
+        Vector3 newPosition = player.rb.position + player.currentSpeed * Time.deltaTime * moveDirection.normalized;
         player.rb.MovePosition(newPosition);
     }
 
@@ -169,6 +166,7 @@ public class PlayerBehaviour : MonoBehaviour
     public void AE_playerAttackStart()
     {
         weaponCollider.enabled = true;
+
     }
     public void AE_playerAttackEnd()
     {
@@ -183,4 +181,12 @@ public class PlayerBehaviour : MonoBehaviour
     {
         canRotation = false;
     }
+    public void AE_playerMoveEnable()
+    {
+        canMove = true;
+    }
+    public void AE_playerMoveDisable()
+    {
+        canMove = false;
+    }   
 }

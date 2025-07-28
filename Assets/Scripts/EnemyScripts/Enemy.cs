@@ -115,6 +115,7 @@ public class Enemy: LivingEntity
     public override void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitDirection)
     {
         this.hitDirection = hitDirection;
+        enemyGuard.KnockBack();
         //뒤로 공격 받음
         if (Vector3.Dot(hitDirection, transform.forward) > 0)
         {
@@ -123,8 +124,17 @@ public class Enemy: LivingEntity
             return;
         }
         Debug.Log("정면");
-        //정면 공격 받음
-        float randomValue = UnityEngine.Random.value;
+        if (NavAgent.isStopped)
+        {
+            Debug.Log("멈춤");
+        }
+        else
+        {
+            Debug.Log("움직임");
+        }
+
+            //정면 공격 받음
+            float randomValue = UnityEngine.Random.value;
         if (randomValue <= guardChance)
         {
             anim.SetTrigger("Guard");
@@ -134,7 +144,6 @@ public class Enemy: LivingEntity
             anim.SetTrigger("Hit");
             //base.OnDamage(currentPattern,currentAnimationIndex,this.hitDirection);
         }
-        //enemyGuard.KnockBack(); 넉백 문제 해결 필요
     }
 
 

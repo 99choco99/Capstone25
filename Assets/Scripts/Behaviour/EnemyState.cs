@@ -8,5 +8,5 @@ public enum EnemyState
 	Patrol,
 	Chase,
 	Attack,
-	Guard
+	Wander
 }

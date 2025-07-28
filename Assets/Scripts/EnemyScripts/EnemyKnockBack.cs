@@ -1,29 +1,53 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
 
 public class EnemyKnockBack : MonoBehaviour
 {
-    [SerializeField] private LayerMask playerAttackLayerMask;
+    private Vector3 knockbackDirection; // ë„‰ë°±ë  ë°©í–¥
+    private float knockbackForce;       // ë„‰ë°±ë  ê±°ë¦¬ ë˜ëŠ” ì†ë„
+    private float knockbackDuration;    // ë„‰ë°±ì´ ì§€ì†ë  ì‹œê°„
 
-    [SerializeField] private float knockBackPower;
-    [SerializeField] private float knockBackTime;
+    private bool isKnockingBack = false;
+    private Vector3 startKnockbackPosition;
+    private float knockbackTimer = 0f;
 
     private Enemy self;
-    private bool needsKnockback = false; // ³Ë¹éÀ» Àû¿ëÇØ¾ß ÇÒÁö ¿©ºÎ
+    private bool needsKnockback = false; // ë„‰ë°±ì„ ì ìš©í•´ì•¼ í• ì§€ ì—¬ë¶€
 
     private void Start()
     {
         self = GetComponent<Enemy>();
     }
 
-    private void FixedUpdate()
+    void FixedUpdate() // ë„‰ë°± ì´ë™ì€ FixedUpdateì—ì„œ ì²˜ë¦¬í•˜ëŠ” ê²ƒì´ ì¢‹ìŒ
     {
-        if (needsKnockback)
+        if (isKnockingBack)
         {
-            ApplyKnockbackPhysics(); // ¹°¸® ¿¬»êÀ» FixedUpdate¿¡¼­ ¼öÇà
+            knockbackTimer += Time.fixedDeltaTime;
+            float t = knockbackTimer / knockbackDuration; // 0ì—ì„œ 1ê¹Œì§€ ì¦ê°€í•˜ëŠ” ì‹œê°„ ë¹„ìœ¨
+
+            // ë¶€ë“œëŸ¬ìš´ ê°ì†ì„ ìœ„í•´ ê³¡ì„  ì‚¬ìš© (ì˜ˆ: Ease-Out)
+            // t = Mathf.Sin(t * Mathf.PI * 0.5f); // Ease-Out Sine
+            t = 1f - (1f - t) * (1f - t); // Ease-Out Quad (ì¡°ê¸ˆ ë” ë¹ ë¥´ê²Œ ê°ì†)
+
+            // ì‹œì‘ ìœ„ì¹˜ì—ì„œ ëª©í‘œ ìœ„ì¹˜ê¹Œì§€ Lerp
+            Vector3 targetPos = startKnockbackPosition + knockbackDirection * knockbackForce;
+            Vector3 currentPos = Vector3.Lerp(startKnockbackPosition, targetPos, t);
+
+            // Rigidbody.MovePosition ì‚¬ìš© (ë¬¼ë¦¬ ì—…ë°ì´íŠ¸ì— ì í•©)
+            self.rb.MovePosition(currentPos);
+
+            if (knockbackTimer >= knockbackDuration)
+            {
+                isKnockingBack = false;
+                // í•„ìš”í•˜ë‹¤ë©´ ë„‰ë°± ì¢…ë£Œ í›„ ìƒíƒœ ë³µêµ¬ ë¡œì§ ì¶”ê°€
+                Debug.Log("Knockback Finished!");
+            }
         }
     }
+
 
     public void KnockBack()
     {
@@ -31,34 +55,50 @@ public class EnemyKnockBack : MonoBehaviour
         {
             return;
         }
+        self.rb.linearVelocity = Vector3.zero;
+        isKnockingBack = true;
 
-        // ³Ë¹é ÇÃ·¡±× ¼³Á¤
-        needsKnockback = true; // FixedUpdate¿¡¼­ ³Ë¹é Àû¿ëµÇµµ·Ï ÇÃ·¡±× ¼³Á¤
-
-        // NavMeshAgent ¿òÁ÷ÀÓ ¸ØÃã (³Ë¹é Àû¿ë Àü, ¶Ç´Â ³Ë¹é ·çÆ¾ ½ÃÀÛ ½Ã ¸ØÃã)
+        // NavMeshAgent ì›€ì§ì„ ë©ˆì¶¤
         if (self.NavAgent.isOnNavMesh)
         {
             self.NavAgent.isStopped = true;
         }
+        // ë„‰ë°± ì‹œê°„ ë™ì•ˆ NavMeshAgentë¥¼ ë¹„í™œì„±í™”í•˜ëŠ” ì½”ë£¨í‹´ ì‹œì‘
+        //StartCoroutine(KnockbackRoutine(knockBackTime));
     }
 
-    private void ApplyKnockbackPhysics()
+    public void ApplyKnockback(Vector3 direction, float force, float duration)
     {
-        if (self == null || self.rb == null) return;
-        self.rb.AddForce(self.hitDirection * knockBackPower, ForceMode.Impulse);
+        if (isKnockingBack) return; // ì´ë¯¸ ë„‰ë°± ì¤‘ì´ë©´ ì¤‘ë³µ ì ìš© ë°©ì§€
 
-        // ³Ë¹é ½Ã°£ µ¿¾È NavMeshAgent¸¦ ºñÈ°¼ºÈ­ÇÏ´Â ÄÚ·çÆ¾ ½ÃÀÛ
-        self.knockbackCoroutine = StartCoroutine(KnockbackRoutine(knockBackTime));
+        knockbackDirection = direction.normalized; // ë°©í–¥ì„ ì •ê·œí™”í•˜ì—¬ ì¼ê´€ëœ í˜ ì ìš©
+        knockbackForce = force;
+        knockbackDuration = duration;
+
+        startKnockbackPosition = transform.position; // ë„‰ë°± ì‹œì‘ ìœ„ì¹˜ ì €ì¥
+        knockbackTimer = 0f;
+        isKnockingBack = true;
+
+        Debug.Log($"Starting Kinematic Knockback. Dir: {direction}, Force: {force}, Duration: {duration}");
     }
 
-    public IEnumerator KnockbackRoutine(float duration)
-    {
-        float timer = 0f;
-        while (timer < duration)
-        {
-            timer += Time.deltaTime;
-            yield return null;
-        }
-        needsKnockback = false; // ³Ë¹é Àû¿ë ÈÄ ÇÃ·¡±× ÃÊ±âÈ­
-    }
+    //public IEnumerator KnockbackRoutine(float duration)
+    //{
+    //    float timer = 0f;
+    //    Vector3 startPosition = transform.position;
+    //    Vector3 targetPosition = startPosition + self.hitDirection.normalized * knockBackPower;
+    //    while (timer < duration)
+    //    {
+    //        timer += Time.deltaTime;
+    //        float t = timer / duration; // 0ì—ì„œ 1ê¹Œì§€ ì¦ê°€í•˜ëŠ” ì‹œê°„ ë¹„ìœ¨
+
+    //        // ë¶€ë“œëŸ¬ìš´ ê°ì†ì„ ìœ„í•´ ê³¡ì„  ì‚¬ìš©
+    //        t = 1f - (1f - t) * (1f - t); // Ease-Out Quad
+
+    //        Vector3 currentPos = Vector3.Lerp(startPosition, targetPosition, t);
+    //        yield return null;
+    //    }
+    //    needsKnockback = false; // ë„‰ë°± ì ìš© í›„ í”Œë˜ê·¸ ì´ˆê¸°í™”
+    //    self.NavAgent.isStopped = false;
+    //}
 }

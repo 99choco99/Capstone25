@@ -2673,7 +2673,7 @@ PrefabInstance:
     - target: {fileID: 556565256300354894, guid: 6c33c7b8411a26348804f518447012fa,
         type: 3}
       propertyPath: guardChance
-      value: 0
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 2658851546032417673, guid: 6c33c7b8411a26348804f518447012fa,
         type: 3}
@@ -2729,6 +2729,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4118802057628646596, guid: 6c33c7b8411a26348804f518447012fa,
+        type: 3}
+      propertyPath: m_Mass
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4118802057628646596, guid: 6c33c7b8411a26348804f518447012fa,
+        type: 3}
+      propertyPath: m_Constraints
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 4118802057628646596, guid: 6c33c7b8411a26348804f518447012fa,
         type: 3}
@@ -7246,11 +7256,16 @@ PrefabInstance:
     - target: {fileID: 488499260528713553, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -117.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 575982145425871002, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
         type: 3}
       propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 831829456395092152, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: m_IsKinematic
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 912786119677470792, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
@@ -7770,13 +7785,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4415156443643132354, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
         type: 3}
+      propertyPath: jumpPower
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4415156443643132354, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
       propertyPath: moveSpeed
-      value: 3
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 4415156443643132354, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
         type: 3}
       propertyPath: sprintSpeed
-      value: 5
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 4415156443643132354, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: guardMoveSpeed
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4467350614547765454, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
         type: 3}
@@ -7837,6 +7862,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4900611398763563848, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: canMove
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4971317083708915955, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
         type: 3}
@@ -8177,6 +8207,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7159763216939243841, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: m_ActionEvents.Array.size
+      value: 29
+      objectReference: {fileID: 0}
+    - target: {fileID: 7159763216939243841, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: m_ActionEvents.Array.data[28].m_ActionId
+      value: 1d7b733f-2ee1-4898-a6a9-81799efd91da
+      objectReference: {fileID: 0}
+    - target: {fileID: 7159763216939243841, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: m_ActionEvents.Array.data[28].m_ActionName
+      value: 'Player/Escape[/Keyboard/escape]'
       objectReference: {fileID: 0}
     - target: {fileID: 7201254592881886315, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
         type: 3}

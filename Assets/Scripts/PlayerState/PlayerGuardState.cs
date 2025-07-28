@@ -1,3 +1,5 @@
+using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerGuardState : StateMachineBehaviour
@@ -13,6 +15,9 @@ public class PlayerGuardState : StateMachineBehaviour
             player = animator.GetComponent<PlayerController>();
         }
         player.currentState = PlayerState.Guard;
+        player.currentSpeed = player.guardMoveSpeed;
+        player.playerBehaviour.canMove = false;
+        player.anim.SetBool("isMove", false);
     }
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
@@ -38,7 +43,6 @@ public class PlayerGuardState : StateMachineBehaviour
         if (!player.guard)
         {
             player.anim.SetBool("Guard", false);
-            player.currentState = PlayerState.Move;
         }
     }
 
