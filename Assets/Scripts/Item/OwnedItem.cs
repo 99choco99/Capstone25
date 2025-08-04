@@ -6,13 +6,16 @@ using UnityEngine.UI;
 
 public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerEnterHandler,IPointerExitHandler
 {
-    public RectTransform rect;
-    public Image icon;
     CanvasGroup canvasGroup;
     protected Transform canvas;
-    GameObject ItemDescription;
-    TextMeshProUGUI ItemDescriptionText;
-    public Slot previousSlot;
+
+    public RectTransform rect;
+    public Image icon;                    //아이템 아이콘
+         
+    GameObject ItemDescription;           //아이템 설명 박스
+    TextMeshProUGUI ItemDescriptionText;  //아이템 설명
+
+    public Slot currentSlot;             //현재 슬롯
 
     public void Awake()
     {
@@ -26,12 +29,12 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        previousSlot = transform.parent.GetComponent<Slot>();
+        currentSlot = transform.parent.GetComponent<Slot>();
 
         transform.SetParent(canvas);
         transform.SetAsLastSibling();
 
-        canvasGroup.alpha = 0.6f;
+        SetAlphaValue(0.6f);
         canvasGroup.blocksRaycasts = false;
     }
 
@@ -44,11 +47,11 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
     {
         if (transform.parent == canvas)
         {
-            transform.SetParent(previousSlot.transform);
-            rect.position = previousSlot.GetComponent<RectTransform>().position;
+            transform.SetParent(currentSlot.transform);
+            rect.position = currentSlot.GetComponent<RectTransform>().position;
         }
 
-        canvasGroup.alpha = 1.0f;
+        SetAlphaValue(1.0f);
         canvasGroup.blocksRaycasts = true;
     }
 
@@ -62,5 +65,10 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
     public void OnPointerExit(PointerEventData eventData)
     {
         ItemDescription.SetActive(false);
+    }
+
+    public void SetAlphaValue(float alpha)
+    {
+        canvasGroup.alpha = alpha;
     }
 }

@@ -1,19 +1,29 @@
+using Firesplash.GameDevAssets.SocketIO;
 using Newtonsoft.Json;
 using SocketIOClient;
 using System;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using UnityEngine;
-using static PlayerSetting;
+using static Firesplash.GameDevAssets.SocketIO.SocketIOInstance;
+using static SocketManager;
 
 public class SocketManager : MonoBehaviour
 {
-    public PlayerDataClass setData;  // 보낼 데이터
-    public PlayerDataClass getData;  // 받은 데이터
+#if UNITY_WEBGL
+    [DllImport("__Internal")]
+    private static extern void MySignalReady();
+#endif
 
-    [Header("SocketIO Setting")]
     public static SocketManager Instance { get; private set; }
-    private SocketIOUnity socket;
-    private string serverUrl = "http://localhost:3000";
+    public SocketIOCommunicator socket;
 
+    LoginData loginData;
+
+
+
+    public event Action<string> OnItemRegisterSuccess;
+    public event Action<string> OnItemRegisterFailed;
 
     void Awake()
     {
@@ -21,72 +31,135 @@ public class SocketManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            InitializeSocket();
         }
         else
         {
             Destroy(gameObject);
+            return;
         }
+        socket = GetComponent<SocketIOCommunicator>();
     }
 
-    async void Start()
+    public void Start()
     {
-        socket = SocketManager.Instance.GetSocket();
-        //소켓 연결시
-        socket.OnConnected += async (sender, e) =>
-        {
-            Debug.Log("Socket connected!");
-            // 연결 완료 후 playerData 이벤트 핸들러 등록
-            socket.On("playerData", (response) => {
-                try
-                {
-                    // 데이터 불러오기
-                    getData = response.GetValue<PlayerDataClass>(); //JSON 받기
-                    //LoadData(getData);
-                }
-                catch (JsonException ex)
-                {
-                    Debug.LogError("JSON Deserialize Error: " + ex.Message);
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError("General Error: " + ex.Message);
-                }
-            });
-        };
-        await socket.ConnectAsync();
-        // 데이터 변화시 다시 불러오기
-        socket.On("UpdateData", response =>
-        {
-            getData = response.GetValue<PlayerDataClass>(); //JSON 받기
-            //LoadData(getData);
-        });
-        //죽었을 경우 실행
-        socket.On("Die", _ =>
-        {
-            //Die();
-        });
+#if UNITY_WEBGL
+        //MySignalReady();
+        Debug.Log("Unity -> 웹: 준비 완료 신호 보냄");
+#endif
+
+
+#if UNITY_EDITOR
+        LoginData testData = new LoginData { id = "editor_user_id", nickname = "에디터_테스터" };
+        ReceiveLoginData(JsonUtility.ToJson(testData));
+#endif
+        SetupSocketEvents();
     }
-    async void InitializeSocket()
+
+
+    public void ReceiveLoginData(string loginJson)
     {
-        try
+        Debug.Log("웹으로부터 로그인 데이터 수신: " + loginJson);
+
+        // JSON 문자열을 파싱
+        //DataManager.Instance.loginData = JsonConvert.DeserializeObject<LoginData>(loginJson);
+    }
+
+
+
+    private void SetupSocketEvents()
+    {
+        socket.Instance.On("connect", (string payload) =>
         {
-            var uri = new Uri(serverUrl);
-            socket = new SocketIOUnity(uri, new SocketIOOptions()
+            //string json = JsonConvert.SerializeObject(DataManager.Instance.loginData);
+            //socket.Instance.Emit("login", json,false);
+            LoadingScene.LoadScene("Main");
+            Debug.Log("소켓 연결 완료!");
+        });
+
+        socket.Instance.On("disconnect", (string payload) =>
+        {
+            DataManager.Instance.SavePlayerData();
+            Debug.Log("소켓 연결 끊김!");
+        });
+
+        // "playerData" 이벤트 리스너
+        socket.Instance.On("loadPlayerData", response => {
+            try
             {
-                Transport = SocketIOClient.Transport.TransportProtocol.WebSocket
-            });
-        }
-        catch (Exception ex)
+                PlayerData data = JsonConvert.DeserializeObject<PlayerData>(response);
+
+                Debug.Log("수신된 플레이어 이름: " + data.id);
+
+                if(DataManager.Instance != null)
+                {
+                    DataManager.Instance.LoadPlayerData(data);
+                }
+            }
+            catch (JsonException ex)
+            {
+                Debug.LogError("JSON 역직렬화 오류: " + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("일반 오류: " + ex.Message);
+            }
+        });
+
+
+        // "UpdateData" 이벤트 리스너
+        socket.Instance.On("UpdateData", response => {
+            // ... 데이터 업데이트 로직
+        });
+
+        // "Die" 이벤트 리스너
+        socket.Instance.On("Die", _ => {
+            // ... 플레이어 사망 로직
+        });
+
+        socket.Instance.On("registerItemSuccess", response =>
         {
-            Debug.LogError("Socket Connection error: " + ex.Message);
-        }
-        await socket.ConnectAsync();
+            string successMessage = response;
+            OnItemRegisterSuccess?.Invoke(successMessage);
+        });
+
+        socket.Instance.On("registerItemFailed", response =>
+        {
+            string errorMessage = response;
+            OnItemRegisterFailed?.Invoke(errorMessage);
+        });
     }
 
-    public SocketIOUnity GetSocket()
+    public void RequestToBuyItem(string itemId, string count)
     {
-        return socket;
+        var itemData = new { loginData.id, itemId, count };
+        string json = JsonConvert.SerializeObject(itemData);
+
+        socket.Instance.Emit("RequestToBuyItem",json,false);
     }
 
+    public void RequestToSellItem(string itemId, string price ,string count)
+    {
+        var itemData = new { loginData.id, itemId, price, count };
+        string json = JsonConvert.SerializeObject(itemData);
+
+        socket.Instance.Emit("RequestToSellItem", json, false);
+    }
+
+
+    // 애플리케이션 종료 시 소켓 연결을 끊기
+    private void OnApplicationQuit()
+    {
+        if (socket != null && socket.Instance.IsConnected())
+        {
+            socket.Instance.Close();
+            socket.Instance.Emit("Disconnet");
+        }
+    }
+
+
+    public class LoginData
+    {
+        public string id;
+        public string nickname;
+    }
 }

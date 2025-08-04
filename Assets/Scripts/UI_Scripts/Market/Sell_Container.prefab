@@ -136,11 +136,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: af035afb48029dd4cb8d83f2a9d627dc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ConsumptionSlots: {fileID: 0}
   spec: {fileID: 7126188451470562229}
   price: {fileID: 6000825809693797717}
   check: {fileID: 5332034632922821139, guid: 43752c88c40e8c247ad7efcd46384289, type: 3}
-  buySlot: {fileID: 2359888904147078532}
 --- !u!1 &2278417166778235004
 GameObject:
   m_ObjectHideFlags: 0
@@ -152,9 +150,8 @@ GameObject:
   - component: {fileID: 8006144720526027723}
   - component: {fileID: 2064215838480510638}
   - component: {fileID: 7180080013394978807}
-  - component: {fileID: 2359888904147078532}
   m_Layer: 5
-  m_Name: slot
+  m_Name: icon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -217,24 +214,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &2359888904147078532
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2278417166778235004}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f1a4d794bbe92ba40aee93f1c0c39f99, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  slotType: 6
-  rect: {fileID: 0}
-  currentItem: {fileID: 0}
-  hasItem: 0
-  slotIndex: 0
-  itemCount: 0
 --- !u!1 &3590892693191952811
 GameObject:
   m_ObjectHideFlags: 0

@@ -15,18 +15,18 @@ public class DropArea : MonoBehaviour,IDropHandler
     {
         if(eventData.pointerDrag != null && eventData.pointerDrag.TryGetComponent<OwnedItem>(out selectedItem))
         {
-            selectedItem.previousSlot.hasItem = false;
-            selectedItem.previousSlot.currentItem = null;
-            if (!InventoryManager.instance.Inventory[selectedItem.data.type].Item2.ContainsKey(selectedItem.previousSlot.slotIndex))
+            selectedItem.currentSlot.hasItem = false;
+            selectedItem.currentSlot.currentItem = null;
+            if (!InventoryManager.instance.Inventory[selectedItem.data.type].Item2.ContainsKey(selectedItem.currentSlot.slotIndex))
             {
-                InventoryManager.instance.Inventory[selectedItem.data.type].Item2.Add(selectedItem.previousSlot.slotIndex, selectedItem.previousSlot.slotIndex);
+                InventoryManager.instance.Inventory[selectedItem.data.type].Item2.Add(selectedItem.currentSlot.slotIndex, selectedItem.currentSlot.slotIndex);
             }
 
             GameObject dropItem = Instantiate(selectedItem.data.DropStatePrefab, DropItems.transform);
             dropItem.transform.position = player.transform.position;
             Destroy(selectedItem.gameObject);
         }
-        if (eventData.pointerDrag.TryGetComponent(out EquipmentItem item) && item.previousSlot.slotType == SlotType.Profile) {
+        if (eventData.pointerDrag.TryGetComponent(out EquipmentItem item) && item.currentSlot.slotType == SlotType.Profile) {
             item.TakeOff(playerData);
         }
     }

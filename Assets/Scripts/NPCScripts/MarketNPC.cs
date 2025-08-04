@@ -7,6 +7,6 @@ public class MarketNPC : NPC
 
     public override void Interact(Transform Player)
     {
-        MarketUI.SetActive(true);
+        Player.GetComponent<PlayerController>().OpenUI(UIPanelType.Market);
     }
 }

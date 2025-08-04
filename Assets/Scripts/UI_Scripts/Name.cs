@@ -1,15 +1,19 @@
+using TMPro;
 using UnityEngine;
 
 public class Name : MonoBehaviour
 {
     private Camera cam;
-    
+    private TextMeshProUGUI nametext;
+
     void Start()
     {
         if(cam == null)
         {
             cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
         }
+        nametext = GetComponentInChildren<TextMeshProUGUI>();
+        nametext.text = gameObject.transform.root.name;
     }
 
     // Update is called once per frame

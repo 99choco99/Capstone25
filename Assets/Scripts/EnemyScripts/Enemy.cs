@@ -115,7 +115,7 @@ public class Enemy: LivingEntity
     public override void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitDirection)
     {
         this.hitDirection = hitDirection;
-        enemyGuard.KnockBack();
+        enemyGuard.KnockBack(hitDirection, currentPattern.knockbackPower[currentAnimationIndex], currentPattern.knockbackDuration);
         //뒤로 공격 받음
         if (Vector3.Dot(hitDirection, transform.forward) > 0)
         {
@@ -123,18 +123,9 @@ public class Enemy: LivingEntity
             //base.OnDamage(currentPattern, currentAnimationIndex, hitDirection);
             return;
         }
-        Debug.Log("정면");
-        if (NavAgent.isStopped)
-        {
-            Debug.Log("멈춤");
-        }
-        else
-        {
-            Debug.Log("움직임");
-        }
 
             //정면 공격 받음
-            float randomValue = UnityEngine.Random.value;
+        float randomValue = UnityEngine.Random.value;
         if (randomValue <= guardChance)
         {
             anim.SetTrigger("Guard");

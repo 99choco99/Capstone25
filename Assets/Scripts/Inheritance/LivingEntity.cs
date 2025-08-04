@@ -6,6 +6,7 @@ using System.Collections;
 public class LivingEntity : MonoBehaviour,IDamageable
 {
     public int level = 0;
+    public float exp = 0; //현재 경험치
     public float maxHp;  // 최대 체력
     public float currentHp;  // 현재 체력
     public float damage;// 공격력

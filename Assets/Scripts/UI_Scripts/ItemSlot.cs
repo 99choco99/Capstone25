@@ -12,17 +12,18 @@ public class ItemSlot : Slot
     }
     public override void OnDrop(PointerEventData eventData)
     {
-        if (eventData.pointerDrag.TryGetComponent(out EquipmentItem item) && item.previousSlot.slotType == SlotType.Profile)
+        
+        if (eventData.pointerDrag.TryGetComponent(out EquipmentItem item) && item.currentSlot.slotType == SlotType.Profile)
         {
             item.TakeOff(playerData);
         }
-        if (eventData.pointerDrag.TryGetComponent<OwnedItem>(out newItem) && slotType == newItem.data.type)
+        if (eventData.pointerDrag.TryGetComponent<OwnedItem>(out OwnedItem newItem) && slotType == newItem.data.type)
         {
             base.OnDrop(eventData);
             if (!hasItem)
             {
                 InventoryManager.instance.Inventory[newItem.data.type].Item2.Remove(slotIndex);
-                InventoryManager.instance.Inventory[newItem.data.type].Item2.Add(newItem.previousSlot.slotIndex, newItem.previousSlot.slotIndex);
+                InventoryManager.instance.Inventory[newItem.data.type].Item2.Add(newItem.currentSlot.slotIndex, newItem.currentSlot.slotIndex);
             }
         }
     }
