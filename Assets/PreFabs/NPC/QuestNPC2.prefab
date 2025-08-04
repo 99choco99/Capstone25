@@ -520,6 +520,7 @@ GameObject:
   - component: {fileID: 5728971543461426510}
   - component: {fileID: 7903609631106290953}
   - component: {fileID: 6745706256505696865}
+  - component: {fileID: 6645505918746396854}
   m_Layer: 8
   m_Name: QuestNPC2
   m_TagString: Untagged
@@ -590,6 +591,21 @@ CapsuleCollider:
   m_Height: 1
   m_Direction: 1
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!114 &6645505918746396854
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2035667288761166491}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ad6f171d9893ed4fb87f2760d70ca5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  NPCName: {fileID: 0}
+  id: 0
+  MarketUI: {fileID: 0}
 --- !u!1 &2100336233358006879
 GameObject:
   m_ObjectHideFlags: 0

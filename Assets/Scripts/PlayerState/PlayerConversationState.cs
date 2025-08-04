@@ -16,7 +16,7 @@ public class PlayerConversationState : StateMachineBehaviour
     public void Enter()
     {
         isAction = false;
-        player.toggleCameraRotation = true;
+        player.isShowMouse = true;
         player.interactRange = 0;
         player.anim.SetFloat("xDir",0);
         player.anim.SetFloat("zDir", 0);
@@ -50,7 +50,7 @@ public class PlayerConversationState : StateMachineBehaviour
     public void Exit()
     {
         playerUI.HideDialogUI();
-        player.toggleCameraRotation = false;
+        player.isShowMouse = false;
         player.interactRange = 3;
     }
 }

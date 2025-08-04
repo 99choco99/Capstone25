@@ -18,7 +18,7 @@ public class QuickSlot : Slot
     public override void OnDrop(PointerEventData eventData)
     {
         if (isCoolingDown) { return; }
-        if (eventData.pointerDrag.TryGetComponent<OwnedItem>(out newItem) && newItem.data.type == SlotType.Consumption)
+        if (eventData.pointerDrag.TryGetComponent<OwnedItem>(out OwnedItem newItem) && newItem.data.type == SlotType.Consumption)
         {
             base.OnDrop(eventData);
         }

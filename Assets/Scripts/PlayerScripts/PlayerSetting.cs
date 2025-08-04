@@ -1,15 +1,20 @@
 using Newtonsoft.Json;
-using UnityEngine;
 using SocketIOClient;
 using System;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerSetting : LivingEntity
 {
     PlayerController player;
+    public string id;
+    public string nickname;
+    PlayerData playerData;
+
     public PlayerUIManager playerUI; //플레이어 UI
     public Animator anim;
-    public event Action OnStatsChanged;  // 스탯 변경사항 적용
     public bool Ishit; // 데미지를 입었는가?
+    public event Action OnStatsChanged;  // 스탯 변경사항 적용
 
     [Header("PlayerStatChanges")]
     public float D_health;
@@ -30,6 +35,52 @@ public class PlayerSetting : LivingEntity
         playerUI = GetComponentInChildren<PlayerUIManager>();
     }
 
+    private void Start()
+    {
+        if (DataManager.Instance != null)
+        {
+            DataManager.Instance.OnSavePlayerData += OnSavePlayerData;
+            DataManager.Instance.OnLoadPlayerData += OnLoadPlayerData;
+        }
+        //SocketManager.Instance.socket.Instance.Emit("requestPlayerData", DataManager.Instance.loginData.id,true);
+    }
+
+    //게임 데이터 불러오기
+    public void OnLoadPlayerData(PlayerData data)
+    {
+        id = data.id;
+        nickname = data.nickname;
+        gameObject.name = nickname;
+
+        maxHp = data.maxHp;
+        currentHp = data.currentHp;
+        damage = data.damage;
+        defense = data.defense;
+        speed = data.speed;
+
+        level = data.level;
+        exp = data.exp;
+
+        playerData = data;
+        Debug.Log("데이터 불러오기 성공");
+    }
+
+    //게임 데이터 저장하기
+    public void OnSavePlayerData()
+    {
+        playerData.maxHp = maxHp;
+        playerData.currentHp = currentHp;
+        playerData.damage = damage;
+        playerData.defense = defense;
+        playerData.speed = speed;
+
+        playerData.level = level;
+        playerData.exp = exp;
+
+        string json = JsonConvert.SerializeObject(playerData);
+        SocketManager.Instance.socket.Instance.Emit("SavePlayerData", json, false);
+        Debug.Log("데이터 저장 완료");
+    }
 
     //데미지를 입었을 때
     public override void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitDirection)
@@ -87,17 +138,14 @@ public class PlayerSetting : LivingEntity
 
         OnStatsChanged?.Invoke();
     }
-    
 
-    //보내고 받을 데이터 형식
-    public class PlayerDataClass
+
+    private void OnDestroy()
     {
-        public float maxHp{ get; set; }
-        public float currentHp { get; set; }
-        public float damage { get; set; }
-        public float exp { get; set; }
-        public int level { get; set; }
-        public bool dead { get; set; }
+        if(DataManager.Instance != null)
+        {
+            DataManager.Instance.OnSavePlayerData -= OnSavePlayerData;
+            DataManager.Instance.OnLoadPlayerData -= OnLoadPlayerData;
+        }
     }
-
 }

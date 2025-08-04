@@ -11,7 +11,6 @@ public class PlayerDeadState : StateMachineBehaviour
         player.anim.SetTrigger("Die");
         player.col.tag = "Invincible";
         player.col.gameObject.layer = 9;
-        player.playerInput.enabled = false;
     }
 
     public void Exit()

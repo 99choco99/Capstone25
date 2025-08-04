@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.EventSystems;
@@ -9,11 +10,11 @@ using UnityEngine.InputSystem;
 using UnityEngine.Windows;
 
 
-public enum PlayerState { Idle,Move,Jump,Attack,Guard,Damaged}
+public enum PlayerState { Idle,Move,Jump,Attack,Guard,Damaged, UI_Open}
 public class PlayerController : NetworkBehaviour
 {
     public PlayerInteraction playerInteraction;
-    public PlayerInput playerInput;
+    private PlayerInput playerInput;
     public Camera playerCamera;
     public CameraMovement CameraMovement;
     public PlayerBehaviour playerBehaviour;
@@ -26,14 +27,16 @@ public class PlayerController : NetworkBehaviour
     public PlayerSetting playerSetting;
 
     [Header("PlayerState")]
+    
     public bool canExecute;
 
 
     [Header("PlayerSetting")]
     public float smoothness; // alt시 카메라 회전 속도
+    public float jumpDuration;  // 점프 지속시간
+    public float jumpPower;  // 점프 힘
     public bool isGround; // 땅에 착지 했는지
     public float AttackDuration = 1f;  // 공격 지속시간
-    public float jumpPower;  // 점프 힘
     public float currentSpeed; //현재 이동속도
     public float moveSpeed; // 기본 이동속도
     public float guardMoveSpeed; //가드시 이동속도
@@ -50,13 +53,12 @@ public class PlayerController : NetworkBehaviour
     public float scroll;  // 마우스 휠
     public bool jump;   // 스페이스 바 
     public bool sprint; //왼쪽 Shift
-    public bool toggleCameraRotation;  // alt키
+    public bool isShowMouse;  // alt키
     public bool attack; // 마우싀 좌클릭
     public bool guard;  // 마우스 우클릭
     public bool interaction;  // 상호작용 F키
     public bool crouch;  // 숙이기 ctrl
     public bool isAttackPress;
-    public bool escape; // 나가기 esc키
 
 
     void Awake()
@@ -78,6 +80,44 @@ public class PlayerController : NetworkBehaviour
         Cursor.lockState = CursorLockMode.Locked;
     }
 
+
+    //UI가 닫혔을 때
+    public void CloseUI()
+    {
+        currentState = PlayerState.Idle;
+        playerInput.SwitchCurrentActionMap("Player");
+        Cursor.lockState = CursorLockMode.Locked;
+    }
+
+    //UI가 열렸을 때
+    public void OpenUI(UIPanelType type)
+    {
+        currentState = PlayerState.UI_Open;
+        playerInput.SwitchCurrentActionMap("UI");
+        PlayerUIManager.instnace.ToggleUI(type);
+        ResetInputValues();
+        Cursor.lockState = CursorLockMode.None;
+    }
+
+    //모든 입력값 초기화
+    private void ResetInputValues()
+    {
+        move = Vector3.zero;
+        look = Vector2.zero;
+        scroll = 0f;
+
+        jump = false;
+        sprint = false;
+        isShowMouse = false;
+        attack = false;
+        guard = false;
+        interaction = false;
+        crouch = false;
+        isAttackPress = false;
+
+        anim.SetBool("isMove", false);
+    }
+
     // 마우스 휠
     public void OnWheel(InputAction.CallbackContext context)
     {
@@ -94,6 +134,7 @@ public class PlayerController : NetworkBehaviour
     // 마우스 입력
     public void OnLook(InputAction.CallbackContext context)
     {
+        if (isShowMouse) { look = default; return; }
         look = context.ReadValue<Vector2>();
     }
 
@@ -107,6 +148,7 @@ public class PlayerController : NetworkBehaviour
     // 마우스 왼쪽 클릭
     public void OnAttack(InputAction.CallbackContext context)
     {
+        if (isShowMouse) { return; }
         if (context.phase == InputActionPhase.Started) { 
             attack = true;
             isAttackPress = true;
@@ -122,6 +164,7 @@ public class PlayerController : NetworkBehaviour
     // 마우스 우클릭
     public void OnGuard(InputAction.CallbackContext context)
     {
+        if (isShowMouse) { return; }
         if (context.phase == InputActionPhase.Started) { 
             guard = true;
         }
@@ -136,10 +179,10 @@ public class PlayerController : NetworkBehaviour
     }
 
     //Alt 키 입력
-    public void OnFreeCam(InputAction.CallbackContext context)
+    public void OnShowMouse(InputAction.CallbackContext context)
     {
-        if (context.phase == InputActionPhase.Started) { toggleCameraRotation = true; }
-        else if (context.phase == InputActionPhase.Canceled) { toggleCameraRotation = false; }
+        if (context.phase == InputActionPhase.Started) { isShowMouse = true; Cursor.lockState = CursorLockMode.None; }
+        else if (context.phase == InputActionPhase.Canceled) { isShowMouse = false; Cursor.lockState = CursorLockMode.Locked; }
     }
 
 
@@ -164,10 +207,8 @@ public class PlayerController : NetworkBehaviour
     {
         if (context.phase == InputActionPhase.Started)
         {
-            escape = true;
-        }else if(context.phase == InputActionPhase.Performed)
-        {
-            escape = false;
+            PlayerUIManager.instnace.CloseLastUI();
+            CloseUI();
         }
     }
 
@@ -176,6 +217,31 @@ public class PlayerController : NetworkBehaviour
         if(context.phase == InputActionPhase.Started)
         {
             playerDetectEnemy.ChangeTarget();
+        }
+    }
+
+
+    public void OnInventory(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            PlayerUIManager.instnace.ToggleUI(UIPanelType.Inventory);
+        }
+    }
+
+    public void OnPlayerProfile(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            PlayerUIManager.instnace.ToggleUI(UIPanelType.Profile);
+        }
+    }
+
+    public void OnSetting(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            PlayerUIManager.instnace.ToggleUI(UIPanelType.Setting);
         }
     }
 }

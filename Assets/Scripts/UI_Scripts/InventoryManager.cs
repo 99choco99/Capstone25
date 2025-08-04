@@ -23,7 +23,7 @@ public class InventoryManager : MonoBehaviour
             instance = this;
         }
         ScrollRect = GetComponent<ScrollRect>();
-        //슬롯타입, 전체슬롯, 빈슬롯
+        //슬롯타입, 전체슬롯, 빈슬롯 정보를 초기화
         Inventory = new Dictionary<SlotType, Tuple<List<Slot>, SortedList<int,int>>>();
         Init(SlotType.Equipment, EquipmentInventory);
         Init(SlotType.Consumption, ConsumptionInventory);
@@ -65,6 +65,8 @@ public class InventoryManager : MonoBehaviour
         Debug.Log("인벤토리 공간 없음");
         return null;
     }
+
+
 
     //현재 아이템 가져오기
     public void GetItemSlot(SlotType type, Transform InventorySlots)
