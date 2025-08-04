@@ -16,7 +16,7 @@ public class ProfileSlot : Slot
     }
     override public void OnDrop(PointerEventData eventData)
     {
-        eventData.pointerDrag.TryGetComponent<OwnedItem>(out newItem);
+        eventData.pointerDrag.TryGetComponent<OwnedItem>(out OwnedItem newItem);
         if (newItem == null) { return; }
         if (newItem.data.type == SlotType.Equipment && newItem.data.equipmentType == EquipmentType)
         {

@@ -19,9 +19,15 @@ public class PlayerBehaviour : MonoBehaviour
 
     public float guardDuration;
 
+
+    public bool isKnockingBack;
     [SerializeField] private float knockBackDuration;
+    float knockBackForce;
+    float knockBackTimer;
     Vector3 knockBackDirection;
+    Vector3 startPosition;
     Vector3 targetPosition;
+    Vector3 currentPosition;
 
     void Start()
     {
@@ -34,12 +40,10 @@ public class PlayerBehaviour : MonoBehaviour
 
     void FixedUpdate()
     {
-        //플레이어 점프 착지
         if (Physics.Raycast(player.rb.position, Vector3.down, SENSEGROUND) && player.rb.linearVelocity.y <= 0)
         {
             player.isGround = true;
         }
-
         switch (player.currentState)
         {
             case PlayerState.Move:
@@ -47,7 +51,7 @@ public class PlayerBehaviour : MonoBehaviour
                 {
                     Jump();
                 }
-                if (player.isGround)
+                else if (player.isGround)
                 {
                     player.anim.SetBool("Jump", false);
                 }
@@ -83,39 +87,49 @@ public class PlayerBehaviour : MonoBehaviour
                 }
                 break;
             case PlayerState.Damaged:
-                KnockBack();
-                player.transform.rotation = Quaternion.LookRotation(-knockBackDirection);
+                if (isKnockingBack)
+                {
+                    KnockBack();
+                    player.transform.rotation = Quaternion.LookRotation(-knockBackDirection);
+                }
                 break;
         }
     }
 
     public void KnockBackInit(float knockBackForce, float knockBackDuration)
     {
-        this.knockBackDuration = knockBackDuration;
         knockBackDirection = player.playerSetting.hitDirection.normalized;
-        targetPosition = knockBackDirection * knockBackForce;
+        this.knockBackDuration = knockBackDuration;
+        this.knockBackForce = knockBackForce;
+        startPosition = player.transform.position;
+        knockBackTimer = 0f;
+        isKnockingBack = true;
         player.rb.linearVelocity = default;
-        StartCoroutine(KnockBackCoroutine());
     }
 
     public void KnockBack()
     {
-        player.rb.AddForce(targetPosition, ForceMode.Impulse);
-    }
-    IEnumerator KnockBackCoroutine()
-    {
-        float timer = 0f;
-        while(timer < knockBackDuration){
-            timer += Time.deltaTime;
-            yield return null;
-        }
-        player.playerSetting.Ishit = false;
-        if (player.guard)
+        knockBackTimer += Time.fixedDeltaTime;
+        float t = knockBackTimer / knockBackDuration; // 0에서 1까지 증가하는 시간 비율
+        t = 1f - (1f - t) * (1f - t);
+
+        targetPosition = startPosition + knockBackDirection * knockBackForce;
+        currentPosition = Vector3.Lerp(startPosition, targetPosition, t);
+        player.rb.MovePosition(currentPosition);
+
+
+        if(knockBackTimer >= knockBackDuration)
         {
-            player.currentState = PlayerState.Guard; //임시조치
+            player.playerSetting.Ishit = false;
+            isKnockingBack = false;
+            if (player.guard)
+            {
+                player.currentState = PlayerState.Guard; //임시조치
+            }
+            player.currentState = PlayerState.Move;
         }
-        player.currentState = PlayerState.Move;
     }
+
 
 
 
@@ -152,15 +166,14 @@ public class PlayerBehaviour : MonoBehaviour
     }
 
 
-    //플레이어 점프 구현
-    public void Jump()
+
+    public void Jump()  
     {
         player.anim.SetBool("Jump", true);
         player.rb.AddForce(Vector3.up * player.jumpPower, ForceMode.Impulse);
         player.isGround = false;
         player.jump = true;
     }
-
 
 
     public void AE_playerAttackStart()

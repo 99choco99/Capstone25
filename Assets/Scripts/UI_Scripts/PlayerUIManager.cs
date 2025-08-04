@@ -1,11 +1,19 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
+
+public enum UIPanelType { 
+    Market,
+    Inventory,
+    Profile,
+    Setting
+}
 public class PlayerUIManager : MonoBehaviour
 {
     public Slider PlayerHpUI;
@@ -15,13 +23,40 @@ public class PlayerUIManager : MonoBehaviour
     public TextMeshProUGUI EnemyName;
     public TextMeshProUGUI NpcName;
     public TextMeshProUGUI NpcText;
+
+
+    private Dictionary<UIPanelType, GameObject> panelDictionary;
+    public Stack<UIPanelType> currentOpenUI = new Stack<UIPanelType>();
+
+    [Header("UI_Panel")]
+    public GameObject Market;
     public GameObject Inventory;
     public GameObject PlayerProfile;
-
-    public bool isPlayerProfileOpen;
-    public bool isInventoryOpen;
     public GameObject Setting;
-    public bool isSettingOpen;
+
+
+    public static PlayerUIManager instnace;
+
+    private void Start()
+    {
+        if(instnace == null)
+        {
+            instnace = this;
+        }
+        else
+        {
+            Destroy(instnace);
+        }
+
+        // 딕셔너리에 UI 패널들을 등록
+        panelDictionary = new Dictionary<UIPanelType, GameObject>()
+        {
+            {UIPanelType.Market, Market },
+            { UIPanelType.Inventory, Inventory },
+            { UIPanelType.Profile, PlayerProfile },
+            { UIPanelType.Setting, Setting }
+        };
+    }
 
     public void ShowEnemyInfoUI()
     {
@@ -59,32 +94,46 @@ public class PlayerUIManager : MonoBehaviour
     {
         ExpUI.maxValue = maxExp;
     }
-    
 
-    public void OnInventory(InputAction.CallbackContext context)
+
+    public void ToggleUI(UIPanelType type)
     {
-        if(context.phase == InputActionPhase.Started)
+        if (panelDictionary[type].activeSelf)
         {
-            isInventoryOpen = !isInventoryOpen;
-            Inventory.SetActive(isInventoryOpen);
+            CloseUI(type);
+        }
+        else
+        {
+            OpenUI(type);
         }
     }
 
-    public void OnPlayerProfile(InputAction.CallbackContext context)
+
+    public void OpenUI(UIPanelType type)
     {
-        if (context.phase == InputActionPhase.Started)
+        panelDictionary[type].SetActive(true);
+        currentOpenUI.Push(type);
+    }
+
+    public void CloseUI(UIPanelType type)
+    {
+        panelDictionary[type].SetActive(false);
+        if (currentOpenUI.Count > 0 && currentOpenUI.Peek() == type)
         {
-            isPlayerProfileOpen = !isPlayerProfileOpen;
-            PlayerProfile.SetActive(isPlayerProfileOpen);
+            currentOpenUI.Pop();
         }
     }
 
-    public void OnSetting(InputAction.CallbackContext context)
+    public void CloseLastUI()
     {
-        if (context.phase == InputActionPhase.Started)
+        if (currentOpenUI.Count > 0)
         {
-            isSettingOpen = !isSettingOpen;
-            Setting.SetActive(isSettingOpen);
+            UIPanelType LastUIType = currentOpenUI.Pop();
+            while (!panelDictionary[LastUIType].activeSelf && currentOpenUI.Count > 0)
+            {
+                LastUIType = currentOpenUI.Pop();
+            }
+            panelDictionary[LastUIType].SetActive(false);
         }
     }
 }
