@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class PlayerData
 {
-    public string id;
+    public string user_id;
     public string nickname;
 
     public float maxHp { get; set; }

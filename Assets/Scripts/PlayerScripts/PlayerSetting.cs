@@ -42,13 +42,13 @@ public class PlayerSetting : LivingEntity
             DataManager.Instance.OnSavePlayerData += OnSavePlayerData;
             DataManager.Instance.OnLoadPlayerData += OnLoadPlayerData;
         }
-        //SocketManager.Instance.socket.Instance.Emit("requestPlayerData", DataManager.Instance.loginData.id,true);
+        SocketManager.Instance.socket.Instance.Emit("requestPlayerData", SocketManager.Instance.loginData.user_id, true);
     }
 
     //게임 데이터 불러오기
     public void OnLoadPlayerData(PlayerData data)
     {
-        id = data.id;
+        id = data.user_id;
         nickname = data.nickname;
         gameObject.name = nickname;
 

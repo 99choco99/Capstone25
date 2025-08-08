@@ -18,12 +18,14 @@ public class SocketManager : MonoBehaviour
     public static SocketManager Instance { get; private set; }
     public SocketIOCommunicator socket;
 
-    LoginData loginData;
+    public LoginData loginData;
 
 
 
-    public event Action<string> OnItemRegisterSuccess;
+    public event Action<RegisterSuccessResponse> OnItemRegisterSuccess;
     public event Action<string> OnItemRegisterFailed;
+    public event Action<string> OnBuyItemFailed;
+    public event Action<BuyItemSuccessResponse> OnBuyItemSuccess;
 
     void Awake()
     {
@@ -49,10 +51,9 @@ public class SocketManager : MonoBehaviour
 
 
 #if UNITY_EDITOR
-        LoginData testData = new LoginData { id = "editor_user_id", nickname = "에디터_테스터" };
-        ReceiveLoginData(JsonUtility.ToJson(testData));
+        LoginData testData = new LoginData { user_id = "editor_user_id", nickname = "에디터_테스터" };
+        ReceiveLoginData(JsonConvert.SerializeObject(testData));
 #endif
-        SetupSocketEvents();
     }
 
 
@@ -60,8 +61,12 @@ public class SocketManager : MonoBehaviour
     {
         Debug.Log("웹으로부터 로그인 데이터 수신: " + loginJson);
 
-        // JSON 문자열을 파싱
-        //DataManager.Instance.loginData = JsonConvert.DeserializeObject<LoginData>(loginJson);
+        //JSON 문자열을 파싱
+        loginData = JsonConvert.DeserializeObject<LoginData>(loginJson);
+
+        // 로그인 데이터를 받은 후에 소켓 연결을 시작합니다.
+        SetupSocketEvents();
+        socket.Instance.Connect();
     }
 
 
@@ -70,16 +75,15 @@ public class SocketManager : MonoBehaviour
     {
         socket.Instance.On("connect", (string payload) =>
         {
-            //string json = JsonConvert.SerializeObject(DataManager.Instance.loginData);
-            //socket.Instance.Emit("login", json,false);
-            LoadingScene.LoadScene("Main");
+            socket.Instance.Emit("login", loginData.user_id, true);
             Debug.Log("소켓 연결 완료!");
         });
 
-        socket.Instance.On("disconnect", (string payload) =>
+        // 서버로부터 로그인 성공 응답을 받을 때의 이벤트 핸들러 추가
+        socket.Instance.On("loginSuccess", _ =>
         {
-            DataManager.Instance.SavePlayerData();
-            Debug.Log("소켓 연결 끊김!");
+            LoadingScene.LoadScene("Main");
+            Debug.Log("게임 시작");
         });
 
         // "playerData" 이벤트 리스너
@@ -88,7 +92,7 @@ public class SocketManager : MonoBehaviour
             {
                 PlayerData data = JsonConvert.DeserializeObject<PlayerData>(response);
 
-                Debug.Log("수신된 플레이어 이름: " + data.id);
+                Debug.Log("수신된 플레이어 이름: " + data.user_id);
 
                 if(DataManager.Instance != null)
                 {
@@ -118,20 +122,30 @@ public class SocketManager : MonoBehaviour
 
         socket.Instance.On("registerItemSuccess", response =>
         {
-            string successMessage = response;
-            OnItemRegisterSuccess?.Invoke(successMessage);
+            RegisterSuccessResponse json = JsonConvert.DeserializeObject<RegisterSuccessResponse>(response);
+            OnItemRegisterSuccess?.Invoke(json);
         });
 
         socket.Instance.On("registerItemFailed", response =>
         {
-            string errorMessage = response;
-            OnItemRegisterFailed?.Invoke(errorMessage);
+            OnItemRegisterFailed?.Invoke(response);
+        });
+
+        socket.Instance.On("buyItemFailed", response =>
+        {
+            OnBuyItemFailed?.Invoke(response);
+        });
+
+        socket.Instance.On("buyItemSuccess", response =>
+        {
+            BuyItemSuccessResponse json = JsonConvert.DeserializeObject<BuyItemSuccessResponse>(response);
+            OnBuyItemSuccess?.Invoke(json);
         });
     }
 
-    public void RequestToBuyItem(string itemId, string count)
+    public void RequestToBuyItem(string marketId, string count)
     {
-        var itemData = new { loginData.id, itemId, count };
+        var itemData = new { loginData.user_id, marketId, count };
         string json = JsonConvert.SerializeObject(itemData);
 
         socket.Instance.Emit("RequestToBuyItem",json,false);
@@ -139,7 +153,7 @@ public class SocketManager : MonoBehaviour
 
     public void RequestToSellItem(string itemId, string price ,string count)
     {
-        var itemData = new { loginData.id, itemId, price, count };
+        var itemData = new { loginData.user_id, itemId, price, count };
         string json = JsonConvert.SerializeObject(itemData);
 
         socket.Instance.Emit("RequestToSellItem", json, false);
@@ -159,7 +173,20 @@ public class SocketManager : MonoBehaviour
 
     public class LoginData
     {
-        public string id;
+        public string user_id;
         public string nickname;
+    }
+
+    public class RegisterSuccessResponse
+    {
+        public string message { get; set; }
+        public string marketId { get; set; }
+    }
+
+    public class BuyItemSuccessResponse
+    {
+        public string message { get; set; }
+        public int purchasedItemCount { get; set; }
+        public int gold {  get; set; }
     }
 }

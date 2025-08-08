@@ -6,7 +6,7 @@ using static SocketManager;
 public class DataManager : MonoBehaviour
 {
     public static DataManager Instance;
-    public LoginData loginData;
+
     public PlayerData playerData;
 
     public event Action OnSavePlayerData;
