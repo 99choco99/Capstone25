@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static SocketManager;
 
 public class MarketSell : MonoBehaviour
 {
@@ -25,6 +26,7 @@ public class MarketSell : MonoBehaviour
 
 
         SocketManager.Instance.OnItemRegisterSuccess += RegistForSale;
+        SocketManager.Instance.OnItemRegisterFailed += ShowNotice;
 
 
         SellBtn.onClick.AddListener(() => {
@@ -70,19 +72,20 @@ public class MarketSell : MonoBehaviour
     }
 
 
-    void RegistForSale(string successMessage)
+    void RegistForSale(RegisterSuccessResponse data)
     {
         // 1. 판매 컨테이너 생성 및 부모 설정
         GameObject newSaleItem = Instantiate(SellContainer, SellingList.transform);
 
         // 2. 아이템 정보 업데이트
         UpdateSaleItemInfo(newSaleItem, saleSlot.currentItem);
+        newSaleItem.GetComponent<MarketBuy>().marketId = data.marketId;
 
         // 3. 현재 판매 슬롯 초기화
         ClearSaleSlot();
 
         // 4. 성공 메시지 표시
-        ShowNotice(successMessage);
+        ShowNotice(data.message);
     }
 
     // 판매 목록 아이템의 정보를 업데이트
@@ -97,15 +100,16 @@ public class MarketSell : MonoBehaviour
 
         // 모든 TextMeshProUGUI 컴포넌트를 찾아 정보 업데이트
         TextMeshProUGUI[] itemInfos = saleItem.GetComponentsInChildren<TextMeshProUGUI>();
-        if (itemInfos.Length >= 2)
+        if (itemInfos.Length >= 3)
         {
-            // 첫 번째 텍스트: 아이템 이름과 개수
-            itemInfos[0].text = $"Name: {itemToSell.data.name}\n" +
-                                $"Count: {count.text}";
-
-            // 두 번째 텍스트: 가격 정보
-            itemInfos[1].text = $"{price.text} Gold";
+            // 첫 번째 텍스트: 아이템 이름
+            itemInfos[0].text = $"Name: {itemToSell.data.name}\n";
+            // 두 번쨰 텍스트: 아이템 개수
+            itemInfos[1].text = $"Count: {count.text}";
+            // 세 번째 텍스트: 가격 정보
+            itemInfos[2].text = $"{price.text} Gold";
         }
+
     }
 
     // 판매 슬롯을 초기화하는 전용 함수

@@ -7,14 +7,16 @@ using UnityEngine.SceneManagement;
 public class PlayerSetting : LivingEntity
 {
     PlayerController player;
-    public string id;
-    public string nickname;
-    PlayerData playerData;
-
     public PlayerUIManager playerUI; //플레이어 UI
     public Animator anim;
-    public bool Ishit; // 데미지를 입었는가?
-    public event Action OnStatsChanged;  // 스탯 변경사항 적용
+
+
+    public string id;
+    public string nickname;
+    public int gold;
+    public int []maxExp;
+
+    public float canParryTime;  // Parry로 인정해주는 최대 시간
 
     [Header("PlayerStatChanges")]
     public float D_health;
@@ -28,6 +30,11 @@ public class PlayerSetting : LivingEntity
     public Attack currentAttack;
     public int currentAnimationIndex;
 
+    //PlayerEvent
+    public event Action<float> OnHpChanged;  // hp 변경
+    public event Action<int, int> OnExpChanged;   // 경험치 적용
+    public event Action OnStatsChanged;  // 스탯 변경사항 적용
+
     private void Awake()
     {
         anim = GetComponent<Animator>();
@@ -40,13 +47,13 @@ public class PlayerSetting : LivingEntity
         if (DataManager.Instance != null)
         {
             DataManager.Instance.OnSavePlayerData += OnSavePlayerData;
-            DataManager.Instance.OnLoadPlayerData += OnLoadPlayerData;
+            LoadPlayerData(DataManager.Instance.playerData);
         }
-        //SocketManager.Instance.socket.Instance.Emit("requestPlayerData", DataManager.Instance.loginData.id,true);
+
     }
 
     //게임 데이터 불러오기
-    public void OnLoadPlayerData(PlayerData data)
+    public void LoadPlayerData(PlayerData data)
     {
         id = data.id;
         nickname = data.nickname;
@@ -60,33 +67,33 @@ public class PlayerSetting : LivingEntity
 
         level = data.level;
         exp = data.exp;
-
-        playerData = data;
+        gold = data.gold;
         Debug.Log("데이터 불러오기 성공");
+
+        OnHpChanged?.Invoke(currentHp);
+        OnExpChanged?.Invoke(exp,level);
+        OnStatsChanged?.Invoke();
     }
 
     //게임 데이터 저장하기
     public void OnSavePlayerData()
     {
-        playerData.maxHp = maxHp;
-        playerData.currentHp = currentHp;
-        playerData.damage = damage;
-        playerData.defense = defense;
-        playerData.speed = speed;
+        DataManager.Instance.playerData.maxHp = maxHp;
+        DataManager.Instance.playerData.currentHp = currentHp;
+        DataManager.Instance.playerData.damage = damage;
+        DataManager.Instance.playerData.defense = defense;
+        DataManager.Instance.playerData.speed = speed;
 
-        playerData.level = level;
-        playerData.exp = exp;
+        DataManager.Instance.playerData.level = level;
+        DataManager.Instance.playerData.exp = exp;
 
-        string json = JsonConvert.SerializeObject(playerData);
-        SocketManager.Instance.socket.Instance.Emit("SavePlayerData", json, false);
-        Debug.Log("데이터 저장 완료");
+        Debug.Log("데이터 저장 시도");
     }
 
     //데미지를 입었을 때
     public override void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitDirection)
     {
-        Ishit = true;
-        this.hitDirection = hitDirection;
+        this.hitDir = hitDirection;
         player.playerBehaviour.KnockBackInit(currentPattern.knockbackPower[currentAnimationIndex], currentPattern.knockbackDuration);
 
         if (!currentPattern.canGuard)
@@ -97,6 +104,11 @@ public class PlayerSetting : LivingEntity
         if (player.guard)
         {
             player.currentState = PlayerState.Guard;
+            if (player.playerBehaviour.guardDuration <= canParryTime)
+            {
+                player.anim.SetTrigger("Parry");
+            }
+            player.anim.SetTrigger("GuardHit");
         }
         else
         {
@@ -106,18 +118,33 @@ public class PlayerSetting : LivingEntity
             {
                 anim.SetTrigger("Hit");
                 anim.SetFloat("hitDirX", Vector3.Dot(hitDirection, transform.right)); // 맞은 방향의 좌우를 구분
+                currentHp -= currentPattern.damage[currentAnimationIndex];
             }
             else //뒤로 맞았을 때
             {
                 anim.SetTrigger("BackHit");
+                currentHp -= currentPattern.damage[currentAnimationIndex] * 1.2f;
             }
+            OnHpChanged?.Invoke(currentHp);
         }
 
+    }
+
+    public void AddExp(int addExp)
+    {
+        exp += addExp;
+        // 레벨업 조건 체크
+        if (level < maxExp.Length && exp >= maxExp[level])
+        {
+            LevelUp();
+        }
+        OnExpChanged?.Invoke(exp, level);
     }
 
 
     public void LevelUp()
     {
+        exp -= maxExp[level];
         level++;
         QuestManager.instance.UnlockQuests(level);
     }
@@ -145,7 +172,6 @@ public class PlayerSetting : LivingEntity
         if(DataManager.Instance != null)
         {
             DataManager.Instance.OnSavePlayerData -= OnSavePlayerData;
-            DataManager.Instance.OnLoadPlayerData -= OnLoadPlayerData;
         }
     }
 }

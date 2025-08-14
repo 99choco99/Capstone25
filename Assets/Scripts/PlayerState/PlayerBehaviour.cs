@@ -80,7 +80,7 @@ public class PlayerBehaviour : MonoBehaviour
                     Move();
                 }
                 guardDuration += Time.deltaTime;
-                if (player.playerSetting.Ishit)
+                if (isKnockingBack)
                 {
                     KnockBack();
                     player.transform.rotation = Quaternion.LookRotation(-knockBackDirection);
@@ -96,9 +96,11 @@ public class PlayerBehaviour : MonoBehaviour
         }
     }
 
+
+    //³Ë¹é ÃÊ±â°ª ¼³Á¤
     public void KnockBackInit(float knockBackForce, float knockBackDuration)
     {
-        knockBackDirection = player.playerSetting.hitDirection.normalized;
+        knockBackDirection = player.playerSetting.hitDir.normalized;
         this.knockBackDuration = knockBackDuration;
         this.knockBackForce = knockBackForce;
         startPosition = player.transform.position;
@@ -107,6 +109,8 @@ public class PlayerBehaviour : MonoBehaviour
         player.rb.linearVelocity = default;
     }
 
+
+    //³Ë¹é
     public void KnockBack()
     {
         knockBackTimer += Time.fixedDeltaTime;
@@ -120,7 +124,6 @@ public class PlayerBehaviour : MonoBehaviour
 
         if(knockBackTimer >= knockBackDuration)
         {
-            player.playerSetting.Ishit = false;
             isKnockingBack = false;
             if (player.guard)
             {
@@ -176,6 +179,7 @@ public class PlayerBehaviour : MonoBehaviour
     }
 
 
+    //AnimationEvent
     public void AE_playerAttackStart()
     {
         weaponCollider.enabled = true;

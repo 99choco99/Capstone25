@@ -6,11 +6,10 @@ using static SocketManager;
 public class DataManager : MonoBehaviour
 {
     public static DataManager Instance;
-    public LoginData loginData;
+
     public PlayerData playerData;
 
     public event Action OnSavePlayerData;
-    public event Action<PlayerData> OnLoadPlayerData;
 
     private void Awake()
     {
@@ -34,7 +33,7 @@ public class DataManager : MonoBehaviour
 
     public void LoadPlayerData(PlayerData data)
     {
-        OnLoadPlayerData?.Invoke(data);
+        playerData = data;
     }
 
 
