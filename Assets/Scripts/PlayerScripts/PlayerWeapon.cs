@@ -1,5 +1,7 @@
 using System.Collections;
 using UnityEngine;
+using WebSocketSharp;
+using static Cinemachine.DocumentationSortingAttribute;
 
 public class PlayerWeapon : Weapon
 {
@@ -17,7 +19,7 @@ public class PlayerWeapon : Weapon
         {
             if (!other.TryGetComponent<Enemy>(out var target)) { Debug.Log("Enemy Component를 찾을 수 없음");  return; }
             Vector3 hitPoint = other.ClosestPoint(transform.position);
-            Vector3 hitDirection = (other.transform.position - transform.forward).normalized;
+            Vector3 hitDirection = (other.transform.position - player.transform.position).normalized;
             hitDirection.y = 0;
             target.OnDamage(player.currentAttack, player.currentAnimationIndex, hitDirection);
         }

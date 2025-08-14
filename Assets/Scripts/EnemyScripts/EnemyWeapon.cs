@@ -28,7 +28,7 @@ public class EnemyWeapon : Weapon
             hitPoint = other.ClosestPoint(transform.position);
             hitDirection = (target.transform.position - self.transform.position);
             hitDirection.y = 0;
-            target.playerSetting.hitDirection = hitDirection.normalized;
+            target.playerSetting.hitDir = hitDirection.normalized;
 
             target.playerSetting.OnDamage(
                 self.enemyAttack.currentPattern, 

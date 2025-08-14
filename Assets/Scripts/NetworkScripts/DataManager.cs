@@ -10,7 +10,6 @@ public class DataManager : MonoBehaviour
     public PlayerData playerData;
 
     public event Action OnSavePlayerData;
-    public event Action<PlayerData> OnLoadPlayerData;
 
     private void Awake()
     {
@@ -34,7 +33,7 @@ public class DataManager : MonoBehaviour
 
     public void LoadPlayerData(PlayerData data)
     {
-        OnLoadPlayerData?.Invoke(data);
+        playerData = data;
     }
 
 

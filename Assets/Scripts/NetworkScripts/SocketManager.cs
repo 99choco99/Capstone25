@@ -2,9 +2,12 @@ using Firesplash.GameDevAssets.SocketIO;
 using Newtonsoft.Json;
 using SocketIOClient;
 using System;
+using System.Collections;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Networking;
 using static Firesplash.GameDevAssets.SocketIO.SocketIOInstance;
 using static SocketManager;
 
@@ -20,7 +23,7 @@ public class SocketManager : MonoBehaviour
 
     public LoginData loginData;
 
-
+    private const string BASE_API_URL = "http://localhost:3000";
 
     public event Action<RegisterSuccessResponse> OnItemRegisterSuccess;
     public event Action<string> OnItemRegisterFailed;
@@ -52,8 +55,10 @@ public class SocketManager : MonoBehaviour
 
 #if UNITY_EDITOR
         LoginData testData = new LoginData { user_id = "editor_user_id", nickname = "에디터_테스터" };
+        Debug.Log("에디터로 실행");
         ReceiveLoginData(JsonConvert.SerializeObject(testData));
 #endif
+
     }
 
 
@@ -64,12 +69,79 @@ public class SocketManager : MonoBehaviour
         //JSON 문자열을 파싱
         loginData = JsonConvert.DeserializeObject<LoginData>(loginJson);
 
-        // 로그인 데이터를 받은 후에 소켓 연결을 시작합니다.
-        SetupSocketEvents();
-        socket.Instance.Connect();
+        StartCoroutine(LoadPlayerDataCoroutine(loginData.user_id));
+    }
+
+    IEnumerator LoadPlayerDataCoroutine(string userId)
+    {
+        string url = $"{BASE_API_URL}/playerData/{userId}";
+        using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
+        {
+            yield return webRequest.SendWebRequest();
+
+            if (webRequest.result == UnityWebRequest.Result.Success)
+            {
+                try
+                {
+                    PlayerData data = JsonConvert.DeserializeObject<PlayerData>(webRequest.downloadHandler.text);
+                    Debug.Log("플레이어 데이터 로드 성공: " + data.id);
+                    DataManager.Instance.LoadPlayerData(data);
+
+                    // 로그인 성공 후 메인 씬으로 이동
+                    InvokeRepeating("AutoSaveData", 5f, 5f);
+                    LoadingScene.LoadScene("Main");
+                }
+                catch (JsonException ex)
+                {
+                    Debug.LogError("JSON 역직렬화 오류: " + ex.Message);
+                }
+            }
+            else
+            {
+                Debug.LogError($"플레이어 데이터 로드 실패: {webRequest.error}");
+            }
+        }
+    }
+
+    IEnumerator SavePlayerDataCourotine(PlayerData data)
+    {
+        string json = JsonConvert.SerializeObject(data);
+
+        string url = $"{BASE_API_URL}/playerData/{loginData.user_id}";
+
+        using(UnityWebRequest webRequest = new UnityWebRequest(url, "POST"))
+        {
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
+            webRequest.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            webRequest.downloadHandler = new DownloadHandlerBuffer();
+            webRequest.SetRequestHeader("Content-Type", "application/json");
+
+            yield return webRequest.SendWebRequest();
+
+            if (webRequest.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log("데이터 저장 성공!");
+            }
+            else
+            {
+                Debug.LogError("데이터 저장 실패: " + webRequest.error);
+            }
+        }
+
     }
 
 
+    IEnumerator RequestToSell(string itemId, string price, string count)
+    {
+        yield return null;
+    }
+
+    private void AutoSaveData()
+    {
+        DataManager.Instance.SavePlayerData();
+        StartCoroutine(SavePlayerDataCourotine(DataManager.Instance.playerData));
+        Debug.Log("Client : 데이터 저장 완료");
+    }
 
     private void SetupSocketEvents()
     {
@@ -92,7 +164,7 @@ public class SocketManager : MonoBehaviour
             {
                 PlayerData data = JsonConvert.DeserializeObject<PlayerData>(response);
 
-                Debug.Log("수신된 플레이어 이름: " + data.user_id);
+                Debug.Log("수신된 플레이어 이름: " + data.id);
 
                 if(DataManager.Instance != null)
                 {
@@ -156,18 +228,14 @@ public class SocketManager : MonoBehaviour
         var itemData = new { loginData.user_id, itemId, price, count };
         string json = JsonConvert.SerializeObject(itemData);
 
-        socket.Instance.Emit("RequestToSellItem", json, false);
+        StartCoroutine(RequestToSell(itemId, price, count));
     }
 
 
     // 애플리케이션 종료 시 소켓 연결을 끊기
     private void OnApplicationQuit()
     {
-        if (socket != null && socket.Instance.IsConnected())
-        {
-            socket.Instance.Close();
-            socket.Instance.Emit("Disconnet");
-        }
+
     }
 
 
