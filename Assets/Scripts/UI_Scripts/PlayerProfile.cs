@@ -24,7 +24,7 @@ public class PlayerProfile : MonoBehaviour
 
     public void UpdateUI()
     {
-        abilityText.text = "Point : " + AbilityPoint;
+        abilityText.text = $"Point : { AbilityPoint}";
         damageText.text = player.damage + "(+" + player.D_damage + ")";
         healthText.text = player.maxHp + "(+" + player.D_health + ")";
         speedText.text = player.speed + "(+" + player.D_speed + ")";

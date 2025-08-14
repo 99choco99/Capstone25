@@ -6,7 +6,7 @@ using System.Collections;
 public class LivingEntity : MonoBehaviour,IDamageable
 {
     public int level = 0;
-    public float exp = 0; //현재 경험치
+    public int exp = 0; //현재 경험치
     public float maxHp;  // 최대 체력
     public float currentHp;  // 현재 체력
     public float damage;// 공격력
@@ -14,7 +14,7 @@ public class LivingEntity : MonoBehaviour,IDamageable
     public float speed; //이동속도
 
     public bool dead { get; protected set; }  // 죽음
-    public Vector3 hitDirection;
+    public Vector3 hitDir;
 
     protected event Action OnDeath; // 죽었을 때 이벤트
 

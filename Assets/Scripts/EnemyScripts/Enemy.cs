@@ -14,13 +14,12 @@ public class Enemy: LivingEntity
     EnemyKnockBack enemyGuard;
     [SerializeField] protected EnemyData enemyData;
 
-    [Header("EnemyData")]
+    [Header("EnemySetting")]
     [SerializeField] private float guardChance = 0.9f;
     float currentSightRange;
     public float normalSightRange;
     public float detectSightRange;
     public float sightAngle;
-    public float currentAttackDamage;
 
     [Header("EnemyDetectData")]
     Collider[] hits;
@@ -33,7 +32,7 @@ public class Enemy: LivingEntity
     public bool freezeRotation = false;
     public bool isVulnerable = true;
     public bool isTargetDetected;
-    public Coroutine knockbackCoroutine;
+    public BlackboardVariable<bool> cantknockBack;
 
     private void Awake()
     {
@@ -109,22 +108,32 @@ public class Enemy: LivingEntity
         BehaviourAgent.BlackboardReference.SetVariableValue<bool>("IsTargetDetected", isDetect);
         isTargetDetected = isDetect;
         isVulnerable = !isDetect;
+        currentSightRange = isDetect ? detectSightRange : normalSightRange;
     }
 
-
-    public override void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitDirection)
+    //데미지를 입었을 때
+    public override void OnDamage(Attack currentPattern, int currentAnimationIndex, Vector3 hitDir)
     {
-        this.hitDirection = hitDirection;
-        enemyGuard.KnockBack(hitDirection, currentPattern.knockbackPower[currentAnimationIndex], currentPattern.knockbackDuration);
-        //뒤로 공격 받음
-        if (Vector3.Dot(hitDirection, transform.forward) > 0)
+        SetDetectState(true);
+        //공격 중
+        BehaviourAgent.BlackboardReference.GetVariable<Boolean>("AttackSign", out cantknockBack);
+
+        if (cantknockBack.Value)
         {
-            anim.SetTrigger("BackHit");
-            //base.OnDamage(currentPattern, currentAnimationIndex, hitDirection);
+            base.OnDamage(currentPattern, currentAnimationIndex, hitDir);
             return;
         }
 
-            //정면 공격 받음
+        enemyGuard.KnockBack(hitDir, currentPattern.knockbackPower[currentAnimationIndex], currentPattern.knockbackDuration);
+        //뒤로 공격 받음
+        if (Vector3.Dot(hitDir, transform.forward) > 0)
+        {
+            anim.SetTrigger("BackHit");
+            base.OnDamage(currentPattern, currentAnimationIndex, hitDir);
+            return;
+        }
+
+        //정면 공격 받음
         float randomValue = UnityEngine.Random.value;
         if (randomValue <= guardChance)
         {
@@ -133,7 +142,7 @@ public class Enemy: LivingEntity
         else
         {
             anim.SetTrigger("Hit");
-            //base.OnDamage(currentPattern,currentAnimationIndex,this.hitDirection);
+            base.OnDamage(currentPattern, currentAnimationIndex, hitDir);
         }
     }
 
@@ -143,6 +152,7 @@ public class Enemy: LivingEntity
     {
         anim.SetTrigger("Die");
         BehaviourAgent.BlackboardReference.SetVariableValue<Boolean>("Dead", true);
+        playerTransform.GetComponent<PlayerSetting>().AddExp(exp); //죽을 떄 경험치 주기
         StartCoroutine("Disappear");
     }
 

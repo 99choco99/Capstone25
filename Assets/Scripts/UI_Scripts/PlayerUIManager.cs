@@ -16,6 +16,9 @@ public enum UIPanelType {
 }
 public class PlayerUIManager : MonoBehaviour
 {
+    public PlayerSetting player;
+
+
     public Slider PlayerHpUI;
     public Slider EnemyHpUI;
     public Slider ExpUI;
@@ -23,6 +26,7 @@ public class PlayerUIManager : MonoBehaviour
     public TextMeshProUGUI EnemyName;
     public TextMeshProUGUI NpcName;
     public TextMeshProUGUI NpcText;
+    public TextMeshProUGUI levelText;
 
 
     private Dictionary<UIPanelType, GameObject> panelDictionary;
@@ -36,6 +40,12 @@ public class PlayerUIManager : MonoBehaviour
 
 
     public static PlayerUIManager instnace;
+
+
+    private void Awake()
+    {
+        player = GetComponentInParent<PlayerSetting>();
+    }
 
     private void Start()
     {
@@ -56,6 +66,23 @@ public class PlayerUIManager : MonoBehaviour
             { UIPanelType.Profile, PlayerProfile },
             { UIPanelType.Setting, Setting }
         };
+
+        player.OnHpChanged += UpdateHp;
+        player.OnExpChanged += UpdateExp;
+    }
+
+    public void UpdateHp(float currenthp)
+    {
+        PlayerHpUI.value = currenthp / player.maxHp;
+    }
+
+    public void UpdateExp(int exp, int level)
+    {
+        if(exp / player.maxExp[level] < 1)
+        {
+            ExpUI.value = exp / player.maxExp[level];
+        }
+        levelText.text = $"Lv. {level}";
     }
 
     public void ShowEnemyInfoUI()

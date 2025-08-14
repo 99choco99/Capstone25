@@ -29,7 +29,6 @@ public class PlayerDamagedState : StateMachineBehaviour
     public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)
     {
         animator.SetBool("AirBornState", false);
-        player.playerSetting.Ishit = false;
         player.currentState = PlayerState.Move;
     }
 

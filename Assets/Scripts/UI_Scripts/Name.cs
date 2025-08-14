@@ -14,6 +14,10 @@ public class Name : MonoBehaviour
         }
         nametext = GetComponentInChildren<TextMeshProUGUI>();
         nametext.text = gameObject.transform.root.name;
+        if(gameObject.tag == "Player")
+        {
+            nametext.text = SocketManager.Instance.loginData.nickname;
+        }
     }
 
     // Update is called once per frame

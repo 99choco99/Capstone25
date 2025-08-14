@@ -10,8 +10,9 @@ public class PlayerData
     public float damage { get; set; }
     public float defense { get; set; }
     public float speed { get; set; }
-    public float exp { get; set; }
+    public int exp { get; set; }
     public int level { get; set; }
     public bool dead { get; set; }
+    public int gold { get; set; }
 
 }
