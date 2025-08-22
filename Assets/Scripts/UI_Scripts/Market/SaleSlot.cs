@@ -4,15 +4,16 @@ using UnityEngine.UI;
 
 public class SaleSlot : Slot
 {
+    public Image itemImage;
+
     public override void OnDrop(PointerEventData eventData)
     {
-        OwnedItem DraggedItem = eventData.pointerDrag.GetComponent<OwnedItem>();
-        if(DraggedItem != null)
-        {
-            OwnedItem newItem = Instantiate(DraggedItem, transform);
-            currentItem = DraggedItem;
-            newItem.rect.position = rect.position;
-            newItem.SetAlphaValue(1.0f);
-        }
+        OwnedItem draggedItem = eventData.pointerDrag?.GetComponent<OwnedItem>();
+
+        if (draggedItem == null) { return; }
+        currentItem = draggedItem;
+        hasItem = true;
+        itemImage.sprite = draggedItem.data.icon;
+        itemCount = draggedItem.currentSlot.itemCount;
     }
 }

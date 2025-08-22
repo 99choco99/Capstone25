@@ -1,7 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using WebSocketSharp;
-using static Cinemachine.DocumentationSortingAttribute;
 
 public class PlayerWeapon : Weapon
 {

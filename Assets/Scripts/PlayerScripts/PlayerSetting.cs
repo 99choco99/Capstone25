@@ -34,6 +34,7 @@ public class PlayerSetting : LivingEntity
     public event Action<float> OnHpChanged;  // hp 변경
     public event Action<int, int> OnExpChanged;   // 경험치 적용
     public event Action OnStatsChanged;  // 스탯 변경사항 적용
+    public event Action<float> OnGuardChanged; //가드 게이지 적용
 
     private void Awake()
     {
@@ -86,6 +87,7 @@ public class PlayerSetting : LivingEntity
 
         DataManager.Instance.playerData.level = level;
         DataManager.Instance.playerData.exp = exp;
+        DataManager.Instance.playerData.gold = gold;
 
         Debug.Log("데이터 저장 시도");
     }
@@ -108,6 +110,7 @@ public class PlayerSetting : LivingEntity
             {
                 player.anim.SetTrigger("Parry");
             }
+            OnGuardChanged?.Invoke(currentPattern.damage[currentAnimationIndex]);
             player.anim.SetTrigger("GuardHit");
         }
         else

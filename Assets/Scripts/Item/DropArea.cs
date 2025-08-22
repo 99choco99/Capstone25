@@ -15,17 +15,20 @@ public class DropArea : MonoBehaviour,IDropHandler
     {
         if(eventData.pointerDrag != null && eventData.pointerDrag.TryGetComponent<OwnedItem>(out selectedItem))
         {
-            selectedItem.currentSlot.hasItem = false;
-            selectedItem.currentSlot.currentItem = null;
-            if (!InventoryManager.instance.Inventory[selectedItem.data.type].Item2.ContainsKey(selectedItem.currentSlot.slotIndex))
+            if(selectedItem.currentSlot.itemCount <= 0)
             {
-                InventoryManager.instance.Inventory[selectedItem.data.type].Item2.Add(selectedItem.currentSlot.slotIndex, selectedItem.currentSlot.slotIndex);
+                selectedItem.currentSlot.currentItem = null;
+                selectedItem.currentSlot.hasItem = false;
+                InventoryManager.instance.Inventory[selectedItem.data.type].EmptySlots.Add(selectedItem.currentSlot.slotIndex);
             }
 
-            GameObject dropItem = Instantiate(selectedItem.data.DropStatePrefab, DropItems.transform);
-            dropItem.transform.position = player.transform.position;
+            //GameObject dropItem = Instantiate(selectedItem.data.DropStatePrefab, DropItems.transform);
+            Vector3 dropPos = player.transform.position + player.forward * 1.0f;
+            dropPos += new Vector3(Random.Range(-0.5f, 0.5f), Random.Range(-0.5f, 0.5f));
+            //dropItem.transform.position = dropPos;
             Destroy(selectedItem.gameObject);
         }
+
         if (eventData.pointerDrag.TryGetComponent(out EquipmentItem item) && item.currentSlot.slotType == SlotType.Profile) {
             item.TakeOff(playerData);
         }

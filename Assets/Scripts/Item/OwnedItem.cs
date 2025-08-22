@@ -10,26 +10,35 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
     protected Transform canvas;
 
     public RectTransform rect;
-    public Image icon;                    //아이템 아이콘
+    public Image image;
          
     GameObject ItemDescription;           //아이템 설명 박스
     TextMeshProUGUI ItemDescriptionText;  //아이템 설명
+    [SerializeField] private TextMeshProUGUI countText; //현재 아이템 개수 표기
+
 
     public Slot currentSlot;             //현재 슬롯
 
     public void Awake()
     {
-        ItemDescription = InventoryManager.instance.ItemDescription;
-        icon = GetComponent<Image>();
         rect = GetComponent<RectTransform>();
-        canvas = GetComponentInParent<Canvas>().transform;
+        image = GetComponent<Image>();
         canvasGroup = GetComponent<CanvasGroup>();
+        countText = GetComponentInChildren<TextMeshProUGUI>();
+
+        currentSlot = GetComponentInParent<Slot>();
+    }
+
+    private void OnEnable()
+    {
+        ItemDescription = InventoryManager.instance.ItemDescription;
         ItemDescriptionText = ItemDescription.GetComponentInChildren<TextMeshProUGUI>(true);
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
         currentSlot = transform.parent.GetComponent<Slot>();
+        canvas = GetComponentInParent<Canvas>().transform;
 
         transform.SetParent(canvas);
         transform.SetAsLastSibling();
@@ -70,5 +79,20 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
     public void SetAlphaValue(float alpha)
     {
         canvasGroup.alpha = alpha;
+    }
+
+
+    public void UpdateCountUI(int count)
+    {
+        if (countText == null) return;
+        countText.text = count >= 1 ? count.ToString() : "";
+    }
+
+    private void OnDestroy()
+    {
+        image.sprite = null;
+        currentSlot.hasItem = false;
+        currentSlot.currentItem = null;
+        currentSlot = null;
     }
 }
