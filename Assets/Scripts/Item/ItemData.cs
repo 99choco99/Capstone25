@@ -1,20 +1,27 @@
 using UnityEngine;
+using UnityEngine.UI;
 
-[CreateAssetMenu(fileName = "ItemData", menuName = "Scriptable Objects/ItemData")]
-public class ItemData : ScriptableObject
+
+[System.Serializable]
+public class ItemSpec
 {
-    public string id;
-
-    public GameObject DropStatePrefab;
-    public GameObject OwnedStatePrefab;
-    public SlotType type;
-    public EquipmentType equipmentType;
-
     public float damage;
     public float defense;
     public float speed;
     public float hp;
-    public int count;
 
+}
+
+[CreateAssetMenu(fileName = "ItemSpec", menuName = "Scriptable Objects/ItemSpec")]
+public class ItemData : ScriptableObject
+{
+    public int id;
+    public string itemName;
     public string script;
+    public int count; //아이템 드랍될때 사용
+    public Sprite icon;
+    public SlotType type;
+    public EquipmentType equipmentType;
+    public ItemSpec spec;
+
 }

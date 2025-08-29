@@ -7,11 +7,11 @@ public class Quest
     public int[] npcId = {};  // 퀘스트 npc ID
     public int questStep = 0; // 퀘스트 진행도
     public int requiredLevel = 0;  //레벨 제한
-    public string script;
+    public string script;       //퀘스트 설명
 
     QuestState state;
 
-    public enum QuestState{ ready, running, complete }
+    public enum QuestState{ locked, ready, running, complete }
 
     public Quest(int questNum, string questName, int[] npcId, int requiredLevel, string script)
     {
@@ -43,7 +43,7 @@ public class Quest
     }
 
     //퀘스트 조건
-    public virtual bool CheckQeust(int id)
+    public virtual bool CheckCondition(int id)
     {
         if (npcId[questStep] != id) { return false; }
         Debug.Log("서브퀘스트 완료");

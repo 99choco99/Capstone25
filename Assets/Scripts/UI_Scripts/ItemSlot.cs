@@ -20,11 +20,6 @@ public class ItemSlot : Slot
         if (eventData.pointerDrag.TryGetComponent<OwnedItem>(out OwnedItem newItem) && slotType == newItem.data.type)
         {
             base.OnDrop(eventData);
-            if (!hasItem)
-            {
-                InventoryManager.instance.Inventory[newItem.data.type].Item2.Remove(slotIndex);
-                InventoryManager.instance.Inventory[newItem.data.type].Item2.Add(newItem.currentSlot.slotIndex, newItem.currentSlot.slotIndex);
-            }
         }
     }
 

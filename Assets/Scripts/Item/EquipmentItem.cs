@@ -9,12 +9,11 @@ public class EquipmentItem : OwnedItem
 {
     public void Equip(PlayerSetting player)
     {
-        player.ApplyStatChanges(data.damage, data.hp, data.defense, data.speed);
+        player.ApplyStatChanges(data.spec.damage, data.spec.hp, data.spec.defense, data.spec.speed);
     }
 
     public void TakeOff(PlayerSetting player)
     {
-        player.ApplyStatChanges(-data.damage, -data.hp, -data.defense, -data.speed);
+        player.ApplyStatChanges(-data.spec.damage, -data.spec.hp, -data.spec.defense, -data.spec.speed);
     }
-
 }

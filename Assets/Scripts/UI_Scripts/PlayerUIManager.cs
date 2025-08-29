@@ -1,32 +1,34 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 
+
 public enum UIPanelType { 
+    Quest,
     Market,
     Inventory,
     Profile,
-    Setting
+    Setting,
+    Dialogue
 }
 public class PlayerUIManager : MonoBehaviour
 {
     public PlayerSetting player;
 
-
+    
     public Slider PlayerHpUI;
+    public Slider GuardGauge;
     public Slider EnemyHpUI;
     public Slider ExpUI;
-    public Image dialogUI;
+
     public TextMeshProUGUI EnemyName;
     public TextMeshProUGUI NpcName;
     public TextMeshProUGUI NpcText;
     public TextMeshProUGUI levelText;
+    public TextMeshProUGUI ExpText;
 
 
     private Dictionary<UIPanelType, GameObject> panelDictionary;
@@ -37,6 +39,8 @@ public class PlayerUIManager : MonoBehaviour
     public GameObject Inventory;
     public GameObject PlayerProfile;
     public GameObject Setting;
+    public GameObject Quest;
+    public GameObject dialogUI;
 
 
     public static PlayerUIManager instnace;
@@ -64,11 +68,14 @@ public class PlayerUIManager : MonoBehaviour
             {UIPanelType.Market, Market },
             { UIPanelType.Inventory, Inventory },
             { UIPanelType.Profile, PlayerProfile },
-            { UIPanelType.Setting, Setting }
+            { UIPanelType.Setting, Setting },
+            {UIPanelType.Quest, Quest },
+            {UIPanelType.Dialogue, dialogUI }
         };
 
         player.OnHpChanged += UpdateHp;
         player.OnExpChanged += UpdateExp;
+        player.OnGuardChanged += UpdateGuardGauge;
     }
 
     public void UpdateHp(float currenthp)
@@ -83,6 +90,24 @@ public class PlayerUIManager : MonoBehaviour
             ExpUI.value = exp / player.maxExp[level];
         }
         levelText.text = $"Lv. {level}";
+        ExpText.text = $"{ExpUI.value}%";
+    }
+
+    public void UpdateGuardGauge(float damage)
+    {
+        GuardGauge.maxValue = player.defense;
+        GuardGauge.value += damage;
+        StartCoroutine(DecreaseGuardGauge());
+    }
+
+    IEnumerator DecreaseGuardGauge()
+    {
+        while(GuardGauge.value > 0)
+        {
+            GuardGauge.value -= Time.deltaTime;
+            yield return null;
+        }
+        GuardGauge.value = 0;
     }
 
     public void ShowEnemyInfoUI()
@@ -96,15 +121,6 @@ public class PlayerUIManager : MonoBehaviour
         yield return new WaitForSeconds(4f);
         EnemyHpUI.gameObject.SetActive(false);
         EnemyName.gameObject.SetActive(false);
-    }
-
-    public void ShowDialogUI()
-    {
-        dialogUI.gameObject.SetActive(true);
-    }
-    public void HideDialogUI()
-    {
-        dialogUI.gameObject.SetActive(false);
     }
 
     public void SetNpcText(string text)
