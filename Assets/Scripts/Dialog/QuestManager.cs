@@ -7,28 +7,26 @@ using UnityEngine.InputSystem;
 
 public class QuestManager : MonoBehaviour
 {
-    public static QuestManager instance;
+    PlayerSetting playerSetting;
 
     public Dictionary<int, Queue<Quest>> availableQuests = new Dictionary<int, Queue<Quest>>(); // 해금된 퀘스트 목록
     Queue<Quest> Questsqueue = new Queue<Quest>(); // 퀘스트 큐
-    Dictionary<int, Queue<Quest>> questList;
+    Dictionary<int, Queue<Quest>> questList;    //전체 퀘스트 리스트
     public int currentQuestStep = 0; // 현재 퀘스트 진행도
-    int currentQuestId;
     public Quest currentQuest;
     bool isQuestActive = false;
     [SerializeField] NPC[] npcList;
 
 
-    [Header("QuestUISetting")]
-    [SerializeField] QuestUI questUI;
-    private bool isQuestListActive = false;
-
     private void Awake()
     {
-        instance = this;
+        playerSetting = GetComponentInParent<PlayerSetting>();
         questList = new Dictionary<int, Queue<Quest>>();
         GenerateData();
+
+        playerSetting.OnLevelUp += UnlockQuests;
     }
+
 
     void GenerateData()
     {
@@ -50,6 +48,7 @@ public class QuestManager : MonoBehaviour
     }
 
 
+    //퀘스트 가져오기
     public int GetQuest(int id)
     {
         if (currentQuest == null || !isQuestActive) { return 0; }
@@ -65,18 +64,18 @@ public class QuestManager : MonoBehaviour
     public void ChangeQuest()
     {
         isQuestActive = true;
-        currentQuest = questUI.selectedQuest;
+        //currentQuest = questUI.selectedQuest;
         Debug.Log("현재 미션: " + currentQuest.questName);
     }
 
     public bool CheckQuest(int id)
     {
-        if (currentQuest.CheckQeust(id)) //현재 퀘스트의 조건을 충족했는가?
+        if (currentQuest.CheckCondition(id)) //현재 퀘스트의 조건을 충족했는가?
         {
             if(currentQuest.questStep >= currentQuest.npcId.Length)
             {
                 Debug.Log("퀘스트 끝");
-                questUI.EndQuest(currentQuest);
+                //questUI.EndQuest(currentQuest);
                 availableQuests[id].Dequeue();
                 isQuestActive = false;
                 currentQuest.QuestComplete();
@@ -88,17 +87,17 @@ public class QuestManager : MonoBehaviour
     }
 
     //레벨 따라 퀘스트 해금
-    public void UnlockQuests(int playerLevel)
+    public void UnlockQuests()
     {
         Questsqueue.Clear(); // 이전 레벨 퀘스트 목록 초기화
         foreach (var npc in npcList)
         {
             foreach (Quest quest in questList[npc.id])
             {
-                if (quest.requiredLevel == playerLevel)
+                if (quest.requiredLevel == playerSetting.level)
                 {
                     Questsqueue.Enqueue(quest);
-                    questUI.SetNewQuest(quest);  // questUI에 퀘스트 표시
+                    //questUI.SetNewQuest(quest);  // questUI에 퀘스트 표시
                 }
             }
             if (Questsqueue.Count > 0) // 퀘스트가 있을 경우에만 딕셔너리에 추가
@@ -115,15 +114,6 @@ public class QuestManager : MonoBehaviour
         currentQuest.SetQuestState(Quest.QuestState.running);
     }
 
-    //J 버튼을 통해 퀘스트 UI 실행
-    public void OnQuestList(InputAction.CallbackContext context)
-    {
-        if (context.phase == InputActionPhase.Started)
-        {
-            isQuestListActive = !isQuestListActive;
-            questUI.gameObject.SetActive(isQuestListActive);
-            Cursor.lockState = isQuestListActive ? CursorLockMode.Confined : CursorLockMode.Locked;
-        }
-    }
+
 
 }

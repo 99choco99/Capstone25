@@ -23,8 +23,6 @@ public class PlayerStateMachine : MonoBehaviour
     private void Awake()
     {
         PlayerController player = GetComponent<PlayerController>();
-
-        playerConversationState = new PlayerConversationState(player);
     }
 
     // 상태 초기화

@@ -4,6 +4,7 @@ public class QuestNPC : NPC
 {
     public override void Interact(Transform player) {
         base.Interact(player);
+        anim.SetBool("Talk", true);
     }
 
 

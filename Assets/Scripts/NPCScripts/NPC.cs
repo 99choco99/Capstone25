@@ -6,10 +6,12 @@ using UnityEngine.UI;
 public class NPC : MonoBehaviour, IInteractable
 {
     [SerializeField] TextMeshProUGUI NPCName;
+    protected Animator anim;
     public int id;
 
     private void Start()
     {
+        anim = GetComponent<Animator>();
         NPCName = GetComponentInChildren<TextMeshProUGUI>();
         NPCName.text = transform.name;
     }

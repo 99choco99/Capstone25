@@ -4,35 +4,29 @@ using UnityEngine;
 
 public class PlayerConversationState : StateMachineBehaviour
 {
-    bool isAction;
 
-    private readonly PlayerController player;
-    private CameraMovement cameraMovement;
-    private PlayerUIManager playerUI;
-    private DialogueManager dialogueManager;
+    public PlayerController player;
+    public CameraMovement cameraMovement;
+    public DialogueManager dialogueManager;
 
-    public PlayerConversationState(PlayerController player) { this.player = player; }
-
-    public void Enter()
+    public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        isAction = false;
-        player.isShowMouse = true;
+        if (player == null)
+        {
+            player = animator.GetComponent<PlayerController>();
+            cameraMovement = player.playerCamera.GetComponentInParent<CameraMovement>();
+            dialogueManager = animator.GetComponentInChildren<DialogueManager>();
+        }
         player.interactRange = 0;
-        player.anim.SetFloat("xDir",0);
-        player.anim.SetFloat("zDir", 0);
         player.interaction = false; // 바로 다음으로 넘어가는거 방지
-
-        cameraMovement = player.playerCamera.GetComponentInParent<CameraMovement>();
-        playerUI = player.GetComponentInChildren<PlayerUIManager>();
-        dialogueManager = player.GetComponentInChildren<DialogueManager>();
-
         cameraMovement.maxDistance = cameraMovement.minDistance;
-        playerUI.ShowDialogUI();
+        player.OpenUI(UIPanelType.Dialogue);
     }
-    public void Update()
+
+    public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        Vector3 midPosition = (player.playerInteraction.select.transform.position + player.transform.position) / 2f + new Vector3(0, 1.3f, 0);
-        cameraMovement.objectToFollow.transform.position = Vector3.Lerp(cameraMovement.objectToFollow.transform.position, midPosition, 2* Time.deltaTime);
+        Vector3 midPosition = (player.currentTalkingNPC.transform.position + player.transform.position) / 2f + new Vector3(0, 1.3f, 0);
+        cameraMovement.objectToFollow.transform.position = Vector3.Lerp(cameraMovement.objectToFollow.transform.position, midPosition, 2 * Time.deltaTime);
         if (player.interaction)
         {
             bool isEnd = dialogueManager.NextDialog();
@@ -41,16 +35,16 @@ public class PlayerConversationState : StateMachineBehaviour
                 cameraMovement.objectToFollow.transform.DOMove(player.transform.position + new Vector3(0, 1.3f, 0), 0.5f).OnComplete(() =>
                 {
                     cameraMovement.maxDistance = cameraMovement.RevertDistance;
-                    
                 });
             }
             player.interaction = false;
         }
     }
-    public void Exit()
+
+    public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        playerUI.HideDialogUI();
-        player.isShowMouse = false;
+        player.OpenUI(UIPanelType.Dialogue);
         player.interactRange = 3;
+        animator.SetBool("Talk", false);
     }
 }

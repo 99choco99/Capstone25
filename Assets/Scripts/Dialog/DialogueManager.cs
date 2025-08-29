@@ -8,7 +8,6 @@ public class DialogueManager : MonoBehaviour
     PlayerUIManager playerUIManager;
     QuestManager questManager;
 
-    NPC npc;
     int currentIndex = 0;
     int dialogIndex = 0;
     string currentText;
@@ -43,7 +42,6 @@ public class DialogueManager : MonoBehaviour
 
     public void StartConversation(NPC npc)
     {
-        this.npc = npc;
         currentIndex = 0;
         playerUIManager.SetNpcName(npc.transform.name);
 

@@ -13,7 +13,6 @@ using UnityEngine.Windows;
 public enum PlayerState { Idle,Move,Jump,Attack,Guard,Damaged, UI_Open}
 public class PlayerController : NetworkBehaviour
 {
-    public PlayerInteraction playerInteraction;
     private PlayerInput playerInput;
     public Camera playerCamera;
     public CameraMovement CameraMovement;
@@ -27,7 +26,7 @@ public class PlayerController : NetworkBehaviour
     public PlayerSetting playerSetting;
 
     [Header("PlayerState")]
-    
+    public NPC currentTalkingNPC;
     public bool canExecute;
 
 
@@ -67,7 +66,6 @@ public class PlayerController : NetworkBehaviour
         anim = GetComponentInChildren<Animator>();
         playerSetting = GetComponent<PlayerSetting>();
         playerInput = GetComponent<PlayerInput>();
-        playerInteraction = GetComponent<PlayerInteraction>();
         playerBehaviour = GetComponent<PlayerBehaviour>();
         playerDetectEnemy = GetComponent<PlayerDetectEnemy>();
 
@@ -242,6 +240,16 @@ public class PlayerController : NetworkBehaviour
         if (context.phase == InputActionPhase.Started)
         {
             PlayerUIManager.instnace.ToggleUI(UIPanelType.Setting);
+        }
+    }
+
+
+    //J 버튼을 통해 퀘스트 UI 실행
+    public void OnQuestList(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            OpenUI(UIPanelType.Quest);
         }
     }
 }

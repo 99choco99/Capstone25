@@ -4,49 +4,64 @@ using UnityEngine.UI;
 
 public class MarketBuy : MonoBehaviour
 {
-    public string marketId;
+    public int marketId;
 
+    public Image icon;
     [SerializeField] GameObject Recipe;
-    [SerializeField] TextMeshProUGUI count;
+    [SerializeField] GameObject check;
+    [SerializeField] GameObject cancelButton;
+    [SerializeField] TextMeshProUGUI count_text;
 
 
     private void Start()
     {
-        SocketManager.Instance.OnBuyItemSuccess += (response =>
-        {
-            SuccessBuyItem(response.purchasedItemCount);
-        });
+        SocketManager.Instance.OnBuyItemSuccess += OnBuyItemSuccessHandler;
+        SocketManager.Instance.OnGetMySellingListSuccess += SetActiveItemCancelButton;
     }
 
+    private void OnDisable()
+    {
+        SocketManager.Instance.OnBuyItemSuccess -= OnBuyItemSuccessHandler;
+        SocketManager.Instance.OnGetMySellingListSuccess -= SetActiveItemCancelButton;
+    }
     public void CreateRecipe()
     {
         GameObject recipe = Instantiate(Recipe, transform.root);
         recipe.GetComponent<Recipe>().marketId = marketId;
     }
 
-    public void SuccessBuyItem(int purchasedItemCount)
+    public void SuccessBuyItem(int remainingItemCount)
     {
-        // 텍스트를 파싱하여 숫자 부분만 추출
-        string[] parts = count.text.Split(':');
-
-        // 파싱된 문자열을 안전하게 숫자로 변환
-        if (parts.Length < 2 || !int.TryParse(parts[1].Trim(), out int currentCount))
+        if (remainingItemCount > 0)
         {
-            // 텍스트 형식이 잘못되었을 경우 오류 로그 출력 후 함수 종료
-            Debug.LogError("수량 텍스트 형식이 잘못되었습니다.");
-            return;
-        }
-        Debug.Log(parts[1].Trim());
-        // 남은 수량 계산 및 처리
-        int remainingCount = currentCount - purchasedItemCount;
-        Debug.Log(remainingCount);
-        if (remainingCount > 0)
-        {
-            count.text = $"Count: {2}";
+            count_text.text = $"Count: {remainingItemCount}";
         }
         else
         {
             Destroy(gameObject);
         }
+    }
+
+    private void OnBuyItemSuccessHandler(SocketManager.BuyItemResponse response)
+    {
+        if (this == null)
+        {
+            return;
+        }
+        if (response.marketId == marketId)
+        {
+            SuccessBuyItem(response.remainingItemCount);
+        }
+    }
+
+    void SetActiveItemCancelButton(SocketManager.GetSellingListResponse response)
+    {
+        cancelButton.SetActive(true);
+    }
+
+    //아이템 등록 취소
+    void CancelRegistMyItem()
+    {
+
     }
 }
