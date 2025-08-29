@@ -1,19 +1,18 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
-using static UnityEngine.Rendering.DebugUI;
+
 
 
 public enum UIPanelType { 
+    Quest,
     Market,
     Inventory,
     Profile,
-    Setting
+    Setting,
+    Dialogue
 }
 public class PlayerUIManager : MonoBehaviour
 {
@@ -24,7 +23,7 @@ public class PlayerUIManager : MonoBehaviour
     public Slider GuardGauge;
     public Slider EnemyHpUI;
     public Slider ExpUI;
-    public Image dialogUI;
+
     public TextMeshProUGUI EnemyName;
     public TextMeshProUGUI NpcName;
     public TextMeshProUGUI NpcText;
@@ -40,6 +39,8 @@ public class PlayerUIManager : MonoBehaviour
     public GameObject Inventory;
     public GameObject PlayerProfile;
     public GameObject Setting;
+    public GameObject Quest;
+    public GameObject dialogUI;
 
 
     public static PlayerUIManager instnace;
@@ -67,7 +68,9 @@ public class PlayerUIManager : MonoBehaviour
             {UIPanelType.Market, Market },
             { UIPanelType.Inventory, Inventory },
             { UIPanelType.Profile, PlayerProfile },
-            { UIPanelType.Setting, Setting }
+            { UIPanelType.Setting, Setting },
+            {UIPanelType.Quest, Quest },
+            {UIPanelType.Dialogue, dialogUI }
         };
 
         player.OnHpChanged += UpdateHp;
@@ -118,15 +121,6 @@ public class PlayerUIManager : MonoBehaviour
         yield return new WaitForSeconds(4f);
         EnemyHpUI.gameObject.SetActive(false);
         EnemyName.gameObject.SetActive(false);
-    }
-
-    public void ShowDialogUI()
-    {
-        dialogUI.gameObject.SetActive(true);
-    }
-    public void HideDialogUI()
-    {
-        dialogUI.gameObject.SetActive(false);
     }
 
     public void SetNpcText(string text)

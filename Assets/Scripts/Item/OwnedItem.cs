@@ -27,10 +27,17 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
         countText = GetComponentInChildren<TextMeshProUGUI>();
 
         currentSlot = GetComponentInParent<Slot>();
+
+
     }
 
     private void OnEnable()
     {
+        if (InventoryManager.instance == null)
+        {
+            Debug.LogError("InventoryManager.instance가 null입니다.");
+            return;
+        }
         ItemDescription = InventoryManager.instance.ItemDescription;
         ItemDescriptionText = ItemDescription.GetComponentInChildren<TextMeshProUGUI>(true);
     }

@@ -1,6 +1,5 @@
-using Firesplash.GameDevAssets.SocketIO;
+
 using Newtonsoft.Json;
-using SocketIOClient;
 using System;
 using System.Collections;
 using System.Runtime.InteropServices;
@@ -8,9 +7,6 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
-using static Firesplash.GameDevAssets.SocketIO.SocketIOInstance;
-using static SocketManager;
-using static UnityEditor.Progress;
 
 public class SocketManager : MonoBehaviour
 {
@@ -20,7 +16,6 @@ public class SocketManager : MonoBehaviour
 #endif
 
     public static SocketManager Instance { get; private set; }
-    public SocketIOCommunicator socket;
 
     public LoginData loginData;
 
@@ -45,14 +40,13 @@ public class SocketManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        socket = GetComponent<SocketIOCommunicator>();
     }
 
     public void Start()
     {
 #if UNITY_WEBGL
-        MySignalReady();
-        Debug.Log("Unity -> 웹: 준비 완료 신호 보냄");
+        //MySignalReady();
+        //Debug.Log("Unity -> 웹: 준비 완료 신호 보냄");
 #endif
 
 

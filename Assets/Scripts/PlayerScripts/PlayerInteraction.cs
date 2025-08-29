@@ -37,6 +37,8 @@ public class PlayerInteraction : MonoBehaviour
                 }
                 if (select.gameObject.TryGetComponent<QuestNPC>(out QuestNPC npc))
                 {
+                    player.anim.SetBool("Talk", true);
+                    player.currentTalkingNPC = npc;
                     // NPC라면 대화상태 진입
                     dialogueManager.StartConversation(npc);
                 }

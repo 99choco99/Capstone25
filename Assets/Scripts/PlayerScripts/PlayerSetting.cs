@@ -7,7 +7,6 @@ using UnityEngine.SceneManagement;
 public class PlayerSetting : LivingEntity
 {
     PlayerController player;
-    public PlayerUIManager playerUI; //플레이어 UI
     public Animator anim;
 
 
@@ -35,12 +34,12 @@ public class PlayerSetting : LivingEntity
     public event Action<int, int> OnExpChanged;   // 경험치 적용
     public event Action OnStatsChanged;  // 스탯 변경사항 적용
     public event Action<float> OnGuardChanged; //가드 게이지 적용
+    public event Action OnLevelUp;  //
 
     private void Awake()
     {
         anim = GetComponent<Animator>();
         player = GetComponent<PlayerController>();
-        playerUI = GetComponentInChildren<PlayerUIManager>();
     }
 
     private void Start()
@@ -50,7 +49,10 @@ public class PlayerSetting : LivingEntity
             DataManager.Instance.OnSavePlayerData += OnSavePlayerData;
             LoadPlayerData(DataManager.Instance.playerData);
         }
-
+        OnHpChanged?.Invoke(currentHp);
+        OnExpChanged?.Invoke(exp, level);
+        OnStatsChanged?.Invoke();
+        Debug.Log("여기까진 오나?");
     }
 
     //게임 데이터 불러오기
@@ -71,9 +73,7 @@ public class PlayerSetting : LivingEntity
         gold = data.gold;
         Debug.Log("데이터 불러오기 성공");
 
-        OnHpChanged?.Invoke(currentHp);
-        OnExpChanged?.Invoke(exp,level);
-        OnStatsChanged?.Invoke();
+
     }
 
     //게임 데이터 저장하기
@@ -139,18 +139,13 @@ public class PlayerSetting : LivingEntity
         // 레벨업 조건 체크
         if (level < maxExp.Length && exp >= maxExp[level])
         {
-            LevelUp();
+            exp -= maxExp[level];
+            level++;
+            OnLevelUp?.Invoke();
         }
         OnExpChanged?.Invoke(exp, level);
     }
 
-
-    public void LevelUp()
-    {
-        exp -= maxExp[level];
-        level++;
-        QuestManager.instance.UnlockQuests(level);
-    }
 
     public void ApplyStatChanges(float damageChange, float healthChange, float defenseChange, float speedChange)
     {
