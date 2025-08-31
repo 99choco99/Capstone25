@@ -15,14 +15,12 @@ public class MarketBuy : MonoBehaviour
 
     private void Start()
     {
-        SocketManager.Instance.OnBuyItemSuccess += OnBuyItemSuccessHandler;
-        SocketManager.Instance.OnGetMySellingListSuccess += SetActiveItemCancelButton;
+        MarketManagerEvents.OnItemPurchaseComplete += OnBuyItemSuccessHandler;
     }
 
     private void OnDisable()
     {
-        SocketManager.Instance.OnBuyItemSuccess -= OnBuyItemSuccessHandler;
-        SocketManager.Instance.OnGetMySellingListSuccess -= SetActiveItemCancelButton;
+        MarketManagerEvents.OnItemPurchaseComplete -= OnBuyItemSuccessHandler;
     }
     public void CreateRecipe()
     {
@@ -42,7 +40,7 @@ public class MarketBuy : MonoBehaviour
         }
     }
 
-    private void OnBuyItemSuccessHandler(SocketManager.BuyItemResponse response)
+    private void OnBuyItemSuccessHandler(BuyItemResponse response)
     {
         if (this == null)
         {
@@ -54,7 +52,7 @@ public class MarketBuy : MonoBehaviour
         }
     }
 
-    void SetActiveItemCancelButton(SocketManager.GetSellingListResponse response)
+    void SetActiveItemCancelButton(IMarketItemResponse response)
     {
         cancelButton.SetActive(true);
     }

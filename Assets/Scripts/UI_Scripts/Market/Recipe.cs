@@ -10,26 +10,26 @@ public class Recipe : MonoBehaviour
     [SerializeField] TMP_InputField recipe_Input;
     [SerializeField] GameObject check;
     GameObject checkBox;
-    Market market;
+
     string count;
 
     private void Start()
     {
-        market = GetComponent<Market>();
-        SocketManager.Instance.OnBuyItemSuccess += SuccessBuyItem;
+
+        APIEvents.OnBuyItemSuccess += SuccessBuyItem;
     }
 
     private void OnDestroy()
     {
-        SocketManager.Instance.OnBuyItemSuccess -= SuccessBuyItem;
+        APIEvents.OnBuyItemSuccess -= SuccessBuyItem;
     }
 
     public void OnRecipeYesButtonClick()
     {
         count = recipe_Input.text;
-        if (int.Parse(count) <= 0 && market != null)
+        if (int.Parse(count) <= 0)
         {
-            market.ShowNotice("1이상의 값을 넣어주세요.");
+            //market.ShowNotice("1이상의 값을 넣어주세요.");
             recipe_Input.text = "";
             return;
         }
@@ -40,11 +40,11 @@ public class Recipe : MonoBehaviour
     public void OnCheckYesButtonClick()
     {
         checkBox.SetActive(false);
-        SocketManager.Instance.RequestToBuyItem(marketId, count);
+        APIManager.Instance.Market.RequestToBuyItem(marketId, count);
         Debug.Log("구매시도");
     }
 
-    public void SuccessBuyItem(SocketManager.BuyItemResponse response)
+    public void SuccessBuyItem(BuyItemResponse response)
     {
         Destroy(checkBox);
         Destroy(gameObject);

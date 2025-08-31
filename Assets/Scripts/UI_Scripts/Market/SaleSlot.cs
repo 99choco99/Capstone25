@@ -11,9 +11,8 @@ public class SaleSlot : Slot
         OwnedItem draggedItem = eventData.pointerDrag?.GetComponent<OwnedItem>();
 
         if (draggedItem == null) { return; }
-        currentItem = draggedItem;
-        hasItem = true;
+        slotData.currentItemData = draggedItem.data;
         itemImage.sprite = draggedItem.data.icon;
-        itemCount = draggedItem.currentSlot.itemCount;
+        slotData.itemCount = draggedItem.currentSlot.slotData.itemCount;
     }
 }

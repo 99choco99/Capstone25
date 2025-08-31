@@ -50,8 +50,9 @@ public class PlayerMoveState : StateMachineBehaviour
         }
         else if (!player.sprint && player.attack && player.isGround)
         {
-            player.currentState = PlayerState.Attack;
             player.anim.SetTrigger("Attack");
+            player.currentState = PlayerState.Attack;
+            player.attack = false;
         }
 
         if (player.guard)

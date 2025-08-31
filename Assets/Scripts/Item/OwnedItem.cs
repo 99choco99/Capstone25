@@ -38,7 +38,7 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
             Debug.LogError("InventoryManager.instance가 null입니다.");
             return;
         }
-        ItemDescription = InventoryManager.instance.ItemDescription;
+        //ItemDescription = InventoryManager.instance.ItemDescription;
         ItemDescriptionText = ItemDescription.GetComponentInChildren<TextMeshProUGUI>(true);
     }
 
@@ -98,8 +98,7 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
     private void OnDestroy()
     {
         image.sprite = null;
-        currentSlot.hasItem = false;
-        currentSlot.currentItem = null;
+
         currentSlot = null;
     }
 }

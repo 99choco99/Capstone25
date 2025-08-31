@@ -1406,6 +1406,11 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2259198724388752570, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2268977376156714124, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1765,6 +1770,26 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4958289017967496385, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4958289017967496385, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4958289017967496385, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 800
+      objectReference: {fileID: 0}
+    - target: {fileID: 4958289017967496385, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 4971317083708915955, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
         type: 3}
@@ -2361,6 +2386,16 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8843377774202090404, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8843377774202090404, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 9072226484189123562, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
         type: 3}
       propertyPath: m_AnchorMax.x
@@ -2434,8 +2469,52 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1508016959089436434, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 65654967}
   m_SourcePrefab: {fileID: 100100000, guid: 81ae39eae71be2a40934cc4dd7e5cb97, type: 3}
+--- !u!1 &65654966 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1508016959089436434, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+    type: 3}
+  m_PrefabInstance: {fileID: 65654965}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &65654967
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 65654966}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd135be323e871342b7cdc491a6ad785, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventoryUI
+  slotPrefab: {fileID: 0}
+  equipmentParent: {fileID: 65654970}
+  consumptionParent: {fileID: 65654969}
+  otherParent: {fileID: 65654968}
+--- !u!224 &65654968 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 5655786209298686021, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+    type: 3}
+  m_PrefabInstance: {fileID: 65654965}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &65654969 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 277765090391251897, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+    type: 3}
+  m_PrefabInstance: {fileID: 65654965}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &65654970 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 488499260528713553, guid: 81ae39eae71be2a40934cc4dd7e5cb97,
+    type: 3}
+  m_PrefabInstance: {fileID: 65654965}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &70218353
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -18334,6 +18413,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   NPCName: {fileID: 0}
+  currentTalkingPlayer: {fileID: 0}
   id: 200
 --- !u!1001 &1781180789
 PrefabInstance:
@@ -24040,7 +24120,8 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 3437471752542797019, guid: 462724927adb10c4ca807d83f52bfddf, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

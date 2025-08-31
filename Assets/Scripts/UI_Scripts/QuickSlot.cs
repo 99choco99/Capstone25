@@ -32,11 +32,10 @@ public class QuickSlot : Slot
         }
         if (quickItem = GetComponentInChildren<ConsumptionItem>())
         {
-            itemCount -= 1;
-            if(itemCount <= 0)
+            slotData.itemCount -= 1;
+            if(slotData.itemCount <= 0)
             {
                 Destroy(quickItem.gameObject);
-                hasItem = false;
             }
             quickItem.consume(playerData);
             StartCoroutine("CoolTime", 3);

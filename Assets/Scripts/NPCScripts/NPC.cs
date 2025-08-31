@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class NPC : MonoBehaviour, IInteractable
 {
     [SerializeField] TextMeshProUGUI NPCName;
+    public PlayerController currentTalkingPlayer;
     protected Animator anim;
     public int id;
 
@@ -16,8 +17,9 @@ public class NPC : MonoBehaviour, IInteractable
         NPCName.text = transform.name;
     }
 
-    public virtual void Interact(Transform player) {
-        StartCoroutine(RotationLerp(player));
+    public virtual void Interact(PlayerController player) {
+        currentTalkingPlayer = player;
+        StartCoroutine(RotationLerp(player.transform));
     }
 
 

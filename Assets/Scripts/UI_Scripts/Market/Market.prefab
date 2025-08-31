@@ -623,7 +623,6 @@ GameObject:
   - component: {fileID: 992209917100796419}
   - component: {fileID: 2492962834730920423}
   - component: {fileID: 5750794648920092427}
-  - component: {fileID: 3437471752542797019}
   m_Layer: 5
   m_Name: MyList
   m_TagString: Untagged
@@ -688,20 +687,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &3437471752542797019
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 288421783345278623}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cbd055e86bcfff54aafbf637c76f2d13, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MySellingLIst
-  SellContainer: {fileID: 1016569736704822572, guid: a23cdab911f95ae41ae1a750cc8b8fea,
-    type: 3}
 --- !u!1 &302101401529244193
 GameObject:
   m_ObjectHideFlags: 0
@@ -4384,6 +4369,7 @@ GameObject:
   - component: {fileID: 5330002668595307724}
   - component: {fileID: 1441954004350707706}
   - component: {fileID: 400537567049010482}
+  - component: {fileID: 4786926313603020605}
   m_Layer: 5
   m_Name: SellingList
   m_TagString: Untagged
@@ -4481,6 +4467,20 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &4786926313603020605
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2177562685400251000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f6282ca3b13eb044a36e5fff3f84e31, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SellingList
+  SellContainer: {fileID: 1016569736704822572, guid: a23cdab911f95ae41ae1a750cc8b8fea,
+    type: 3}
 --- !u!1 &2191440790313879482
 GameObject:
   m_ObjectHideFlags: 0
@@ -10268,9 +10268,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6deec696ae1f54241b48b7bd841624a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SellingList: {fileID: 5790009496206098927}
-  SellContainer: {fileID: 1016569736704822572, guid: a23cdab911f95ae41ae1a750cc8b8fea,
-    type: 3}
   notice: {fileID: 4604444401029306518}
   check: {fileID: 5074395173405448410}
   price: {fileID: 971827257014508730}
@@ -11695,7 +11692,7 @@ GameObject:
   - component: {fileID: 4191116043636736904}
   - component: {fileID: 4394808459076079089}
   - component: {fileID: 4030553584609187479}
-  - component: {fileID: 6125451171867036367}
+  - component: {fileID: 6847195354247072339}
   m_Layer: 5
   m_Name: Market
   m_TagString: Untagged
@@ -11791,7 +11788,7 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
---- !u!114 &6125451171867036367
+--- !u!114 &6847195354247072339
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -11800,11 +11797,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 5890927762657721120}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 29253897a0546d64fa65c7c5a3ce3acc, type: 3}
+  m_Script: {fileID: 11500000, guid: 7a29c463e2399d349a2dc469ba56b4f5, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  notice: {fileID: 4604444401029306518}
-  notice_text: {fileID: 1541374418017131887}
+  m_EditorClassIdentifier: Assembly-CSharp::MarketManager
 --- !u!1 &5923823920639016069
 GameObject:
   m_ObjectHideFlags: 0

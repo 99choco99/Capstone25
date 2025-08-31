@@ -46,13 +46,12 @@ public class PlayerSetting : LivingEntity
     {
         if (DataManager.Instance != null)
         {
-            DataManager.Instance.OnSavePlayerData += OnSavePlayerData;
+            DataManager.Instance.OnSave += OnSavePlayerData;
             LoadPlayerData(DataManager.Instance.playerData);
         }
         OnHpChanged?.Invoke(currentHp);
         OnExpChanged?.Invoke(exp, level);
         OnStatsChanged?.Invoke();
-        Debug.Log("여기까진 오나?");
     }
 
     //게임 데이터 불러오기
@@ -169,7 +168,7 @@ public class PlayerSetting : LivingEntity
     {
         if(DataManager.Instance != null)
         {
-            DataManager.Instance.OnSavePlayerData -= OnSavePlayerData;
+            DataManager.Instance.OnSave -= OnSavePlayerData;
         }
     }
 }
