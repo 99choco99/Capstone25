@@ -16,16 +16,33 @@ public class MarketBuy : MonoBehaviour
     private void Start()
     {
         MarketManagerEvents.OnItemPurchaseComplete += OnBuyItemSuccessHandler;
+
     }
 
     private void OnDisable()
     {
         MarketManagerEvents.OnItemPurchaseComplete -= OnBuyItemSuccessHandler;
     }
+
+
     public void CreateRecipe()
     {
         GameObject recipe = Instantiate(Recipe, transform.root);
         recipe.GetComponent<Recipe>().marketId = marketId;
+    }
+
+
+
+    private void OnBuyItemSuccessHandler(BuyItemResponse response)
+    {
+        if (this == null)
+        {
+            return;
+        }
+        if (response.marketId == marketId)
+        {
+            SuccessBuyItem(response.remainingItemCount);
+        }
     }
 
     public void SuccessBuyItem(int remainingItemCount)
@@ -37,18 +54,6 @@ public class MarketBuy : MonoBehaviour
         else
         {
             Destroy(gameObject);
-        }
-    }
-
-    private void OnBuyItemSuccessHandler(BuyItemResponse response)
-    {
-        if (this == null)
-        {
-            return;
-        }
-        if (response.marketId == marketId)
-        {
-            SuccessBuyItem(response.remainingItemCount);
         }
     }
 

@@ -112,11 +112,7 @@ public class MarketAPI
 
                     if (response.success)
                     {
-                        APIEvents.OnItemRegisterSuccess?.Invoke(response);
-                    }
-                    else
-                    {
-                        APIEvents.OnItemRegisterFailed?.Invoke(response.message);
+                        APIEvents.OnItemRegister?.Invoke(response);
                     }
                 }
                 catch { }
@@ -150,11 +146,7 @@ public class MarketAPI
 
                     if (response.success)
                     {
-                        APIEvents.OnBuyItemSuccess?.Invoke(response);
-                    }
-                    else
-                    {
-                        APIEvents.OnBuyItemFailed?.Invoke(response.message);
+                        APIEvents.OnBuyItem?.Invoke(response);
                     }
                 }
                 catch (JsonException ex)
@@ -190,17 +182,16 @@ public class MarketAPI
     //아이템 판매 요청
     public void RequestToSellItem(int Itemid, ItemSpec itemspec, string price, string count)
     {
-        
         coroutineRunner.StartCoroutine(RequestToSell(Itemid, itemspec, price, count));
     }
 }
 
-public interface IMarketItemResponse
+public class IMarketItemResponse
 {
-    public int marketId { get; set; }
-    public int ItemId { get; set; }
-    public int ItemCount { get; set; }
-    public int price { get; set; }
+    public int marketId { get; set; }  //마켓 id
+    public int ItemId { get; set; }     //아이템 id
+    public int ItemCount { get; set; }  // 등록된 아이템 개수
+    public int price { get; set; }   //등록한 가격
 }
 
 
@@ -208,10 +199,6 @@ public class ItemRegistResponse : IMarketItemResponse
 {
     public bool success;  //등록 성공 여부
     public string message { get; set; }  // 성공 or 실패 메세지
-    public int marketId { get; set; }  //마켓 id
-    public int ItemId { get; set; }     //아이템 id
-    public int ItemCount { get; set; }  // 등록된 아이템 개수
-    public int price { get; set; }   //등록한 가격
 }
 
 public class BuyItemResponse

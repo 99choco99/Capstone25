@@ -18,6 +18,7 @@ public class APIManager : MonoBehaviour
     public static APIManager Instance { get; private set; }
     public PlayerDataAPI PlayerData;
     public MarketAPI Market;
+    public InventoryAPI Inventory;
     public LoginData loginData;
 
 
@@ -65,6 +66,7 @@ public class APIManager : MonoBehaviour
 
         PlayerData = new PlayerDataAPI(this);
         Market = new MarketAPI(this, loginData.user_id);
+        Inventory = new InventoryAPI(this, loginData.user_id);
 
         PlayerData.RequestLoadPlayerData(loginData.user_id);
     }

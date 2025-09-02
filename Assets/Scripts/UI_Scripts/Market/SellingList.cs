@@ -18,6 +18,7 @@ public class SellingList : MonoBehaviour
     {
         MarketManagerEvents.OnGetSellingListComplete -= UpdateSellingList;
         MarketManagerEvents.OnGetMySellingListComplete -= UpdateSellingList;
+        MarketManagerEvents.OnItemRegistComplete -= UpdateSellingList;
     }
 
 

@@ -7,4 +7,5 @@ public static class InventoryEvents
     public static Action<SlotType, int> OnSlotDataChanged;
     // 인벤토리 데이터 초기화가 완료되었음
     public static Action<SlotType, int> OnInventoryDataInitialized;
+
 }

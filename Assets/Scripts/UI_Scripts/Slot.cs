@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 
-public enum SlotType { Equipment,Consumption,Other, Profile, Quick, Sale, Buy}
+public enum SlotType { Equipment,Consumption,Other, Profile, Quick}
 public class Slot : MonoBehaviour, IPointerEnterHandler, IDropHandler, IPointerExitHandler
 {
     public SlotData slotData;
@@ -26,22 +26,20 @@ public class Slot : MonoBehaviour, IPointerEnterHandler, IDropHandler, IPointerE
     // 슬롯 아이템 개수 UI 
     public void UpdateUI()
     {
-        if (slotData != null && slotData.hasItem)
+        if (slotData != null)
         {
             OwnedItem ownedItem = transform.GetComponentInChildren<OwnedItem>();
 
             if (ownedItem != null)
             {
-                slotData.currentItemData = ownedItem.data;
-                ownedItem.image.sprite = slotData.currentItemData.icon;
+                ownedItem.data = slotData.itemData;
+                ownedItem.image.sprite = slotData.itemData.icon;
                 ownedItem.currentSlot = this;
                 ownedItem.UpdateCountUI(slotData.itemCount);
             }
         }
         else
         {
-            // 슬롯 데이터가 비어있으면 UI를 비활성화
-            // 자식 오브젝트(아이템 아이콘)를 모두 제거합니다.
             foreach (Transform child in transform)
             {
                 Destroy(child.gameObject);

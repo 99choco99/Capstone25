@@ -29,6 +29,15 @@ public class ItemManager : MonoBehaviour
 
     public ItemData GetItem(int id)
     {
-        return Items[id];
+        if (Items.ContainsKey(id))
+        {
+            return Items[id];
+        }
+        else
+        {
+            Debug.Log("존재하지 않는 아이템");
+            return null;
+        }
+
     }
 }

@@ -13,22 +13,21 @@ public class MarketManager : MonoBehaviour
     private void OnEnable()
     {
         // 아이템 등록
-        APIEvents.OnItemRegisterSuccess += OnItemRegisterSuccessFromAPI;
-        APIEvents.OnItemRegisterFailed += OnItemRegisterFailedFromAPI;
+        APIEvents.OnItemRegister += OnItemRegisterFromAPI;
 
         //아이템 판매목록 가져오기
         APIEvents.OnGetSellingListSuccess += OnGetSellingListSuccessFromAPI;
         APIEvents.OnGetMySellingListSuccess += OnGetMySellingListSuccessFromAPI;
 
-        APIEvents.OnBuyItemSuccess += OnBuyItemSuccessFromAPI;
+        APIEvents.OnBuyItem += OnBuyItemFromAPI;
     }
     private void OnDisable()
     {
         // 구독 해제
-        APIEvents.OnItemRegisterSuccess -= OnItemRegisterSuccessFromAPI;
-        APIEvents.OnItemRegisterFailed -= OnItemRegisterFailedFromAPI;
+        APIEvents.OnItemRegister -= OnItemRegisterFromAPI;
         APIEvents.OnGetSellingListSuccess -= OnGetSellingListSuccessFromAPI;
         APIEvents.OnGetMySellingListSuccess -= OnGetMySellingListSuccessFromAPI;
+        APIEvents.OnBuyItem -= OnBuyItemFromAPI;
     }
 
 
@@ -44,30 +43,38 @@ public class MarketManager : MonoBehaviour
         MarketManagerEvents.OnGetMySellingListComplete?.Invoke(response);
     }
 
-    //아이템 구매 성공
-    void OnBuyItemSuccessFromAPI(BuyItemResponse response)
+    //아이템 구매 성공/실패
+    void OnBuyItemFromAPI(BuyItemResponse response)
     {
+        if (!response.success)
+        {
+            MarketManagerEvents.OnItemPurchaseFailed?.Invoke(response.message);
+        }
+        else
+        {
+            InventoryManager.instance.AddPurchasedItem(response);
+            MarketManagerEvents.OnItemPurchaseComplete?.Invoke(response);
+        }
 
-
-
-        MarketManagerEvents.OnItemPurchaseComplete?.Invoke(response);
     }
 
-    //아이템 등록 성공
-    void OnItemRegisterSuccessFromAPI(ItemRegistResponse response)
+    //아이템 등록
+    void OnItemRegisterFromAPI(ItemRegistResponse response)
     {
-        // 인벤토리에서 해당 아이템 개수 차감.
-        UpdateInventoryAfterSale(response);
+        if (!response.success)
+        {
+            Debug.LogError("아이템 등록 실패: " + response.message);
+            MarketManagerEvents.OnItemRegistFailed?.Invoke(response.message);
+        }
+        else
+        {
+            // 인벤토리에서 해당 아이템 개수 차감.
+            UpdateInventoryAfterSale(response);
 
-        MarketManagerEvents.OnItemRegistComplete?.Invoke(response);
+            MarketManagerEvents.OnItemRegistComplete?.Invoke(response);
+        }
     }
 
-    // API 통신 실패 시 호출되는 핸들러
-    private void OnItemRegisterFailedFromAPI(string message)
-    {
-        Debug.LogError("아이템 등록 실패: " + message);
-        MarketManagerEvents.OnItemRegistFailed?.Invoke(message);
-    }
 
     void UpdateInventoryAfterSale(ItemRegistResponse response)
     {
