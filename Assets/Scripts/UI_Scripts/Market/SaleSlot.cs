@@ -12,9 +12,10 @@ public class SaleSlot : Slot
 
         if (draggedItem == null) { return; }
         slotData.itemData = draggedItem.data;
-        slotData.itemSpec = slotData.itemData.spec;
-        slotData.itemId = slotData.itemData.id;
-        itemImage.sprite = slotData.itemData.icon;
+        slotData.slotIndex = draggedItem.currentSlot.slotData.slotIndex;
+        slotData.itemSpec = draggedItem.currentSlot.slotData.itemSpec;
+        slotData.itemId = draggedItem.data.id;
+        itemImage.sprite = draggedItem.data.icon;
         slotData.itemCount = draggedItem.currentSlot.slotData.itemCount;
     }
 }

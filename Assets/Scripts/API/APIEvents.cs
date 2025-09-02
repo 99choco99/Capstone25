@@ -11,6 +11,9 @@ public static class APIEvents
     //아이템 구매
     public static Action<BuyItemResponse> OnBuyItem;
 
+    //아이템 취소
+    public static Action<CancelRegistResponse> OnCancelItem;
+
     //아이템 판매 목록 가져오기
     public static Action<IMarketItemResponse> OnGetSellingListSuccess;  //아이템 판매 목록 가져오기 성공 이벤트
     public static Action<IMarketItemResponse> OnGetMySellingListSuccess; //내 판매 목록 가져오기 성공 이벤트
@@ -18,5 +21,4 @@ public static class APIEvents
 
     //인벤토리 목록 가져오기
     public static Action<InventoryResponse> OnGetInventory;
-    public static Action<InventoryResponse> OnSetInventory;
 }

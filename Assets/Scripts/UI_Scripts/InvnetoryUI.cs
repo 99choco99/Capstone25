@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 
 public class InventoryUI : MonoBehaviour
 {
-    bool isInit = false;
+
     [SerializeField] private GameObject slotPrefab;
     [SerializeField] private GameObject itemPrefab;
     [SerializeField] private Transform equipmentParent;
@@ -84,10 +84,10 @@ public class InventoryUI : MonoBehaviour
             InventoryManager.instance.MoveToEmptySlot(
                 draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
                 droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
-            if (draggedItemUI != null)
-            {
-                Destroy(draggedItemUI.gameObject);
-            }
+        }
+        if (draggedItemUI != null)
+        {
+            Destroy(draggedItemUI.gameObject);
         }
 
     }
@@ -110,9 +110,11 @@ public class InventoryUI : MonoBehaviour
             }
             if (ownedItem != null)
             {
+
                 ownedItem.data = slotData.itemData;
                 ownedItem.image.sprite = slotData.itemData.icon;
                 ownedItem.currentSlot = uiSlot;
+                ownedItem.currentSlot.slotData = slotData;
                 ownedItem.UpdateCountUI(slotData.itemCount);
             }
         }
@@ -121,7 +123,6 @@ public class InventoryUI : MonoBehaviour
             foreach (Transform child in uiSlot.transform)
             {
                 Destroy(child.gameObject);
-                slotData = default;
             }
         }
     }

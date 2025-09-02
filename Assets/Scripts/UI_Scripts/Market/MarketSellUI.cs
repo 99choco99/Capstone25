@@ -39,7 +39,7 @@ public class MarketSellUI : MonoBehaviour
 
         //판매버튼 클릭시 서버에 판매 목록 등록 요청
         check.GetComponentInChildren<Button>().onClick.AddListener(() => {
-            Instance.Market.RequestToSellItem(saleSlot.slotData.itemData.id, saleSlot.slotData.itemData.spec, price.text ,count.text);
+            MarketManager.Instance.SellItem(saleSlot.slotData.itemData.id, saleSlot.slotData.itemSpec, price.text ,count.text);
             check.SetActive(false);
         });
 

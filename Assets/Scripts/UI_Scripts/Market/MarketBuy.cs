@@ -13,15 +13,19 @@ public class MarketBuy : MonoBehaviour
     [SerializeField] TextMeshProUGUI count_text;
 
 
-    private void Start()
+    private void Awake()
     {
         MarketManagerEvents.OnItemPurchaseComplete += OnBuyItemSuccessHandler;
+        MarketManagerEvents.OnSetCancelButtonUI += SetActiveItemCancelButton;
+        MarketManagerEvents.OnCancelRegistComplete += RemoveRegistedItem;
 
     }
 
-    private void OnDisable()
+    private void OnDestroy()
     {
         MarketManagerEvents.OnItemPurchaseComplete -= OnBuyItemSuccessHandler;
+        MarketManagerEvents.OnSetCancelButtonUI -= SetActiveItemCancelButton;
+        MarketManagerEvents.OnCancelRegistComplete -= RemoveRegistedItem;
     }
 
 
@@ -57,14 +61,25 @@ public class MarketBuy : MonoBehaviour
         }
     }
 
-    void SetActiveItemCancelButton(IMarketItemResponse response)
+    //취소된 아이템을 등록현황에서 제거
+    public void RemoveRegistedItem(CancelRegistResponse response)
     {
-        cancelButton.SetActive(true);
+        if (response.success && response.marketId == marketId)
+        {
+            Destroy(gameObject);
+        }
     }
 
-    //아이템 등록 취소
-    void CancelRegistMyItem()
+    // 내 판매목록 가져올 때 취소버튼 활성화
+    void SetActiveItemCancelButton(bool value)
     {
+        cancelButton.SetActive(value);
+        gameObject.GetComponent<Button>().enabled = !value;
+    }
 
+    //아이템 등록 취소 요청
+    public void CancelRegistMyItem()
+    {
+        MarketManager.Instance.CancelMyItem(marketId);
     }
 }

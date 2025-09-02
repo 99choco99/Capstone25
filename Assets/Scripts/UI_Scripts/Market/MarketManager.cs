@@ -3,10 +3,21 @@ using UnityEngine;
 
 public class MarketManager : MonoBehaviour
 {
+    public static MarketManager Instance;
     SaleSlot saleSlot;   //판매 슬롯
 
     private void Awake()
     {
+        if(Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         saleSlot = GetComponentInChildren<SaleSlot>();
     }
 
@@ -19,7 +30,11 @@ public class MarketManager : MonoBehaviour
         APIEvents.OnGetSellingListSuccess += OnGetSellingListSuccessFromAPI;
         APIEvents.OnGetMySellingListSuccess += OnGetMySellingListSuccessFromAPI;
 
+        //아이템 구매
         APIEvents.OnBuyItem += OnBuyItemFromAPI;
+
+        //아이템 취소
+        APIEvents.OnCancelItem += OnCancelRegisterFromAPI;
     }
     private void OnDisable()
     {
@@ -28,6 +43,7 @@ public class MarketManager : MonoBehaviour
         APIEvents.OnGetSellingListSuccess -= OnGetSellingListSuccessFromAPI;
         APIEvents.OnGetMySellingListSuccess -= OnGetMySellingListSuccessFromAPI;
         APIEvents.OnBuyItem -= OnBuyItemFromAPI;
+        APIEvents.OnCancelItem -= OnCancelRegisterFromAPI;
     }
 
 
@@ -75,6 +91,19 @@ public class MarketManager : MonoBehaviour
         }
     }
 
+    public void OnCancelRegisterFromAPI(CancelRegistResponse response)
+    {
+        if (!response.success)
+        {
+            Debug.LogError("아이템 등록 취소 실패: " + response.message);
+            MarketManagerEvents.OnCancelRegistFailed?.Invoke(response.message);
+        }
+        else
+        {
+            MarketManagerEvents.OnCancelRegistComplete?.Invoke(response);
+        }
+    }
+
 
     void UpdateInventoryAfterSale(ItemRegistResponse response)
     {
@@ -85,5 +114,17 @@ public class MarketManager : MonoBehaviour
             return;
         }
         InventoryManager.instance.RegisterItemToMarket(saleSlotData, response.ItemCount);
+    }
+
+    //아이템 판매
+    public void SellItem(int Itemid, ItemSpec itemspec, string price, string count)
+    {
+        APIManager.Instance.Market.RequestToSellItem(Itemid, itemspec, price, count);
+    }
+
+    //아이템 취소
+    public void CancelMyItem(int marketId)
+    {
+        APIManager.Instance.Market.RequestToCancelItem(marketId);
     }
 }

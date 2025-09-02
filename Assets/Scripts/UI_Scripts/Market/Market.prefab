@@ -284,6 +284,7 @@ GameObject:
   - component: {fileID: 992209917100796419}
   - component: {fileID: 2492962834730920423}
   - component: {fileID: 5750794648920092427}
+  - component: {fileID: 3169721515226943956}
   - component: {fileID: 2729143435200080611}
   m_Layer: 5
   m_Name: MyList
@@ -349,6 +350,32 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &3169721515226943956
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288421783345278623}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 0
+  m_Spacing: 0
+  m_ChildForceExpandWidth: 1
+  m_ChildForceExpandHeight: 1
+  m_ChildControlWidth: 0
+  m_ChildControlHeight: 0
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
 --- !u!114 &2729143435200080611
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -361,6 +388,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f6282ca3b13eb044a36e5fff3f84e31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SellingList
+  isMySellingList: 1
   SellContainer: {fileID: 1016569736704822572, guid: a23cdab911f95ae41ae1a750cc8b8fea,
     type: 3}
 --- !u!1 &302101401529244193
@@ -4914,7 +4942,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: -67.5}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2035778619641080832
@@ -5006,6 +5034,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f6282ca3b13eb044a36e5fff3f84e31, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SellingList
+  isMySellingList: 0
   SellContainer: {fileID: 1016569736704822572, guid: a23cdab911f95ae41ae1a750cc8b8fea,
     type: 3}
 --- !u!1 &5890927762657721120
@@ -5892,7 +5921,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   slotData:
-    slotType: 0
+    slotType: 5
     slotIndex: 0
     itemId: 0
     itemSpec:

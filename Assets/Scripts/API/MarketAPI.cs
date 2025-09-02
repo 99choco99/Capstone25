@@ -78,13 +78,13 @@ public class MarketAPI
     }
 
     //판매 요청
-    IEnumerator RequestToSell(int ItemId, ItemSpec data, string price, string count)
+    IEnumerator RequestToSell(int ItemId, ItemSpec spec, string price, string count)
     {
         var itemData = new
         {
             userId = userId,
             ItemId = ItemId,
-            ItemData = data,
+            itemSpec = spec,
             price = price,
             itemCount = count
         };
@@ -161,6 +161,40 @@ public class MarketAPI
         }
     }
 
+    //아이템 등록 취소
+    IEnumerator CancelRegistItem(int marketId)
+    {
+        string url = $"{APIConstants.BASE_API_URL}/market/items/{userId}/{marketId}";
+
+        using (UnityWebRequest webRequest = UnityWebRequest.Delete(url))
+        {
+            webRequest.downloadHandler = new DownloadHandlerBuffer();
+
+            yield return webRequest.SendWebRequest();
+
+            if (webRequest.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log("아이템 삭제 요청 성공");
+                string responseJson = webRequest.downloadHandler.text;
+                try
+                {
+                    CancelRegistResponse response = JsonConvert.DeserializeObject<CancelRegistResponse>(responseJson);
+                    if (response.success)
+                    {
+                        APIEvents.OnCancelItem?.Invoke(response);
+                    }
+                }
+                catch (JsonException ex)
+                {
+                    Debug.LogError($"역직렬화 오류 : {ex.Message}");
+                }
+            }
+            else
+            {
+                Debug.LogError($"아이템 삭제 실패: {webRequest.result}");
+            }
+        }
+    }
 
 
     //아이템 목록 가져오기 요청
@@ -184,7 +218,16 @@ public class MarketAPI
     {
         coroutineRunner.StartCoroutine(RequestToSell(Itemid, itemspec, price, count));
     }
+
+    //아이템 등록 취소 요청
+    public void RequestToCancelItem(int marketId)
+    {
+        coroutineRunner.StartCoroutine(CancelRegistItem(marketId));
+    }
 }
+
+
+
 
 public class IMarketItemResponse
 {
@@ -200,6 +243,14 @@ public class ItemRegistResponse : IMarketItemResponse
     public bool success;  //등록 성공 여부
     public string message { get; set; }  // 성공 or 실패 메세지
 }
+
+public class CancelRegistResponse : IMarketItemResponse
+{
+    public bool success;
+    public string message { get; set; }
+    public ItemSpec spec { get; set; }
+}
+
 
 public class BuyItemResponse
 {

@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
+using Unity.Services.Relay.Models;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -45,23 +46,41 @@ public class InventoryAPI
 
     }
 
-    //IEnumerator SetInventoryItem(SlotData slotData)
-    //{
-    //    string url = $"{APIConstants.BASE_API_URL}/playerData/inventory/{userId}";
+    IEnumerator SaveInventoryItem(SlotData slotData)
+    {
+        string url = $"{APIConstants.BASE_API_URL}/playerData/inventory/{userId}";
 
-    //    using(UnityWebRequest webRequest = UnityWebRequest.Get(url))
-    //    {
-    //        if(WebRequest.Result == UnityWebRequest.Result.Success)
-    //        {
+        string jsonData = JsonConvert.SerializeObject(slotData);
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
 
-    //        }
-    //    }
-    //}
+        using (UnityWebRequest webRequest = new UnityWebRequest(url, "POST"))
+        {
+            webRequest.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            webRequest.downloadHandler = new DownloadHandlerBuffer();
+
+            // PATCH 요청으로 인식하도록 헤더 추가
+            webRequest.SetRequestHeader("X-HTTP-Method-Override", "PATCH");
+            webRequest.SetRequestHeader("Content-Type", "application/json");
+
+            yield return webRequest.SendWebRequest();
+
+            if(webRequest.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"Error: {webRequest.error}");
+            }
+        }
+    }
 
     public void RequestInventory()
     {
         coroutineRunner.StartCoroutine(GetInventoryItem());
     }
+
+    public void RequestSaveInventory(SlotData slotData)
+    {
+        coroutineRunner.StartCoroutine(SaveInventoryItem(slotData));
+    }
+
 }
 
 public class InventoryResponse{

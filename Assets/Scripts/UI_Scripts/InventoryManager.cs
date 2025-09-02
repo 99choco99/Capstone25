@@ -24,8 +24,8 @@ public class InventoryManager : MonoBehaviour
             return;
         }
         APIEvents.OnGetInventory += LoadInventory;
-        APIEvents.OnSetInventory += SetInventory;
-
+        InventoryEvents.OnSlotDataChanged += SaveInventory;
+        MarketManagerEvents.OnCancelRegistComplete += ReturnItemFromMarket;
     }
 
     private void Start()
@@ -48,7 +48,8 @@ public class InventoryManager : MonoBehaviour
     private void OnDestroy()
     {
         APIEvents.OnGetInventory -= LoadInventory;
-        APIEvents.OnSetInventory -= SetInventory;
+        InventoryEvents.OnSlotDataChanged -= SaveInventory;
+        MarketManagerEvents.OnCancelRegistComplete -= ReturnItemFromMarket;
     }
 
 
@@ -78,15 +79,11 @@ public class InventoryManager : MonoBehaviour
         
     }
 
-    public void SetInventory(InventoryResponse response)
+    public void SaveInventory(SlotType type, int slotIndex)
     {
-
+        APIManager.Instance.Inventory.RequestSaveInventory(Inventory[type][slotIndex]);
     }
 
-    public void UpdateInventory(SlotData sourceData)
-    {
-        Inventory[sourceData.slotType][sourceData.slotIndex] = sourceData;
-    }
 
     //아이템이 있는 슬롯끼리 교환
     public void SwapItems(SlotType sourceSlotType, int sourceSlotIndex, SlotType destinationSlotType, int destinationSlotIndex)
@@ -117,7 +114,7 @@ public class InventoryManager : MonoBehaviour
         destinationData.itemData = sourceData.itemData;
         destinationData.itemSpec = sourceData.itemSpec;
 
-        // 소스 슬롯 초기화
+        // 소스 슬롯 초기화       
         sourceData.itemId = 0;
         sourceData.itemCount = 0;
         sourceData.itemData = null;
@@ -129,20 +126,43 @@ public class InventoryManager : MonoBehaviour
     }
 
     //마켓에 아이템을 등록했을 때
-    public void RegisterItemToMarket(SlotData sourceData, int saleCount)
+    public void RegisterItemToMarket(SlotData saleSlotData, int saleCount)
     {
-        sourceData.itemCount -= saleCount;
-
-        if (sourceData.itemCount <= 0)
+        saleSlotData.itemCount -= saleCount;
+        saleSlotData.slotType = saleSlotData.itemData.type;
+        if (saleSlotData.itemCount <= 0)
         {
-            sourceData.itemData = null;
-            sourceData.itemCount = 0;
+            saleSlotData.itemData = null;
+            saleSlotData.itemSpec = null;
+            saleSlotData.itemId = 0;
+            saleSlotData.itemCount = 0;
         }
-        UpdateInventory(sourceData);
-        InventoryEvents.OnSlotDataChanged?.Invoke(GetSlotType(sourceData), sourceData.slotIndex);
+        Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemData = saleSlotData.itemData;
+        Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemSpec = saleSlotData.itemSpec;
+        Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemId = saleSlotData.itemId;
+        Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemCount = saleSlotData.itemCount;
+        InventoryEvents.OnSlotDataChanged?.Invoke(saleSlotData.slotType, saleSlotData.slotIndex);
     }
 
-    // 아이템을 구매하거나 추가하는 로직
+
+    //마켓에 아이템을 취소했을 때
+    public void ReturnItemFromMarket(CancelRegistResponse response)
+    {
+        if (response.success)
+        {
+            ItemData itemData = ItemManager.Instance.GetItem(response.ItemId);
+            SlotData slotData = FindEmptySlot(itemData.type);
+            slotData.itemData = itemData;
+            slotData.itemSpec = response.spec;
+            slotData.itemData.spec = response.spec;
+            slotData.itemCount = response.ItemCount;
+            slotData.itemId = response.ItemId;
+            InventoryEvents.OnSlotDataChanged?.Invoke(GetSlotType(slotData), slotData.slotIndex);
+            
+        }
+    }
+
+    // 아이템을 구매하는 로직
     public void AddPurchasedItem(BuyItemResponse response)
     {
         ItemData data = ItemManager.Instance.GetItem(response.ItemId);
@@ -156,8 +176,11 @@ public class InventoryManager : MonoBehaviour
 
         // 데이터만 변경하고, UI는 건드리지 않습니다.
         emptySlotData.itemData = data;
+        emptySlotData.itemId = response.ItemId;
         emptySlotData.itemSpec = response.spec;
         emptySlotData.itemCount = response.purchasedItemCount;
+
+        Inventory[emptySlotData.slotType][emptySlotData.slotIndex] = emptySlotData;
 
         // 데이터 변경이 완료되었음을 UI에 알립니다.
         InventoryEvents.OnSlotDataChanged?.Invoke(data.type, emptySlotData.slotIndex);
