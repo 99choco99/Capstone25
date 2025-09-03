@@ -13,11 +13,11 @@ public class ItemSlot : Slot
     public override void OnDrop(PointerEventData eventData)
     {
         
-        if (eventData.pointerDrag.TryGetComponent(out EquipmentItem item) && item.currentSlot.slotType == SlotType.Profile)
+        if (eventData.pointerDrag.TryGetComponent(out EquipmentItem item) && item.currentSlot.slotData.slotType == SlotType.Profile)
         {
             item.TakeOff(playerData);
         }
-        if (eventData.pointerDrag.TryGetComponent<OwnedItem>(out OwnedItem newItem) && slotType == newItem.data.type)
+        if (eventData.pointerDrag.TryGetComponent<OwnedItem>(out OwnedItem newItem) && slotData.slotType == newItem.data.type)
         {
             base.OnDrop(eventData);
         }

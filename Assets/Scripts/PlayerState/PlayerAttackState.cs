@@ -33,6 +33,7 @@ public class PlayerAttackState : StateMachineBehaviour
         player.currentState = PlayerState.Attack;
         player.playerBehaviour.canMove = false;
         currentAttackIndex = (currentAttackIndex + 1) % MAX_ATTACK_ANIMATIONS;
+        if(currentAttackIndex < 0) { currentAttackIndex = 0; }
         player.playerSetting.currentAttack = player.playerSetting.playerNormalAttack[currentAttackIndex];
     }
 

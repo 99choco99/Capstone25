@@ -98,8 +98,7 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
     private void OnDestroy()
     {
         image.sprite = null;
-        currentSlot.hasItem = false;
-        currentSlot.currentItem = null;
+
         currentSlot = null;
     }
 }

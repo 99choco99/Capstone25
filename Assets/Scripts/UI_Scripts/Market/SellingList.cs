@@ -2,30 +2,53 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using static SocketManager;
+using static APIManager;
 
 public class SellingList : MonoBehaviour
 {
+    [SerializeField] private bool isMySellingList;
     [SerializeField] GameObject SellContainer;
+
+    private void Awake()
+    {
+        MarketManagerEvents.OnGetSellingListComplete += UpdateSellingList;
+        MarketManagerEvents.OnGetMySellingListComplete += UpdateSellingList;
+        MarketManagerEvents.OnItemRegistComplete += UpdateSellingList;
+    }
+    private void OnDestroy()
+    {
+        MarketManagerEvents.OnGetSellingListComplete -= UpdateSellingList;
+        MarketManagerEvents.OnGetMySellingListComplete -= UpdateSellingList;
+        MarketManagerEvents.OnItemRegistComplete -= UpdateSellingList;
+    }
 
 
     private void OnEnable()
     {
         Clear();
-        SocketManager.Instance.RequestToGetSellingList();
-        SocketManager.Instance.OnGetSellingListSuccess += UpdateSellingList;
+        RequestMarketListUpdate();
     }
 
-
-    private void OnDisable()
+    // 마켓 목록 갱신을 요청
+    public void RequestMarketListUpdate()
     {
-        SocketManager.Instance.OnGetSellingListSuccess -= UpdateSellingList;
+
+        if (isMySellingList)
+        {
+            // 내 판매 목록만 가져오기
+            Instance.Market.RequestToGetMyList();
+        }
+        else
+        {
+            // 전체 마켓 목록 가져오기
+            Instance.Market.RequestToGetSellingList();
+        }
     }
 
-
-    private void UpdateSellingList(GetSellingListResponse response)
+    //판매목록 업데이트
+    private void UpdateSellingList(IMarketItemResponse response)
     {
-
+        if (!gameObject.activeSelf) { return; }
         GameObject container = Instantiate(SellContainer,transform);
         ItemData itemData = ItemManager.Instance.GetItem(response.ItemId);
 
@@ -33,8 +56,8 @@ public class SellingList : MonoBehaviour
     }
 
 
-    // 판매 목록 아이템의 정보를 업데이트
-    private void UpdateSaleItemInfo(GameObject itemContainer, ItemData itemData, GetSellingListResponse response)
+    // 아이템의 정보를 업데이트
+    private void UpdateSaleItemInfo(GameObject itemContainer, ItemData itemData, IMarketItemResponse response)
     {
         // 아이템 아이콘 변경
         MarketBuy marketBuyComponent = itemContainer.GetComponent<MarketBuy>();
@@ -55,15 +78,14 @@ public class SellingList : MonoBehaviour
             itemInfoText[2].text = $"{response.price} Gold";
         }
 
+        if (isMySellingList) { MarketManagerEvents.OnSetCancelButtonUI?.Invoke(isMySellingList); }
     }
 
     void Clear()
     {
-        int childCount = transform.childCount;
-
-        for (int i = transform.childCount -1; i >= 0; i--)
+        foreach (Transform child in transform)
         {
-            Destroy(transform.GetChild(i).gameObject);
+            Destroy(child.gameObject);
         }
     }
 }

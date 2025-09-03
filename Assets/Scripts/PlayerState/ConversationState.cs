@@ -2,21 +2,26 @@ using DG.Tweening;
 using System;
 using UnityEngine;
 
-public class PlayerConversationState : StateMachineBehaviour
+public class ConversationState : StateMachineBehaviour
 {
+    NPC self;
+    PlayerController player;
+    CameraMovement cameraMovement;
+    DialogueManager dialogueManager;
+    bool isEnd = false;
 
-    public PlayerController player;
-    public CameraMovement cameraMovement;
-    public DialogueManager dialogueManager;
+
 
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        if (player == null)
+        if (self == null || player == null)
         {
-            player = animator.GetComponent<PlayerController>();
+            self = animator.GetComponentInParent<NPC>();
+            player = self.currentTalkingPlayer;
             cameraMovement = player.playerCamera.GetComponentInParent<CameraMovement>();
-            dialogueManager = animator.GetComponentInChildren<DialogueManager>();
+            dialogueManager = player.GetComponentInChildren<DialogueManager>();
         }
+        isEnd = false;
         player.interactRange = 0;
         player.interaction = false; // 바로 다음으로 넘어가는거 방지
         cameraMovement.maxDistance = cameraMovement.minDistance;
@@ -25,16 +30,17 @@ public class PlayerConversationState : StateMachineBehaviour
 
     public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        Vector3 midPosition = (player.currentTalkingNPC.transform.position + player.transform.position) / 2f + new Vector3(0, 1.3f, 0);
+        if (player == null || isEnd) { return; }
+        Vector3 midPosition = (self.transform.position + player.transform.position) / 2f + new Vector3(0, 1.3f, 0);
         cameraMovement.objectToFollow.transform.position = Vector3.Lerp(cameraMovement.objectToFollow.transform.position, midPosition, 2 * Time.deltaTime);
         if (player.interaction)
         {
-            bool isEnd = dialogueManager.NextDialog();
+            isEnd = dialogueManager.NextDialog();
             if (isEnd)
             {
                 cameraMovement.objectToFollow.transform.DOMove(player.transform.position + new Vector3(0, 1.3f, 0), 0.5f).OnComplete(() =>
                 {
-                    cameraMovement.maxDistance = cameraMovement.RevertDistance;
+                    animator.SetBool("Talk", false);
                 });
             }
             player.interaction = false;
@@ -43,8 +49,9 @@ public class PlayerConversationState : StateMachineBehaviour
 
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        player.OpenUI(UIPanelType.Dialogue);
+        player.CloseUI(UIPanelType.Dialogue);
         player.interactRange = 3;
-        animator.SetBool("Talk", false);
+        cameraMovement.maxDistance = cameraMovement.RevertDistance;
     }
+
 }
