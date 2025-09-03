@@ -21,4 +21,10 @@ public static class APIEvents
 
     //인벤토리 목록 가져오기
     public static Action<InventoryResponse> OnGetInventory;
+
+
+
+    //퀘스트 데이터 가져오기
+    public static Action<QuestData[]> OnGetQuestData;
+
 }

@@ -6,7 +6,6 @@ public class DialogueManager : MonoBehaviour
 {
     Dictionary<int, string[]> dialogue;
     PlayerUIManager playerUIManager;
-    QuestManager questManager;
 
     int currentIndex = 0;
     int dialogIndex = 0;
@@ -15,7 +14,6 @@ public class DialogueManager : MonoBehaviour
     private void Awake()
     {
         playerUIManager = GetComponent<PlayerUIManager>();
-        questManager = GetComponent<QuestManager>();
         dialogue = new Dictionary<int, string[]>();
         GenerateData();
     }
@@ -45,8 +43,7 @@ public class DialogueManager : MonoBehaviour
         currentIndex = 0;
         playerUIManager.SetNpcName(npc.transform.name);
 
-        dialogIndex = npc.id + 0;
-            //+ questManager.GetQuest(npc.id);
+        dialogIndex = npc.id + 0;// + questManager.GetQuest(npc.id);
         if (dialogue.ContainsKey(dialogIndex))
         {
             currentText = GetDialog(dialogIndex, 0);
@@ -69,6 +66,7 @@ public class DialogueManager : MonoBehaviour
             return dialogue[id][index];
         }
     }
+
     public bool NextDialog()
     {
         currentText = GetDialog(dialogIndex, ++currentIndex);

@@ -19,6 +19,7 @@ public class APIManager : MonoBehaviour
     public PlayerDataAPI PlayerData;
     public MarketAPI Market;
     public InventoryAPI Inventory;
+    public QuestAPI Quest;
     public LoginData loginData;
 
 
@@ -67,6 +68,7 @@ public class APIManager : MonoBehaviour
         PlayerData = new PlayerDataAPI(this);
         Market = new MarketAPI(this, loginData.user_id);
         Inventory = new InventoryAPI(this, loginData.user_id);
+        Quest = new QuestAPI(this, loginData.user_id);
 
         PlayerData.RequestLoadPlayerData(loginData.user_id);
     }

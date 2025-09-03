@@ -15,36 +15,48 @@ public class QuestManager : MonoBehaviour
 
     public Quest currentQuest;
     public int currentQuestStep = 0; // 현재 퀘스트 진행도
-    bool isQuestActive = false;
 
 
     private void Awake()
     {
         playerSetting = GetComponentInParent<PlayerSetting>();
         QuestList = new Dictionary<int, List<QuestData>>();
-        GenerateData();
+
+        APIEvents.OnGetQuestData += GenerateData;
 
         playerSetting.OnLevelUp += UnlockQuests;
+        APIManager.Instance.Quest.RequestGetQuestData();
     }
 
-    private void OnDisable()
+    private void OnDestroy()
     {
         playerSetting.OnLevelUp -= UnlockQuests;
+        APIEvents.OnGetQuestData -= GenerateData;
     }
 
-    void GenerateData()
+    void GenerateData(QuestData[] questData)
     {
-        
-        // 퀘스트 리스트 받아오기
-        // 퀘스트 번호, 퀘스트 이름, 관련 NPC, 퀘스트 설명
-
+        foreach (QuestData quest in questData)
+        {
+            Debug.Log(quest);
+            if (!QuestList.ContainsKey(quest.requiredLevel))
+            {
+                QuestList.Add(quest.requiredLevel, new List<QuestData>());
+            }
+            QuestList[quest.requiredLevel].Add(quest);
+        }
     }
+
 
 
     //레벨 따라 퀘스트 해금
     public void UnlockQuests()
     {
-        if (QuestList[playerSetting.level].Count <= 0) { Debug.Log("해당 레벨 퀘스트 없음."); }
+
+        if (!QuestList.ContainsKey(playerSetting.level)) { 
+            Debug.Log("해당 레벨 퀘스트 없음.");
+            return;
+        }
         foreach(QuestData data in QuestList[playerSetting.level])
         {
             QuestEvents.QuestUnlocked(data);
