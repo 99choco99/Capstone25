@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using static SocketManager;
+using static APIManager;
 
 public class DataManager : MonoBehaviour
 {
@@ -9,7 +9,7 @@ public class DataManager : MonoBehaviour
 
     public PlayerData playerData;
 
-    public event Action OnSavePlayerData;
+    public event Action OnSave;
 
     private void Awake()
     {
@@ -23,12 +23,13 @@ public class DataManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+        InvokeRepeating("AutoSaveData", 10f, 10f);
     }
     
 
-    public void SavePlayerData()
+    public void Save()
     {
-        OnSavePlayerData?.Invoke();
+        OnSave?.Invoke();
     }
 
     public void LoadPlayerData(PlayerData data)
@@ -36,5 +37,11 @@ public class DataManager : MonoBehaviour
         playerData = data;
     }
 
+    //플레이어 데이터 자동 저장
+    private void AutoSaveData()
+    {
+        Save();
+        APIManager.Instance.PlayerData.RequestSavePlayerData(playerData);
+    }
 
 }

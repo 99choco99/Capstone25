@@ -13,7 +13,7 @@ public class PlayerStateMachine : MonoBehaviour
     public PlayerSlideState playerSlideState;   // 슬라이드 상태
     public PlayerDamagedState playerDamagedState;   // 데미지를 입은 상태
     public PlayerDeadState playerDeadState;   // 죽은 상태
-    public PlayerConversationState playerConversationState;  // 대화 상태
+    public ConversationState playerConversationState;  // 대화 상태
 
 
     private bool isTransitionPosible; //상태 전이가 가능한가?

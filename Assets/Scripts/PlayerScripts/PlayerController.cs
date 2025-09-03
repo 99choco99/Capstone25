@@ -26,7 +26,6 @@ public class PlayerController : NetworkBehaviour
     public PlayerSetting playerSetting;
 
     [Header("PlayerState")]
-    public NPC currentTalkingNPC;
     public bool canExecute;
 
 
@@ -83,6 +82,13 @@ public class PlayerController : NetworkBehaviour
     public void CloseUI()
     {
         currentState = PlayerState.Idle;
+        playerInput.SwitchCurrentActionMap("Player");
+        Cursor.lockState = CursorLockMode.Locked;
+    }
+    public void CloseUI(UIPanelType type)
+    {
+        currentState = PlayerState.Idle;
+        PlayerUIManager.instnace.CloseUI(type);
         playerInput.SwitchCurrentActionMap("Player");
         Cursor.lockState = CursorLockMode.Locked;
     }

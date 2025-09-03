@@ -282,7 +282,7 @@
                     "name": "",
                     "id": "05f6913d-c316-48b2-a6bb-e225f14c7960",
                     "path": "<Mouse>/leftButton",
-                    "interactions": "Press(behavior=2)",
+                    "interactions": "Press(behavior=1)",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
                     "action": "Attack",
@@ -697,6 +697,15 @@
                     "name": "escape",
                     "type": "Button",
                     "id": "9365a35c-7f6f-40f6-b186-c9e3cf55d607",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Interaction",
+                    "type": "Button",
+                    "id": "223ff003-df7c-4bbd-a25d-d274555da20d",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -1130,6 +1139,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "escape",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f59e8855-aec3-487c-9b29-71f491f704a0",
+                    "path": "<Keyboard>/f",
+                    "interactions": "Press(behavior=2)",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Interaction",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

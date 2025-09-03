@@ -5,8 +5,8 @@ public class MarketNPC : NPC
     [SerializeField] GameObject MarketUI;
 
 
-    public override void Interact(Transform Player)
+    public override void Interact(PlayerController player)
     {
-        Player.GetComponent<PlayerController>().OpenUI(UIPanelType.Market);
+        player.OpenUI(UIPanelType.Market);
     }
 }

@@ -2,9 +2,9 @@ using UnityEngine;
 
 public class DropItem : Item, IInteractable
 {
-    public void Interact(Transform player)
+    public void Interact(PlayerController player)
     {
-        Slot slot = InventoryManager.instance.FindEmptySlot(data.type);
+        SlotData slot = InventoryManager.instance.FindEmptySlot(data.type);
 
         slot.itemCount += data.count;
         Destroy(gameObject);

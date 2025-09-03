@@ -5,15 +5,11 @@ using UnityEngine.UI;
 
 public class InventoryManager : MonoBehaviour
 {
-    ScrollRect ScrollRect;
+    public bool isInit;
+    public const int slotCount = 36;
+    public Dictionary<SlotType, List<SlotData>> Inventory;
+
     public GameObject ItemDescription;
-    public Transform EquipmentInventory;
-    public Transform ConsumptionInventory;
-    public Transform OtherInventory;
-
-    public Dictionary<SlotType, InventoryData> Inventory;
-
-
     public static InventoryManager instance;
 
     private void Awake()
@@ -27,105 +23,184 @@ public class InventoryManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        ScrollRect = GetComponent<ScrollRect>();
+        APIEvents.OnGetInventory += LoadInventory;
+        InventoryEvents.OnSlotDataChanged += SaveInventory;
+        MarketManagerEvents.OnCancelRegistComplete += ReturnItemFromMarket;
+    }
 
+    private void Start()
+    {
         //슬롯타입, 전체슬롯, 빈슬롯 정보를 초기화
-        Inventory = new ();
-        Init(SlotType.Equipment, EquipmentInventory);
-        Init(SlotType.Consumption, ConsumptionInventory);
-        Init(SlotType.Other, OtherInventory);
-        transform.parent.gameObject.SetActive(false);
+        Inventory = new();
+
+        Init(SlotType.Equipment, slotCount);
+        Init(SlotType.Consumption, slotCount);
+        Init(SlotType.Other, slotCount);
+
+        isInit = true;
+        APIManager.Instance.Inventory.RequestInventory();
+    }
+    private void OnEnable()
+    {
+
     }
 
-    public void SetInvenType(RectTransform InventoryType)
+    private void OnDestroy()
     {
-        ScrollRect.content = InventoryType;
+        APIEvents.OnGetInventory -= LoadInventory;
+        InventoryEvents.OnSlotDataChanged -= SaveInventory;
+        MarketManagerEvents.OnCancelRegistComplete -= ReturnItemFromMarket;
     }
 
-    void Init(SlotType type, Transform InventoryTransform)
-    {
-        List<Slot> slots = new(InventoryTransform.GetComponentsInChildren<Slot>());
-        Inventory.Add(type, new InventoryData(slots));
 
-        foreach (Slot slot in slots)
+    void Init(SlotType type, int count)
+    {
+        List<SlotData> slots = new List<SlotData>();
+        for (int i = 0; i < count; i++)
         {
-            slot.OnChangedSlot += HandleSlotChanged;
+            slots.Add(new SlotData { slotIndex = i });
+        }
+        Inventory.Add(type, slots);
+        InventoryEvents.OnInventoryDataInitialized?.Invoke(type, count);
+    }
+
+    //인벤토리 불러오기
+    public void LoadInventory(InventoryResponse response)
+    {
+        if(response?.inventory == null) { return; }
+        foreach(SlotData data in response.inventory)
+        {
+            Inventory[data.slotType][data.slotIndex].itemId = data.itemId;
+            Inventory[data.slotType][data.slotIndex].itemCount = data.itemCount;
+            Inventory[data.slotType][data.slotIndex].itemData = ItemManager.Instance.GetItem(data.itemId);
+            Inventory[data.slotType][data.slotIndex].itemSpec = data.itemSpec;
+            InventoryEvents.OnSlotDataChanged?.Invoke(data.slotType, data.slotIndex);
+        }
+        
+    }
+
+    public void SaveInventory(SlotType type, int slotIndex)
+    {
+        APIManager.Instance.Inventory.RequestSaveInventory(Inventory[type][slotIndex]);
+    }
+
+
+    //아이템이 있는 슬롯끼리 교환
+    public void SwapItems(SlotType sourceSlotType, int sourceSlotIndex, SlotType destinationSlotType, int destinationSlotIndex)
+    {
+        SlotData sourceData = Inventory[sourceSlotType][sourceSlotIndex];
+        SlotData destinationData = Inventory[destinationSlotType][destinationSlotIndex];
+
+        // 데이터 교환
+        (sourceData.itemId, destinationData.itemId) = (destinationData.itemId, sourceData.itemId);
+        (sourceData.itemCount, destinationData.itemCount) = (destinationData.itemCount, sourceData.itemCount);
+        (sourceData.itemData, destinationData.itemData) = (destinationData.itemData, sourceData.itemData);
+        (sourceData.itemSpec, destinationData.itemSpec) = (destinationData.itemSpec, sourceData.itemSpec);
+
+        // 변경된 두 슬롯에 대해 UI 업데이트를 요청합니다.
+        InventoryEvents.OnSlotDataChanged?.Invoke(sourceSlotType, sourceSlotIndex);
+        InventoryEvents.OnSlotDataChanged?.Invoke(destinationSlotType, destinationSlotIndex);
+    }
+
+    // 아이템을 빈 슬롯으로 이동
+    public void MoveToEmptySlot(SlotType sourceSlotType, int sourceSlotIndex, SlotType destinationSlotType, int destinationSlotIndex)
+    {
+        SlotData sourceData = Inventory[sourceSlotType][sourceSlotIndex];
+        SlotData destinationData = Inventory[destinationSlotType][destinationSlotIndex];
+
+        // 소스 데이터를 목적지 슬롯으로 복사
+        destinationData.itemId = sourceData.itemId;
+        destinationData.itemCount = sourceData.itemCount;
+        destinationData.itemData = sourceData.itemData;
+        destinationData.itemSpec = sourceData.itemSpec;
+
+        // 소스 슬롯 초기화       
+        sourceData.itemId = 0;
+        sourceData.itemCount = 0;
+        sourceData.itemData = null;
+        sourceData.itemSpec = null;
+
+        // 변경된 두 슬롯에 대해 UI 업데이트를 요청합니다.
+        InventoryEvents.OnSlotDataChanged?.Invoke(sourceSlotType, sourceSlotIndex);
+        InventoryEvents.OnSlotDataChanged?.Invoke(destinationSlotType, destinationSlotIndex);
+    }
+
+    //마켓에 아이템을 등록했을 때
+    public void RegisterItemToMarket(SlotData saleSlotData, int saleCount)
+    {
+        saleSlotData.itemCount -= saleCount;
+        saleSlotData.slotType = saleSlotData.itemData.type;
+        if (saleSlotData.itemCount <= 0)
+        {
+            saleSlotData.itemData = null;
+            saleSlotData.itemSpec = null;
+            saleSlotData.itemId = 0;
+            saleSlotData.itemCount = 0;
+        }
+        Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemData = saleSlotData.itemData;
+        Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemSpec = saleSlotData.itemSpec;
+        Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemId = saleSlotData.itemId;
+        Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemCount = saleSlotData.itemCount;
+        InventoryEvents.OnSlotDataChanged?.Invoke(saleSlotData.slotType, saleSlotData.slotIndex);
+    }
+
+
+    //마켓에 아이템을 취소했을 때
+    public void ReturnItemFromMarket(CancelRegistResponse response)
+    {
+        if (response.success)
+        {
+            ItemData itemData = ItemManager.Instance.GetItem(response.ItemId);
+            SlotData slotData = FindEmptySlot(itemData.type);
+            slotData.itemData = itemData;
+            slotData.itemSpec = response.spec;
+            slotData.itemData.spec = response.spec;
+            slotData.itemCount = response.ItemCount;
+            slotData.itemId = response.ItemId;
+            InventoryEvents.OnSlotDataChanged?.Invoke(GetSlotType(slotData), slotData.slotIndex);
+            
         }
     }
 
-
-    //슬롯에서 변경이 일어날 경우
-    private void HandleSlotChanged(Slot slot)
+    // 아이템을 구매하는 로직
+    public void AddPurchasedItem(BuyItemResponse response)
     {
-        InventoryData data = Inventory[slot.slotType];
+        ItemData data = ItemManager.Instance.GetItem(response.ItemId);
+        SlotData emptySlotData = FindEmptySlot(data.type);
 
-        if (slot.hasItem)
+        if (emptySlotData == null)
         {
-            data.EmptySlots.Remove(slot.slotIndex);
-        }
-        else
-        {
-            data.EmptySlots.Add(slot.slotIndex);
-        }
-    }
-
-
-    //슬롯의 정보를 업데이트
-    public void UpdateSlot(Slot slot, int delta)
-    {
-        InventoryData data = Inventory[slot.slotType];
-        int index = slot.slotIndex;
-
-        if (slot.currentItem == null)
-        {
-            Debug.LogWarning("아이템이 없는 슬롯입니다.");
-            slot.Clear();
+            Debug.LogWarning("인벤토리 공간 없음");
             return;
         }
 
-        data.Slots[index].itemCount += delta;
+        // 데이터만 변경하고, UI는 건드리지 않습니다.
+        emptySlotData.itemData = data;
+        emptySlotData.itemId = response.ItemId;
+        emptySlotData.itemSpec = response.spec;
+        emptySlotData.itemCount = response.purchasedItemCount;
 
-        if (data.Slots[index].itemCount <= 0)
-        {
-            // 수량이 0 이하 슬롯 비우기
-            Destroy(data.Slots[index].currentItem.gameObject);
-            data.Slots[index].Clear();
-        }
-        else
-        {
-            // UI 갱신
-            data.Slots[index].UpdateUI();
-        }
+        Inventory[emptySlotData.slotType][emptySlotData.slotIndex] = emptySlotData;
+
+        // 데이터 변경이 완료되었음을 UI에 알립니다.
+        InventoryEvents.OnSlotDataChanged?.Invoke(data.type, emptySlotData.slotIndex);
     }
 
     //비어있는 인벤토리 슬롯 찾아서 반환
-    public Slot FindEmptySlot(SlotType type)
+    public SlotData FindEmptySlot(SlotType type)
     {
-        if(Inventory[type].EmptySlots.Count > 0)
-        {
-            int emptyIndex = Inventory[type].EmptySlots.Min;
-            Inventory[type].EmptySlots.Remove(emptyIndex);
-            Inventory[type].Slots[emptyIndex].hasItem = true;
-
-            return Inventory[type].Slots[emptyIndex];
-        }
-        Debug.Log("인벤토리 공간 없음");
-        return null;
+        return Inventory[type].Find(s => !s.hasItem);
     }
 
-
-
-    public class InventoryData
+    //슬롯 타입 반환
+    public SlotType GetSlotType(SlotData slotData)
     {
-        public List<Slot> Slots;
-        public SortedSet<int> EmptySlots;
-
-        public InventoryData(List<Slot> slots) {
-            Slots = slots;
-            for (int i = 0; i < Slots.Count; i++) {
-                slots[i].slotIndex = i;
-            }
-            EmptySlots = new SortedSet<int>(slots.FindAll(s => !s.hasItem).ConvertAll(s => s.slotIndex));
-        }
+        return slotData.slotType;
     }
+
+    public SlotData GetSlotData(SlotData slotData)
+    {
+        return Inventory[slotData.slotType][slotData.slotIndex];
+    }
+
 }

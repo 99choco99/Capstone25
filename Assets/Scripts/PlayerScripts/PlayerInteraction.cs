@@ -31,17 +31,16 @@ public class PlayerInteraction : MonoBehaviour
             if (!isWorking && player.interaction)
             {
                 isWorking = true;
-                if (select.gameObject.TryGetComponent(out interactObject))
-                {
-                    interactObject.Interact(player.transform);  //상호작용
-                }
                 if (select.gameObject.TryGetComponent<QuestNPC>(out QuestNPC npc))
                 {
-                    player.anim.SetBool("Talk", true);
-                    player.currentTalkingNPC = npc;
                     // NPC라면 대화상태 진입
                     dialogueManager.StartConversation(npc);
                 }
+                if (select.gameObject.TryGetComponent(out interactObject))
+                {
+                    interactObject.Interact(player);  //상호작용
+                }
+
                 StartCoroutine("WaitTime", 0.5f);
             }
         }

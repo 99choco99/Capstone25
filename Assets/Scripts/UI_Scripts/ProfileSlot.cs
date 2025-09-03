@@ -21,7 +21,7 @@ public class ProfileSlot : Slot
         if (newItem.data.type == SlotType.Equipment && newItem.data.equipmentType == EquipmentType)
         {
             EquipmentItem Item = (EquipmentItem)newItem;
-            currentEquippedItem = (EquipmentItem)currentItem;
+            //currentEquippedItem = (EquipmentItem)currentItem;
             if (currentEquippedItem != null) { currentEquippedItem.TakeOff(playerData); }
             Item.Equip(playerData);
             currentEquippedItem = Item;
