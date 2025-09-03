@@ -2,7 +2,6 @@ using NUnit.Framework;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using WebSocketSharp;
 using static APIManager;
 
 public class SellingList : MonoBehaviour

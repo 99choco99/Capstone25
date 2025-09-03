@@ -57,9 +57,6 @@ public class InventoryAPI
         {
             webRequest.uploadHandler = new UploadHandlerRaw(bodyRaw);
             webRequest.downloadHandler = new DownloadHandlerBuffer();
-
-            // PATCH 요청으로 인식하도록 헤더 추가
-            webRequest.SetRequestHeader("X-HTTP-Method-Override", "PATCH");
             webRequest.SetRequestHeader("Content-Type", "application/json");
 
             yield return webRequest.SendWebRequest();

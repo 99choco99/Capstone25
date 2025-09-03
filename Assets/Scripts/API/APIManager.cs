@@ -42,15 +42,15 @@ public class APIManager : MonoBehaviour
     public void Start()
     {
 #if UNITY_WEBGL
-        //MySignalReady();
-        //Debug.Log("Unity -> 웹: 준비 완료 신호 보냄");
+        MySignalReady();
+        Debug.Log("Unity -> 웹: 준비 완료 신호 보냄");
 #endif
 
 
 #if UNITY_EDITOR
-        LoginData testData = new LoginData { user_id = "editor_user_id2", nickname = "에디터_테스터" };
-        Debug.Log("에디터로 실행");
-        ReceiveLoginData(JsonConvert.SerializeObject(testData));
+        //LoginData testData = new LoginData { user_id = "editor_user_id2", nickname = "에디터_테스터" };
+        //Debug.Log("에디터로 실행");
+        //ReceiveLoginData(JsonConvert.SerializeObject(testData));
 #endif
 
 

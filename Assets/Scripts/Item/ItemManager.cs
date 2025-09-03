@@ -14,9 +14,10 @@ public class ItemManager : MonoBehaviour
         if(Instance == null)
         {
             Instance = this;
+            DontDestroyOnLoad(gameObject);
         }
         else { 
-            Destroy(Instance);
+            Destroy(gameObject);
             return;
         }
         Items = new Dictionary<int, ItemData>();

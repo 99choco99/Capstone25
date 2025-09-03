@@ -9,7 +9,7 @@ public class InventoryManager : MonoBehaviour
     public const int slotCount = 36;
     public Dictionary<SlotType, List<SlotData>> Inventory;
 
-
+    public GameObject ItemDescription;
     public static InventoryManager instance;
 
     private void Awake()
