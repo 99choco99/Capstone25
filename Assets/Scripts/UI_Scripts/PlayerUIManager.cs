@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 
@@ -16,9 +17,9 @@ public enum UIPanelType {
 }
 public class PlayerUIManager : MonoBehaviour
 {
-    public PlayerSetting player;
+    public PlayerStats playerStats;
 
-    
+
     public Slider PlayerHpUI;
     public Slider GuardGauge;
     public Slider EnemyHpUI;
@@ -48,12 +49,7 @@ public class PlayerUIManager : MonoBehaviour
 
     private void Awake()
     {
-        player = GetComponentInParent<PlayerSetting>();
-    }
-
-    private void Start()
-    {
-        if(instnace == null)
+        if (instnace == null)
         {
             instnace = this;
         }
@@ -61,6 +57,12 @@ public class PlayerUIManager : MonoBehaviour
         {
             Destroy(instnace);
         }
+        playerStats = GetComponentInParent<PlayerStats>();
+    }
+
+    private void Start()
+    {
+
 
         // 딕셔너리에 UI 패널들을 등록
         panelDictionary = new Dictionary<UIPanelType, GameObject>()
@@ -73,21 +75,26 @@ public class PlayerUIManager : MonoBehaviour
             {UIPanelType.Dialogue, dialogUI }
         };
 
-        player.OnHpChanged += UpdateHp;
-        player.OnExpChanged += UpdateExp;
-        player.OnGuardChanged += UpdateGuardGauge;
+        playerStats.OnHpChanged += UpdateHp;
+        playerStats.OnExpChanged += UpdateExp;
+        playerStats.OnGuardChanged += UpdateGuardGauge;
+
+        foreach(var panel in panelDictionary.Values)
+        {
+            panel.SetActive(false);
+        }
     }
 
     public void UpdateHp(float currenthp)
     {
-        PlayerHpUI.value = currenthp / player.maxHp;
+        PlayerHpUI.value = currenthp / playerStats.maxHp;
     }
 
     public void UpdateExp(int exp, int level)
     {
-        if(exp / player.maxExp[level] < 1)
+        if(exp / playerStats.maxExp[level] < 1)
         {
-            ExpUI.value = exp / player.maxExp[level];
+            ExpUI.value = exp / playerStats.maxExp[level];
         }
         levelText.text = $"Lv. {level}";
         ExpText.text = $"{ExpUI.value}%";
@@ -95,7 +102,7 @@ public class PlayerUIManager : MonoBehaviour
 
     public void UpdateGuardGauge(float damage)
     {
-        GuardGauge.maxValue = player.defense;
+        GuardGauge.maxValue = playerStats.defense;
         GuardGauge.value += damage;
         StartCoroutine(DecreaseGuardGauge());
     }
@@ -154,6 +161,7 @@ public class PlayerUIManager : MonoBehaviour
 
     public void OpenUI(UIPanelType type)
     {
+        GameManager.instance.ChangeState(GameState.UIMode);
         panelDictionary[type].SetActive(true);
         currentOpenUI.Push(type);
     }
@@ -164,6 +172,10 @@ public class PlayerUIManager : MonoBehaviour
         if (currentOpenUI.Count > 0 && currentOpenUI.Peek() == type)
         {
             currentOpenUI.Pop();
+        }
+        if (currentOpenUI.Count == 0)
+        {
+            GameManager.instance.ChangeState(GameState.Gameplay);
         }
     }
 
@@ -177,7 +189,13 @@ public class PlayerUIManager : MonoBehaviour
                 LastUIType = currentOpenUI.Pop();
             }
             panelDictionary[LastUIType].SetActive(false);
+            if (currentOpenUI.Count == 0)
+            {
+                GameManager.instance.ChangeState(GameState.Gameplay);
+            }
         }
     }
+
+
 }
 

@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class CameraMovement : MonoBehaviour
 {
-    PlayerController playerController;  // 사용자 입력
+    PlayerInputHandler PlayerInputHandler;  // 사용자 입력
     public Transform objectToFollow;  // 카메라가 따라갈 대상
     public float followSpeed = 10f;  // 카메라 이동속도
     public float sensitivity = 50f;  // 카메라 감도
@@ -25,7 +25,7 @@ public class CameraMovement : MonoBehaviour
 
     private void Awake()
     {
-        playerController = GetComponentInParent<PlayerController>();
+        PlayerInputHandler = GetComponentInParent<PlayerInputHandler>();
         rotX = transform.localRotation.eulerAngles.x;
         rotY = transform.localRotation.eulerAngles.y;
 
@@ -37,8 +37,8 @@ public class CameraMovement : MonoBehaviour
 
     private void Update()
     {
-        rotX += -(playerController.look.y) * sensitivity * Time.deltaTime;
-        rotY += playerController.look.x * sensitivity * Time.deltaTime;
+        rotX += -(PlayerInputHandler.LookInput.y) * sensitivity * Time.deltaTime;
+        rotY += PlayerInputHandler.LookInput.x * sensitivity * Time.deltaTime;
 
         rotX = Mathf.Clamp(rotX, -clampAngle, clampAngle);
         Quaternion rot = Quaternion.Euler(rotX, rotY, 0);

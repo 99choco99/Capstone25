@@ -4,7 +4,7 @@ using UnityEngine;
 public class Attack : ScriptableObject
 {
     public bool canGuard;
-    public float[] damage;
-    public float[] knockbackPower;
+    public float damage;
+    public float knockbackPower;
     public float knockbackDuration;
 }

@@ -1,44 +1,57 @@
 using System.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
 
-public class PlayerGuardState : StateMachineBehaviour
+public class PlayerGuardState : State
 {
-    PlayerController player;
+
+    private float guardTimer;
+
+    public PlayerGuardState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
 
-    public override void OnStateMachineEnter(Animator animator, int stateMachinePathHash)
+    public override void Enter()
     {
-        if (player == null)
+        guardTimer = 0f;
+        player.Anim.SetBool("Guard", true);
+        player.Motor.StopMovement();
+
+        player.Motor.LockMovementFor(0.45f);
+    }
+
+
+    public override void Exit()
+    {
+        player.Anim.SetBool("Guard", false);
+    }
+
+    public override void Update()
+    {
+        guardTimer += Time.deltaTime;
+
+
+        if (!player.InputHandler.GuardInput)
         {
-            player = animator.GetComponent<PlayerController>();
-        }
-        player.currentState = PlayerState.Guard;
-        player.currentSpeed = player.guardMoveSpeed;
-        player.playerBehaviour.canMove = false;
-        player.anim.SetBool("isMove", false);
-    }
-    public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    {
-        if (player == null)
-        {
-            player = animator.GetComponent<PlayerController>();
-        }
-        player.currentState = PlayerState.Guard;
-    }
-
-
-    public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    {
-        if (!player.guard)
-        {
-            player.anim.SetBool("Guard", false);
+            if (player.InputHandler.MoveInput == Vector3.zero)
+            {
+                stateMachine.TransitionTo(stateMachine.PlayerIdleState);
+            }
+            else
+            {
+                stateMachine.TransitionTo(stateMachine.PlayerMoveState);
+            }
+            return;
         }
     }
 
-    public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)
+    public override void FixedUpdate()
     {
-        player.currentState = PlayerState.Move;
-        player.guard = false;
+        player.Motor.Move(player.InputHandler.MoveInput, player.Stats.MoveSpeed);
     }
+
+
+    public bool IsParryWindowActive()
+    {
+        return guardTimer <= player.Combat.parryDuration;
+    }
+
 }

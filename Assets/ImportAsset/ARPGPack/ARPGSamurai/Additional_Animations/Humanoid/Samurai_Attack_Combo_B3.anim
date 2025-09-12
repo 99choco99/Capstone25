@@ -24631,7 +24631,7 @@ AnimationClip:
     m_AdditiveReferencePoseClip: {fileID: 0}
     m_AdditiveReferencePoseTime: 0
     m_StartTime: 0
-    m_StopTime: 0.9666667
+    m_StopTime: 1
     m_OrientationOffsetY: 0
     m_Level: 0
     m_CycleOffset: 0
@@ -48082,7 +48082,7 @@ AnimationClip:
   m_HasMotionFloatCurves: 0
   m_Events:
   - time: 0.15
-    functionName: AE_playerAttackRotationEnable
+    functionName: AE_playerMoveDisable
     data: 
     objectReferenceParameter: {fileID: 3239977534788678177, guid: 7677e18cda4bb0a4fa1eacd99dd5220a,
       type: 3}
@@ -48090,14 +48090,6 @@ AnimationClip:
     intParameter: 0
     messageOptions: 0
   - time: 0.23333333
-    functionName: AE_playerAttackRotationDisable
-    data: 
-    objectReferenceParameter: {fileID: 3239977534788678177, guid: 7677e18cda4bb0a4fa1eacd99dd5220a,
-      type: 3}
-    floatParameter: 0
-    intParameter: 0
-    messageOptions: 0
-  - time: 0.25
     functionName: AE_playerAttackStart
     data: 
     objectReferenceParameter: {fileID: 3239977534788678177, guid: 7677e18cda4bb0a4fa1eacd99dd5220a,
@@ -48107,6 +48099,14 @@ AnimationClip:
     messageOptions: 0
   - time: 0.31666666
     functionName: AE_playerAttackEnd
+    data: 
+    objectReferenceParameter: {fileID: 3239977534788678177, guid: 7677e18cda4bb0a4fa1eacd99dd5220a,
+      type: 3}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 1
+    functionName: AE_playerMoveEnable
     data: 
     objectReferenceParameter: {fileID: 3239977534788678177, guid: 7677e18cda4bb0a4fa1eacd99dd5220a,
       type: 3}

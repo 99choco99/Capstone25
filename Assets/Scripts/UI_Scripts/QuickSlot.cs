@@ -5,14 +5,14 @@ using System.Collections;
 
 public class QuickSlot : Slot
 {
-    PlayerSetting playerData;
+    PlayerStats playerData;
     Slider slider;
     ConsumptionItem quickItem;
     bool isCoolingDown = false;
 
     private void Start()
     {
-        playerData = GetComponentInParent<PlayerSetting>();
+        playerData = GetComponentInParent<PlayerStats>();
         slider = GetComponentInChildren<Slider>();
     }
     public override void OnDrop(PointerEventData eventData)

@@ -7,7 +7,7 @@ public class DataManager : MonoBehaviour
 {
     public static DataManager Instance;
 
-    public PlayerData playerData;
+    public PlayerData playerData { get; private set; }
 
     public event Action OnSave;
 
@@ -43,5 +43,11 @@ public class DataManager : MonoBehaviour
         Save();
         APIManager.Instance.PlayerData.RequestSavePlayerData(playerData);
     }
+
+    public int GetMaxExpForLevel(int level)
+    {
+        return 1;
+    }
+
 
 }

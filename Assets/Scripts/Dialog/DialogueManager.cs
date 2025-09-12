@@ -1,9 +1,25 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+public class DialogueLine
+{
+    public string speakerName; // 화자 이름
+    [TextArea(3, 10)] // 인스펙터에서 여러 줄로 편하게 입력하도록
+    public string sentence;    // 대사 내용
+}
+
 public class DialogueManager : MonoBehaviour
 {
+    public static DialogueManager instance;
+
+
+    public event Action<NPC, Player> OnConversationStart;
+    public event Action OnConversationEnd;
+    public event Action<DialogueLine> OnShowLine;
+
     Dictionary<int, string[]> dialogue;
     PlayerUIManager playerUIManager;
 
@@ -13,6 +29,17 @@ public class DialogueManager : MonoBehaviour
 
     private void Awake()
     {
+        if(instance == null)
+        {
+            instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+
         playerUIManager = GetComponent<PlayerUIManager>();
         dialogue = new Dictionary<int, string[]>();
         GenerateData();

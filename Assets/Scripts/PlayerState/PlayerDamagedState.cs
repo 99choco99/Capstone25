@@ -1,35 +1,25 @@
-using TMPro;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-public class PlayerDamagedState : StateMachineBehaviour
+public class PlayerDamagedState : State
 {
-    private PlayerController player;
+
+    private float exitTimer; // 피격 상태에서 머무를 시간
+    public PlayerDamagedState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
 
-
-    public override void OnStateMachineEnter(Animator animator, int stateMachinePathHash)
+    public override void Enter()
     {
-        if(player == null)
+        exitTimer = 0.5f;
+        player.Combat.ResetCombo(); // 피격 시 콤보 강제 초기화
+    }
+
+    public override void Update()
+    {
+        exitTimer -= Time.deltaTime;
+
+        if (exitTimer <= 0f)
         {
-            player = animator.GetComponent<PlayerController>();
+            stateMachine.TransitionTo(stateMachine.PlayerIdleState);
         }
-        player.currentState = PlayerState.Damaged;
     }
-
-    public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    {
-        if (player == null)
-        {
-            player = animator.GetComponent<PlayerController>();
-        }
-        player.currentState = PlayerState.Damaged;
-    }
-
-    public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)
-    {
-        animator.SetBool("AirBornState", false);
-        player.currentState = PlayerState.Move;
-    }
-
 }

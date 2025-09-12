@@ -9,59 +9,53 @@ using System.Linq;
 
 public class PlayerInteractUI : MonoBehaviour
 {
-    [SerializeField] private GameObject InteractInfo; //주변 interactable 의 정보
-    [SerializeField] private GameObject containerGameObject;  //InteractInfo 를 담기 위함
-    [SerializeField] private PlayerInteraction playerInteraction; // 플레이어의 interact 참조
-
-    private Collider[] InteractObject;//플레이어 주변의 InteractObject  저장
-    private List<GameObject> InteractUIContainer;  //InteractObject를 보여주기 위한 컨테이너
-    private TMP_Text InteractObjectName;  // InteractObject의 이름
+    [SerializeField] private GameObject uiContainer; //전체 UI
+    [SerializeField] private GameObject promptPrefab;  // 각 상호작용 대상들의 prompt
+    [SerializeField] private Transform promptParent;  // prompt 부모
 
 
-    private void Start()
+    private PlayerInteraction playerInteraction; // 플레이어의 interact 참조
+    private List<GameObject> uiInteractables = new List<GameObject>();
+
+
+    private void Awake()
     {
-        InteractObject = new Collider[10];
-        InteractUIContainer = new List<GameObject>();
+        playerInteraction = GetComponentInParent<PlayerInteraction>();
+        playerInteraction.OnInteractableChanged += UpdateInteractablesList;
+        playerInteraction.OnSelectionChanged += UpdateSelection;
+
+        uiContainer.SetActive(false);
     }
 
-    private void Update()
+
+
+    void UpdateInteractablesList(List<IInteractable> interactables)
     {
-        InteractObject = playerInteraction.GetInteractObject();  //주변 InteractObject 가져오기
-        InteractUI();  // UI
+        foreach (Transform child in promptParent) { Destroy(child.gameObject); }
+        uiInteractables.Clear();
+
+        if (interactables.Count == 0) { 
+            uiContainer.SetActive(false); 
+            return; 
+        }
+        uiContainer.SetActive(true);
+        
+        foreach(var interactable in interactables)
+        {
+            var promptInstance = Instantiate(promptPrefab, promptParent);
+            var promptText = promptInstance.GetComponentInChildren<TextMeshProUGUI>();
+            promptText.text = interactable.InteractionPrompt;
+            uiInteractables.Add(promptInstance);
+        }
+
+        UpdateSelection(playerInteraction.currentSelection);
     }
 
-    void InteractUI()
+    void UpdateSelection(IInteractable newSelection)
     {
-        foreach (GameObject obj in InteractUIContainer)
+        for(int i = 0; i < uiInteractables.Count; i++)
         {
-            obj.SetActive(false);
+            uiInteractables[i].GetComponent<Image>().color = (playerInteraction.interactablesInRange[i] == playerInteraction.currentSelection) ? Color.green : Color.red;
         }
-
-        // 여유 Container가 없으면 생성, 있으면 Active해서 활용
-        for (int i = 0; i < InteractObject.Length; i++)
-        {
-            if (InteractObject[i] == null) { break; }
-            GameObject select;
-
-            if (i < InteractUIContainer.Count)
-            {
-
-                select = InteractUIContainer[i];
-                select.SetActive(true);
-            }
-            else
-            {
-                select = Instantiate(containerGameObject, InteractInfo.transform);
-                InteractUIContainer.Add(select);
-            }
-
-            // 주변 NPC 이름 가져오기
-            InteractObjectName = select.transform.GetChild(1).GetComponentInChildren<TMP_Text>();
-            InteractObjectName.text = InteractObject[i].name;
-        }
-        if(InteractUIContainer.Count <= 0) { return; }
-        //선택된 UI의 색 바꾸기
-        InteractUIContainer[playerInteraction.preselectIndex].transform.GetChild(1).GetComponent<Image>().color = new Color(1, 0, 0);
-        InteractUIContainer[playerInteraction.selectIndex].transform.GetChild(1).GetComponent<Image>().color = new Color(0, 1, 0);
     }
 }

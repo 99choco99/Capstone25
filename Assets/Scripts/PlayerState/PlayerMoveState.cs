@@ -1,74 +1,62 @@
-using Unity.AppUI.Core;
 using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 
-public class PlayerMoveState : StateMachineBehaviour
+public class PlayerMoveState : State
 {
-    PlayerController player;
+    public PlayerMoveState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
 
-    public override void OnStateMachineEnter(Animator animator, int stateMachinePathHash)
+    public override void Enter()
     {
-        if (player == null)
-        {
-            player = animator.GetComponent<PlayerController>();
-        }
-        player.anim.SetBool("isMove", false);
-        player.anim.SetBool("Attack", false);
-        player.anim.ResetTrigger("Attack");
-        player.anim.ResetTrigger("HeavyAttack");
-        player.currentState = PlayerState.Move;
-    }
-    public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    {
-        if (player == null)
-        {
-            player = animator.GetComponent<PlayerController>();
-        }
-        player.currentState = PlayerState.Move;
-        if (player.sprint)
-        {
-            player.currentSpeed = player.sprintSpeed;
-        }
-        else
-        {
-            player.currentSpeed = player.moveSpeed;
-        }
-    }
-    public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    {
-        if (player.playerBehaviour.isInRange && player.attack && player.canExecute)
-        {
-            player.anim.SetTrigger("Execute");
-        }
-        else if (player.attack && player.sprint)
-        {
-            player.currentState = PlayerState.Attack;
-            player.anim.SetTrigger("SprintAttack");
-        }
-        else if (!player.sprint && player.attack && player.isGround)
-        {
-            player.anim.SetTrigger("Attack");
-            player.currentState = PlayerState.Attack;
-            player.attack = false;
-        }
 
-        if (player.guard)
-        {
-            player.currentState = PlayerState.Guard;
-            player.anim.SetBool("Guard", true);
-        }
-
-        if (player.isGround)
-        {
-            player.anim.SetBool("Jump", false);
-        }
     }
 
-    public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)
-    { 
-        player.anim.SetBool("isMove", false);
+    public override void Exit()
+    {
+
+    }
+
+
+    public override void Update()
+    {
+        // 이동 중에도 다른 행동으로 전환이 가능해야 합니다.
+        if (player.InputHandler.AttackInput)
+        {
+            player.InputHandler.UseAttackInput();
+            stateMachine.TransitionTo(stateMachine.PlayerAttackState);
+            return;
+        }
+
+        if (player.InputHandler.GuardInput)
+        {
+            stateMachine.TransitionTo(stateMachine.PlayerGuardState);
+            return;
+        }
+
+        if (player.InputHandler.JumpInput)
+        {
+            player.InputHandler.UseJumpInput();
+            stateMachine.TransitionTo(stateMachine.PlayerJumpState);
+            return;
+        }
+        if (player.InputHandler.SprintInput)
+        {
+            stateMachine.TransitionTo(stateMachine.PlayerSprintState);
+            return;
+        }
+
+        // 이동 입력을 멈추면 IdleState로 돌아갑니다.
+        if (player.InputHandler.MoveInput == Vector3.zero)
+        {
+            stateMachine.TransitionTo(stateMachine.PlayerIdleState);
+            return;
+        }
+
+    }
+
+    public override void FixedUpdate()
+    {
+        if (player.InputHandler.MoveInput == Vector3.zero) { return; }
+        player.Motor.Move(player.InputHandler.MoveInput, player.Stats.MoveSpeed);
     }
 }

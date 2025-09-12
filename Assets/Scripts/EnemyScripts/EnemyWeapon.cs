@@ -3,38 +3,24 @@ using UnityEngine;
 
 public class EnemyWeapon : Weapon
 {
-    LayerMask playerLayer = 1 << 6;
-    [SerializeField] Enemy self;
-    PlayerController target;
-
-    Collider col;
-    Vector3 hitPoint;
-    Vector3 hitDirection;
+    EnemyCombat EnemyCombat;
+    [SerializeField] LayerMask playerLayer = 1 << 6;
 
     private void Awake()
     {
-        self = GetComponentInParent<Enemy>();
-        col = GetComponent<Collider>();
+        EnemyCombat = GetComponentInParent<EnemyCombat>();
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if((1 << other.gameObject.layer) == playerLayer && target == null)
+        if((1 << other.gameObject.layer) == playerLayer)
         {
-           target = other.transform.parent.GetComponent<PlayerController>();
+           if(other.TryGetComponent<IDamageable>(out var target))
+            {
+                EnemyCombat.OnWeaponHit(target,other);
+            }
         }
-        if ((1 << other.gameObject.layer) == playerLayer)
-        {
-            hitPoint = other.ClosestPoint(transform.position);
-            hitDirection = (target.transform.position - self.transform.position);
-            hitDirection.y = 0;
-            target.playerSetting.hitDir = hitDirection.normalized;
 
-            target.playerSetting.OnDamage(
-                self.enemyAttack.currentPattern, 
-                self.enemyAttack.currentAnimationIndex, 
-                hitDirection);
-        }
     }
 
 }

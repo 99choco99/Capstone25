@@ -1,87 +1,114 @@
+using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerInteraction : MonoBehaviour
 {
-    [SerializeField] PlayerController player;
-    [SerializeField] DialogueManager dialogueManager;
-    IInteractable interactObject;
 
-    private readonly int layerMask = 1 << 8;
-    public Collider select;
-    Collider[] hits;
-    public int selectIndex = 0;
-    public int preselectIndex = 0;
+    [Header("설정")]
+    [SerializeField] private float interactRange = 3f;
+    [SerializeField] private LayerMask layerMask;
 
-    bool isWorking;
+    //Event
+    public event Action<List<IInteractable>> OnInteractableChanged;
+    public event Action<IInteractable> OnSelectionChanged;
+
+
+    public IInteractable currentSelection { get; private set; }
+
+    private Player player;
+    public int selectionIndex = 0;
+    public List<IInteractable> interactablesInRange = new List<IInteractable>();
+
 
     private void Awake()
     {
-        player = GetComponent<PlayerController>();
-        dialogueManager = GetComponentInChildren<DialogueManager>();
+        player = GetComponent<Player>();
+        DialogueManager.instance.OnConversationStart += HandleConversationStart;
+        DialogueManager.instance.OnConversationEnd += HandleConversationEnd;
+    }
+
+    private void OnDestroy()
+    {
+        DialogueManager.instance.OnConversationStart -= HandleConversationStart;
+        DialogueManager.instance.OnConversationEnd -= HandleConversationEnd;
     }
 
     void Update()
     {
-        hits = GetInteractObject();
-        if (hits.Length > 0)
+        DetectInteractables();
+        if (interactablesInRange.Count > 0)
         {
-            SelectObject(hits);
-            if (!isWorking && player.interaction)
-            {
-                isWorking = true;
-                if (select.gameObject.TryGetComponent<QuestNPC>(out QuestNPC npc))
-                {
-                    // NPC라면 대화상태 진입
-                    dialogueManager.StartConversation(npc);
-                }
-                if (select.gameObject.TryGetComponent(out interactObject))
-                {
-                    interactObject.Interact(player);  //상호작용
-                }
+            HandleSelection();
+            CheckForInteraction();
+        }
+    }
 
-                StartCoroutine("WaitTime", 0.5f);
+    private void DetectInteractables()
+    {
+        Collider[] colliders = Physics.OverlapSphere(transform.position, interactRange,layerMask);
+
+        List<IInteractable> newInteractables = new List<IInteractable>();
+        foreach (Collider collider in colliders)
+        {
+            if (collider.TryGetComponent<IInteractable>(out IInteractable interactable))
+            {
+                newInteractables.Add(interactable);
             }
         }
+
+        bool IsListEqual = new HashSet<IInteractable>(interactablesInRange).SetEquals(newInteractables);
+
+        if (!IsListEqual)
+        {
+            interactablesInRange = newInteractables;
+            OnInteractableChanged?.Invoke(newInteractables);
+
+            UpdateSelection();
+        }
     }
 
-    public Collider[] GetInteractObject()
+    private void HandleSelection()
     {
-        hits = Physics.OverlapSphere(transform.position, player.interactRange,layerMask);
-        if (hits != null)
+        float scroll = player.InputHandler.Scroll;
+        if(scroll != 0)
         {
-            return hits;
+            selectionIndex += (scroll > 0) ? -1 : 1;
+            UpdateSelection();
         }
-        return null;
     }
 
-    void SelectObject(Collider[] hits)
+    void UpdateSelection()
     {
-        select = hits[0];
-        //이전 Index 저장
-        if (preselectIndex != selectIndex)
-        {
-            preselectIndex = selectIndex;
-        }
-
-        //마우스 휠로 선택할 InteractObject 정하기
-        if (selectIndex < hits.Length - 1 && player.scroll > 0)
-        {
-            selectIndex += 1;
-        }
-        else if (selectIndex > 0 && player.scroll < 0)
-        {
-            selectIndex -= 1;
-        }
-        if (selectIndex > hits.Length - 1 || selectIndex < 0) { selectIndex = 0; }
-        select = hits[selectIndex];
+        if (selectionIndex < 0) selectionIndex = 0;
+        if (selectionIndex >= interactablesInRange.Count) selectionIndex = interactablesInRange.Count - 1;
+        currentSelection = interactablesInRange.Count > 0 ? interactablesInRange[selectionIndex] : null;
+        OnSelectionChanged?.Invoke(currentSelection);
     }
 
-
-    IEnumerator WaitTime(float time)
+    void CheckForInteraction()
     {
-        yield return new WaitForSeconds(time);
-        isWorking = false;
+        if (player.InputHandler.InteractionInput)
+        {
+            player.InputHandler.UseInteractionInput(); // 입력 소비
+
+            currentSelection?.Interact(player);
+        }
+    }
+
+    private void HandleConversationStart(NPC npc, Player p)
+    {
+        player.StateMachine.TransitionTo(player.StateMachine.ConversationState);
+    }
+
+    private void HandleConversationEnd()
+    {
+        if (player.StateMachine.CurrentState is ConversationState)
+        {
+            player.StateMachine.TransitionTo(player.StateMachine.PlayerIdleState);
+        }
     }
 }
