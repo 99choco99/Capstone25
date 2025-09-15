@@ -13,6 +13,7 @@ public class PlayerStateMachine : MonoBehaviour
     public PlayerGuardState PlayerGuardState { get; private set; }  // 가드 상태
     public PlayerSprintState PlayerSprintState { get; private set; }   // 슬라이드 상태
     public PlayerDamagedState PlayerDamagedState { get; private set; }   // 데미지를 입은 상태
+    public PlayerExecuteState PlayerExecuteState { get; private set; }
     public PlayerDeadState PlayerDeadState { get; private set; }   // 죽은 상태
     public ConversationState ConversationState { get; private set; }  // 대화 상태
 
@@ -23,7 +24,7 @@ public class PlayerStateMachine : MonoBehaviour
     //플레이어 상태들
     private void Awake()
     {
-        Player player = GetComponent<Player>();
+        player = GetComponent<Player>();
 
         PlayerIdleState = new PlayerIdleState(player, this);
         PlayerMoveState = new PlayerMoveState(player, this);
@@ -34,6 +35,7 @@ public class PlayerStateMachine : MonoBehaviour
         PlayerDamagedState = new PlayerDamagedState(player, this);
         ConversationState = new ConversationState(player, this);
         PlayerDeadState = new PlayerDeadState(player, this);
+        PlayerExecuteState = new PlayerExecuteState(player, this);
     }
 
 

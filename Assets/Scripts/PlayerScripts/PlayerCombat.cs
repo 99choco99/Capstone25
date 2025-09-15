@@ -67,7 +67,7 @@ public class PlayerCombat : MonoBehaviour
 
         DamageInfo result = new DamageInfo
         {
-            finalDamage = 0,
+            finalDamage = currentAttackData.damage,
             knockbackForce = currentAttackData.knockbackPower,
             knockbackDuration = currentAttackData.knockbackDuration,
             hitPoint = hitPoint,

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class TargetingSystem : MonoBehaviour
 {
@@ -33,7 +34,6 @@ public class TargetingSystem : MonoBehaviour
             SelectNextTarget();
         }
 
-
         if (CurrentTarget != null)
         {
             if (CurrentTarget.dead || Vector3.Distance(transform.position, CurrentTarget.gameObject.transform.position) > detectionRange)
@@ -43,11 +43,13 @@ public class TargetingSystem : MonoBehaviour
         }
     }
 
+
+    //현재타겟을 다음 타겟으로 설정
     public void SelectNextTarget()
     {
         if (CurrentTarget != null)
         {
-            targetIndex = (targetIndex + 1) % targetInRange.Count;
+            if(targetIndex >= targetInRange.Count) { SetTarget(null); return; }
             SetTarget(targetInRange[targetIndex]);
         }
         else
@@ -56,6 +58,8 @@ public class TargetingSystem : MonoBehaviour
         }
     }
 
+
+    //타겟을 찾고 선택하기
     void FindAndSelectTargetInRange()
     {
         var colliders = Physics.OverlapSphere(transform.position, detectionRange,targetLayer);
@@ -71,11 +75,13 @@ public class TargetingSystem : MonoBehaviour
         }
     }
 
+    //타겟 해제
     void DeselectTarget()
     {
         SetTarget(null);
     }
 
+    //타겟 설정
     void SetTarget(IDamageable target)
     {
         CurrentTarget = target;
@@ -89,4 +95,26 @@ public class TargetingSystem : MonoBehaviour
         }
     }
 
+    public bool IsCurrentTargetExecutable()
+    {
+        if (CurrentTarget == null || CurrentTarget.dead) return false;
+
+        //적의 방어가 무너졌을 때
+        if (CurrentTarget.gameObject.TryGetComponent<EnemyStats>(out var enemyStats))
+        {
+            if (enemyStats.IsPostureBroken) return true;
+        }
+
+        //적이 발견하지 못했을 때
+        if(CurrentTarget.gameObject.TryGetComponent<EnemySense>(out var enemySense))
+        {
+            float angleToEnemyBack = Vector3.Angle(player.transform.forward, -CurrentTarget.transform.forward);
+            if (!enemySense.IsTargetDetected && angleToEnemyBack < 45f) // 등 뒤 90도 범위
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

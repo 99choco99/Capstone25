@@ -36,7 +36,7 @@ public class PlayerProfile : MonoBehaviour
         abilityText.text = $"Point : {playerStats.AbilityPoint}";
         damageText.text = $"{playerStats.damage} (+ {playerStats.bonusDamage})";
         healthText.text = playerStats.maxHp + "(+" + playerStats.bonusmaxHp + ")";
-        defenseText.text = playerStats.defense + "(+" + playerStats.bonusDefense + ")";
+        defenseText.text = playerStats.maxPosture + "(+" + playerStats.bonusDefense + ")";
 
         bool canUpgrade = playerStats.AbilityPoint > 0;
         damageUpButton.interactable = canUpgrade;

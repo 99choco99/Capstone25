@@ -46,7 +46,6 @@ public class PlayerStats : LivingEntity
     public event Action<float> OnHpChanged;  // hp 변경
     public event Action<int, int> OnExpChanged;   // 경험치 적용
     public event Action OnStatsChanged;  // 스탯 변경사항 적용
-    public event Action<float> OnGuardChanged; //가드 게이지 적용
     public event Action<DamageInfo> OnDamaged;
     public event Action OnLevelUp;  //레벨업시
 
@@ -68,7 +67,7 @@ public class PlayerStats : LivingEntity
         maxHp = data.maxHp;
         currentHp = data.currentHp;
         damage = data.damage;
-        defense = data.defense;
+        maxPosture = data.defense;
 
         Level = data.level;
         Exp = data.exp;
@@ -95,7 +94,7 @@ public class PlayerStats : LivingEntity
         dataToSave.maxHp = maxHp;
         dataToSave.currentHp = currentHp;
         dataToSave.damage = damage;
-        dataToSave.defense = defense;
+        dataToSave.defense = maxPosture;
         dataToSave.level = Level;
         dataToSave.exp = Exp;
         dataToSave.gold = Gold;
@@ -134,6 +133,7 @@ public class PlayerStats : LivingEntity
         else if (isGuarding)
         {
             finalDamageToHp = 0;
+            TakePostureDamage(damageInfo.finalDamage);
             Debug.Log("가드 성공!");
             // TODO: 가드 게이지 감소 로직
         }
@@ -141,6 +141,7 @@ public class PlayerStats : LivingEntity
         {
             // 가드/패링 실패 시에만 체력 감소
             base.OnDamage(damageInfo);
+            TakePostureDamage(damageInfo.finalDamage * 0.5f);
         }
 
 
@@ -150,6 +151,8 @@ public class PlayerStats : LivingEntity
         {
             finalDamage = finalDamageToHp,
             hitDirection = damageInfo.hitDirection,
+            knockbackDuration = damageInfo.knockbackDuration,
+            knockbackForce = damageInfo.knockbackForce,
             wasGuarded = isGuarding,
             wasParried = isParrying,
         };

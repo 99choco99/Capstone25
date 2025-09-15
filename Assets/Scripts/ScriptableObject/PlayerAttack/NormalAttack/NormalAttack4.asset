@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 683d8284b6f93de4aae0bf7e1bbce976, type: 3}
   m_Name: NormalAttack4
   m_EditorClassIdentifier: 
-  canGuard: 1
-  damage:
-  - 0
-  knockbackPower:
-  - 1
-  knockbackDuration: 0.5
+  type: 0
+  damage: 1
+  knockbackPower: 0.8
+  knockbackDuration: 0.3
+  minAttackCooldown: 1
+  maxAttackCooldown: 2

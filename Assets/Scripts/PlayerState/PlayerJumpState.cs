@@ -14,6 +14,7 @@ public class PlayerJumpState : State
 
     public override void Update()
     {
+
         if (player.Motor.IsGrounded && player.Motor.rb.linearVelocity.y < 0.1f)
         {
             if (player.InputHandler.MoveInput == Vector3.zero)

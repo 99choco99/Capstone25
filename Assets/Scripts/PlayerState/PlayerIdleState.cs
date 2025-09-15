@@ -13,7 +13,14 @@ public class PlayerIdleState : State
 
     public override void Update()
     {
-        // 1. 공격 입력이 들어오면 AttackState로 전환
+        if (player.InputHandler.AttackInput && player.TargetingSystem.IsCurrentTargetExecutable())
+        {
+            player.InputHandler.UseAttackInput();
+            stateMachine.TransitionTo(stateMachine.PlayerExecuteState);
+            return;
+        }
+
+
         if (player.InputHandler.AttackInput)
         {
             player.InputHandler.UseAttackInput(); // 입력 소비
@@ -21,14 +28,14 @@ public class PlayerIdleState : State
             return;
         }
 
-        // 2. 가드 입력이 들어오면 GuardState로 전환
+
         if (player.InputHandler.GuardInput)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGuardState);
             return;
         }
 
-        // 3. 점프 입력이 들어오면 JumpState로 전환
+
         if (player.InputHandler.JumpInput)
         {
             player.InputHandler.UseJumpInput(); // 입력 소비
@@ -36,7 +43,7 @@ public class PlayerIdleState : State
             return;
         }
 
-        // 4. 이동 입력이 들어오면 MoveState로 전환
+
         if (player.InputHandler.MoveInput != Vector3.zero)
         {
             stateMachine.TransitionTo(stateMachine.PlayerMoveState);

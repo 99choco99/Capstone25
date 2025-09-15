@@ -19,7 +19,13 @@ public class PlayerMoveState : State
 
     public override void Update()
     {
-        // 이동 중에도 다른 행동으로 전환이 가능해야 합니다.
+        if (player.InputHandler.AttackInput && player.TargetingSystem.IsCurrentTargetExecutable())
+        {
+            player.InputHandler.UseAttackInput();
+            stateMachine.TransitionTo(stateMachine.PlayerExecuteState);
+            return;
+        }
+
         if (player.InputHandler.AttackInput)
         {
             player.InputHandler.UseAttackInput();

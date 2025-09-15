@@ -6,4 +6,5 @@ public interface IDamageable
     GameObject gameObject { get; }
     Transform transform { get; }
     public void OnDamage(DamageInfo Info);
+    public void Die();
 }

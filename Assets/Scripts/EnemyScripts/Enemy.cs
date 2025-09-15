@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using Unity.Behavior;
+using UnityEditor.Animations;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -10,13 +11,16 @@ public class Enemy: MonoBehaviour
     public EnemyMotor Motor { get; private set; }
     public EnemyStats Stats { get; private set; }
     public EnemyCombat Combat { get; private set; }
+    public Animator Anim { get; private set; }
     public BehaviorGraphAgent BehaviourTree { get; private set; }
 
     private void Awake()
     {
+        Stats = GetComponent<EnemyStats>();
         Senses = GetComponent<EnemySense>();
         Motor = GetComponent<EnemyMotor>();
-        Stats = GetComponent<EnemyStats>();
+        Combat = GetComponent<EnemyCombat>();
+        Anim = GetComponent<Animator>();
         BehaviourTree = GetComponent<BehaviorGraphAgent>();
     }
 

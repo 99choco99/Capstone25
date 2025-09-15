@@ -12,7 +12,7 @@ public class PlayerWeapon : Weapon
     }
     private void OnTriggerEnter(Collider other)
     {
-        if (owner != null) { return; }
+        if (owner == null) { return; }
         if ((1 << other.gameObject.layer) == layerMask)
         {
             if (other.TryGetComponent<IDamageable>(out var target))

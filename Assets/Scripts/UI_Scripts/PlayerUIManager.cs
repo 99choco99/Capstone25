@@ -21,7 +21,7 @@ public class PlayerUIManager : MonoBehaviour
 
 
     public Slider PlayerHpUI;
-    public Slider GuardGauge;
+    public Slider PostureGauge;
     public Slider EnemyHpUI;
     public Slider ExpUI;
 
@@ -77,7 +77,7 @@ public class PlayerUIManager : MonoBehaviour
 
         playerStats.OnHpChanged += UpdateHp;
         playerStats.OnExpChanged += UpdateExp;
-        playerStats.OnGuardChanged += UpdateGuardGauge;
+        playerStats.OnPostureChanged += UpdatePostureGauge;
 
         foreach(var panel in panelDictionary.Values)
         {
@@ -100,21 +100,10 @@ public class PlayerUIManager : MonoBehaviour
         ExpText.text = $"{ExpUI.value}%";
     }
 
-    public void UpdateGuardGauge(float damage)
+    public void UpdatePostureGauge(float currentPosture, float maxPosture)
     {
-        GuardGauge.maxValue = playerStats.defense;
-        GuardGauge.value += damage;
-        StartCoroutine(DecreaseGuardGauge());
-    }
-
-    IEnumerator DecreaseGuardGauge()
-    {
-        while(GuardGauge.value > 0)
-        {
-            GuardGauge.value -= Time.deltaTime;
-            yield return null;
-        }
-        GuardGauge.value = 0;
+        PostureGauge.maxValue = maxPosture;
+        PostureGauge.value = currentPosture;
     }
 
     public void ShowEnemyInfoUI()

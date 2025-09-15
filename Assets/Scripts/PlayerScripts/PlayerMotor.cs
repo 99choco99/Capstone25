@@ -123,7 +123,7 @@ public class PlayerMotor : MonoBehaviour
 
         Vector3 moveInputDirection = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).normalized;
 
-        if (canRotate || !isKnockingBack)
+        if (canRotate && player.TargetingSystem.CurrentTarget == null)
         {
             Vector3 cameraForward = player.MainCamera.transform.forward;
             cameraForward.y = 0;
@@ -135,7 +135,7 @@ public class PlayerMotor : MonoBehaviour
         }
         else if (player.TargetingSystem.CurrentTarget != null)
         {
-            Vector3 targetDir = player.TargetingSystem.CurrentTarget.transform.position - transform.position;
+            Vector3 targetDir = (player.TargetingSystem.CurrentTarget.transform.position - transform.position).normalized;
             RotateTowardsDirection(targetDir);
         }
         else if (moveInputDirection != Vector3.zero)
@@ -224,6 +224,7 @@ public class PlayerMotor : MonoBehaviour
     public void AE_playerMoveDisable()
     {
         canMove = false;
+        canRotate = true;
     }
 
     private void OnAnimatorMove()
