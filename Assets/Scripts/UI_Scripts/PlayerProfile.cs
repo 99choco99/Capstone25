@@ -1,55 +1,47 @@
 using System;
 using TMPro;
-using Unity.AppUI.UI;
+using UnityEngine.UI;
 using UnityEngine;
 
 public class PlayerProfile : MonoBehaviour
 {
-    enum Ability { damage,hp,speed,defense};
-    PlayerSetting player;
-    public int AbilityPoint;
-    [SerializeField] TextMeshProUGUI abilityText;
-    [SerializeField] TextMeshProUGUI healthText;
-    [SerializeField] TextMeshProUGUI speedText;
-    [SerializeField] TextMeshProUGUI damageText;
-    [SerializeField] TextMeshProUGUI defenseText;
+    private PlayerStats playerStats;
+
+    [Header("UI ÄÄÆ÷³ÍÆ®")]
+    [SerializeField] private TextMeshProUGUI abilityText;
+    [SerializeField] private TextMeshProUGUI healthText;
+    [SerializeField] private TextMeshProUGUI damageText;
+    [SerializeField] private TextMeshProUGUI defenseText;
+    [SerializeField] private Button damageUpButton;
+    [SerializeField] private Button healthUpButton;
+    [SerializeField] private Button defesnseUpbutton;
 
     private void Start()
     {
-        player = GetComponentInParent<PlayerSetting>();
-        player.OnStatsChanged += UpdateUI;
+        playerStats.OnStatsChanged += UpdateUI;
         UpdateUI();
+    }
+
+    private void OnDestroy()
+    {
+        if (playerStats != null)
+        {
+            playerStats.OnStatsChanged -= UpdateUI;
+        }
     }
 
 
     public void UpdateUI()
     {
-        abilityText.text = $"Point : { AbilityPoint}";
-        damageText.text = player.damage + "(+" + player.D_damage + ")";
-        healthText.text = player.maxHp + "(+" + player.D_health + ")";
-        speedText.text = player.speed + "(+" + player.D_speed + ")";
-        defenseText.text = player.defense + "(+" + player.D_defense + ")";
+        abilityText.text = $"Point : {playerStats.AbilityPoint}";
+        damageText.text = $"{playerStats.damage} (+ {playerStats.bonusDamage})";
+        healthText.text = playerStats.maxHp + "(+" + playerStats.bonusmaxHp + ")";
+        defenseText.text = playerStats.maxPosture + "(+" + playerStats.bonusDefense + ")";
+
+        bool canUpgrade = playerStats.AbilityPoint > 0;
+        damageUpButton.interactable = canUpgrade;
+        healthUpButton.interactable = canUpgrade;
+        defesnseUpbutton.interactable = canUpgrade;
     }
 
-    public void UpAbility(int selectIndex)
-    {
-        if (AbilityPoint <= 0) { return; }
-        Ability selectAbility = (Ability)selectIndex;
-        AbilityPoint--;
-        switch (selectAbility) {
-            case Ability.damage:
-                player.damage++;
-                break;
-            case Ability.speed:
-                player.speed++;
-                break;
-            case Ability.defense:
-                player.defense++;
-                break;
-            case Ability.hp:
-                player.maxHp++;
-                break;
-        }
-        UpdateUI();
-    }
 }

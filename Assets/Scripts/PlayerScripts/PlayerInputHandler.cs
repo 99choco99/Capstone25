@@ -1,0 +1,184 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch;
+
+public class PlayerInputHandler : MonoBehaviour
+{
+    [SerializeField] PlayerInput PlayerInput;
+
+    [Header("PlayerSetting Input Values")]
+    public Vector3 MoveInput { get; private set; }
+    public Vector2 LookInput { get; private set; }
+    public bool JumpInput { get; private set; }
+    public bool AttackInput { get; private set; }
+    public bool GuardInput { get; private set; }
+    public bool SprintInput { get; private set; }
+    public bool IsShowMouse { get; private set; }
+    public bool InteractionInput { get; private set; }
+    public bool TargetInput { get; private set; }
+    public bool CrouchInput { get; private set; }
+    public bool IsAttackPress { get; private set; }
+    public float Scroll { get; private set; }
+
+    public void UseJumpInput() => JumpInput = false;
+    public void UseAttackInput() => AttackInput = false;
+    public void UseInteractionInput() => InteractionInput = false;
+    public void UseTargetInput() => TargetInput = false;
+
+    private void Start()
+    {
+        GameManager.instance.OnGameStateChanged += HandlerGameStateChanged;
+    }
+    private void OnDestroy()
+    {
+        if(GameManager.instance != null)
+        {
+            GameManager.instance.OnGameStateChanged -= HandlerGameStateChanged;
+        }
+    }
+
+    // 매 프레임 한번만 true가 되도록 처리하기 위함
+    private void LateUpdate()
+    {
+        TargetInput = false;
+        JumpInput = false;
+        AttackInput = false;
+    }
+
+    void HandlerGameStateChanged(GameState state)
+    {
+        if(state == GameState.Gameplay)
+        {
+            PlayerInput.SwitchCurrentActionMap("Player");
+        }
+        else
+        {
+            PlayerInput.SwitchCurrentActionMap("UI");
+        }
+        Debug.Log(PlayerInput.currentActionMap);
+    }
+
+
+    public void OnMove(InputAction.CallbackContext context)
+    {
+        MoveInput = context.ReadValue<Vector3>();
+    }
+
+    public void OnLook(InputAction.CallbackContext context)
+    {
+        if (IsShowMouse) { LookInput = default; return; }
+        LookInput = context.ReadValue<Vector2>();
+    }
+
+    public void OnWheel(InputAction.CallbackContext context)
+    {
+        Scroll = -context.ReadValue<float>();
+    }
+
+    public void OnJump(InputAction.CallbackContext context)
+    {
+        if (context.started)
+            JumpInput = true;
+    }
+
+    public void OnAttack(InputAction.CallbackContext context)
+    {
+        if (IsShowMouse) return;
+
+        if (context.started)
+        {
+            AttackInput = true;
+            IsAttackPress = true;
+        }
+        else if (context.canceled)
+        {
+            IsAttackPress = false;
+        }
+    }
+
+    public void OnGuard(InputAction.CallbackContext context)
+    {
+        if (IsShowMouse) return;
+        GuardInput = context.ReadValueAsButton();
+    }
+
+    public void OnSprint(InputAction.CallbackContext context)
+    {
+        SprintInput = context.ReadValueAsButton();
+    }
+
+    public void OnShowMouse(InputAction.CallbackContext context)
+    {
+        if (context.started) { IsShowMouse = true; }
+        else if (context.canceled) { IsShowMouse = false; }
+    }
+
+    public void OnInteraction(InputAction.CallbackContext context)
+    {
+        if (context.started) { InteractionInput = true; }
+    }
+
+    public void OnCrouch(InputAction.CallbackContext context)
+    {
+        if (context.started)
+        {
+            CrouchInput = !CrouchInput;
+        }
+    }
+
+    public void OnChangeTarget(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            TargetInput = true;
+        }
+    }
+
+
+
+
+    public void OnEscape(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            PlayerUIManager.instnace.CloseLastUI();
+        }
+    }
+
+
+
+    public void OnInventory(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            PlayerUIManager.instnace.ToggleUI(UIPanelType.Inventory);
+        }
+    }
+
+    public void OnPlayerProfile(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            PlayerUIManager.instnace.ToggleUI(UIPanelType.Profile);
+        }
+    }
+
+    public void OnSetting(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            PlayerUIManager.instnace.ToggleUI(UIPanelType.Setting);
+        }
+    }
+
+
+    //J 버튼을 통해 퀘스트 UI 실행
+    public void OnQuestList(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            PlayerUIManager.instnace.ToggleUI(UIPanelType.Quest);
+
+        }
+    }
+}
