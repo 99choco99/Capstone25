@@ -1,25 +1,8 @@
 using UnityEngine;
 
-public class PlayerDeadState : StateMachineBehaviour
+public class PlayerDeadState : State
 {
-    PlayerController player;
+    public PlayerDeadState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
-    public PlayerDeadState(PlayerController player) { this.player = player; }
 
-    public void Enter()
-    {
-        player.anim.SetTrigger("Die");
-        player.col.tag = "Invincible";
-        player.col.gameObject.layer = 9;
-    }
-
-    public void Exit()
-    {
-
-    }
-
-    public void Update()
-    {
-
-    }
 }

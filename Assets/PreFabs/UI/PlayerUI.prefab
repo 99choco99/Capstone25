@@ -1539,10 +1539,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba6ec1e5fcfd9614388f2957be907601, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  InteractInfo: {fileID: 8523337542507008199}
-  containerGameObject: {fileID: 264052307433820297, guid: 11afc49677fa516478a8f8ada29cadfb,
-    type: 3}
-  playerInteraction: {fileID: 0}
+  uiContainer: {fileID: 0}
+  promptPrefab: {fileID: 0}
+  promptParent: {fileID: 0}
 --- !u!114 &3508018557750070540
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1921,13 +1920,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7398af233ba1af4dbb7c728ad17278f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerStats: {fileID: 0}
   PlayerHpUI: {fileID: 3735708612850296413}
+  PostureGauge: {fileID: 0}
   EnemyHpUI: {fileID: 8240163880330173282}
   ExpUI: {fileID: 0}
-  dialogUI: {fileID: 4574955798355327850}
   EnemyName: {fileID: 1883017945241809048}
   NpcName: {fileID: 3485354280372520197}
   NpcText: {fileID: 4460130024031910048}
+  levelText: {fileID: 0}
+  ExpText: {fileID: 0}
+  Market: {fileID: 0}
+  Inventory: {fileID: 0}
+  PlayerProfile: {fileID: 0}
+  Setting: {fileID: 0}
+  Quest: {fileID: 0}
+  dialogUI: {fileID: 0}
 --- !u!114 &7892398743935723746
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1952,11 +1960,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 47050485faeb2aa4397953590d892ee0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentQuest: {fileID: 0}
   currentQuestStep: 0
-  npcList:
-  - {fileID: 5259255235560830168, guid: 451b8e9571a7de34488f55bd7bea7c42, type: 3}
-  - {fileID: 974675119921654655, guid: 830050f67e239ac4f81d6a720988a3ce, type: 3}
-  questUI: {fileID: 2950703872008299706}
 --- !u!1 &3888621070200528281
 GameObject:
   m_ObjectHideFlags: 0
@@ -4070,8 +4075,8 @@ MonoBehaviour:
   questPrefab: {fileID: 3663691783251343360, guid: 289c8ed75e123d94b9842add8803493d,
     type: 3}
   content: {fileID: 5471317554039071398}
-  questName: {fileID: 7307860602462113730}
-  questGuide: {fileID: 2260699482816696094}
+  questNameText: {fileID: 0}
+  questGuideText: {fileID: 0}
 --- !u!1 &7289193466979878933
 GameObject:
   m_ObjectHideFlags: 0

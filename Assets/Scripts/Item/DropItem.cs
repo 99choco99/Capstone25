@@ -2,11 +2,12 @@ using UnityEngine;
 
 public class DropItem : Item, IInteractable
 {
-    public void Interact(PlayerController player)
+    public string InteractionPrompt => gameObject.name;
+    public void Interact(Player player)
     {
         SlotData slot = InventoryManager.instance.FindEmptySlot(data.type);
 
-        slot.itemCount += data.count;
+        //slot.itemCount += data.count;
         Destroy(gameObject);
     }
 }

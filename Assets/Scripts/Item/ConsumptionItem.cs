@@ -4,9 +4,9 @@ using UnityEngine;
 public class ConsumptionItem : OwnedItem
 {
 
-    public void consume(PlayerSetting playerData)
+    public void consume(PlayerStats playerData)
     {
-        playerData.ApplyStatChanges(data.spec.damage, data.spec.hp, data.spec.defense, data.spec.speed);
+        playerData.ApplyStatChanges();
     }
 
     IEnumerator buff_duration(float duration)

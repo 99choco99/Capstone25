@@ -12,11 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 683d8284b6f93de4aae0bf7e1bbce976, type: 3}
   m_Name: Pattern1
   m_EditorClassIdentifier: 
-  canGuard: 1
-  damage:
-  - 5
-  - 5
-  knockbackPower:
-  - 1
-  - 1
+  type: 0
+  damage: 1
+  knockbackPower: 1
   knockbackDuration: 0.7
+  minAttackCooldown: 1.5
+  maxAttackCooldown: 2

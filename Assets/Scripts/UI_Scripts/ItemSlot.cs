@@ -5,10 +5,10 @@ using UnityEngine.EventSystems;
 
 public class ItemSlot : Slot
 {
-    PlayerSetting playerData;
+    PlayerStats playerData;
     private void Start()
     {
-        playerData = GetComponentInParent<PlayerSetting>();
+        playerData = GetComponentInParent<PlayerStats>();
     }
     public override void OnDrop(PointerEventData eventData)
     {

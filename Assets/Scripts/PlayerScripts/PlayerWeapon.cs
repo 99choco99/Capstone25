@@ -4,22 +4,21 @@ using UnityEngine;
 public class PlayerWeapon : Weapon
 {
     [SerializeField] LayerMask layerMask;
-    PlayerSetting player;
+    PlayerCombat owner;
 
     private void Awake()
     {
-        player = GetComponentInParent<PlayerSetting>();
+        owner = GetComponentInParent<PlayerCombat>();
     }
-
     private void OnTriggerEnter(Collider other)
     {
+        if (owner == null) { return; }
         if ((1 << other.gameObject.layer) == layerMask)
         {
-            if (!other.TryGetComponent<Enemy>(out var target)) { Debug.Log("Enemy Component를 찾을 수 없음");  return; }
-            Vector3 hitPoint = other.ClosestPoint(transform.position);
-            Vector3 hitDirection = (other.transform.position - player.transform.position).normalized;
-            hitDirection.y = 0;
-            target.OnDamage(player.currentAttack, player.currentAnimationIndex, hitDirection);
+            if (other.TryGetComponent<IDamageable>(out var target))
+            {
+                owner.OnWeaponHit(target, other);
+            }
         }
     }
 

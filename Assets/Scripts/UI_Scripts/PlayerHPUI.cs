@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 public class PlayerHPUI : MonoBehaviour
 {
-    [SerializeField] PlayerSetting player;
+    [SerializeField] PlayerStats player;
     Slider HPslider;
 
     private void Awake()

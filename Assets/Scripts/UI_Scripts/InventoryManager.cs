@@ -154,7 +154,6 @@ public class InventoryManager : MonoBehaviour
             SlotData slotData = FindEmptySlot(itemData.type);
             slotData.itemData = itemData;
             slotData.itemSpec = response.spec;
-            slotData.itemData.spec = response.spec;
             slotData.itemCount = response.ItemCount;
             slotData.itemId = response.ItemId;
             InventoryEvents.OnSlotDataChanged?.Invoke(GetSlotType(slotData), slotData.slotIndex);
