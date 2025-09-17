@@ -40,7 +40,7 @@ public class PlayerStats : LivingEntity
     public float bonusDamage { get; protected set; }
     public float bonusDefense { get; protected set; }
 
-
+    
     public int[] maxExp;
     //PlayerEvent
     public event Action<float> OnHpChanged;  // hp º¯°æ

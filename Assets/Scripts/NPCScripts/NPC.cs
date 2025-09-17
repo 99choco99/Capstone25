@@ -19,6 +19,7 @@ public class NPC : MonoBehaviour, IInteractable
 
     public virtual void Interact(Player player) {
         StartCoroutine(RotationLerp(player.transform));
+        DialogueManager.instance.StartConversation(QuestManager.Instance.GetDialogueKey());
     }
 
 

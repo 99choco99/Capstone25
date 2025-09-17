@@ -5,7 +5,8 @@ using UnityEngine;
 
 public class PlayerProfile : MonoBehaviour
 {
-    private PlayerStats playerStats;
+    [SerializeField] Player player;
+    PlayerStats playerStats;
 
     [Header("UI ÄÄÆ÷³ÍÆ®")]
     [SerializeField] private TextMeshProUGUI abilityText;
@@ -18,13 +19,15 @@ public class PlayerProfile : MonoBehaviour
 
     private void Start()
     {
-        playerStats.OnStatsChanged += UpdateUI;
+        player = GetComponentInParent<Player>();
+        playerStats = player.Stats;
+        player.Stats.OnStatsChanged += UpdateUI;
         UpdateUI();
     }
 
     private void OnDestroy()
     {
-        if (playerStats != null)
+        if (player.Stats != null)
         {
             playerStats.OnStatsChanged -= UpdateUI;
         }

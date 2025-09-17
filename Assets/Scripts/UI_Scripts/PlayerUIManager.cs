@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -33,7 +34,7 @@ public class PlayerUIManager : MonoBehaviour
 
 
     private Dictionary<UIPanelType, GameObject> panelDictionary;
-    public Stack<UIPanelType> currentOpenUI = new Stack<UIPanelType>();
+    public List<UIPanelType> currentOpenUI = new List<UIPanelType>();
 
     [Header("UI_Panel")]
     public GameObject Market;
@@ -152,16 +153,13 @@ public class PlayerUIManager : MonoBehaviour
     {
         GameManager.instance.ChangeState(GameState.UIMode);
         panelDictionary[type].SetActive(true);
-        currentOpenUI.Push(type);
+        currentOpenUI.Add(type);
     }
 
     public void CloseUI(UIPanelType type)
     {
         panelDictionary[type].SetActive(false);
-        if (currentOpenUI.Count > 0 && currentOpenUI.Peek() == type)
-        {
-            currentOpenUI.Pop();
-        }
+        currentOpenUI.Remove(type);
         if (currentOpenUI.Count == 0)
         {
             GameManager.instance.ChangeState(GameState.Gameplay);
@@ -172,16 +170,8 @@ public class PlayerUIManager : MonoBehaviour
     {
         if (currentOpenUI.Count > 0)
         {
-            UIPanelType LastUIType = currentOpenUI.Pop();
-            while (!panelDictionary[LastUIType].activeSelf && currentOpenUI.Count > 0)
-            {
-                LastUIType = currentOpenUI.Pop();
-            }
-            panelDictionary[LastUIType].SetActive(false);
-            if (currentOpenUI.Count == 0)
-            {
-                GameManager.instance.ChangeState(GameState.Gameplay);
-            }
+            UIPanelType lastPanel = currentOpenUI.Last();
+            CloseUI(lastPanel);
         }
     }
 
