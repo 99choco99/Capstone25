@@ -26,8 +26,8 @@ public class DialogueManager : MonoBehaviour
     public event Action<DialogueLine> OnShowLine;
 
     Dictionary<string, List<DialogueLine>> DialogueData = new();
-    Queue<DialogueLine> currentDialogueList = new();
-
+    Queue<DialogueLine> currentDialogueQueue = new();
+    private QuestInteractionInfo currentInteraction; // 현재 대화의 목적과 정보를 담는 변수
 
     private void Awake()
     {
@@ -52,40 +52,76 @@ public class DialogueManager : MonoBehaviour
 
     void GenerateData(Dialogue[] data)
     {
-        Debug.Log(data);
-        foreach (var _ in data)
+        DialogueData.Clear();
+        foreach (var s in data)
         {
-            DialogueData.Add(_.dialogueID, _.lines);
+            DialogueData.Add(s.dialogueID, s.lines);
         }
 
     }
 
-    public void StartConversation(string dialogueKey)
+    public void StartConversation(QuestInteractionInfo interactionInfo)
     {
-        if (dialogueKey == null) {
-            dialogueKey = "BORGUS_DEFAULT";
-        }
-        Debug.Log(dialogueKey);
-        if(DialogueData.TryGetValue(dialogueKey, out List<DialogueLine> lines))
+        if(interactionInfo == null) { return; }
+        if(DialogueData.TryGetValue(interactionInfo.DialogueKey, out List<DialogueLine> lines))
         {
+            currentInteraction = interactionInfo;
+            currentDialogueQueue.Clear();
             foreach (var dialog in lines)
             {
-                currentDialogueList.Enqueue(dialog);
+                currentDialogueQueue.Enqueue(dialog);
             }
-            NextDialog();
             OnConversationStart?.Invoke();
+            ShowNextLine();
         }
 
     }
 
-    public void NextDialog()
+    public void ShowNextLine()
     {
-        if(currentDialogueList.TryDequeue(out var line))
+        if(currentDialogueQueue.TryDequeue(out var line))
         {
             OnShowLine?.Invoke(line);
         }
         else
         {
+            EndConversation();
+        }
+    }
+
+    private void EndConversation()
+    {
+        var newInteraction = QuestManager.Instance.GetQuestInteractionForNpc(currentInteraction.NpcId);
+
+        if (newInteraction != null)
+        {
+            switch (newInteraction.Type)
+            {
+                case QuestInteractionType.Start:
+                    // [수정!] newInteraction의 올바른 QuestId를 사용합니다.
+                    QuestManager.Instance.StartQuest(newInteraction.QuestId);
+                    break;
+                case QuestInteractionType.Complete:
+                    QuestManager.Instance.TurnInQuest(newInteraction.QuestId);
+                    break;
+                case QuestInteractionType.Talk:
+                    QuestManager.Instance.ReportTalkToNPC(newInteraction.NpcId);
+                    break;
+            }
+        }
+
+        // 2. 이어서 다른 대화를 보여줄지 결정하는 로직
+        // 현재 대화(currentInteraction)와 새로 발견된 대화(newInteraction)가 다르고,
+        // 새로 발견된 대화가 단순 정보성 대화(None)가 아닐 경우에만 대화를 이어갑니다.
+        if (newInteraction != null && newInteraction.DialogueKey != currentInteraction.DialogueKey && newInteraction.Type != QuestInteractionType.None)
+        {
+            // 새로 발견된 퀘스트 대화를 바로 이어서 시작
+            StartConversation(newInteraction);
+        }
+        else
+        {
+            // 이어갈 대화가 없으면 대화창을 닫습니다.
+            currentInteraction = null;
             OnConversationEnd?.Invoke();
         }
     }

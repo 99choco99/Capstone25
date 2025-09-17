@@ -23,7 +23,7 @@ public static class APIEvents
     public static Action<InventoryResponse> OnGetInventory;
 
     //퀘스트 데이터 가져오기
-    public static Action<QuestData[], QuestStatus[]> OnGetQuestData;
+    public static Action<QuestDefinition[], QuestStatus[]> OnGetQuestData;
 
     //대화 내용 가져오기
     public static Action<Dialogue[]> OnGetDialogue;

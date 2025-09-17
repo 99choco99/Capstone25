@@ -17,15 +17,17 @@ public class QuestUI : MonoBehaviour
     private Dictionary<int, QuestUIItem> questUIItems = new Dictionary<int, QuestUIItem>();
     private int? selectedQuestId = null;
 
-    private void OnEnable()
-    {
-
+    private void Awake()
+    { 
         // 퀘스트 이벤트 구독
         QuestManager.Instance.OnQuestStatusChanged += HandleQuestStatusChanged;
 
-        InitializedList();
     }
 
+    private void Start()
+    {
+        InitializedList();
+    }
     private void OnDisable()
     {
         // 구독 해제
@@ -35,7 +37,7 @@ public class QuestUI : MonoBehaviour
 
     private void InitializedList()
     {
-        foreach(Transform child in content)
+        foreach (Transform child in content)
         {
             Destroy(child.gameObject);
         }
@@ -44,8 +46,9 @@ public class QuestUI : MonoBehaviour
         List<QuestStatus> questStatuses = QuestManager.Instance.GetAllStatuses();
         foreach(QuestStatus status in questStatuses)
         {
-            if(status.state != QuestState.locked)
+            if(status.state != QuestState.Locked)
             {
+                Debug.Log(status);
                 var data = QuestManager.Instance.GetQuestData(status.questId);
                 UpdateQuest(data, status);
             }
@@ -55,9 +58,9 @@ public class QuestUI : MonoBehaviour
 
 
     //퀘스트 상태 변경시 발생하는 함수
-    private void HandleQuestStatusChanged(QuestData data, QuestStatus status)
+    private void HandleQuestStatusChanged(QuestDefinition data, QuestStatus status)
     {
-        if (status.state != QuestState.locked)
+        if (status.state != QuestState.Locked)
         {
             UpdateQuest(data, status);
         }
@@ -68,7 +71,7 @@ public class QuestUI : MonoBehaviour
     }
 
     //퀘스트 상태 업데이트
-    public void UpdateQuest(QuestData data, QuestStatus status)
+    public void UpdateQuest(QuestDefinition data, QuestStatus status)
     {
         if (questUIItems.TryGetValue(data.questID, out var uiItem))
         {
@@ -95,7 +98,7 @@ public class QuestUI : MonoBehaviour
     //퀘스트 정보 표시
     public void ShowQuestInfo(int questId)
     {
-        QuestData data = QuestManager.Instance.GetQuestData(questId);
+        QuestDefinition data = QuestManager.Instance.GetQuestData(questId);
         QuestStatus status = QuestManager.Instance.GetQuestStatus(questId);
 
         if(data == null || status == null) { return; }
@@ -126,7 +129,7 @@ public class QuestUI : MonoBehaviour
     {
         if(selectedQuestId != null)
         {
-            QuestManager.Instance.StartQuest(selectedQuestId.Value);
+            QuestManager.Instance.SetCurrentQuest(selectedQuestId.Value);
         }
     }
 

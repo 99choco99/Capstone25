@@ -31,7 +31,7 @@ public class QuestAPI
                 try
                 {
                     QuestDataList response = JsonConvert.DeserializeObject<QuestDataList>(webRequest.downloadHandler.text);
-                    QuestData[] questDataArray = response.questData;
+                    QuestDefinition[] questDataArray = response.questData;
                     QuestStatus[] questStatusesArray = response.questStatuses;
 
                     APIEvents.OnGetQuestData?.Invoke(questDataArray, questStatusesArray);
@@ -91,6 +91,6 @@ public class QuestAPI
 [System.Serializable]
 public class QuestDataList
 {
-    public QuestData[] questData;
+    public QuestDefinition[] questData;
     public QuestStatus[] questStatuses;
 }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.AppUI.UI;
 using Unity.VisualScripting;
+using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.XR.Haptics;
@@ -14,13 +15,11 @@ public class QuestManager : MonoBehaviour
     public static QuestManager Instance;
 
     //퀘스트id, 퀘스트데이터
-    public Dictionary<int, QuestData> QuestData = new();
+    public Dictionary<int, QuestDefinition> QuestDefinition = new();
     //퀘스트id, 퀘스트 상태
     public Dictionary<int, QuestStatus> playerQuestState = new();
 
-    public event Action<QuestData, QuestStatus> OnQuestStatusChanged;
-    public event Action<int?> OnQuestSelected;
-
+    public event Action<QuestDefinition, QuestStatus> OnQuestStatusChanged;
 
     PlayerStats playerStats;
     private int? currentQuestId = null;
@@ -39,54 +38,37 @@ public class QuestManager : MonoBehaviour
 
         playerStats = GetComponentInParent<PlayerStats>();  
 
-        APIEvents.OnGetQuestData += PopulateQuestData;
-
+        APIEvents.OnGetQuestData += Initialize;
 
         APIManager.Instance.Quest.RequestGetQuestData();
+
+        playerStats.OnLevelUp += UnlockQuests;
+        EnemyStats.OnEnemyDied += HandleEnemyKilled;
+        OnQuestStatusChanged += SaveQuestStatus;
     }
 
     private void Start()
     {
-        playerStats.OnLevelUp += UnlockQuests;
-        EnemyStats.OnEnemyDied += HandleEnemyKilled;
-        OnQuestStatusChanged += SaveQuestStatus;
+
     }
 
     private void OnDestroy()
     {
         EnemyStats.OnEnemyDied -= HandleEnemyKilled;
         playerStats.OnLevelUp -= UnlockQuests;
-        APIEvents.OnGetQuestData -= PopulateQuestData;
+        APIEvents.OnGetQuestData -= Initialize;
         OnQuestStatusChanged -= SaveQuestStatus;
     }
 
-    void PopulateQuestData(QuestData[] questData, QuestStatus[] questProgress)
+    void Initialize(QuestDefinition[] questData, QuestStatus[] questProgress)
     {
-        QuestData.Clear();
+        QuestDefinition.Clear();
         playerQuestState.Clear();
-        if (questProgress != null)
+        foreach (QuestDefinition quest in questData)
         {
-            foreach (QuestStatus progress in questProgress)
+            if (!QuestDefinition.ContainsKey(quest.questID))
             {
-                // 아직 등록되지 않은 경우에만 추가 (혹시 모를 중복 데이터 방지)
-                if (!playerQuestState.ContainsKey(progress.questId))
-                {
-                    playerQuestState.Add(progress.questId, progress);
-                }
-
-                // 진행 중인 퀘스트 ID 설정
-                if (progress.state == QuestState.running)
-                {
-                    currentQuestId = progress.questId;
-                    OnQuestSelected?.Invoke(currentQuestId);
-                }
-            }
-        }
-        foreach (QuestData quest in questData)
-        {
-            if (!QuestData.ContainsKey(quest.questID))
-            {
-                QuestData.Add(quest.questID, quest);
+                QuestDefinition.Add(quest.questID, quest);
             }
             if (!playerQuestState.ContainsKey(quest.questID))
             {
@@ -94,53 +76,178 @@ public class QuestManager : MonoBehaviour
             }
         }
 
-
-        UnlockQuests();
+        if (questProgress != null)
+        {
+            foreach (QuestStatus progress in questProgress)
+            {
+                if (playerQuestState.ContainsKey(progress.questId))
+                {
+                    playerQuestState[progress.questId] = progress;
+                }
+                if (progress.IsFocused)
+                {
+                    currentQuestId = progress.questId;
+                }
+                OnQuestStatusChanged?.Invoke(GetQuestData(progress.questId), GetQuestStatus(progress.questId));
+            }
+        }
     }
-
-    //퀘스트 서버에 저장하기
-    public void SaveQuestStatus(QuestData data, QuestStatus status)
-    {
-        APIManager.Instance.Quest.RequestSaveQuestStatus(status);
-    }
-
 
 
     //퀘스트 상태 가져오기
     public QuestStatus GetQuestStatus(int questId) => playerQuestState.GetValueOrDefault(questId);
-
-    //퀘스트 대화 정보 가져오기
-    public string GetDialogueKey()
-    {
-        if(currentQuestId == null) { return null; }
-        var status = GetQuestStatus(currentQuestId.Value);
-        var data = GetQuestData(currentQuestId.Value);
-
-        return data.steps[status.currentStepIndex].dialogueKey;
-    }
+    public QuestStatus GetCurerntQuestStatus() => currentQuestId.HasValue ? playerQuestState.GetValueOrDefault(currentQuestId.Value) : null;
+    public QuestDefinition GetCurerntQuestDefinition() => currentQuestId.HasValue ? QuestDefinition.GetValueOrDefault(currentQuestId.Value) : null;
     //퀘스트 원본 데이터 가져오기
-    public QuestData GetQuestData(int questId) => QuestData.GetValueOrDefault(questId);
+    public QuestDefinition GetQuestData(int questId) => QuestDefinition.GetValueOrDefault(questId);
     //퀘스트 전체 상태 가져오기
     public List<QuestStatus> GetAllStatuses() => playerQuestState.Values.ToList();
+
+    //퀘스트 서버에 저장하기
+    public void SaveQuestStatus(QuestDefinition data, QuestStatus status)
+    {
+        APIManager.Instance.Quest.RequestSaveQuestStatus(status);
+    }
 
     //퀘스트 지정
     public void SetCurrentQuest(int? questId)
     {
-        if(currentQuestId == questId) { return; }
+        if (currentQuestId == questId) return;
+
+        // 이전 퀘스트 포커스 해제
+        if (currentQuestId.HasValue && playerQuestState.TryGetValue(currentQuestId.Value, out var oldStatus))
+        {
+            oldStatus.IsFocused = false;
+            OnQuestStatusChanged?.Invoke(GetQuestData(oldStatus.questId), oldStatus);
+        }
+
         currentQuestId = questId;
-        OnQuestSelected?.Invoke(questId);
+
+        // 새 퀘스트 포커스 설정
+        if (currentQuestId.HasValue && playerQuestState.TryGetValue(currentQuestId.Value, out var newStatus))
+        {
+            newStatus.IsFocused = true;
+            OnQuestStatusChanged?.Invoke(GetQuestData(newStatus.questId), newStatus);
+        }
     }
+
+
+
+    //퀘스트 시작
+    public void StartQuest(int questId)
+    {
+        if (playerQuestState.TryGetValue(questId, out var status))
+        {
+            status.state = QuestState.InProgress;
+            OnQuestStatusChanged?.Invoke(GetQuestData(questId), status);
+        }
+    }
+
+
+    public void TurnInQuest(int questId)
+    {
+        if (playerQuestState.TryGetValue(questId, out var status) && status.state == QuestState.Complete)
+        {
+            var questDef = GetQuestData(questId);
+            var currentStep = questDef.steps[status.currentStepIndex];
+
+            // 보상 지급
+            GiveReward(currentStep.rewards);
+
+            // 다음 단계가 있는지 확인
+            if (status.currentStepIndex + 1 < questDef.steps.Count)
+            {
+                // 다음 단계로 이동
+                status.currentStepIndex++;
+                status.state = QuestState.InProgress; // 다음 단계가 있으므로 다시 진행 중 상태로
+            }
+            else
+            {
+                // 모든 단계가 끝났다면 최종 완료
+                status.state = QuestState.TurnedIn;
+                SetCurrentQuest(null);
+            }
+            OnQuestStatusChanged?.Invoke(questDef, status);
+        }
+    }
+
+
+    public QuestInteractionInfo GetQuestInteractionForNpc(int npcId)
+    {
+        if (!currentQuestId.HasValue) { return null; }
+
+        var status = GetCurerntQuestStatus();
+        var questDef = GetCurerntQuestDefinition();
+
+        if (status == null || questDef == null || status.currentStepIndex >= questDef.steps.Count) { return null; }
+
+        var currentStep = questDef.steps[status.currentStepIndex];
+
+        // 우선순위 1: 퀘스트 완료 보고
+        // 현재 단계가 '완료' 상태이고, 이 NPC가 보고를 받을 NPC인가?
+        if (status.state == QuestState.Complete && currentStep.turnInNpcId == npcId)
+        {
+            return new QuestInteractionInfo(currentStep.dialogueKey_Complete, status.questId, npcId, QuestInteractionType.Complete);
+        }
+
+        // 우선순위 2: 퀘스트 수락
+        // 퀘스트가 '수락 가능' 상태이고, 이 NPC가 퀘스트를 주는 NPC인가?
+        if (status.state == QuestState.Ready && currentStep.startNpcId == npcId)
+        {
+            return new QuestInteractionInfo(currentStep.dialogueKey_Start, status.questId, npcId, QuestInteractionType.Start);
+        }
+
+        // 우선순위 3: 퀘스트 진행 중 상호작용
+        if (status.state == QuestState.InProgress)
+        {
+            // 3-1. '대화하기'가 미션인 경우
+            var talkMission = currentStep.missions.FirstOrDefault(m => m.type == MissionType.TalkTo && m.targetId == npcId);
+            if (talkMission != null)
+            {
+                if(currentStep.startNpcId == npcId)
+                {
+                    return new QuestInteractionInfo(currentStep.dialogueKey_InProgress, status.questId, npcId, QuestInteractionType.None);
+                }
+                int missionIndex = currentStep.missions.IndexOf(talkMission);
+                int missionKey = status.currentStepIndex * 100 + missionIndex; // 이 부분은 QuestStatus 구조에 따라 달라질 수 있음
+                if (status.MissionProgress[missionKey] < talkMission.requiredAmount)
+                {
+                    // "NPC와 대화하기" 미션은 그 단계의 시작과 같으므로, 'dialogueKey_Start'를 사용합니다.
+                    // 이렇게 하면 QuestInteractionType.Talk 타입으로 반환되어 미션이 정상적으로 처리됩니다.
+                    return new QuestInteractionInfo(currentStep.dialogueKey_Complete, status.questId, npcId, QuestInteractionType.Complete);
+                }
+            }
+            else
+            {
+                // 3-2. 일반적인 '진행 중' 대화 상대인지 확인
+                // 이 NPC가 퀘스트를 '줬거나' or '완료 보고를 받을' 관련 인물인가?
+                // 일반 진행 중 대화 상대 확인
+                if (currentStep.turnInNpcId == npcId)
+                {
+                    // 퀘스트를 준 NPC와 대화 -> StartNpc용 대화 키 사용
+                    return new QuestInteractionInfo(currentStep.dialogueKey_InProgress, status.questId, npcId, QuestInteractionType.None);
+                }
+            }
+
+
+        }
+
+        // 위 모든 경우에 해당하지 않으면, 이 NPC는 현재 퀘스트와 관련이 없습니다.
+        return null;
+    }
+
+
 
 
     //레벨 따라 퀘스트 해금
     public void UnlockQuests()
     {
-        foreach(var quest in QuestData.Values)
+        foreach(var quest in QuestDefinition.Values)
         {
             var status = GetQuestStatus(quest.questID);
-            if(playerStats.Level >= quest.requiredLevel && status.state == QuestState.locked)
+            if(playerStats.Level >= quest.requiredLevel && status.state == QuestState.Locked)
             {
-                status.state = QuestState.ready;
+                status.state = QuestState.Ready;
                 OnQuestStatusChanged?.Invoke(quest, status);
             }
         }
@@ -148,25 +255,7 @@ public class QuestManager : MonoBehaviour
     }
 
 
-    //퀘스트 시작
-    public void StartQuest(int questId)
-    {
-        if(currentQuestId.HasValue && currentQuestId.Value != questId)
-        {
-            if (playerQuestState.TryGetValue(currentQuestId.Value, out var preQuest))
-            {
-                preQuest.state = QuestState.running;
-                OnQuestStatusChanged?.Invoke(GetQuestData(currentQuestId.Value), preQuest);
-            }
-        }
 
-        if(playerQuestState.TryGetValue(questId, out var newQuest))
-        {
-            newQuest.state = QuestState.focused;
-            SetCurrentQuest(questId);
-            OnQuestStatusChanged?.Invoke(GetQuestData(questId), newQuest);
-        }
-    }
 
     private void HandleEnemyKilled(int enemyId)
     {
@@ -179,7 +268,7 @@ public class QuestManager : MonoBehaviour
 
     private void HandleCollectItem(int itemId, int amount)
     {
-        //UpdateMissionProgress();
+        UpdateMissionProgress(MissionType.Collect, itemId, amount);
     }
 
 
@@ -189,10 +278,10 @@ public class QuestManager : MonoBehaviour
         if(currentQuestId == null) { return; }
 
         var questStatus = playerQuestState[currentQuestId.Value];
-        if (questStatus.state != QuestState.focused) { return; }
+        if (!questStatus.IsFocused) { return; }
 
 
-        var questData = QuestData[currentQuestId.Value];
+        var questData = QuestDefinition[currentQuestId.Value];
         var currentStep = questData.steps[questStatus.currentStepIndex];
         bool IsProgress = false;
 
@@ -225,31 +314,25 @@ public class QuestManager : MonoBehaviour
             // 모든 목표가 완료되었다면
             if (isComplete)
             {
-                // 마지막 단계였는지 확인
-                if (questStatus.currentStepIndex >= questData.steps.Count - 1)
-                {
-                    questStatus.state = QuestState.complete; // 퀘스트 전체 완료
-                    GetReward(currentQuestId.Value);
-                }
-                else
-                {
-                    questStatus.currentStepIndex++; // 다음 단계로
-                }
-                OnQuestStatusChanged?.Invoke(questData, questStatus);
+                questStatus.state = QuestState.Complete;
+
             }
         }
-
+        OnQuestStatusChanged?.Invoke(questData, questStatus);
     }
 
-    public void GetReward(int questId)
+
+
+    private void GiveReward(QuestReward reward)
     {
-        if (playerQuestState.TryGetValue(questId, out var status) && status.state == QuestState.complete) 
-        {
-            currentQuestId = null;
-        }
-        //골드 추가 QuestDataList[questId].rewards[QuestDataList[questId].questStep].exp
-        //아이템 추가
+        if (reward == null) return;
+
+        // 예시: 경험치, 골드, 아이템 지급 로직
+        // 실제로는 PlayerStats나 InventoryManager 같은 다른 매니저의 함수를 호출해야 합니다.
+        playerStats.AddExp(reward.exp);
+        //playerStats.AddGold(reward.gold);
+        // InventoryManager.Instance.AddItem(reward.itemId);
+
+        Debug.Log($"보상 획득: 경험치 {reward.exp}, 골드 {reward.gold}");
     }
-
-
 }

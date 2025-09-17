@@ -19,7 +19,7 @@ public class QuestUIItem : MonoBehaviour
         button.onClick.AddListener(OnItemClicked);
     }
 
-    public void Initialize(QuestData data, QuestStatus status, System.Action<int> OnSelectCallback)
+    public void Initialize(QuestDefinition data, QuestStatus status, System.Action<int> OnSelectCallback)
     {
         this.QuestId = data.questID;
         OnItemSelected += OnSelectCallback;
@@ -31,25 +31,30 @@ public class QuestUIItem : MonoBehaviour
     {
         switch (status.state)
         {
-            case QuestState.ready:
+            case QuestState.Ready:
                 questStatusText.text = "[시작 가능]";
                 questStatusText.color = Color.black;
                 break;
-            case QuestState.focused:
-                questStatusText.text = "[집중]";
-                questStatusText.color = Color.red;
-                break;
-            case QuestState.running:
+            case QuestState.InProgress:
                 questStatusText.text = "[진행중]";
                 questStatusText.color = Color.green;
                 break;
-            case QuestState.complete:
+            case QuestState.Complete:
                 questStatusText.text = "[완료]";
                 questStatusText.color = Color.gray;
                 break;
-            default:
-                questStatusText.text = "[신규]";
+            case QuestState.TurnedIn:
+                questStatusText.text = "[종료]";
+                questStatusText.color = Color.gray;
                 break;
+            default:
+
+                break;
+        }
+        if (status.IsFocused)
+        {
+            questStatusText.text = "[집중]";
+            questStatusText.color = Color.red;
         }
     }
 

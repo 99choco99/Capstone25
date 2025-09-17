@@ -93,6 +93,7 @@ public class PlayerUIManager : MonoBehaviour
 
     public void UpdateExp(int exp, int level)
     {
+        if(playerStats.maxExp.Length < level-1) { return; }
         if(exp / playerStats.maxExp[level] < 1)
         {
             ExpUI.value = exp / playerStats.maxExp[level];
