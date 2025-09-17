@@ -28,6 +28,7 @@ public class PlayerInputHandler : MonoBehaviour
     private void Start()
     {
         GameManager.instance.OnGameStateChanged += HandlerGameStateChanged;
+
     }
     private void OnDestroy()
     {

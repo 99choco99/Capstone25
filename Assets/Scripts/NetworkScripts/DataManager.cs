@@ -7,7 +7,7 @@ public class DataManager : MonoBehaviour
 {
     public static DataManager Instance;
 
-    public PlayerData playerData { get; private set; }
+    public PlayerData playerData;
 
     public event Action OnSave;
 

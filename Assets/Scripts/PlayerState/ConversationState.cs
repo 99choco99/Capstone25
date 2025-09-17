@@ -9,6 +9,8 @@ public class ConversationState : State
     public override void Enter()
     {
         player.Motor.StopMovement();
+        player.Motor.canMove = false;
+        player.Motor.canRotate = false;
     }
 
     public override void Update()
@@ -16,9 +18,12 @@ public class ConversationState : State
         if (player.InputHandler.InteractionInput)
         {
             player.InputHandler.UseInteractionInput();
-            DialogueManager.instance.NextDialog();
+            DialogueManager.instance.ShowNextLine();
         }
     }
-    public override void Exit() { }
+    public override void Exit() {
+        player.Motor.canMove = true;
+        player.Motor.canRotate = true;
+    }
 
 }

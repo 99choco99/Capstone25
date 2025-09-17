@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -30,9 +31,10 @@ public class QuestAPI
                 try
                 {
                     QuestDataList response = JsonConvert.DeserializeObject<QuestDataList>(webRequest.downloadHandler.text);
-                    QuestData[] questDataArray = response.quests;
+                    QuestDefinition[] questDataArray = response.questData;
+                    QuestStatus[] questStatusesArray = response.questStatuses;
 
-                    APIEvents.OnGetQuestData?.Invoke(questDataArray);
+                    APIEvents.OnGetQuestData?.Invoke(questDataArray, questStatusesArray);
                 }
                 catch (JsonException ex)
                 {
@@ -47,7 +49,31 @@ public class QuestAPI
         }
     }
 
+    IEnumerator SaveQuestStatus(QuestStatus status)
+    {
+        string url = $"{APIConstants.BASE_API_URL}/quest/{userId}";
+        string json = JsonConvert.SerializeObject(status);
 
+        using (UnityWebRequest  webRequest = new UnityWebRequest(url, "POST")) 
+        {
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
+            webRequest.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            webRequest.downloadHandler = new DownloadHandlerBuffer();
+            webRequest.SetRequestHeader("Content-Type", "application/json");
+
+            yield return webRequest.SendWebRequest();
+
+            if(webRequest.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log("퀘스트 저장 성공");
+            }
+            else
+            {
+                Debug.LogError("퀘스트 저장 실패");
+            }
+        
+        }
+    }
 
 
     public void RequestGetQuestData()
@@ -55,10 +81,16 @@ public class QuestAPI
         coroutineRunner.StartCoroutine(GetQuestData());
     }
 
+
+    public void RequestSaveQuestStatus(QuestStatus status)
+    {
+        coroutineRunner.StartCoroutine(SaveQuestStatus(status));
+    }
 }
 
 [System.Serializable]
 public class QuestDataList
 {
-    public QuestData[] quests;
+    public QuestDefinition[] questData;
+    public QuestStatus[] questStatuses;
 }
