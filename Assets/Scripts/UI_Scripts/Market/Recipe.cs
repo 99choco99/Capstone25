@@ -42,7 +42,7 @@ public class Recipe : MonoBehaviour
         count = recipe_Input.text;
         if (int.Parse(count) <= 0)
         {
-            //market.ShowNotice("1이상의 값을 넣어주세요.");
+            ShowNotice("1이상의 값을 넣어주세요.");
             recipe_Input.text = "";
             return;
         }

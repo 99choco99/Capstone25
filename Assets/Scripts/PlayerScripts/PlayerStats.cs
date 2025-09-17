@@ -36,11 +36,14 @@ public class PlayerStats : LivingEntity
     public float JumpPower;
 
 
+    public float baseMaxHp;
+    public float baseDamage;
+    public float baseDefense;
     public float bonusmaxHp { get; protected set; }
     public float bonusDamage { get; protected set; }
     public float bonusDefense { get; protected set; }
 
-
+    
     public int[] maxExp;
     //PlayerEvent
     public event Action<float> OnHpChanged;  // hp 변경
@@ -55,6 +58,7 @@ public class PlayerStats : LivingEntity
     private void Awake()
     {
         player = GetComponent<Player>();
+        LoadPlayerData(DataManager.Instance.playerData);
     }
 
     //게임 데이터 불러오기
@@ -72,6 +76,8 @@ public class PlayerStats : LivingEntity
         Level = data.level;
         Exp = data.exp;
         Gold = data.gold;
+
+        ApplyStatChanges();
 
         OnHpChanged?.Invoke(currentHp);
         OnExpChanged?.Invoke(Exp, Level);

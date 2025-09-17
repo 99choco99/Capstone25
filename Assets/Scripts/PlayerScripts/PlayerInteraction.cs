@@ -94,12 +94,11 @@ public class PlayerInteraction : MonoBehaviour
         if (player.InputHandler.InteractionInput)
         {
             player.InputHandler.UseInteractionInput(); // 입력 소비
-
             currentSelection?.Interact(player);
         }
     }
 
-    private void HandleConversationStart(NPC npc, Player p)
+    private void HandleConversationStart()
     {
         player.StateMachine.TransitionTo(player.StateMachine.ConversationState);
     }
