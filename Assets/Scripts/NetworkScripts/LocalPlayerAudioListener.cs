@@ -1,13 +1,15 @@
 using UnityEngine;
 using Unity.Netcode;
 
-public class LocalPlayerAudioListener : NetworkBehaviour
+public class LocalPlayerAudioListener : MonoBehaviour
 {
     private AudioListener _audioListener;
+    private Player player;
 
     void Start()
     {
         _audioListener = GetComponent<AudioListener>();
+        player = GetComponentInParent<Player>();
         if (_audioListener == null)
         {
             // 카메라에 Audio Listener가 없을 경우, 플레이어 오브젝트 자체에서 찾습니다.
@@ -20,7 +22,7 @@ public class LocalPlayerAudioListener : NetworkBehaviour
         }
 
         // 이 NetworkObject가 로컬 플레이어의 소유인지 확인합니다.
-        if (!IsOwner)
+        if (!player.IsLocalPlayer)
         {
             // 로컬 플레이어의 소유가 아니면 Audio Listener를 비활성화합니다.
             _audioListener.enabled = false;

@@ -34,7 +34,7 @@ public class PlayerDataAPI
                     DataManager.Instance.LoadPlayerData(data);
 
 
-                    LoadingScene.LoadScene("Main");
+                    //LoadingScene.LoadScene("Main");
                 }
                 catch (JsonException ex)
                 {

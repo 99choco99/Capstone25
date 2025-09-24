@@ -58,11 +58,7 @@ public class PlayerMoveState : State
             return;
         }
 
+        player.Motor.Move();
     }
 
-    public override void FixedUpdate()
-    {
-        if (player.InputHandler.MoveInput == Vector3.zero) { return; }
-        player.Motor.Move(player.InputHandler.MoveInput, player.Stats.MoveSpeed);
-    }
 }

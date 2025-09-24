@@ -20,9 +20,9 @@ public class QuestStep
     public List<QuestMission> missions;     //퀘스트 목표
     public QuestReward rewards;         //퀘스트 보상
 
-    public string dialogueKey_Start;      // 이 단계를 '시작'시킬 때의 대화 키
+    public string dialogueKey_Start;      // 이 단계를 시작시킬 때의 대화 키
     public string dialogueKey_InProgress; // 이 단계가 진행중일 때의 대화 키
-    public string dialogueKey_Complete;   // 이 단계의 목표를 '완료'했을 때의 대화 키
+    public string dialogueKey_Complete;   // 이 단계의 목표를 완료했을 때의 대화 키
 }
 public enum MissionType { Kill, Collect, TalkTo }
 public class QuestMission
@@ -31,6 +31,9 @@ public class QuestMission
     public string missionScript;  //퀘스트 설명(ex: 마야에게 말걸기)
     public int targetId; // 몬스터 ID, 아이템 ID, NPC ID 등
     public int requiredAmount;
+
+    public string dialogueKey_Initial;  // 해당 NPC에게 처음 말을 걸었을 때의 대화 키
+    public string dialogueKey_Repeated; // 이미 말을 건 NPC에게 다시 말을 걸었을 때의 대화 키
 }
 
 public class QuestReward

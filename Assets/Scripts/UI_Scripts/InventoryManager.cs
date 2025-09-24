@@ -40,10 +40,6 @@ public class InventoryManager : MonoBehaviour
         isInit = true;
         APIManager.Instance.Inventory.RequestInventory();
     }
-    private void OnEnable()
-    {
-
-    }
 
     private void OnDestroy()
     {
@@ -183,6 +179,7 @@ public class InventoryManager : MonoBehaviour
 
         // 데이터 변경이 완료되었음을 UI에 알립니다.
         InventoryEvents.OnSlotDataChanged?.Invoke(data.type, emptySlotData.slotIndex);
+        InventoryEvents.OnChangedGold?.Invoke(response.gold);
     }
 
     //비어있는 인벤토리 슬롯 찾아서 반환

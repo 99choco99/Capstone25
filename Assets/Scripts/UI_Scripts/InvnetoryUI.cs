@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -10,6 +11,7 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] private Transform equipmentParent;
     [SerializeField] private Transform consumptionParent;
     [SerializeField] private Transform otherParent;
+    [SerializeField] private TextMeshProUGUI goldText;
 
     private Dictionary<SlotType, List<Slot>> uiSlots = new();
 
@@ -17,26 +19,9 @@ public class InventoryUI : MonoBehaviour
     {
         InventoryEvents.OnInventoryDataInitialized += InitUI;
         InventoryEvents.OnSlotDataChanged += UpdateSlotUI;
-
+        InventoryEvents.OnChangedGold += UpdateGoldUI;
     }
 
-    private void OnEnable()
-    {
-
-
-        //// 인벤토리가 이미 초기화되었는지 확인 후 수동으로 초기화 호출
-        //if (InventoryManager.instance != null && InventoryManager.instance.isInit)
-        //{
-        //    foreach (var pair in InventoryManager.instance.Inventory)
-        //    {
-        //        InitUI(pair.Key, pair.Value.Count);
-        //        for (int i = 0; i < pair.Value.Count; i++)
-        //        {
-        //            UpdateSlotUI(pair.Key, i);
-        //        }
-        //    }
-        //}
-    }
 
     private void Start()
     {
@@ -47,6 +32,7 @@ public class InventoryUI : MonoBehaviour
     {
         InventoryEvents.OnInventoryDataInitialized -= InitUI;
         InventoryEvents.OnSlotDataChanged -= UpdateSlotUI;
+        InventoryEvents.OnChangedGold -= UpdateGoldUI;
     }
 
     private void InitUI(SlotType type, int count)
@@ -125,6 +111,11 @@ public class InventoryUI : MonoBehaviour
                 Destroy(child.gameObject);
             }
         }
+    }
+
+    private void UpdateGoldUI(int gold)
+    {
+        goldText.text = $"{gold} Gold";
     }
 
     private Transform GetParentForType(SlotType type)
