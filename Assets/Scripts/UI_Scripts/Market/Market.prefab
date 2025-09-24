@@ -1942,7 +1942,7 @@ GameObject:
   - component: {fileID: 8819324726080649474}
   - component: {fileID: 5734599201364460178}
   m_Layer: 6
-  m_Name: Bottom
+  m_Name: Gold
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4942,7 +4942,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -67.5}
+  m_AnchoredPosition: {x: 0, y: -337.5}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2035778619641080832
@@ -5067,7 +5067,7 @@ RectTransform:
   m_GameObject: {fileID: 5890927762657721120}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6832642210777556160}
@@ -5177,6 +5177,7 @@ MonoBehaviour:
   equipmentParent: {fileID: 5203193445179217003}
   consumptionParent: {fileID: 8626485167400453581}
   otherParent: {fileID: 5524603718845084053}
+  goldText: {fileID: 7578803273396986829}
 --- !u!1 &5950824508698913155
 GameObject:
   m_ObjectHideFlags: 0

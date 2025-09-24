@@ -7,16 +7,23 @@ using UnityEngine.UIElements;
 
 public class TargetingSystem : MonoBehaviour
 {
-    [SerializeField] private float detectionRange = 5f;
     [SerializeField] private LayerMask targetLayer;
+    [SerializeField] public LayerMask ObstacleLayer;
+    [SerializeField] private Transform targetTransform;
+    [SerializeField] private float detectionRange = 5f;
+    [SerializeField] private float minimumViewAngle = -50f;
+    [SerializeField] private float maxmumViewAngle = 50f;
+    private List<IDamageable> TargetInRange = new List<IDamageable>();
+
+
 
     public event Action<IDamageable> OnChangedTarget;
     public event Action OnTargetDeselected;
 
     public IDamageable CurrentTarget { get; private set; }
-
-    private List<IDamageable> targetInRange = new List<IDamageable>();
-    private int targetIndex = -1;
+    private IDamageable nearestTarget;
+    private IDamageable LeftTarget;
+    private IDamageable RightTarget;
     private Player player;
 
 
@@ -36,6 +43,15 @@ public class TargetingSystem : MonoBehaviour
 
         if (CurrentTarget != null)
         {
+            if(player.InputHandler.LookInput.x > 0.3f)
+            {
+                SetTarget(LeftTarget);
+            }else if(player.InputHandler.LookInput.x < -0.3f)
+            {
+                SetTarget(RightTarget);
+            }
+
+
             if (CurrentTarget.dead || Vector3.Distance(transform.position, CurrentTarget.gameObject.transform.position) > detectionRange)
             {
                 DeselectTarget();
@@ -49,12 +65,12 @@ public class TargetingSystem : MonoBehaviour
     {
         if (CurrentTarget != null)
         {
-            if(targetIndex >= targetInRange.Count) { SetTarget(null); return; }
-            SetTarget(targetInRange[targetIndex]);
+            SetTarget(null);
         }
         else
         {
             FindAndSelectTargetInRange();
+            SetTarget(nearestTarget);
         }
     }
 
@@ -62,18 +78,95 @@ public class TargetingSystem : MonoBehaviour
     //타겟을 찾고 선택하기
     void FindAndSelectTargetInRange()
     {
+        TargetInRange.Clear();
+
+        float shortestDistance = Mathf.Infinity;
+        float shortestDistanceOfRightTarget = Mathf.Infinity;
+        float shortestdistanceOfLeftTarget = -Mathf.Infinity;
+
+
         var colliders = Physics.OverlapSphere(transform.position, detectionRange,targetLayer);
 
         foreach (var collider in colliders)
         {
-            targetInRange.Add(collider.GetComponent<IDamageable>());
+            var target = collider.GetComponent<IDamageable>();
+
+            if(target != null)
+            {
+                Vector3 targetDirection = collider.transform.position - transform.position;
+                float distanceFromTarget = Vector3.Distance(transform.position, collider.transform.position);
+                float viewableAngle = Vector3.Angle(targetDirection, player.MainCamera.transform.forward);
+
+                if (target.dead) { continue; }
+
+                if(distanceFromTarget > detectionRange) { continue; }
+
+                if(viewableAngle > minimumViewAngle && viewableAngle < maxmumViewAngle)
+                {
+                    RaycastHit hit;
+
+                    if(Physics.Linecast(targetTransform.position, target.transform.position, out hit, ObstacleLayer))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        TargetInRange.Add(target);
+                    }
+                }
+
+            }
         }
-        if (targetInRange.Count > 0)
+
+
+        for (int i = 0; i < TargetInRange.Count; i++)
         {
-            targetIndex = 0;
-            SetTarget(targetInRange[0]);
+            if (TargetInRange[i] != null)
+            {
+                float distanceFromTarget = Vector3.Distance(transform.position, TargetInRange[i].transform.position);
+                Vector3 directionFromTarget = TargetInRange[i].transform.position - transform.position;
+
+                if(distanceFromTarget < shortestDistance)
+                {
+                    shortestDistance = distanceFromTarget;
+                    nearestTarget = TargetInRange[i];
+                }
+
+                Vector3 relativeEnemyPosition = transform.InverseTransformPoint(TargetInRange[i].transform.position);
+                var distanceFromLeftTarget = relativeEnemyPosition.x;
+                var distanceFromRightTarget = relativeEnemyPosition.x;
+
+                if (CurrentTarget == TargetInRange[i])
+                    continue;
+
+
+                if(distanceFromLeftTarget <= 0f && distanceFromRightTarget > shortestdistanceOfLeftTarget)
+                {
+                    shortestdistanceOfLeftTarget = distanceFromLeftTarget;
+                    LeftTarget = TargetInRange[i];
+                }else if(distanceFromRightTarget >= 0f && distanceFromRightTarget < shortestDistanceOfRightTarget)
+                {
+                    shortestDistanceOfRightTarget = distanceFromRightTarget;
+                    RightTarget = TargetInRange[i];
+                }
+            }
+            else
+            {
+                ClearTargetInRange();
+            }
         }
+
+
     }
+
+    private void ClearTargetInRange()
+    {
+        nearestTarget = null;
+        LeftTarget = null;
+        RightTarget = null;
+        TargetInRange.Clear();
+    }
+
 
     //타겟 해제
     void DeselectTarget()
@@ -94,6 +187,7 @@ public class TargetingSystem : MonoBehaviour
             OnTargetDeselected?.Invoke();
         }
     }
+
 
     public bool IsCurrentTargetExecutable()
     {

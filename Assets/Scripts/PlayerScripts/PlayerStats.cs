@@ -1,8 +1,7 @@
 using System;
-using UnityEditor.Playables;
+
 using UnityEngine;
-using WebSocketSharp;
-using static Cinemachine.DocumentationSortingAttribute;
+
 
 
 public class DamageInfo
@@ -32,6 +31,7 @@ public class PlayerStats : LivingEntity
     public int AbilityPoint { get; private set; }
 
     public float MoveSpeed;
+    public float RunSpeed;
     public float SprintSpeed;
     public float JumpPower;
 
@@ -44,7 +44,6 @@ public class PlayerStats : LivingEntity
     public float bonusDefense { get; protected set; }
 
     
-    public int[] maxExp;
     //PlayerEvent
     public event Action<float> OnHpChanged;  // hp 변경
     public event Action<int, int> OnExpChanged;   // 경험치 적용
@@ -58,7 +57,12 @@ public class PlayerStats : LivingEntity
     private void Awake()
     {
         player = GetComponent<Player>();
+
+    }
+    private void Start()
+    {
         LoadPlayerData(DataManager.Instance.playerData);
+
     }
 
     //게임 데이터 불러오기
@@ -82,6 +86,7 @@ public class PlayerStats : LivingEntity
         OnHpChanged?.Invoke(currentHp);
         OnExpChanged?.Invoke(Exp, Level);
         OnStatsChanged?.Invoke();
+        InventoryEvents.OnChangedGold?.Invoke(Gold);
 
         if (DataManager.Instance != null)
         {
@@ -184,6 +189,11 @@ public class PlayerStats : LivingEntity
         OnExpChanged?.Invoke(Exp, Level);
     }
 
+    public void AddGold(int addGold)
+    {
+        Gold += addGold;
+        InventoryEvents.OnChangedGold?.Invoke(Gold);
+    }
 
 
     //스텟 증가

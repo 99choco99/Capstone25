@@ -1,12 +1,14 @@
 using UnityEngine;
 using Unity.Netcode;
 
-public class LocalPlayerCamera : NetworkBehaviour
+public class LocalPlayerCamera : MonoBehaviour
 {
     public Camera playerCamera; // Inspector 창에서 카메라 컴포넌트를 드래그 앤 드롭할 변수
+    Player player;
 
     void Start()
     {
+        player = GetComponentInParent<Player>();
         // playerCamera 변수가 비어있다면 자식 오브젝트에서 Camera 컴포넌트를 찾습니다.
         if (playerCamera == null)
         {
@@ -19,7 +21,7 @@ public class LocalPlayerCamera : NetworkBehaviour
         }
 
         // 이 NetworkObject가 로컬 플레이어의 소유인지 확인합니다.
-        if (!IsOwner)
+        if (!player.IsLocalPlayer)
         {
             // 로컬 플레이어의 소유가 아니면 카메라를 비활성화합니다.
             playerCamera.enabled = false;

@@ -48,12 +48,8 @@ public class PlayerSprintState : State
             stateMachine.TransitionTo(stateMachine.PlayerIdleState);
             return;
         }
-
+        player.Motor.Move();
     }
 
-    public override void FixedUpdate()
-    {
-        player.Motor.Move(player.InputHandler.MoveInput, player.Stats.SprintSpeed);
-    }
 
 }

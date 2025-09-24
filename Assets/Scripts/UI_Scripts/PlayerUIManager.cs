@@ -64,7 +64,6 @@ public class PlayerUIManager : MonoBehaviour
     private void Start()
     {
 
-
         // 딕셔너리에 UI 패널들을 등록
         panelDictionary = new Dictionary<UIPanelType, GameObject>()
         {
@@ -86,6 +85,13 @@ public class PlayerUIManager : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        playerStats.OnHpChanged -= UpdateHp;
+        playerStats.OnExpChanged -= UpdateExp;
+        playerStats.OnPostureChanged -= UpdatePostureGauge;
+    }
+
     public void UpdateHp(float currenthp)
     {
         PlayerHpUI.value = currenthp / playerStats.maxHp;
@@ -93,13 +99,10 @@ public class PlayerUIManager : MonoBehaviour
 
     public void UpdateExp(int exp, int level)
     {
-        if(playerStats.maxExp.Length < level-1) { return; }
-        if(exp / playerStats.maxExp[level] < 1)
-        {
-            ExpUI.value = exp / playerStats.maxExp[level];
-        }
+        ExpUI.maxValue = DataManager.Instance.GetMaxExpForLevel(level);
+        ExpUI.value = exp;
         levelText.text = $"Lv. {level}";
-        ExpText.text = $"{ExpUI.value}%";
+        ExpText.text = $"{(ExpUI.value / ExpUI.maxValue) * 100}%";
     }
 
     public void UpdatePostureGauge(float currentPosture, float maxPosture)
