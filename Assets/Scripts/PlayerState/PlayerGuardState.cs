@@ -41,12 +41,10 @@ public class PlayerGuardState : State
             }
             return;
         }
+        player.Motor.Move();
     }
 
-    public override void FixedUpdate()
-    {
-        player.Motor.Move(player.InputHandler.MoveInput, player.Stats.MoveSpeed);
-    }
+
 
 
     public bool IsParryWindowActive()

@@ -15,7 +15,7 @@ public class PlayerJumpState : State
     public override void Update()
     {
 
-        if (player.Motor.IsGrounded && player.Motor.rb.linearVelocity.y < 0.1f)
+        if (player.Motor.IsGrounded)
         {
             if (player.InputHandler.MoveInput == Vector3.zero)
             {
@@ -26,12 +26,7 @@ public class PlayerJumpState : State
                 stateMachine.TransitionTo(stateMachine.PlayerMoveState);
             }
         }
-    }
-
-    public override void FixedUpdate()
-    {
-        // 공중에서도 어느 정도 좌우 이동이 가능하도록 Motor를 호출
-        player.Motor.Move(player.InputHandler.MoveInput, player.Stats.MoveSpeed * 0.8f);
+        player.Motor.Move();
     }
 
     public override void Exit()

@@ -1,7 +1,7 @@
 using System;
 using Unity.VisualScripting;
 using UnityEngine;
-using static Unity.VisualScripting.AnnotationUtility;
+
 
 public class PlayerCombat : MonoBehaviour
 {
@@ -33,12 +33,6 @@ public class PlayerCombat : MonoBehaviour
             player.Stats.OnDamaged -= HandleDamageReaction;
         }
     }
-
-    private void Update()
-    {
-
-    }
-
 
     //공격 시작
     public void StartAttack()

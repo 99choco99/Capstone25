@@ -8,7 +8,7 @@ public class DataManager : MonoBehaviour
     public static DataManager Instance;
 
     public PlayerData playerData;
-
+    [SerializeField] private int[] maxExp;
     public event Action OnSave;
 
     private void Awake()
@@ -46,7 +46,11 @@ public class DataManager : MonoBehaviour
 
     public int GetMaxExpForLevel(int level)
     {
-        return 1;
+        if(maxExp.Length < level)
+        {
+            return int.MaxValue;
+        }
+        return maxExp[level];
     }
 
 

@@ -15,9 +15,10 @@ public class EnemyWeapon : Weapon
     {
         if((1 << other.gameObject.layer) == playerLayer)
         {
-           if(other.TryGetComponent<IDamageable>(out var target))
+            var target = other.GetComponentInParent<IDamageable>();
+            if(target != null)
             {
-                EnemyCombat.OnWeaponHit(target,other);
+                EnemyCombat.OnWeaponHit(target, other);
             }
         }
 

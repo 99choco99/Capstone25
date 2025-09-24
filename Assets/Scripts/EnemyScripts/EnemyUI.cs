@@ -10,17 +10,22 @@ public class EnemyUI : MonoBehaviour
     {
         enemy = GetComponentInParent<Enemy>();
         col = GetComponentInParent<Collider>();
-        mainCamera = Camera.main;
+
     }
 
     void Start()
     {
+
         transform.position = col.bounds.center + new Vector3(0, col.bounds.extents.y, 0);
     }
 
     // Update is called once per frame
     void LateUpdate()
     {
+        if(mainCamera == null)
+        {
+            mainCamera = Camera.main;
+        }
         transform.LookAt(mainCamera.transform);
     }
 }

@@ -24,7 +24,7 @@ public class PlayerInteraction : MonoBehaviour
     public List<IInteractable> interactablesInRange = new List<IInteractable>();
 
 
-    private void Awake()
+    private void Start()
     {
         player = GetComponent<Player>();
         DialogueManager.instance.OnConversationStart += HandleConversationStart;

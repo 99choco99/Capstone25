@@ -8,6 +8,10 @@ public class PlayerInputHandler : MonoBehaviour
 
     [Header("PlayerSetting Input Values")]
     public Vector3 MoveInput { get; private set; }
+    [SerializeField] float horizontalInput;
+    [SerializeField] float verticalInput;
+    public float moveAmount;
+
     public Vector2 LookInput { get; private set; }
     public bool JumpInput { get; private set; }
     public bool AttackInput { get; private set; }
@@ -30,6 +34,7 @@ public class PlayerInputHandler : MonoBehaviour
         GameManager.instance.OnGameStateChanged += HandlerGameStateChanged;
 
     }
+
     private void OnDestroy()
     {
         if(GameManager.instance != null)
@@ -37,6 +42,9 @@ public class PlayerInputHandler : MonoBehaviour
             GameManager.instance.OnGameStateChanged -= HandlerGameStateChanged;
         }
     }
+
+
+
 
     // 매 프레임 한번만 true가 되도록 처리하기 위함
     private void LateUpdate()
@@ -56,13 +64,27 @@ public class PlayerInputHandler : MonoBehaviour
         {
             PlayerInput.SwitchCurrentActionMap("UI");
         }
-        Debug.Log(PlayerInput.currentActionMap);
     }
 
 
     public void OnMove(InputAction.CallbackContext context)
     {
         MoveInput = context.ReadValue<Vector3>();
+
+        horizontalInput = MoveInput.x;
+        verticalInput = MoveInput.z;
+
+        moveAmount = Mathf.Clamp01(Mathf.Abs(horizontalInput) + Mathf.Abs(verticalInput));
+        if (moveAmount > 0 && moveAmount <= 0.5f)
+        {
+            moveAmount = 0.5f;
+        }
+        else if (moveAmount > 0.5f)
+        {
+            moveAmount = 1f;
+        }
+
+        
     }
 
     public void OnLook(InputAction.CallbackContext context)

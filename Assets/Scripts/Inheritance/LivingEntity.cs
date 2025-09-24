@@ -46,7 +46,7 @@ public class LivingEntity : MonoBehaviour,IDamageable
         if (dead) return;
 
         currentHp -= damageInfo.finalDamage;
-        Debug.Log(currentHp);
+
         // 체력이 0 이하가 되면 사망 처리
         if (currentHp <= 0)
         {
