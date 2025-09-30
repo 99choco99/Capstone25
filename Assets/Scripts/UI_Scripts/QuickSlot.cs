@@ -37,7 +37,7 @@ public class QuickSlot : Slot
             {
                 Destroy(quickItem.gameObject);
             }
-            quickItem.consume(playerData);
+            //quickItem.consume(playerData);
             StartCoroutine("CoolTime", 3);
         }
     }

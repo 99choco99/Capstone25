@@ -40,8 +40,6 @@ public class PlayerCombat : MonoBehaviour
         if(normalAttacks.Length <= 0) { return; }
         player.Anim.SetTrigger("Attack");
 
-        Debug.Log($"공격 실행: 콤보 {comboIndex + 1}");
-
         // 다음 공격을 위해 콤보 인덱스 증가
         comboIndex = (comboIndex + 1) % normalAttacks.Length;
     }
@@ -51,6 +49,8 @@ public class PlayerCombat : MonoBehaviour
     {
         comboIndex = 0;
     }
+
+    //플레이어가 적을 공격했을 때
     public void OnWeaponHit(IDamageable target, Collider targetCollider)
     {
         Attack currentAttackData = normalAttacks[comboIndex];

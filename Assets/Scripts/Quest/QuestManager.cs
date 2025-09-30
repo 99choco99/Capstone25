@@ -52,9 +52,13 @@ public class QuestManager : MonoBehaviour
     private void OnDestroy()
     {
         EnemyStats.OnEnemyDied -= HandleEnemyKilled;
-        playerStats.OnLevelUp -= UnlockQuests;
+
         APIEvents.OnGetQuestData -= Initialize;
         OnQuestStatusChanged -= SaveQuestStatus;
+        if (playerStats != null)
+        {
+            playerStats.OnLevelUp -= UnlockQuests;
+        }
     }
 
     void Initialize(QuestDefinition[] questData, QuestStatus[] questProgress)

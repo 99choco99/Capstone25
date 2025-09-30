@@ -31,10 +31,7 @@ public class PlayerJumpState : State
 
     public override void Exit()
     {
-        if (player.Motor.IsGrounded)
-        {
-            player.Anim.SetBool("Jump", false);
-        }
+        player.Anim.SetBool("Jump", false);
     }
 
 }

@@ -33,8 +33,12 @@ public class PlayerInteraction : MonoBehaviour
 
     private void OnDestroy()
     {
-        DialogueManager.instance.OnConversationStart -= HandleConversationStart;
-        DialogueManager.instance.OnConversationEnd -= HandleConversationEnd;
+        if(DialogueManager.instance != null)
+        {
+            DialogueManager.instance.OnConversationStart -= HandleConversationStart;
+            DialogueManager.instance.OnConversationEnd -= HandleConversationEnd;
+        }
+
     }
 
     void Update()

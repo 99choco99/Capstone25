@@ -4,30 +4,54 @@ using UnityEngine.EventSystems;
 
 public class ProfileSlot : Slot
 {
-    PlayerStats playerData;
-    public EquipmentType EquipmentType;
-    public PlayerProfile PlayerProfile;
-    EquipmentItem currentEquippedItem;
+    [SerializeField] EquipmentType EquipmentSlotType;
 
     private void Start()
     {
-        playerData = GetComponentInParent<PlayerStats>();
-        PlayerProfile = GetComponentInParent<PlayerProfile>();
+        OnDropRequest += OnDropHandler;
     }
+
+    private void OnDestroy()
+    {
+        OnDropRequest -= OnDropHandler;
+    }
+
     override public void OnDrop(PointerEventData eventData)
     {
-        eventData.pointerDrag.TryGetComponent<OwnedItem>(out OwnedItem newItem);
-        if (newItem == null) { return; }
-        if (newItem.data.type == SlotType.Equipment && newItem.data.equipmentType == EquipmentType)
+        if(eventData.pointerDrag.TryGetComponent<OwnedItem>(out OwnedItem newItem))
         {
-            EquipmentItem Item = (EquipmentItem)newItem;
-            //currentEquippedItem = (EquipmentItem)currentItem;
-            if (currentEquippedItem != null) { currentEquippedItem.TakeOff(playerData); }
-            Item.Equip(playerData);
-            currentEquippedItem = Item;
-            PlayerProfile.UpdateUI();
-            base.OnDrop(eventData);
+            if (newItem.data.type == SlotType.Equipment && newItem.data.equipmentType == EquipmentSlotType)
+            {
+                EquipmentManager.instance.Equip(EquipmentSlotType, newItem.spec);
+                base.OnDrop(eventData);
+            }
         }
+
     }
+
+    private void OnDropHandler(Slot droppedSlot, PointerEventData eventData)
+    {
+        OwnedItem draggedItemUI = eventData.pointerDrag?.GetComponent<OwnedItem>();
+        Slot draggedSlot = draggedItemUI?.currentSlot;
+        if (droppedSlot == draggedSlot) { return; }
+        if (droppedSlot.slotData.hasItem)
+        {
+            InventoryManager.instance.SwapItems(
+                draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
+                droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
+        }
+        else
+        {
+            InventoryManager.instance.MoveToEmptySlot(
+                draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
+                droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
+        }
+        if (draggedItemUI != null)
+        {
+            Destroy(draggedItemUI.gameObject);
+        }
+
+    }
+
 
 }

@@ -31,7 +31,6 @@ public class PlayerStats : LivingEntity
     public int AbilityPoint { get; private set; }
 
     public float MoveSpeed;
-    public float RunSpeed;
     public float SprintSpeed;
     public float JumpPower;
 
@@ -81,7 +80,6 @@ public class PlayerStats : LivingEntity
         Exp = data.exp;
         Gold = data.gold;
 
-        ApplyStatChanges();
 
         OnHpChanged?.Invoke(currentHp);
         OnExpChanged?.Invoke(Exp, Level);
@@ -218,7 +216,12 @@ public class PlayerStats : LivingEntity
     }
 
 
-    public void ApplyStatChanges() { }
+    public void ApplyStatChanges(ItemSpec spec) {
+        if(spec == null)
+        {
+
+        }
+    }
     private void OnDestroy()
     {
         if (DataManager.Instance != null)

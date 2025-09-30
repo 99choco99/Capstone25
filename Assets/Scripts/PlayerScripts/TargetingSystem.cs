@@ -11,8 +11,7 @@ public class TargetingSystem : MonoBehaviour
     [SerializeField] public LayerMask ObstacleLayer;
     [SerializeField] private Transform targetTransform;
     [SerializeField] private float detectionRange = 5f;
-    [SerializeField] private float minimumViewAngle = -50f;
-    [SerializeField] private float maxmumViewAngle = 50f;
+    [SerializeField] private float maximumViewAngle = 50f;
     private List<IDamageable> TargetInRange = new List<IDamageable>();
 
 
@@ -43,12 +42,13 @@ public class TargetingSystem : MonoBehaviour
 
         if (CurrentTarget != null)
         {
-            if(player.InputHandler.LookInput.x > 0.3f)
+            if(player.InputHandler.LookInput.x > 0.5f)
             {
-                SetTarget(LeftTarget);
-            }else if(player.InputHandler.LookInput.x < -0.3f)
+                if (RightTarget != null) SetTarget(RightTarget);
+            }
+            else if(player.InputHandler.LookInput.x < -0.5f)
             {
-                SetTarget(RightTarget);
+                if (LeftTarget != null) SetTarget(LeftTarget);
             }
 
 
@@ -101,11 +101,9 @@ public class TargetingSystem : MonoBehaviour
 
                 if(distanceFromTarget > detectionRange) { continue; }
 
-                if(viewableAngle > minimumViewAngle && viewableAngle < maxmumViewAngle)
+                if(viewableAngle < maximumViewAngle)
                 {
-                    RaycastHit hit;
-
-                    if(Physics.Linecast(targetTransform.position, target.transform.position, out hit, ObstacleLayer))
+                    if(Physics.Linecast(targetTransform.position, target.transform.position, out var hit, ObstacleLayer))
                     {
                         continue;
                     }
@@ -180,10 +178,12 @@ public class TargetingSystem : MonoBehaviour
         CurrentTarget = target;
         if (target != null)
         {
+            player.isLockOn = true;
             OnChangedTarget?.Invoke(target);
         }
         else
         {
+            player.isLockOn = false;
             OnTargetDeselected?.Invoke();
         }
     }

@@ -6,7 +6,6 @@ using UnityEngine;
 public class SlotData
 {
 
-
     public SlotType slotType;
     public int slotIndex;
     public int itemId;

@@ -21,6 +21,6 @@ public class ItemData : ScriptableObject
     public Sprite icon;
     public SlotType type;
     public EquipmentType equipmentType;
-    public ItemSpec DefaultSpec;
+    //public ItemSpec DefaultSpec;
 
 }

@@ -13,6 +13,8 @@ public class PlayerCamera : MonoBehaviour
     public float sensitivity = 50f;  // 카메라 감도
     public float minimumclampAngle = -30f;  // 각도 제한
     public float maximumclampAngle = 60f;  // 각도 제한
+    [SerializeField] LayerMask collideLayer;
+
 
     private float rotX;   // 카메라 X축 회전
     public float rotY;  // 카메라 Y축 회전
@@ -24,9 +26,6 @@ public class PlayerCamera : MonoBehaviour
     public float smoothness; //카메라 이동속도
 
 
-
-    public bool isLockOn;
-    private Transform currentTarget;
 
 
 
@@ -42,27 +41,47 @@ public class PlayerCamera : MonoBehaviour
             Destroy(this);
         }
 
+
+
         rotX = transform.rotation.eulerAngles.x;
         rotY = transform.rotation.eulerAngles.y;
 
         cameraZPosition = realCamera.transform.localPosition.z;
     }
 
-    private void Start()
-    {
-        player.TargetingSystem.OnChangedTarget += HandleTargetChanged;
-        player.TargetingSystem.OnTargetDeselected += HandleTargetDeselected;
-    }
-
-    private void OnDisable()
-    {
-        player.TargetingSystem.OnChangedTarget -= HandleTargetChanged;
-        player.TargetingSystem.OnTargetDeselected -= HandleTargetDeselected;
-    }
 
     private void Update()
     {
-        if (!isLockOn)
+        if(player == null) { return; }
+        if (!player.isLockOn)
+        {
+
+        }
+    }
+
+    private void LateUpdate()
+    {
+        if (player == null) { return; }
+        if (player.isLockOn && player.TargetingSystem.CurrentTarget != null)
+        {
+            Vector3 targetDirection = player.TargetingSystem.CurrentTarget.transform.position - transform.position;
+            targetDirection.y = 0;
+            targetDirection.Normalize();
+            Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * smoothness);
+
+
+            targetDirection = player.TargetingSystem.CurrentTarget.transform.position - cameraPivotTransform.position;
+            targetDirection.Normalize();
+
+            targetRotation = Quaternion.LookRotation(targetDirection);
+            cameraPivotTransform.rotation = Quaternion.Slerp(cameraPivotTransform.rotation, targetRotation, Time.deltaTime * smoothness);
+
+            rotY = transform.eulerAngles.y;
+            rotX = cameraPivotTransform.localEulerAngles.x;
+            if (rotX > 180) rotX -= 360;
+        }
+        else
         {
             rotX -= player.InputHandler.LookInput.y * sensitivity * Time.deltaTime;
             rotY += player.InputHandler.LookInput.x * sensitivity * Time.deltaTime;
@@ -81,26 +100,10 @@ public class PlayerCamera : MonoBehaviour
             cameraPivotTransform.localRotation = targetRotation;
         }
 
-    }
-
-    private void LateUpdate()
-    {
         Vector3 targetCameraPoistion = Vector3.SmoothDamp(transform.position, player.transform.position, ref cameraVelocity, Time.deltaTime * smoothness);
         transform.position = targetCameraPoistion;
 
 
-        if (isLockOn && currentTarget != null)
-        {
-            Vector3 directionToTarget = (currentTarget.transform.position - transform.position).normalized;
-            directionToTarget.y = 0;
-            Quaternion targetRotation = Quaternion.LookRotation(directionToTarget);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, smoothness * Time.deltaTime);
-
-
-            rotY = transform.eulerAngles.y;
-            rotX = transform.eulerAngles.x;
-
-        }
         HandleCameraCollisions();
     }
 
@@ -108,13 +111,12 @@ public class PlayerCamera : MonoBehaviour
     {
 
         targetCameraZPosition = cameraZPosition;
-        RaycastHit hit;
         Vector3 direction = realCamera.transform.position - cameraPivotTransform.position;
         direction.Normalize();
 
-        if (Physics.SphereCast(cameraPivotTransform.position, cameraCollisionOffset, direction, out hit, Mathf.Abs(targetCameraZPosition)))
+        if (Physics.SphereCast(cameraPivotTransform.position, cameraCollisionOffset, direction, out var hit, Mathf.Abs(targetCameraZPosition), collideLayer))
         {
-            float distanceFromHit = Vector3.Distance(cameraPivotTransform.position, hit.transform.position);
+            float distanceFromHit = Vector3.Distance(cameraPivotTransform.position, hit.point);
             targetCameraZPosition = -(distanceFromHit - cameraCollisionOffset);
         }
 
@@ -127,18 +129,6 @@ public class PlayerCamera : MonoBehaviour
         newCameraLocalPosition.z = Mathf.Lerp(realCamera.transform.localPosition.z, targetCameraZPosition, 0.2f); // Lerp의 세 번째 인자는 시간보다 보간 계수로 사용하는 것이 더 직관적일 수 있습니다.
         realCamera.transform.localPosition = newCameraLocalPosition;
 
-    }
-
-    private void HandleTargetChanged(IDamageable target)
-    {
-        isLockOn = true;
-        currentTarget = target.transform;
-    }
-
-    private void HandleTargetDeselected()
-    {
-        isLockOn = false;
-        currentTarget = null;
     }
 
 }

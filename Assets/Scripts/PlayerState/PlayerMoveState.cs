@@ -45,9 +45,18 @@ public class PlayerMoveState : State
             stateMachine.TransitionTo(stateMachine.PlayerJumpState);
             return;
         }
+
+
         if (player.InputHandler.SprintInput)
         {
             stateMachine.TransitionTo(stateMachine.PlayerSprintState);
+            return;
+        }
+
+        if (player.InputHandler.DodgeInput)
+        {
+            player.InputHandler.UseDodgeInput();
+            stateMachine.TransitionTo(stateMachine.PlayerRollingState);
             return;
         }
 

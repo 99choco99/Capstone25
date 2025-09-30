@@ -36,7 +36,7 @@ public class PlayerSprintState : State
             stateMachine.TransitionTo(stateMachine.PlayerJumpState);
             return;
         }
-        if (!player.InputHandler.SprintInput)
+        if (!player.InputHandler.DodgeInput)
         {
             stateMachine.TransitionTo(stateMachine.PlayerMoveState);
             return;
