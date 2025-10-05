@@ -35,11 +35,26 @@ public class PlayerAnimatorManager : MonoBehaviour
 
     public void UpdateAnimMoveParameter(float horizontalInput, float verticalInput)
     {
-
-        if (player.InputHandler.SprintInput)
+        if (player.Motor.movementLockCoroutine != null)
+        {
+            player.Anim.SetFloat("Horizontal", 0, 0.1f, Time.deltaTime);
+            player.Anim.SetFloat("Vertical", 0, 0.1f, Time.deltaTime);
+            return;
+        }
+        if (player.InputHandler.SprintInput && player.StateMachine.CurrentState == player.StateMachine.PlayerSprintState)
         {
             verticalInput = 2;
         }
+        if(horizontalInput == 0)
+        {
+            horizontalInput = 0;
+        }
+        if(verticalInput == 0)
+        {
+            verticalInput = 0;
+        }
+
+
         player.Anim.SetFloat("Horizontal", horizontalInput, 0.1f, Time.deltaTime);
         player.Anim.SetFloat("Vertical", verticalInput, 0.1f, Time.deltaTime);
 

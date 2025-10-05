@@ -4,6 +4,7 @@ public class PlayerSprintState : State
 {
     public PlayerSprintState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
+    public override bool UseRootMotion => false;
     public override void Enter()
     {
     }
@@ -36,18 +37,19 @@ public class PlayerSprintState : State
             stateMachine.TransitionTo(stateMachine.PlayerJumpState);
             return;
         }
-        if (!player.InputHandler.DodgeInput)
+        if (!player.InputHandler.SprintInput || player.TargetingSystem.CurrentTarget != null)
         {
             stateMachine.TransitionTo(stateMachine.PlayerMoveState);
             return;
         }
 
-        // 이동 입력을 멈추면 IdleState로 돌아갑니다.
         if (player.InputHandler.MoveInput == Vector3.zero)
         {
             stateMachine.TransitionTo(stateMachine.PlayerIdleState);
             return;
         }
+
+
         player.Motor.Move();
     }
 

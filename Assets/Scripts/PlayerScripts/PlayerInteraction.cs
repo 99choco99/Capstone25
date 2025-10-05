@@ -43,12 +43,16 @@ public class PlayerInteraction : MonoBehaviour
 
     void Update()
     {
-        DetectInteractables();
-        if (interactablesInRange.Count > 0)
+        if(player.StateMachine.CurrentState != player.StateMachine.ConversationState)
         {
-            HandleSelection();
-            CheckForInteraction();
+            DetectInteractables();
+            if (interactablesInRange.Count > 0)
+            {
+                HandleSelection();
+                CheckForInteraction();
+            }
         }
+
     }
 
     private void DetectInteractables()

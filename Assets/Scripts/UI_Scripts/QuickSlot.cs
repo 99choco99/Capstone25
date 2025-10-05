@@ -5,16 +5,25 @@ using System.Collections;
 
 public class QuickSlot : Slot
 {
-    PlayerStats playerData;
-    Slider slider;
-    ConsumptionItem quickItem;
+    [SerializeField] Slider slider;
     bool isCoolingDown = false;
+
+    private void Awake()
+    {
+        InventoryEvents.OnQuickSlotUsed += StartCooldownVisual;
+    }
 
     private void Start()
     {
-        playerData = GetComponentInParent<PlayerStats>();
         slider = GetComponentInChildren<Slider>();
     }
+
+    private void OnDestroy()
+    {
+        InventoryEvents.OnQuickSlotUsed -= StartCooldownVisual;
+    }
+
+
     public override void OnDrop(PointerEventData eventData)
     {
         if (isCoolingDown) { return; }
@@ -24,26 +33,28 @@ public class QuickSlot : Slot
         }
     }
 
-    public void Use()
+    public void RequestUseItem()
     {
         if (isCoolingDown)
         {
+            Debug.Log("쿨타임 중입니다.");
             return;
         }
-        if (quickItem = GetComponentInChildren<ConsumptionItem>())
-        {
-            slotData.itemCount -= 1;
-            if(slotData.itemCount <= 0)
-            {
-                Destroy(quickItem.gameObject);
-            }
-            //quickItem.consume(playerData);
-            StartCoroutine("CoolTime", 3);
-        }
+
+        // 실제 사용 로직은 InventoryManager에게 위임
+        InventoryManager.instance.RequestUseQuickSlotItem();
     }
 
+    private void StartCooldownVisual(ItemSpec spec)
+    {
+        if (slotData == null || !slotData.hasItem)
+        {
+            return; // 슬롯이 비었으면 쿨타임 UI를 표시하지 않고 종료
+        }
+        StartCoroutine(CooldownCoroutine(spec.coolTime));
+    }
 
-    IEnumerator CoolTime(float time)
+    IEnumerator CooldownCoroutine(float time)
     {
         isCoolingDown = true;
         slider.value = 1;

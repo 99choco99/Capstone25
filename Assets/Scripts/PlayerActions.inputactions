@@ -57,7 +57,7 @@
                     "id": "641cd816-40e6-41b4-8c3d-04687c349290",
                     "expectedControlType": "",
                     "processors": "",
-                    "interactions": "Tap(duration=0.1,pressPoint=0.3)",
+                    "interactions": "Tap",
                     "initialStateCheck": false
                 },
                 {
@@ -161,9 +161,9 @@
                 },
                 {
                     "name": "Sprint",
-                    "type": "PassThrough",
+                    "type": "Button",
                     "id": "434d9570-cccd-46fb-a2ee-f679d422621b",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "Hold",
                     "initialStateCheck": false
@@ -504,17 +504,6 @@
                     "name": "",
                     "id": "7bd44e6e-32ab-4fe2-9f95-581d44d6a313",
                     "path": "<Keyboard>/e",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "UseItem",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "6e107062-7c63-4353-8e27-758ae8bf706c",
-                    "path": "<Mouse>/rightButton",
                     "interactions": "",
                     "processors": "",
                     "groups": "",

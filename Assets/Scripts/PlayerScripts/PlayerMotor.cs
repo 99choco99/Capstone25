@@ -1,9 +1,6 @@
 using System.Collections;
-using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem.XR;
+
 
 public class PlayerMotor : MonoBehaviour
 {
@@ -35,7 +32,7 @@ public class PlayerMotor : MonoBehaviour
 
     public bool canMove = true;
     public bool canRotate = true;
-    private Coroutine movementLockCoroutine;
+    public Coroutine movementLockCoroutine;
 
 
     // [추가] 네트워크 전송 주기 관리를 위한 변수
@@ -88,7 +85,7 @@ public class PlayerMotor : MonoBehaviour
 
         Vector3 moveDirection = (cameraForward * player.InputHandler.MoveInput.z + cameraRight * player.InputHandler.MoveInput.x).normalized;
 
-        if (player.InputHandler.SprintInput)
+        if (player.StateMachine.CurrentState == player.StateMachine.PlayerSprintState)
         {
             controller.Move(player.Stats.SprintSpeed * Time.deltaTime * moveDirection);
 

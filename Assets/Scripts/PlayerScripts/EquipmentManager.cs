@@ -1,8 +1,10 @@
-// EquipmentManager.cs
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+public enum EquipmentType { helmet, top, bottom, shoes, gloves, accessory,None }
 public class EquipmentManager : MonoBehaviour
 {
     public static EquipmentManager instance;
@@ -19,17 +21,22 @@ public class EquipmentManager : MonoBehaviour
             instance = this;
         }
     }
-    void Start() { playerStats = GetComponentInParent<PlayerStats>(); }
 
     // 아이템 장착 함수
     public void Equip(EquipmentType slotType, ItemSpec spec)
     {
+        if (playerStats == null)
+        {
+            playerStats = GetComponentInParent<PlayerStats>();
+        }
+
         if (equippedItems.ContainsKey(slotType))
         {
             Unequip(slotType);
         }
 
         equippedItems[slotType] = spec;
+
 
         playerStats.ApplyStatChanges(spec);
 
@@ -42,8 +49,9 @@ public class EquipmentManager : MonoBehaviour
         {
             // 인벤토리로 아이템을 돌려주는 로직 (InventoryManager.instance.AddItem(...))
 
+
+            playerStats.ApplyStatChanges(equippedItems[slotType], false);
             equippedItems.Remove(slotType);
-            playerStats.ApplyStatChanges(null);
         }
     }
 }

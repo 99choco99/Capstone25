@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 using System;
-using UnityEngine;
+
 
 [Serializable]
 public class SlotData
@@ -18,4 +18,12 @@ public class SlotData
 
     public int itemCount;
     public bool hasItem => itemData != null;
+
+    public void Clear()
+    {
+        itemId = 0;
+        itemCount = 0;
+        itemData = null;
+        itemSpec = null; ;
+    }
 }

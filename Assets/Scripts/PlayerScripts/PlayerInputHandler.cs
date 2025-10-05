@@ -150,7 +150,7 @@ public class PlayerInputHandler : MonoBehaviour
 
     public void OnInteraction(InputAction.CallbackContext context)
     {
-        if (context.started) { InteractionInput = true; }
+        if (context.started) {InteractionInput = true; }
     }
 
     public void OnCrouch(InputAction.CallbackContext context)

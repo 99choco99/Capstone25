@@ -83,22 +83,24 @@ public class PlayerCombat : MonoBehaviour
             // 패링 성공 시 연출
             Debug.Log("PlayerCombat: 패링 연출 실행!");
             // TODO: 패링 성공 사운드, 이펙트, 애니메이션 트리거
-            player.Anim.SetTrigger("Parry");
+            player.animatorManager.PlayTargetActionAnimation("Parry");
         }
         else if (result.wasGuarded)
         {
             // 가드 성공 시 연출
             Debug.Log("PlayerCombat: 가드 연출 실행!");
             // TODO: 가드 성공 사운드, 이펙트, 애니메이션 트리거
-            player.Anim.SetTrigger("GuardHit");
+
+            player.animatorManager.PlayTargetActionAnimation("GuardHit");
         }
         else if (result.finalDamage > 0)
         {
             // 실제 데미지를 입었을 때 연출
             Debug.Log($"PlayerCombat: 피격 연출 실행! 데미지: {result.finalDamage}");
-            player.Motor.StartKnockBack(result.hitDirection, result.knockbackForce, result.knockbackDuration); // 넉백 실행
-            player.Anim.SetTrigger("Hit");
+
+            player.animatorManager.PlayTargetActionAnimation("Hit");
         }
+        player.Motor.StartKnockBack(result.hitDirection, result.knockbackForce, result.knockbackDuration); // 넉백 실행
     }
 
 

@@ -346,7 +346,7 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0.29534912, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  m_hasFontAssetChanged: 1
+  m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &346212932146357232
@@ -612,6 +612,8 @@ MonoBehaviour:
       defense: 0
       speed: 0
       hp: 0
+      duration: 0
+      coolTime: 0
     itemCount: 0
   image: {fileID: 0}
   rect: {fileID: 7838572336509822440}
@@ -2493,17 +2495,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   slotData:
-    slotType: 0
-    slotIndex: 0
+    slotType: 3
+    slotIndex: 3
     itemId: 0
     itemSpec:
       damage: 0
       defense: 0
       speed: 0
       hp: 0
+      duration: 0
+      coolTime: 0
     itemCount: 0
-  image: {fileID: 0}
-  rect: {fileID: 0}
+  image: {fileID: 600003840474790652}
+  rect: {fileID: 3356293685090541027}
   EquipmentSlotType: 3
 --- !u!1 &1565311332984948650
 GameObject:
@@ -2640,8 +2644,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: ': 0000'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 07bca07bb8318e34cbb305c02f5aa1c6, type: 2}
+  m_sharedMaterial: {fileID: 6615648644627212272, guid: 07bca07bb8318e34cbb305c02f5aa1c6,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2839,8 +2844,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: ': 0000'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 07bca07bb8318e34cbb305c02f5aa1c6, type: 2}
+  m_sharedMaterial: {fileID: 6615648644627212272, guid: 07bca07bb8318e34cbb305c02f5aa1c6,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3678,17 +3684,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   slotData:
-    slotType: 0
-    slotIndex: 0
+    slotType: 3
+    slotIndex: 1
     itemId: 0
     itemSpec:
       damage: 0
       defense: 0
       speed: 0
       hp: 0
+      duration: 0
+      coolTime: 0
     itemCount: 0
-  image: {fileID: 0}
-  rect: {fileID: 0}
+  image: {fileID: 899335414486381474}
+  rect: {fileID: 5101883854205954110}
   EquipmentSlotType: 1
 --- !u!1 &2259198724388752570
 GameObject:
@@ -5030,10 +5038,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1869196265043532664}
-        m_TargetAssemblyTypeName: PlayerProfile, Assembly-CSharp
-        m_MethodName: UpAbility
-        m_Mode: 3
+      - m_Target: {fileID: 1236270409340426741}
+        m_TargetAssemblyTypeName: PlayerStats, Assembly-CSharp
+        m_MethodName: UpgradeDefense
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -5268,17 +5276,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   slotData:
-    slotType: 0
-    slotIndex: 0
+    slotType: 3
+    slotIndex: 4
     itemId: 0
     itemSpec:
       damage: 0
       defense: 0
       speed: 0
       hp: 0
+      duration: 0
+      coolTime: 0
     itemCount: 0
-  image: {fileID: 0}
-  rect: {fileID: 0}
+  image: {fileID: 4602485183019590431}
+  rect: {fileID: 6370416267677637500}
   EquipmentSlotType: 4
 --- !u!1 &3068733121963640250
 GameObject:
@@ -7023,7 +7033,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1602381373586344088}
         m_TargetAssemblyTypeName: QuickSlot, Assembly-CSharp
-        m_MethodName: Use
+        m_MethodName: RequestUseItem
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7299,9 +7309,12 @@ MonoBehaviour:
   MoveSpeed: 3
   SprintSpeed: 5
   JumpPower: 3.5
-  baseMaxHp: 0
   baseDamage: 0
   baseDefense: 0
+  baseMaxHp: 0
+  bonusDamage: 0
+  bonusDefense: 0
+  bonusMaxHp: 0
 --- !u!114 &8184674505061922039
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8375,8 +8388,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: ': 0000'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 07bca07bb8318e34cbb305c02f5aa1c6, type: 2}
+  m_sharedMaterial: {fileID: 6615648644627212272, guid: 07bca07bb8318e34cbb305c02f5aa1c6,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -8511,8 +8525,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: 'Point : 000'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 07bca07bb8318e34cbb305c02f5aa1c6, type: 2}
+  m_sharedMaterial: {fileID: 6615648644627212272, guid: 07bca07bb8318e34cbb305c02f5aa1c6,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -11429,17 +11444,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   slotData:
-    slotType: 0
-    slotIndex: 0
+    slotType: 3
+    slotIndex: 5
     itemId: 0
     itemSpec:
       damage: 0
       defense: 0
       speed: 0
       hp: 0
+      duration: 0
+      coolTime: 0
     itemCount: 0
-  image: {fileID: 0}
-  rect: {fileID: 0}
+  image: {fileID: 178215417953464636}
+  rect: {fileID: 3634165870098023059}
   EquipmentSlotType: 5
 --- !u!1 &5547127463021468110
 GameObject:
@@ -12975,7 +12992,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   slotData:
-    slotType: 0
+    slotType: 4
     slotIndex: 0
     itemId: 0
     itemSpec:
@@ -12983,9 +13000,12 @@ MonoBehaviour:
       defense: 0
       speed: 0
       hp: 0
+      duration: 0
+      coolTime: 0
     itemCount: 0
-  image: {fileID: 0}
-  rect: {fileID: 0}
+  image: {fileID: 4660131861022935064}
+  rect: {fileID: 5245821165745974}
+  slider: {fileID: 8215503736409208583}
 --- !u!1 &6084174685311788948
 GameObject:
   m_ObjectHideFlags: 0
@@ -13245,10 +13265,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1869196265043532664}
-        m_TargetAssemblyTypeName: PlayerProfile, Assembly-CSharp
-        m_MethodName: UpAbility
-        m_Mode: 3
+      - m_Target: {fileID: 1236270409340426741}
+        m_TargetAssemblyTypeName: PlayerStats, Assembly-CSharp
+        m_MethodName: UpgradeHealth
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -14054,17 +14074,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   slotData:
-    slotType: 0
-    slotIndex: 0
+    slotType: 3
+    slotIndex: 2
     itemId: 0
     itemSpec:
       damage: 0
       defense: 0
       speed: 0
       hp: 0
+      duration: 0
+      coolTime: 0
     itemCount: 0
-  image: {fileID: 0}
-  rect: {fileID: 0}
+  image: {fileID: 1881109385296787005}
+  rect: {fileID: 6814478005391897975}
   EquipmentSlotType: 2
 --- !u!1 &6533897558312731687
 GameObject:
@@ -14865,7 +14887,7 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0.29534912, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  m_hasFontAssetChanged: 1
+  m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &6838390559060253361
@@ -17388,8 +17410,8 @@ MonoBehaviour:
   equipmentParent: {fileID: 488499260528713553}
   consumptionParent: {fileID: 277765090391251897}
   otherParent: {fileID: 5655786209298686021}
-  ProfileParent: {fileID: 0}
-  QuickParent: {fileID: 0}
+  ProfileParent: {fileID: 5091284091110712240}
+  QuickParent: {fileID: 5245821165745974}
   goldText: {fileID: 6084711884335395822}
 --- !u!114 &2355761052910105310
 MonoBehaviour:
@@ -17771,7 +17793,7 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0.29534912, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  m_hasFontAssetChanged: 1
+  m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &7769725728689372763
@@ -18177,7 +18199,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   slotData:
-    slotType: 0
+    slotType: 3
     slotIndex: 0
     itemId: 0
     itemSpec:
@@ -18185,9 +18207,11 @@ MonoBehaviour:
       defense: 0
       speed: 0
       hp: 0
+      duration: 0
+      coolTime: 0
     itemCount: 0
-  image: {fileID: 0}
-  rect: {fileID: 0}
+  image: {fileID: 6528940044386180001}
+  rect: {fileID: 1075441378136123960}
   EquipmentSlotType: 0
 --- !u!1 &7830070397271691863
 GameObject:
@@ -18341,10 +18365,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1869196265043532664}
-        m_TargetAssemblyTypeName: PlayerProfile, Assembly-CSharp
-        m_MethodName: UpAbility
-        m_Mode: 3
+      - m_Target: {fileID: 1236270409340426741}
+        m_TargetAssemblyTypeName: PlayerStats, Assembly-CSharp
+        m_MethodName: UpgradeDamage
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine

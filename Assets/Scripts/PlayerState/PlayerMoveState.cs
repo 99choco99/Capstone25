@@ -47,7 +47,7 @@ public class PlayerMoveState : State
         }
 
 
-        if (player.InputHandler.SprintInput)
+        if (player.InputHandler.SprintInput && player.TargetingSystem.CurrentTarget == null)
         {
             stateMachine.TransitionTo(stateMachine.PlayerSprintState);
             return;
