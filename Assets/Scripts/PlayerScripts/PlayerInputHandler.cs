@@ -84,7 +84,7 @@ public class PlayerInputHandler : MonoBehaviour
         verticalInput = MoveInput.z;
 
         moveAmount = Mathf.Clamp01(Mathf.Abs(horizontalInput) + Mathf.Abs(verticalInput));
-        if(moveAmount >= 0.5f)
+        if (moveAmount >= 0.5f)
         {
             moveAmount = 1f;
         }

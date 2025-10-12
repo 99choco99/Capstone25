@@ -7,11 +7,12 @@ public class PlayerSprintState : State
     public override bool UseRootMotion => false;
     public override void Enter()
     {
+        SoundManager.Instance.PlayLoopingSFX("Walking");
     }
 
     public override void Exit()
     {
-
+        SoundManager.Instance.StopLoopingSFX("Walking");
     }
 
 
@@ -46,6 +47,7 @@ public class PlayerSprintState : State
         if (player.InputHandler.MoveInput == Vector3.zero)
         {
             stateMachine.TransitionTo(stateMachine.PlayerIdleState);
+
             return;
         }
 

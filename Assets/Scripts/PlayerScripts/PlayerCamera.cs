@@ -50,15 +50,6 @@ public class PlayerCamera : MonoBehaviour
     }
 
 
-    private void Update()
-    {
-        if(player == null) { return; }
-        if (!player.isLockOn)
-        {
-
-        }
-    }
-
     private void LateUpdate()
     {
         if (player == null) { return; }

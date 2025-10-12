@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class EnemySense : MonoBehaviour
 {
+    Enemy enemy;
+
     private float currentSightRange;
     [SerializeField] private float normalSightRange = 10f;
     [SerializeField] private float detectSightRange = 20f;
@@ -20,6 +22,12 @@ public class EnemySense : MonoBehaviour
     public bool IsPlayerAttacking { get; private set; } // 플레이어가 공격 중인가?
     public bool IsPlayerVulnerable { get; private set; } // 플레이어가 무방비 상태인가?
 
+
+
+    private void Awake()
+    {
+        enemy = GetComponent<Enemy>();
+    }
 
     private void Start()
     {
@@ -70,6 +78,7 @@ public class EnemySense : MonoBehaviour
 
     }
 
+    //타겟 발견 상태를 갱신
     public void SetDetectState(bool detected, Transform target)
     {
         IsTargetDetected = detected;
@@ -92,12 +101,13 @@ public class EnemySense : MonoBehaviour
         }
     }
 
+
+    //타겟의 상태를 분석
     private void AnalyzeTarget()
     {
         if (Target == null || playerAnimator == null)
         {
             IsPlayerAttacking = false;
-            IsPlayerVulnerable = false;
             return;
         }
 
@@ -106,10 +116,10 @@ public class EnemySense : MonoBehaviour
         AnimatorStateInfo stateInfo = playerAnimator.GetCurrentAnimatorStateInfo(0);
 
         IsPlayerAttacking = stateInfo.IsTag("Attack");
-        IsPlayerVulnerable = stateInfo.IsTag("Vulnerable");
     }
 
 
+    //타겟이 공격범위 안에 있는지
     public bool IsTargetInAttackRange(float range)
     {
         if (!IsTargetDetected) return false;

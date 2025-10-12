@@ -1,24 +1,26 @@
 using System;
 using Unity.VisualScripting;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 
-public class PlayerCombat : MonoBehaviour
+public class PlayerCombat : MonoBehaviour,IWeaponOwner
 {
     private Player player;
     public float parryDuration = 0.2f;
     [SerializeField] private Attack[] normalAttacks; // 일반 공격 콤보 데이터
 
+    [SerializeField] private Weapon weapon;
     [SerializeField] private Collider weaponCollider;
 
     private int comboIndex = 0;
-
     public event Action OnAttackEnd;
 
     private void Awake()
     {
         player = GetComponent<Player>();
-
+        weapon = GetComponentInChildren<Weapon>();
+        weaponCollider = weapon.GetComponent<Collider>();
 
     }
     private void Start()
@@ -42,6 +44,7 @@ public class PlayerCombat : MonoBehaviour
 
         // 다음 공격을 위해 콤보 인덱스 증가
         comboIndex = (comboIndex + 1) % normalAttacks.Length;
+
     }
 
     //콤보 리셋
@@ -51,13 +54,12 @@ public class PlayerCombat : MonoBehaviour
     }
 
     //플레이어가 적을 공격했을 때
-    public void OnWeaponHit(IDamageable target, Collider targetCollider)
+    public void OnWeaponHit(IDamageable target, Collider targetCollider, Weapon weapon)
     {
         Attack currentAttackData = normalAttacks[comboIndex];
 
         Vector3 hitPoint = targetCollider.ClosestPoint(weaponCollider.transform.position);
-        Vector3 hitDirection = (targetCollider.transform.position - transform.position).normalized;
-        hitDirection.y = 0;
+        Vector3 hitDirection = transform.forward;
 
         DamageInfo result = new DamageInfo
         {
@@ -80,27 +82,24 @@ public class PlayerCombat : MonoBehaviour
 
         if (result.wasParried)
         {
-            // 패링 성공 시 연출
-            Debug.Log("PlayerCombat: 패링 연출 실행!");
-            // TODO: 패링 성공 사운드, 이펙트, 애니메이션 트리거
+
             player.animatorManager.PlayTargetActionAnimation("Parry");
+            SoundManager.Instance.PlaySFX("Parry");
         }
         else if (result.wasGuarded)
         {
-            // 가드 성공 시 연출
-            Debug.Log("PlayerCombat: 가드 연출 실행!");
-            // TODO: 가드 성공 사운드, 이펙트, 애니메이션 트리거
 
             player.animatorManager.PlayTargetActionAnimation("GuardHit");
         }
         else if (result.finalDamage > 0)
         {
-            // 실제 데미지를 입었을 때 연출
-            Debug.Log($"PlayerCombat: 피격 연출 실행! 데미지: {result.finalDamage}");
 
             player.animatorManager.PlayTargetActionAnimation("Hit");
+            SoundManager.Instance.PlaySFX("Hit");
+            Quaternion effectRotation = Quaternion.LookRotation(result.hitDirection);
+            EffectManager.Instance.PlayEffect("Blood", result.hitPoint, effectRotation);
+            OnAttackEnd?.Invoke();
         }
-        player.Motor.StartKnockBack(result.hitDirection, result.knockbackForce, result.knockbackDuration); // 넉백 실행
     }
 
 
@@ -109,16 +108,14 @@ public class PlayerCombat : MonoBehaviour
     public void AE_playerAttackStart()
     {
         player.Motor.canRotate = false;
-        weaponCollider.enabled = true;
-
+        weapon.EnableWeaponCollider();
+        SoundManager.Instance.PlaySFX("Attack");
     }
     public void AE_playerAttackEnd()
     {
+        weapon.DisableWeaponCollider();
         OnAttackEnd?.Invoke();
-
-        weaponCollider.enabled = false;
     }
-
 
 
 }

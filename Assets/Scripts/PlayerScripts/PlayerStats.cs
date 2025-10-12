@@ -126,8 +126,7 @@ public class PlayerStats : LivingEntity
 
         if (isGuarding)
         {
-            PlayerGuardState guardState = player.StateMachine.CurrentState as PlayerGuardState;
-            if (guardState != null && guardState.IsParryWindowActive())
+            if (player.StateMachine.CurrentState is PlayerGuardState guardState && guardState.IsParryWindowActive())
             {
                 isParrying = true;
             }
@@ -139,24 +138,22 @@ public class PlayerStats : LivingEntity
         if (isParrying)
         {
             finalDamageToHp = 0;
-            Debug.Log("패링 성공!");
         }
         else if (isGuarding)
         {
             finalDamageToHp = 0;
             TakePostureDamage(damageInfo.finalDamage);
-            Debug.Log("가드 성공!");
-            // TODO: 가드 게이지 감소 로직
         }
         else
         {
-            // 가드/패링 실패 시에만 체력 감소
             base.OnDamage(damageInfo);
             TakePostureDamage(damageInfo.finalDamage * 0.5f);
         }
 
 
         OnHpChanged?.Invoke(currentHp);
+
+
 
         DamageInfo result = new DamageInfo()
         {

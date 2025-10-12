@@ -8,12 +8,12 @@ public class PlayerMoveState : State
 
     public override void Enter()
     {
-
+        SoundManager.Instance.PlayLoopingSFX("Walking");
     }
 
     public override void Exit()
     {
-
+        SoundManager.Instance.StopLoopingSFX("Walking");
     }
 
 

@@ -9,13 +9,13 @@ public class PlayerJumpState : State
         if (!player.Motor.IsGrounded) { return; }
         player.Anim.SetBool("Jump", true);
         player.Motor.Jump(player.Stats.JumpPower);
-
+        SoundManager.Instance.PlaySFX("Jump");
     }
 
     public override void Update()
     {
 
-        if (player.Motor.IsGrounded)
+        if (player.Motor.IsGrounded && player.Motor.verticalVelocity.y <= 0f)
         {
             if (player.InputHandler.MoveInput == Vector3.zero)
             {
@@ -25,6 +25,7 @@ public class PlayerJumpState : State
             {
                 stateMachine.TransitionTo(stateMachine.PlayerMoveState);
             }
+            return; // 상태가 변경되었으면 아래 로직을 실행할 필요 없음
         }
         player.Motor.Move();
     }

@@ -1,20 +1,17 @@
-using NUnit.Framework;
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class TargetingSystem : MonoBehaviour
 {
     [SerializeField] private LayerMask targetLayer;
     [SerializeField] public LayerMask ObstacleLayer;
+    [SerializeField] private Transform raycastOrigin; // 플레이어 시점 (카메라 또는 머리 위치)
     [SerializeField] private Transform targetTransform;
     [SerializeField] private float detectionRange = 5f;
     [SerializeField] private float maximumViewAngle = 50f;
-    private List<IDamageable> TargetInRange = new List<IDamageable>();
-
-
+    List<IDamageable> validTargets = new List<IDamageable>();
 
     public event Action<IDamageable> OnChangedTarget;
     public event Action OnTargetDeselected;
@@ -37,142 +34,134 @@ public class TargetingSystem : MonoBehaviour
         if (player.InputHandler.TargetInput)
         {
             player.InputHandler.UseTargetInput();
-            SelectNextTarget();
+            ToggleTarget();
         }
 
         if (CurrentTarget != null)
         {
-            if(player.InputHandler.LookInput.x > 0.5f)
-            {
-                if (RightTarget != null) SetTarget(RightTarget);
-            }
-            else if(player.InputHandler.LookInput.x < -0.5f)
-            {
-                if (LeftTarget != null) SetTarget(LeftTarget);
-            }
-
-
-            if (CurrentTarget.dead || Vector3.Distance(transform.position, CurrentTarget.gameObject.transform.position) > detectionRange)
-            {
-                DeselectTarget();
-            }
+            HandleTargetUpdates();
+            HandleTargetSwitching();
         }
     }
 
 
     //현재타겟을 다음 타겟으로 설정
-    public void SelectNextTarget()
+    private void ToggleTarget()
     {
         if (CurrentTarget != null)
         {
-            SetTarget(null);
+            DeselectTarget();
         }
         else
         {
-            FindAndSelectTargetInRange();
-            SetTarget(nearestTarget);
+            validTargets = GetAllValidTargets();
+            if (validTargets.Count > 0)
+            {
+                IDamageable nearest = FindNearestTarget(validTargets);
+                SetTarget(nearest);
+            }
+        }
+    }
+
+    private void HandleTargetUpdates()
+    {
+        if (CurrentTarget.dead || Vector3.Distance(transform.position, CurrentTarget.transform.position) > detectionRange)
+        {
+            DeselectTarget();
+            return;
+        }
+
+        validTargets = GetAllValidTargets();
+        UpdateLeftRightTargets(validTargets);
+    }
+
+    private void HandleTargetSwitching()
+    {
+        float lookInputX = player.InputHandler.LookInput.x;
+
+        if (lookInputX > 0.5f && RightTarget != null)
+        {
+            SetTarget(RightTarget);
+        }
+        else if (lookInputX < -0.5f && LeftTarget != null)
+        {
+            SetTarget(LeftTarget);
         }
     }
 
 
-    //타겟을 찾고 선택하기
-    void FindAndSelectTargetInRange()
+    private List<IDamageable> GetAllValidTargets()
     {
-        TargetInRange.Clear();
-
-        float shortestDistance = Mathf.Infinity;
-        float shortestDistanceOfRightTarget = Mathf.Infinity;
-        float shortestdistanceOfLeftTarget = -Mathf.Infinity;
+        validTargets.Clear();
 
 
-        var colliders = Physics.OverlapSphere(transform.position, detectionRange,targetLayer);
+        var colliders = Physics.OverlapSphere(transform.position, detectionRange, targetLayer);
 
         foreach (var collider in colliders)
         {
-            var target = collider.GetComponent<IDamageable>();
-
-            if(target != null)
+            if (collider.TryGetComponent<IDamageable>(out var target))
             {
-                Vector3 targetDirection = collider.transform.position - transform.position;
-                float distanceFromTarget = Vector3.Distance(transform.position, collider.transform.position);
-                float viewableAngle = Vector3.Angle(targetDirection, player.MainCamera.transform.forward);
+                if (target.dead) continue;
 
-                if (target.dead) { continue; }
+                Vector3 directionToTarget = collider.transform.position - raycastOrigin.position;
+                if (Vector3.Angle(player.MainCamera.transform.forward, directionToTarget) > maximumViewAngle) continue;
 
-                if(distanceFromTarget > detectionRange) { continue; }
+                if (Physics.Linecast(raycastOrigin.position, collider.bounds.center, ObstacleLayer)) continue;
 
-                if(viewableAngle < maximumViewAngle)
-                {
-                    if(Physics.Linecast(targetTransform.position, target.transform.position, out var hit, ObstacleLayer))
-                    {
-                        continue;
-                    }
-                    else
-                    {
-                        TargetInRange.Add(target);
-                    }
-                }
-
+                validTargets.Add(target);
             }
         }
-
-
-        for (int i = 0; i < TargetInRange.Count; i++)
-        {
-            if (TargetInRange[i] != null)
-            {
-                float distanceFromTarget = Vector3.Distance(transform.position, TargetInRange[i].transform.position);
-                Vector3 directionFromTarget = TargetInRange[i].transform.position - transform.position;
-
-                if(distanceFromTarget < shortestDistance)
-                {
-                    shortestDistance = distanceFromTarget;
-                    nearestTarget = TargetInRange[i];
-                }
-
-                Vector3 relativeEnemyPosition = transform.InverseTransformPoint(TargetInRange[i].transform.position);
-                var distanceFromLeftTarget = relativeEnemyPosition.x;
-                var distanceFromRightTarget = relativeEnemyPosition.x;
-
-                if (CurrentTarget == TargetInRange[i])
-                    continue;
-
-
-                if(distanceFromLeftTarget <= 0f && distanceFromRightTarget > shortestdistanceOfLeftTarget)
-                {
-                    shortestdistanceOfLeftTarget = distanceFromLeftTarget;
-                    LeftTarget = TargetInRange[i];
-                }else if(distanceFromRightTarget >= 0f && distanceFromRightTarget < shortestDistanceOfRightTarget)
-                {
-                    shortestDistanceOfRightTarget = distanceFromRightTarget;
-                    RightTarget = TargetInRange[i];
-                }
-            }
-            else
-            {
-                ClearTargetInRange();
-            }
-        }
-
-
+        return validTargets;
     }
 
-    private void ClearTargetInRange()
+
+    private IDamageable FindNearestTarget(List<IDamageable> targets)
     {
-        nearestTarget = null;
+        IDamageable nearest = null;
+        float minDistance = Mathf.Infinity;
+
+        foreach (var target in targets)
+        {
+            float distance = Vector3.Distance(transform.position, target.transform.position);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                nearest = target;
+            }
+        }
+        return nearest;
+    }
+
+
+    private void UpdateLeftRightTargets(List<IDamageable> targets)
+    {
         LeftTarget = null;
         RightTarget = null;
-        TargetInRange.Clear();
+        float closestRightAngle = 180f;
+        float closestLeftAngle = -180f;
+
+        Vector3 cameraForward = player.MainCamera.transform.forward;
+
+        foreach (var target in targets)
+        {
+            if (target == CurrentTarget) continue;
+
+            Vector3 directionToTarget = target.transform.position - transform.position;
+            float angle = Vector3.SignedAngle(cameraForward, directionToTarget, Vector3.up);
+
+            if (angle > 0 && angle < closestRightAngle) // 오른쪽에 있는 타겟들 중 가장 중앙에 가까운 타겟
+            {
+                closestRightAngle = angle;
+                RightTarget = target;
+            }
+            else if (angle < 0 && angle > closestLeftAngle) // 왼쪽에 있는 타겟들 중 가장 중앙에 가까운 타겟
+            {
+                closestLeftAngle = angle;
+                LeftTarget = target;
+            }
+        }
     }
 
-
-    //타겟 해제
-    void DeselectTarget()
-    {
-        SetTarget(null);
-    }
-
-    //타겟 설정
     void SetTarget(IDamageable target)
     {
         CurrentTarget = target;
@@ -183,10 +172,19 @@ public class TargetingSystem : MonoBehaviour
         }
         else
         {
-            player.isLockOn = false;
-            OnTargetDeselected?.Invoke();
+            DeselectTarget();
         }
     }
+
+    void DeselectTarget()
+    {
+        CurrentTarget = null;
+        LeftTarget = null;
+        RightTarget = null;
+        player.isLockOn = false;
+        OnTargetDeselected?.Invoke();
+    }
+
 
 
     public bool IsCurrentTargetExecutable()

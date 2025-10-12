@@ -34,11 +34,11 @@ public class Player : MonoBehaviour
         if(PlayerCamera.Instance.player == null)
         {
             PlayerCamera.Instance.player = this;
+            SoundManager.Instance.PlayLoopingSFX("BGM_Main");
         }
 
         Cursor.lockState = CursorLockMode.Locked;
 
     }
-
 
 }

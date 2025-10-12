@@ -14,7 +14,7 @@ public class PlayerMotor : MonoBehaviour
 
     [Header("점프 및 중력처리")]
     //중력 및 점프 처리를 위한 변수
-    private Vector3 verticalVelocity;
+    public Vector3 verticalVelocity;
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private float groundCheckDistance = 0.2f; 
     [SerializeField] private LayerMask groundLayer;
@@ -35,11 +35,11 @@ public class PlayerMotor : MonoBehaviour
     public Coroutine movementLockCoroutine;
 
 
-    // [추가] 네트워크 전송 주기 관리를 위한 변수
+    // 네트워크 전송 주기 관리를 위한 변수
     private float lastSendTime = 0f;
     private float sendInterval = 0.1f; // 0.1초 간격으로 전송 (초당 10번)
 
-    // [추가] 마지막으로 전송한 위치/회전 값을 저장할 변수
+    // 마지막으로 전송한 위치/회전 값을 저장할 변수
     private Vector3 lastSentPosition;
     private Quaternion lastSentRotation;
 
@@ -47,6 +47,16 @@ public class PlayerMotor : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         player = GetComponent<Player>();
+    }
+
+    private void Start()
+    {
+        player.Stats.OnDamaged += StartKnockBack;
+    }
+
+    private void OnDestroy()
+    {
+        player.Stats.OnDamaged -= StartKnockBack;
     }
 
 
@@ -61,17 +71,7 @@ public class PlayerMotor : MonoBehaviour
         HandleRotation();
     }
 
-    // 중력 처리 함수
-    private void HandleGravity()
-    {
-        if (IsGrounded && verticalVelocity.y < 0)
-        {
-            verticalVelocity.y = -2f; // 땅에 붙어있도록 살짝 아래로 힘을 줌
-        }
 
-        verticalVelocity.y += gravity * Time.deltaTime;
-        controller.Move(verticalVelocity * Time.deltaTime);
-    }
 
     //기본적인 이동
     public void Move()
@@ -174,16 +174,33 @@ public class PlayerMotor : MonoBehaviour
     public void HandleGroundCheck()
     {
         Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y + 0.1f, transform.position.z);
+        IsGrounded = Physics.CheckSphere(spherePosition, groundCheckDistance, groundLayer, QueryTriggerInteraction.Ignore);
 
-        if(!IsGrounded && verticalVelocity.y < 0)
+    }
+
+
+    // 중력 처리 함수
+    private void HandleGravity()
+    {
+        if (IsGrounded && verticalVelocity.y < 0)
         {
-            IsGrounded = Physics.CheckSphere(spherePosition, groundCheckDistance, groundLayer, QueryTriggerInteraction.Ignore);
+            verticalVelocity.y = -2f; // 땅에 붙어있도록 살짝 아래로 힘을 줌
         }
 
+        verticalVelocity.y += 2f * gravity * Time.deltaTime;
+        controller.Move(verticalVelocity * Time.deltaTime);
     }
 
     private void HandleRotation()
     {
+        if (player.isLockOn && player.TargetingSystem.CurrentTarget != null)
+        {
+            Vector3 targetDirection = player.TargetingSystem.CurrentTarget.transform.position - transform.position;
+            RotateTowardsDirection(targetDirection);
+            return; // 타겟 추적 후 다른 회전 로직은 무시하고 종료
+        }
+
+
         if (!canRotate || isKnockingBack) { return; }
 
         if (player.isLockOn)
@@ -228,24 +245,22 @@ public class PlayerMotor : MonoBehaviour
     }
 
 
-
-
-    
     //넉백 시작
-     public void StartKnockBack(Vector3 direction, float force, float duration)
-    {
+     public void StartKnockBack(DamageInfo damageInfo)
+     {
         isKnockingBack = true;
         knockBackTimer = 0f;
-        knockBackDuration = duration;
-        knockbackMovement = direction * force; // 초당 넉백될 이동량 계산
+        knockBackDuration = damageInfo.knockbackDuration;
+        knockbackMovement = damageInfo.hitDirection * damageInfo.knockbackForce; // 초당 넉백될 이동량 계산
 
-    }
+     }
+
     //넉백
     public void HandleKnockBack()
     {
         if (!isKnockingBack) return;
 
-        knockBackTimer += Time.fixedDeltaTime;
+        knockBackTimer += Time.deltaTime;
         controller.Move(knockbackMovement * Time.deltaTime);
 
         if (knockBackTimer >= knockBackDuration)

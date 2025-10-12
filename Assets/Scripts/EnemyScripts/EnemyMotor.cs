@@ -1,19 +1,19 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.InputSystem.XR;
 
 public class EnemyMotor : MonoBehaviour
 {
     private NavMeshAgent navAgent;
     private Animator anim;
-    private Rigidbody rb;
     private Enemy enemy;
+    private CharacterController characterController;
 
     private bool isKnockingBack = false;
     private float knockbackForce;       // 넉백될 힘
     private float knockbackTimer = 0f;
     private float knockbackDuration;
-    private Vector3 startKnockbackPosition;
     private Vector3 knockbackDirection;
     private float rotationSpeed = 10f;
 
@@ -31,7 +31,7 @@ public class EnemyMotor : MonoBehaviour
         enemy = GetComponent<Enemy>();
         navAgent = GetComponent<NavMeshAgent>();
         anim = GetComponent<Animator>();
-        rb = GetComponent<Rigidbody>();
+        characterController = GetComponent<CharacterController>();
     }
 
     private void Start()
@@ -50,18 +50,13 @@ public class EnemyMotor : MonoBehaviour
             HandleStrafe();
         }
         UpdateAnimatorParameters();
-
-    }
-
-    private void FixedUpdate()
-    {
         HandleKnockBack();
     }
 
 
     public void KnockBackStart(DamageInfo damageInfo)
     {
-        if (enemy == null || anim == null || rb == null || navAgent == null)
+        if (enemy == null || anim == null || navAgent == null)
         {
             return;
         }
@@ -70,7 +65,6 @@ public class EnemyMotor : MonoBehaviour
         knockbackForce = damageInfo.knockbackForce;
         knockbackDuration = damageInfo.knockbackDuration;
 
-        startKnockbackPosition = transform.position; // 넉백 시작 위치 저장
         knockbackTimer = 0f;
 
         isKnockingBack = true;
@@ -88,14 +82,7 @@ public class EnemyMotor : MonoBehaviour
         if (isKnockingBack)
         {
             knockbackTimer += Time.fixedDeltaTime;
-            float t = knockbackTimer / knockbackDuration; // 0에서 1까지 증가하는 시간 비율
-            t = 1f - (1f - t) * (1f - t);
-
-            // 시작 위치에서 목표 위치까지 Lerp
-            Vector3 targetPos = startKnockbackPosition + knockbackDirection * knockbackForce;
-            Vector3 currentPos = Vector3.Lerp(startKnockbackPosition, targetPos, t);
-
-            rb.MovePosition(currentPos);
+            characterController.Move(knockbackForce * Time.deltaTime * knockbackDirection);
 
             if (knockbackTimer >= knockbackDuration)
             {
@@ -250,17 +237,6 @@ public class EnemyMotor : MonoBehaviour
         anim.SetInteger("AttackIndex", attackIndex);
         anim.SetTrigger("HeavyAttack");
     }
-
-    public void PerformGuard(bool state)
-    {
-        anim.SetBool("isGuarding", state);
-    }
-
-    public void PerformDeflect()
-    {
-        anim.SetTrigger("Deflect");
-    }
-
     public void PlayDeathAnimation()
     {
         anim.SetTrigger("Die");

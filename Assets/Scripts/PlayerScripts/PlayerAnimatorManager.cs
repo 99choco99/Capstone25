@@ -77,7 +77,6 @@ public class PlayerAnimatorManager : MonoBehaviour
     {
         player.Anim.CrossFade(targetAnim, 0.2f);
         this.isPerformingAction = isPerformingAction;
-
     }
 
 
@@ -88,5 +87,12 @@ public class PlayerAnimatorManager : MonoBehaviour
             player.Motor.controller.Move(player.Anim.deltaPosition);
             transform.rotation *= player.Anim.deltaRotation;
         }
+    }
+
+
+
+    public void AE_PlaySFX(string name)
+    {
+        SoundManager.Instance.PlaySFX(name);
     }
 }

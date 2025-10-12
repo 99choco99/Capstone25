@@ -7,16 +7,19 @@ using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public class EnemyCombat : MonoBehaviour
+public class EnemyCombat : MonoBehaviour,IWeaponOwner
 {
 
     private Enemy enemy;
-    [SerializeField] EnemyWeapon weapon;
+    [SerializeField] private List<Weapon> weapons = new List<Weapon>();
+
     [SerializeField] Attack[] attacks;
     public int currentAttackIndex;
 
-    private bool IsWeanponHit;
+    [SerializeField] float guardChance;
     public bool canAttack = true;
+
+
     public event Action OnAttackEnd;
 
     private void Awake()
@@ -25,16 +28,14 @@ public class EnemyCombat : MonoBehaviour
         canAttack = true;
     }
 
-    public void OnWeaponHit(IDamageable target, Collider targetCollider)
+
+    // 적을 공격했을 때
+    public void OnWeaponHit(IDamageable target, Collider targetCollider, Weapon weapon)
     {
-        if (IsWeanponHit) { return; }
-        IsWeanponHit = true;
-
         Attack currentAttackData = attacks[currentAttackIndex];
-
+        Collider weaponCollider = weapon.GetComponent<Collider>();
         Vector3 hitPoint = targetCollider.ClosestPoint(transform.position);
-        Vector3 hitDirection = (targetCollider.transform.position - weapon.transform.position).normalized;
-        hitDirection.y = 0;
+        Vector3 hitDirection = transform.forward;
 
         DamageInfo damageInfo = new DamageInfo
         {
@@ -46,6 +47,7 @@ public class EnemyCombat : MonoBehaviour
             wasGuarded = false,
             wasParried = false,
         };
+
         target.OnDamage(damageInfo);
     }
 
@@ -104,6 +106,26 @@ public class EnemyCombat : MonoBehaviour
         enemy.Motor.PlayHeavyAttackAnimation(currentAttackIndex);
     }
 
+
+    public void DecideDefenseAction()
+    {
+        if (!canAttack) return;
+
+        float value = Random.Range(0f, 1f);
+
+
+        if (value <= guardChance)
+        {
+            enemy.AnimationManager.PlayAnimation("Deflect", true);
+        }
+        else
+        {
+            enemy.AnimationManager.PlayAnimation("Hit", true);
+        }
+
+        enemy.Motor.Stop();
+    }
+
     public void ApplyAttackCooldown()
     {
         Attack currentAttackData = attacks[currentAttackIndex];
@@ -124,13 +146,19 @@ public class EnemyCombat : MonoBehaviour
 
     public void AE_EnemyAttackStart()
     {
-        IsWeanponHit = false;
-        weapon.enabled = true;
+        foreach (var weapon in weapons)
+        {
+            weapon.EnableWeaponCollider();
+        }
+        SoundManager.Instance.PlaySFX("Attack");
     }
 
     public void AE_EnemyAttackEnd()
     {
-        weapon.enabled = false;
+        foreach (var weapon in weapons)
+        {
+            weapon.DisableWeaponCollider();
+        }
         OnAttackEnd?.Invoke();
         ApplyAttackCooldown();
     }
