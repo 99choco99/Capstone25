@@ -39,7 +39,7 @@ public class EquipmentManager : MonoBehaviour
 
 
         playerStats.ApplyStatChanges(spec);
-
+        SoundManager.Instance.PlaySFX("Equip");
         OnChangedEquipmentItem?.Invoke();
     }
 

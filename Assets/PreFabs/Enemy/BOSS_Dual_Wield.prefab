@@ -431,6 +431,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2538664114464285715}
+  - {fileID: 3442269779460798341}
   m_Father: {fileID: 1531695757644327842}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1546272142586639146
@@ -943,6 +944,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyStats
   postureRecoveryTimer: 0
   enemyData: {fileID: 11400000, guid: bdbb2ff2db80f2145b2cef3615b709f9, type: 2}
+  isDeflecting: 0
 --- !u!114 &4125133768076078961
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -966,7 +968,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: df7dc48f7c93f0a42a240943b5b9fb33, type: 2}
   currentAttackIndex: 0
   guardChance: 0.8
-  canAttack: 1
+  canPerformAction: 1
 --- !u!114 &4819141762195598978
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -980,6 +982,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMotor
   strafeReplanningDistance: 1.5
+  deathblowVictimAnchor: {fileID: 6053522181254530859}
 --- !u!114 &2003076996461437125
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -992,15 +995,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d2a7b7943a65ca4093747b8404cce3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemySense
-  normalSightRange: 10
-  detectSightRange: 20
-  sightAngle: 90
-  targetLayer:
+  eyeTransform: {fileID: 3442269779460798341}
+  detectionRadius: 15
+  detectionAngle: 90
+  playerLayer:
     serializedVersion: 2
     m_Bits: 64
   obstacleLayer:
     serializedVersion: 2
     m_Bits: 8192
+  senseInterval: 0.1
+  threatDistance: 3
+  threatAngleThreshold: 0.5
+  loseTargetTime: 5
 --- !u!114 &7566335555001652218
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1013,6 +1020,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8200a53b5ab89ff489e13d1ccdc505fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAnimationManager
+  IsPerformAction: 0
 --- !u!143 &3935712621509304411
 CharacterController:
   m_ObjectHideFlags: 0
@@ -2302,6 +2310,37 @@ MonoBehaviour:
   layerMask:
     serializedVersion: 2
     m_Bits: 64
+--- !u!1 &7213528172492797134
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3442269779460798341}
+  m_Layer: 0
+  m_Name: EyeTransform
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3442269779460798341
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7213528172492797134}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2982584330508872656}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7365383946894392028
 GameObject:
   m_ObjectHideFlags: 0

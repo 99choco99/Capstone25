@@ -13,4 +13,16 @@ public class AnimationExitSMB : StateMachineBehaviour
 
         player.animatorManager.isPerformingAction = false;
     }
+
+    public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)
+    {
+        if (player == null)
+        {
+            player = animator.GetComponent<Player>();
+        }
+        else
+        {
+            player.animatorManager.isPerformingAction = false;
+        }
+    }
 }

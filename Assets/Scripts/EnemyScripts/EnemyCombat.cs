@@ -1,9 +1,8 @@
-using NUnit.Framework;
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.Netcode;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -15,9 +14,11 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
 
     [SerializeField] Attack[] attacks;
     public int currentAttackIndex;
+    private List<Attack> _normalAttacks = new List<Attack>();
+    private List<Attack> _heavyAttacks = new List<Attack>();
 
     [SerializeField] float guardChance;
-    public bool canAttack = true;
+    public bool canPerformAction = true;
 
 
     public event Action OnAttackEnd;
@@ -25,7 +26,19 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     private void Awake()
     {
         enemy = GetComponent<Enemy>();
-        canAttack = true;
+        InitializeAttacks();
+        canPerformAction  = true;
+    }
+
+    private void InitializeAttacks()
+    {
+        foreach (var attack in attacks)
+        {
+            if (attack.type == AttackType.Normal)
+                _normalAttacks.Add(attack);
+            else if (attack.type == AttackType.Heavy)
+                _heavyAttacks.Add(attack);
+        }
     }
 
 
@@ -54,73 +67,37 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     //공격
     public void PerformAttack()
     {
-        if (!canAttack) { return; }
+        if (!canPerformAction  || _normalAttacks.Count == 0) { return; }
 
-        List<Attack> normalAttacks = new List<Attack>();
-        foreach (var attack in attacks)
-        {
-            if(attack.type == AttackType.Normal)
-            {
-                normalAttacks.Add(attack);
-            }
-        }
+        canPerformAction  = false;
 
-        if (normalAttacks.Count == 0)
-        {
-            Debug.LogWarning("실행할 Normal Attack이 없습니다.");
-            return;
-        }
-        canAttack = false;
-
-        Attack selectedAttack = normalAttacks[Random.Range(0, normalAttacks.Count)];
+        Attack selectedAttack = _normalAttacks[Random.Range(0, _normalAttacks.Count)];
         currentAttackIndex = System.Array.IndexOf(attacks, selectedAttack);
-
-        // Motor에게 애니메이션 재생을 요청
         enemy.Motor.PlayAttackAnimation(currentAttackIndex);
     }
 
     //강공격
     public void PerformHeavyAttack()
     {
-        if (!canAttack) { return; }
+        if (!canPerformAction  || _heavyAttacks.Count == 0) return;
+        canPerformAction  = false;
 
-        List<Attack> heavyAttacks = new List<Attack>();
-        foreach (var attack in attacks)
-        {
-            if (attack.type == AttackType.Normal)
-            {
-                heavyAttacks.Add(attack);
-            }
-        }
-
-        if (heavyAttacks.Count == 0)
-        {
-            Debug.LogWarning("실행할 Normal Attack이 없습니다.");
-            return;
-        }
-        canAttack = false;
-
-        Attack selectedAttack = heavyAttacks[Random.Range(0, heavyAttacks.Count)];
+        Attack selectedAttack = _heavyAttacks[Random.Range(0, _heavyAttacks.Count)];
         currentAttackIndex = System.Array.IndexOf(attacks, selectedAttack);
-
         enemy.Motor.PlayHeavyAttackAnimation(currentAttackIndex);
     }
 
-
     public void DecideDefenseAction()
     {
-        if (!canAttack) return;
+        if (!canPerformAction ) return;
 
         float value = Random.Range(0f, 1f);
 
 
         if (value <= guardChance)
         {
-            enemy.AnimationManager.PlayAnimation("Deflect", true);
-        }
-        else
-        {
-            enemy.AnimationManager.PlayAnimation("Hit", true);
+            enemy.Stats.isDeflecting = true;
+            enemy.AnimationManager.PlayAnimation("Deflect", false);
         }
 
         enemy.Motor.Stop();
@@ -136,7 +113,7 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     IEnumerator AttackTimer(float timer)
     {
         yield return new WaitForSeconds(timer);
-        canAttack = true;
+        canPerformAction  = true;
     }
 
     public int GetAttackCount()
@@ -159,7 +136,9 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
         {
             weapon.DisableWeaponCollider();
         }
-        OnAttackEnd?.Invoke();
-        ApplyAttackCooldown();
+        OnAttackEnd?.Invoke();  //공격 끝남 알림
+        ApplyAttackCooldown();  //공격 쿨타임
     }
+
+
 }

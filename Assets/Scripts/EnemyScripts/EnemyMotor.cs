@@ -24,6 +24,7 @@ public class EnemyMotor : MonoBehaviour
     Transform strafeTarget;
     float strafeDistance;
 
+    public Transform deathblowVictimAnchor;
 
 
     private void Awake()
@@ -45,9 +46,13 @@ public class EnemyMotor : MonoBehaviour
 
     private void Update()
     {
-        if (isStrafing)
+        if (!isKnockingBack && navAgent.isOnNavMesh && navAgent.hasPath)
         {
-            HandleStrafe();
+            if (!isStrafing)
+            {
+                navAgent.nextPosition = transform.position;
+            }
+            characterController.Move(navAgent.velocity * Time.deltaTime);
         }
         UpdateAnimatorParameters();
         HandleKnockBack();
@@ -82,15 +87,17 @@ public class EnemyMotor : MonoBehaviour
         if (isKnockingBack)
         {
             knockbackTimer += Time.fixedDeltaTime;
-            characterController.Move(knockbackForce * Time.deltaTime * knockbackDirection);
+            float deceleration = 1f - (knockbackTimer / knockbackDuration);
+            deceleration = Mathf.Clamp01(deceleration);
+            characterController.Move(deceleration * knockbackForce * Time.deltaTime * knockbackDirection);
 
             if (knockbackTimer >= knockbackDuration)
             {
                 isKnockingBack = false;
-                Debug.Log("Knockback Finished!");
             }
         }
     }
+
     public void LookAtTarget(Vector3 targetPosition)
     {
         if (isKnockingBack) return;

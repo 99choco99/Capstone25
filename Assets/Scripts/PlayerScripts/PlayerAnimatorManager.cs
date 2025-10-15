@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem.XR;
 
 public class PlayerAnimatorManager : MonoBehaviour
 {
@@ -7,6 +6,7 @@ public class PlayerAnimatorManager : MonoBehaviour
 
     public bool isPerformingAction = false;
 
+    private string lastAnimName;
 
     // [추가] 네트워크 전송 최적화를 위한 변수들
     private float lastAnimSendTime = 0f;
@@ -75,6 +75,8 @@ public class PlayerAnimatorManager : MonoBehaviour
     // 구르기 등 특정 액션을 재생
     public void PlayTargetActionAnimation(string targetAnim, bool isPerformingAction = true)
     {
+        if (this.isPerformingAction && targetAnim != lastAnimName) { return; }
+        lastAnimName = targetAnim;
         player.Anim.CrossFade(targetAnim, 0.2f);
         this.isPerformingAction = isPerformingAction;
     }
@@ -95,4 +97,9 @@ public class PlayerAnimatorManager : MonoBehaviour
     {
         SoundManager.Instance.PlaySFX(name);
     }
+    public void AE_PlayLoopingSFX(string name)
+    {
+        SoundManager.Instance.PlayLoopingSFX(name);
+    }
+
 }

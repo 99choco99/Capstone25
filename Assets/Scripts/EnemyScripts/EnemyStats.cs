@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using Unity.Netcode;
 using UnityEngine;
 
 public class EnemyStats : LivingEntity
@@ -16,6 +15,7 @@ public class EnemyStats : LivingEntity
     private float postureBrokenTimer = 0f;
 
     public bool IsPostureBroken {  get; private set; }
+    public bool isDeflecting;
 
     private void Awake()
     {
@@ -64,38 +64,43 @@ public class EnemyStats : LivingEntity
     }
 
 
-    public override void OnDamage(DamageInfo damageInfo)
+    public override void OnDamage(DamageInfo result)
     {
 
-        if(Vector3.Dot(damageInfo.hitDirection,transform.forward) < 0)
+        if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
         {
-            if (enemy.Senses.IsPlayerAttacking)
-            {
-                enemy.Combat.DecideDefenseAction();
-            }
+            enemy.AnimationManager.PlayAnimation("BackHit", false);
         }
         else
         {
-            enemy.AnimationManager.PlayAnimation("BackHit", true);
+            enemy.AnimationManager.PlayAnimation("Hit", false);
+
         }
 
-
-        AnimatorStateInfo stateInfo = enemy.Anim.GetCurrentAnimatorStateInfo(0);
-
-        bool isDeflecting = stateInfo.IsTag("Deflect");
 
         if (isDeflecting)
         {
-            Debug.Log("적: 튕겨내기 성공!");
-            TakePostureDamage(damageInfo.finalDamage);
+            Quaternion effectRotation = Quaternion.LookRotation(result.hitDirection);
+            EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, effectRotation);
+            TakePostureDamage(result.finalDamage);
+            isDeflecting = false;
         }
         else
         {
-            base.OnDamage(damageInfo);
-            TakePostureDamage(damageInfo.finalDamage);
-;       }
+            base.OnDamage(result);
+            TakePostureDamage(result.finalDamage);
+            Quaternion effectRotation = Quaternion.LookRotation(result.hitPoint);
+            GameObject bloodEffect = EffectManager.Instance.PlayEffect("Blood", result.hitPoint, effectRotation);
+            SoundManager.Instance.PlaySFX("Cutting flesh");
+            if (bloodEffect != null)
+            {
+                // bloodEffect의 부모를 피격된 적인 result.victim으로 설정합니다.
+                bloodEffect.transform.SetParent(transform);
+            }
+        }
 
-        OnDamaged?.Invoke(damageInfo);
+        Debug.Log("6");
+        OnDamaged?.Invoke(result);
     }
 
     public override void Die()

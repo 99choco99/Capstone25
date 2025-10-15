@@ -23,6 +23,7 @@ public class PlayerSprintState : State
         {
             player.InputHandler.UseAttackInput();
             stateMachine.TransitionTo(stateMachine.PlayerAttackState);
+            player.animatorManager.PlayTargetActionAnimation("SprintAttack", true);
             return;
         }
 
@@ -47,7 +48,6 @@ public class PlayerSprintState : State
         if (player.InputHandler.MoveInput == Vector3.zero)
         {
             stateMachine.TransitionTo(stateMachine.PlayerIdleState);
-
             return;
         }
 

@@ -324,6 +324,7 @@ public class QuestManager : MonoBehaviour
         playerStats.AddGold(reward.gold);
         //InventoryManager.Instance.AddItem(reward.itemId);
 
+        SoundManager.Instance.PlaySFX("missionComplete");
         Debug.Log($"º¸»ó È¹µæ: °æÇèÄ¡ {reward.exp}, °ñµå {reward.gold}");
     }
 }

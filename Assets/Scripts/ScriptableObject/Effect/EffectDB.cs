@@ -4,8 +4,8 @@ using UnityEngine;
 [System.Serializable]
 public class Effect
 {
-    public string Name; // 코드에서 사용할 '별명' (Key)
-    public GameObject Prefab; // 실제 이펙트 프리팹 (Value)
+    public string Name;
+    public GameObject Prefab;
 }
 
 

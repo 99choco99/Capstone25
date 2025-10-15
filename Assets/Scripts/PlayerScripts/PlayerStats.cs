@@ -30,10 +30,6 @@ public class PlayerStats : LivingEntity
 
     public int AbilityPoint { get; private set; }
 
-    public float MoveSpeed;
-    public float SprintSpeed;
-    public float JumpPower;
-
     public float baseDamage;
     public float baseDefense;
     public float baseMaxHp;
@@ -49,6 +45,8 @@ public class PlayerStats : LivingEntity
     public event Action<DamageInfo> OnDamaged;
     public event Action OnLevelUp;  //레벨업시
 
+
+    public bool isGuarding;
 
     private Player player;
 
@@ -121,7 +119,7 @@ public class PlayerStats : LivingEntity
         if (dead) return;
 
         // --- 가드 및 패링 판정 ---
-        bool isGuarding = player.StateMachine.CurrentState is PlayerGuardState;
+        isGuarding = player.StateMachine.CurrentState is PlayerGuardState;
         bool isParrying = false;
 
         if (isGuarding)

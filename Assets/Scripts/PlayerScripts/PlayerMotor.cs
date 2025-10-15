@@ -11,6 +11,11 @@ public class PlayerMotor : MonoBehaviour
 
     [SerializeField] private float rotationSpeed = 15f;
 
+    [Header("움직임")]
+    public float MoveSpeed;
+    public float SprintSpeed;
+    public float GuardSpeed;
+    public float JumpPower;
 
     [Header("점프 및 중력처리")]
     //중력 및 점프 처리를 위한 변수
@@ -62,12 +67,10 @@ public class PlayerMotor : MonoBehaviour
 
     private void Update()
     {
-
         HandleGroundCheck();
         HandleGravity();
 
         HandleKnockBack();
-        if (player.animatorManager.isPerformingAction) { return; }
         HandleRotation();
     }
 
@@ -87,15 +90,18 @@ public class PlayerMotor : MonoBehaviour
 
         if (player.StateMachine.CurrentState == player.StateMachine.PlayerSprintState)
         {
-            controller.Move(player.Stats.SprintSpeed * Time.deltaTime * moveDirection);
-
+            controller.Move(SprintSpeed * Time.deltaTime * moveDirection);
+        }
+        else if(player.StateMachine.CurrentState == player.StateMachine.PlayerGuardState)
+        {
+            controller.Move(GuardSpeed * Time.deltaTime * moveDirection);
         }
         else
         {
-            controller.Move(player.Stats.MoveSpeed * Time.deltaTime * moveDirection);
+            controller.Move(MoveSpeed * Time.deltaTime * moveDirection);
         }
 
-        
+
 
         if (Time.time - lastSendTime > sendInterval)
         {
@@ -116,7 +122,6 @@ public class PlayerMotor : MonoBehaviour
     //백스텝 및 구르기
     public void Dodge()
     {
-        if (player.animatorManager.isPerformingAction) { return; }
         //구르기 shift 
         if (player.InputHandler.MoveInput != Vector3.zero)
         {
@@ -182,11 +187,6 @@ public class PlayerMotor : MonoBehaviour
     // 중력 처리 함수
     private void HandleGravity()
     {
-        if (IsGrounded && verticalVelocity.y < 0)
-        {
-            verticalVelocity.y = -2f; // 땅에 붙어있도록 살짝 아래로 힘을 줌
-        }
-
         verticalVelocity.y += 2f * gravity * Time.deltaTime;
         controller.Move(verticalVelocity * Time.deltaTime);
     }

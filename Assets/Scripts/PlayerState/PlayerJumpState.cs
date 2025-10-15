@@ -8,7 +8,8 @@ public class PlayerJumpState : State
     {
         if (!player.Motor.IsGrounded) { return; }
         player.Anim.SetBool("Jump", true);
-        player.Motor.Jump(player.Stats.JumpPower);
+        player.animatorManager.PlayTargetActionAnimation("Jump", true);
+        player.Motor.Jump(player.Motor.JumpPower);
         SoundManager.Instance.PlaySFX("Jump");
     }
 

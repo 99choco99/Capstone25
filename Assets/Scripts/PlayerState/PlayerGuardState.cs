@@ -12,9 +12,13 @@ public class PlayerGuardState : State
     public override void Enter()
     {
         guardTimer = 0f;
+        player.animatorManager.PlayTargetActionAnimation("Guard", false);
         player.Anim.SetBool("Guard", true);
         player.Motor.StopMovement();
-
+        if (player.Motor.movementLockCoroutine == null)
+        {
+            SoundManager.Instance.PlaySFX("Guard");
+        }
         player.Motor.LockMovementFor(0.45f);
     }
 
@@ -41,6 +45,13 @@ public class PlayerGuardState : State
             }
             return;
         }
+        if (player.InputHandler.JumpInput)
+        {
+            player.InputHandler.UseJumpInput();
+            stateMachine.TransitionTo(stateMachine.PlayerJumpState);
+            return;
+        }
+
         player.Motor.Move();
     }
 

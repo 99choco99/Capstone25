@@ -7,7 +7,7 @@ public class SoundManager : MonoBehaviour
     public static SoundManager Instance { get; private set; }
 
     [Header("사운드 데이터베이스")]
-    [SerializeField] private SoundDatabase soundDB; // SoundDatabase 에셋을 여기에 연결
+    [SerializeField] private SoundDatabase soundDB;
 
     [Header("오디오 소스 설정")]
     [SerializeField] private AudioSource bgmPlayer;

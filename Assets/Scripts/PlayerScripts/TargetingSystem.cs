@@ -8,7 +8,6 @@ public class TargetingSystem : MonoBehaviour
     [SerializeField] private LayerMask targetLayer;
     [SerializeField] public LayerMask ObstacleLayer;
     [SerializeField] private Transform raycastOrigin; // 플레이어 시점 (카메라 또는 머리 위치)
-    [SerializeField] private Transform targetTransform;
     [SerializeField] private float detectionRange = 5f;
     [SerializeField] private float maximumViewAngle = 50f;
     List<IDamageable> validTargets = new List<IDamageable>();

@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Playables;
 public class Player : MonoBehaviour
 {
     public bool IsLocalPlayer { get; set; } = false;
@@ -13,7 +14,6 @@ public class Player : MonoBehaviour
     public PlayerInteraction Interaction { get; private set; }     //플레이어의 상호작용 정의
     public TargetingSystem TargetingSystem { get; private set; }   //플레이어의 타겟 선정을 정리
     public PlayerCombat Combat { get; private set; }               //플레이어의 전투 관련 정의.
-
     public PlayerAnimatorManager animatorManager {get;private set;}//플레이어의 애니메이션 정의.
     public Animator Anim { get; private set; }
     public Camera MainCamera { get; private set; }

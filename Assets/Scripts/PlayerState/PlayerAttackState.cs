@@ -14,6 +14,7 @@ public class PlayerAttackState : State
         player.Motor.StopMovement();
         player.Combat.StartAttack();
         player.Combat.OnAttackEnd += HandleAttackEnd;
+
     }
 
     public override void Update()
