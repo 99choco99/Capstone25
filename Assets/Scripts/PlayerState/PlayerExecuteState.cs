@@ -5,6 +5,7 @@ public class PlayerExecuteState : State
     public PlayerExecuteState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
     private IDamageable target;
+    public override bool UseRootMotion => false;
 
     public override void Enter()
     {
@@ -16,9 +17,11 @@ public class PlayerExecuteState : State
         }
 
         player.Motor.StopMovement();
-        player.Anim.SetTrigger("Execute");
-
-        //TODO : 연출
+        if (target.gameObject.GetComponent<Enemy>())
+        {
+            Debug.Log("인살");
+        }
+        player.Combat.AttemptDeathblow(target.gameObject.GetComponent<Enemy>());
     }
 
     public void OnExecuteClimax()
@@ -29,7 +32,7 @@ public class PlayerExecuteState : State
         }
     }
 
-    public void OnExecuteEnd()
+    public void AE_OnExecuteEnd()
     {
         stateMachine.TransitionTo(stateMachine.PlayerIdleState);
     }

@@ -78,11 +78,6 @@ public class PlayerUIManager : MonoBehaviour
         playerStats.OnHpChanged += UpdateHp;
         playerStats.OnExpChanged += UpdateExp;
         playerStats.OnPostureChanged += UpdatePostureGauge;
-
-        foreach(var panel in panelDictionary.Values)
-        {
-            panel.SetActive(false);
-        }
     }
 
     private void OnDestroy()

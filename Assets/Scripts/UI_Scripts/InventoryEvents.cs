@@ -9,4 +9,6 @@ public static class InventoryEvents
     public static Action<SlotType, int> OnInventoryDataInitialized;
     // 소유 골드가 변경됨.
     public static Action<int> OnChangedGold;
+    // 퀵슬롯 아이템 사용 완료
+    public static Action<ItemSpec> OnQuickSlotUsed;
 }

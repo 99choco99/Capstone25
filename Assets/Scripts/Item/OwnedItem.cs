@@ -52,6 +52,11 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
 
         SetAlphaValue(0.6f);
         canvasGroup.blocksRaycasts = false;
+
+        if (currentSlot is ProfileSlot profileSlot)
+        {
+            EquipmentManager.instance.Unequip(profileSlot.GetEquipmentSlotType());
+        }
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -65,6 +70,10 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
         {
             transform.SetParent(currentSlot.transform);
             rect.position = currentSlot.GetComponent<RectTransform>().position;
+            if (currentSlot is ProfileSlot profileSlot)
+            {
+                EquipmentManager.instance.Equip(profileSlot.GetEquipmentSlotType(), currentSlot.slotData.itemSpec);
+            }
         }
 
         SetAlphaValue(1.0f);

@@ -257,11 +257,10 @@ MonoBehaviour:
   sensitivity: 15
   minimumclampAngle: -30
   maximumclampAngle: 60
+  collideLayer:
+    serializedVersion: 2
+    m_Bits: 8193
   rotY: 0
-  dirNormalized: {x: 0, y: 0, z: 0}
-  finalDir: {x: 0, y: 0, z: 0}
-  minDistance: 1
-  maxDistance: 5
-  RevertDistance: 7
-  finalDistance: 0
   smoothness: 3
+  lockOnTargetFollowSpeed: 0.2
+  isLockOn: 0

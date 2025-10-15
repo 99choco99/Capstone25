@@ -115,7 +115,7 @@ public class QuestUI : MonoBehaviour
             for (int i = 0; i < currentStep.missions.Count; i++) {
                 var mission = currentStep.missions[i];
                 var missionKey = status.currentStepIndex * 100 + i; 
-                if(mission.type == MissionType.TalkTo) { continue; }
+                //if(mission.type == MissionType.TalkTo) { continue; }
                 int currentAmount = status.MissionProgress.ContainsKey(missionKey) ? status.MissionProgress[missionKey] : 0;
                 // 예: "고블린 처치 (2/5)"
                 stepScript += $"- {mission.missionScript} ({currentAmount} / {mission.requiredAmount})\n";

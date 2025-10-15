@@ -33,18 +33,26 @@ public class PlayerInteraction : MonoBehaviour
 
     private void OnDestroy()
     {
-        DialogueManager.instance.OnConversationStart -= HandleConversationStart;
-        DialogueManager.instance.OnConversationEnd -= HandleConversationEnd;
+        if(DialogueManager.instance != null)
+        {
+            DialogueManager.instance.OnConversationStart -= HandleConversationStart;
+            DialogueManager.instance.OnConversationEnd -= HandleConversationEnd;
+        }
+
     }
 
     void Update()
     {
-        DetectInteractables();
-        if (interactablesInRange.Count > 0)
+        if(player.StateMachine.CurrentState != player.StateMachine.ConversationState)
         {
-            HandleSelection();
-            CheckForInteraction();
+            DetectInteractables();
+            if (interactablesInRange.Count > 0)
+            {
+                HandleSelection();
+                CheckForInteraction();
+            }
         }
+
     }
 
     private void DetectInteractables()

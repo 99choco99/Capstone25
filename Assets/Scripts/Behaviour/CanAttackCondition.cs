@@ -14,7 +14,7 @@ public partial class CanAttackCondition : Condition
             Debug.Log("combat 컴포넌트가 없음");
             return false;
         }
-        return combat.canAttack;
+        return combat.canPerformAction ;
     }
 
     public override void OnStart()

@@ -1,5 +1,5 @@
 using System;
-
+using Unity.VisualScripting;
 using UnityEngine;
 
 
@@ -30,20 +30,14 @@ public class PlayerStats : LivingEntity
 
     public int AbilityPoint { get; private set; }
 
-    public float MoveSpeed;
-    public float RunSpeed;
-    public float SprintSpeed;
-    public float JumpPower;
-
-
-    public float baseMaxHp;
     public float baseDamage;
     public float baseDefense;
-    public float bonusmaxHp { get; protected set; }
-    public float bonusDamage { get; protected set; }
-    public float bonusDefense { get; protected set; }
+    public float baseMaxHp;
 
-    
+    public float bonusDamage;
+    public float bonusDefense;
+    public float bonusMaxHp;
+
     //PlayerEvent
     public event Action<float> OnHpChanged;  // hp 변경
     public event Action<int, int> OnExpChanged;   // 경험치 적용
@@ -51,6 +45,8 @@ public class PlayerStats : LivingEntity
     public event Action<DamageInfo> OnDamaged;
     public event Action OnLevelUp;  //레벨업시
 
+
+    public bool isGuarding;
 
     private Player player;
 
@@ -62,8 +58,9 @@ public class PlayerStats : LivingEntity
     private void Start()
     {
         LoadPlayerData(DataManager.Instance.playerData);
-
+        InventoryEvents.OnQuickSlotUsed += Consume;
     }
+
 
     //게임 데이터 불러오기
     public void LoadPlayerData(PlayerData data)
@@ -72,20 +69,22 @@ public class PlayerStats : LivingEntity
         Nickname = data.nickname;
         gameObject.name = Nickname;
 
-        maxHp = data.maxHp;
+        baseMaxHp = data.maxHp;
+        baseDefense = data.defense;
+        baseDamage = data.damage;
         currentHp = data.currentHp;
-        damage = data.damage;
-        maxPosture = data.defense;
+
+
 
         Level = data.level;
         Exp = data.exp;
         Gold = data.gold;
 
-        ApplyStatChanges();
+        UpdateTotalStats();
 
         OnHpChanged?.Invoke(currentHp);
         OnExpChanged?.Invoke(Exp, Level);
-        OnStatsChanged?.Invoke();
+
         InventoryEvents.OnChangedGold?.Invoke(Gold);
 
         if (DataManager.Instance != null)
@@ -102,10 +101,10 @@ public class PlayerStats : LivingEntity
         if (DataManager.Instance == null) return;
 
         PlayerData dataToSave = DataManager.Instance.playerData;
-        dataToSave.maxHp = maxHp;
+        dataToSave.maxHp = baseMaxHp;
         dataToSave.currentHp = currentHp;
-        dataToSave.damage = damage;
-        dataToSave.defense = maxPosture;
+        dataToSave.damage = baseDamage;
+        dataToSave.defense = baseDefense;
         dataToSave.level = Level;
         dataToSave.exp = Exp;
         dataToSave.gold = Gold;
@@ -120,13 +119,12 @@ public class PlayerStats : LivingEntity
         if (dead) return;
 
         // --- 가드 및 패링 판정 ---
-        bool isGuarding = player.StateMachine.CurrentState is PlayerGuardState;
+        isGuarding = player.StateMachine.CurrentState is PlayerGuardState;
         bool isParrying = false;
 
         if (isGuarding)
         {
-            PlayerGuardState guardState = player.StateMachine.CurrentState as PlayerGuardState;
-            if (guardState != null && guardState.IsParryWindowActive())
+            if (player.StateMachine.CurrentState is PlayerGuardState guardState && guardState.IsParryWindowActive())
             {
                 isParrying = true;
             }
@@ -138,25 +136,22 @@ public class PlayerStats : LivingEntity
         if (isParrying)
         {
             finalDamageToHp = 0;
-            Debug.Log("패링 성공!");
-            // TODO: 패링 성공 관련 이벤트(OnParrySuccess)를 별도로 발생시켜 PlayerCombat이 반격 등을 처리하게 할 수 있음
         }
         else if (isGuarding)
         {
             finalDamageToHp = 0;
             TakePostureDamage(damageInfo.finalDamage);
-            Debug.Log("가드 성공!");
-            // TODO: 가드 게이지 감소 로직
         }
         else
         {
-            // 가드/패링 실패 시에만 체력 감소
             base.OnDamage(damageInfo);
             TakePostureDamage(damageInfo.finalDamage * 0.5f);
         }
 
 
         OnHpChanged?.Invoke(currentHp);
+
+
 
         DamageInfo result = new DamageInfo()
         {
@@ -203,28 +198,79 @@ public class PlayerStats : LivingEntity
         AbilityPoint--;
         switch (statToUpgrade)
         {
-            case PlayerStatType.Damage:
-                bonusDamage++;
-                break;
-            case PlayerStatType.Defense:
-                bonusDefense++;
-                break;
-            case PlayerStatType.Health:
-                bonusmaxHp++;
-                break;
+            case PlayerStatType.Damage: baseDamage++; break;
+            case PlayerStatType.Defense: baseDefense++; break;
+            case PlayerStatType.Health: baseMaxHp++; break;
+        }
+
+        UpdateTotalStats();
+    }
+
+    public void UpgradeDamage()
+    {
+        UpAbility(PlayerStatType.Damage);
+    }
+
+    public void UpgradeDefense()
+    {
+        UpAbility(PlayerStatType.Defense);
+    }
+
+    public void UpgradeHealth()
+    {
+        UpAbility(PlayerStatType.Health);
+    }
+
+    public void ApplyStatChanges(ItemSpec spec, bool IsEquip = true) {
+        if(IsEquip)
+        {
+            bonusDamage += spec.damage;
+            bonusDefense += spec.defense;
+            bonusMaxHp += spec.hp;
+        }
+        else
+        {
+            bonusDamage -= spec.damage;
+            bonusDefense -= spec.defense;
+            bonusMaxHp -= spec.hp;
+        }
+        UpdateTotalStats();
+    }
+
+    private void UpdateTotalStats()
+    {
+        damage = baseDamage + bonusDamage;
+        maxPosture = baseDefense + bonusDefense;
+        maxHp = baseMaxHp + bonusMaxHp;
+
+        if (currentHp > maxHp)
+        {
+            currentHp = maxHp;
         }
 
         OnStatsChanged?.Invoke();
     }
 
+    // 소비 아이템 사용
+    public void Consume(ItemSpec spec)
+    {
+        bonusDamage += spec.damage;
+        bonusDefense += spec.defense;
+        currentHp += spec.hp;
+        if(currentHp > maxHp)
+        {
+            currentHp = maxHp;
+        }
+        OnHpChanged?.Invoke(currentHp);
+    }
 
-    public void ApplyStatChanges() { }
     private void OnDestroy()
     {
         if (DataManager.Instance != null)
         {
             DataManager.Instance.OnSave -= OnSavePlayerData;
         }
+        InventoryEvents.OnQuickSlotUsed -= Consume;
     }
 
 }

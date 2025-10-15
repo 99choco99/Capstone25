@@ -3,30 +3,21 @@ using Unity.Behavior;
 using UnityEngine;
 using Action = Unity.Behavior.Action;
 using Unity.Properties;
-using Random = UnityEngine.Random;
 
 [Serializable, GeneratePropertyBag]
-[NodeDescription(name: "Perform Deflect", story: "Perform Deflect", category: "Action", id: "c2c886a55e1d77ca305ed3d5c7203518")]
+[NodeDescription(name: "PerformDeflect", story: "PerformDeflect", category: "Action", id: "be06278213da2c6c7c6c00930156d062")]
 public partial class PerformDeflectAction : Action
 {
-    EnemyMotor motor;
-
+    EnemyCombat combat;
     protected override Status OnStart()
     {
-        if(motor == null && GameObject != null)
-        {
-            motor = GameObject.GetComponent<Enemy>()?.Motor;
-        }
-        if (motor == null)
-        {
-            return Status.Failure;
-        }
-        motor.PerformDeflect();
-        return Status.Success;
+        combat = GameObject.GetComponent<EnemyCombat>();
+        return Status.Running;
     }
 
     protected override Status OnUpdate()
     {
+        combat.DecideDefenseAction();
         return Status.Success;
     }
 

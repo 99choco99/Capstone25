@@ -73,7 +73,7 @@ public class DialogueManager : MonoBehaviour
                     QuestManager.Instance.TurnInQuest(interactionInfo.QuestId);
                     break;
                 case QuestInteractionType.Talk:
-                    QuestManager.Instance.ReportTalkToNPC(currentInteraction.NpcId);
+                    QuestManager.Instance.ReportTalkToNPC(interactionInfo.NpcId);
                     break;
             }
         }

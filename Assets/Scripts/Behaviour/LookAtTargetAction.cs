@@ -1,41 +1,48 @@
 using System;
 using Unity.Behavior;
-using UnityEngine;
-using Action = Unity.Behavior.Action;
 using Unity.Properties;
+using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
+using Action = Unity.Behavior.Action;
 
 [Serializable, GeneratePropertyBag]
 [NodeDescription(name: "LookAtTarget", story: "LookAtTarget", category: "Action", id: "08b1ecd2151c5fb4a4124e30b69e0e44")]
 public partial class LookAtTargetAction : Action
 {
-
-    private EnemyMotor motor;
-    private EnemySense senses;
-    private Transform selfTransform;
+    private Enemy enemy;
 
     public float arrivalAngle = 5.0f;
 
+
     protected override Status OnStart()
     {
-        motor = GameObject.GetComponent<Enemy>()?.Motor;
-        senses = GameObject.GetComponent<Enemy>()?.Senses;
-        selfTransform = GameObject.transform;
+        if (enemy == null)
+        {
+            enemy = GameObject.GetComponent<Enemy>();
+        }
+
+        if (enemy == null || enemy.Motor == null || enemy.Senses == null)
+        {
+            Debug.LogError("LookAtTargetAction: Enemy 또는 필수 컴포넌트를 찾을 수 없습니다!");
+            return Status.Failure;
+        }
+
         return Status.Running;
     }
 
     protected override Status OnUpdate()
     {
-        if (motor == null || senses == null || senses.Target == null)
+        if (enemy.Senses.Target == null)
         {
             return Status.Failure;
         }
 
-        motor.LookAtTarget(senses.Target.position);
+        enemy.Motor.LookAtTarget(enemy.Senses.Target.position);
 
-        Vector3 directionToTarget = (senses.Target.position - selfTransform.position).normalized;
+        Vector3 directionToTarget = (enemy.Senses.Target.position - enemy.transform.position).normalized;
         directionToTarget.y = 0;
 
-        float angle = Vector3.Angle(selfTransform.forward, directionToTarget);
+        float angle = Vector3.Angle(enemy.transform.forward, directionToTarget);
 
         if (angle <= arrivalAngle)
         {
@@ -44,6 +51,7 @@ public partial class LookAtTargetAction : Action
 
         return Status.Running;
     }
+
 
     protected override void OnEnd()
     {

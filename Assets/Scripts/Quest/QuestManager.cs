@@ -52,9 +52,13 @@ public class QuestManager : MonoBehaviour
     private void OnDestroy()
     {
         EnemyStats.OnEnemyDied -= HandleEnemyKilled;
-        playerStats.OnLevelUp -= UnlockQuests;
+
         APIEvents.OnGetQuestData -= Initialize;
         OnQuestStatusChanged -= SaveQuestStatus;
+        if (playerStats != null)
+        {
+            playerStats.OnLevelUp -= UnlockQuests;
+        }
     }
 
     void Initialize(QuestDefinition[] questData, QuestStatus[] questProgress)
@@ -320,6 +324,7 @@ public class QuestManager : MonoBehaviour
         playerStats.AddGold(reward.gold);
         //InventoryManager.Instance.AddItem(reward.itemId);
 
+        SoundManager.Instance.PlaySFX("missionComplete");
         Debug.Log($"º¸»ó È¹µæ: °æÇèÄ¡ {reward.exp}, °ñµå {reward.gold}");
     }
 }
