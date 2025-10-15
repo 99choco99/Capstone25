@@ -28,6 +28,13 @@ public class PlayerIdleState : State
             return;
         }
 
+        if (player.InputHandler.DodgeInput)
+        {
+            player.InputHandler.UseDodgeInput();
+            stateMachine.TransitionTo(stateMachine.PlayerRollingState);
+            return;
+        }
+
 
         if (player.InputHandler.GuardInput)
         {

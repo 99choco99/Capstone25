@@ -11,6 +11,8 @@ public class InventoryUI : MonoBehaviour
     [SerializeField] private Transform equipmentParent;
     [SerializeField] private Transform consumptionParent;
     [SerializeField] private Transform otherParent;
+    [SerializeField] private Transform ProfileParent;
+    [SerializeField] private Transform QuickParent;
     [SerializeField] private TextMeshProUGUI goldText;
 
     private Dictionary<SlotType, List<Slot>> uiSlots = new();
@@ -23,11 +25,6 @@ public class InventoryUI : MonoBehaviour
     }
 
 
-    private void Start()
-    {
-        gameObject.SetActive(false);
-    }
-
     private void OnDestroy()
     {
         InventoryEvents.OnInventoryDataInitialized -= InitUI;
@@ -38,20 +35,45 @@ public class InventoryUI : MonoBehaviour
     private void InitUI(SlotType type, int count)
     {
         Transform parent = GetParentForType(type);
-        if (parent == null) return;
+        if (parent == null) { return; }
 
         uiSlots[type] = new List<Slot>();
-        for (int i = 0; i < count; i++)
+
+        if (type == SlotType.Profile || type == SlotType.Quick)
         {
-            GameObject slotObject = Instantiate(slotPrefab, parent);
-            Slot slot = slotObject.GetComponent<Slot>();
+            Slot[] existingSlots = parent.GetComponentsInChildren<Slot>(true);
 
-            slot.slotData = InventoryManager.instance.Inventory[type][i];
+            for (int i = 0; i < existingSlots.Length; i++)
+            {
+                if (i >= count) break;
 
-            slot.OnDropRequest += OnDropHandler;
+                Slot slot = existingSlots[i];
+                slot.slotData = InventoryManager.instance.Inventory[type][i];
 
-            uiSlots[type].Add(slot);
+                slot.OnDropRequest += OnDropHandler;
+
+                uiSlots[type].Add(slot);
+
+
+            }
         }
+        else
+        {
+            for (int i = 0; i < count; i++)
+            {
+                GameObject slotObject = Instantiate(slotPrefab, parent);
+                Slot slot = slotObject.GetComponent<Slot>();
+
+                slot.slotData = InventoryManager.instance.Inventory[type][i];
+
+                slot.OnDropRequest += OnDropHandler;
+
+                uiSlots[type].Add(slot);
+            }
+        }
+
+        //모든 준비가 완료되면 끔
+        gameObject.SetActive(false);
     }
 
     private void OnDropHandler(Slot droppedSlot, PointerEventData eventData)
@@ -71,6 +93,7 @@ public class InventoryUI : MonoBehaviour
                 draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
                 droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
         }
+
         if (draggedItemUI != null)
         {
             Destroy(draggedItemUI.gameObject);
@@ -80,6 +103,7 @@ public class InventoryUI : MonoBehaviour
 
     private void UpdateSlotUI(SlotType type, int index)
     {
+        if(!uiSlots.ContainsKey(type)) { return; }
         Slot uiSlot = uiSlots[type][index];
         SlotData slotData = InventoryManager.instance.Inventory[type][index];
 
@@ -125,6 +149,8 @@ public class InventoryUI : MonoBehaviour
             SlotType.Equipment => equipmentParent,
             SlotType.Consumption => consumptionParent,
             SlotType.Other => otherParent,
+            SlotType.Profile => ProfileParent,
+            SlotType.Quick => QuickParent,
             _ => null
         };
 

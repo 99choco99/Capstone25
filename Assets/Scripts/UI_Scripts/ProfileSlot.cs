@@ -1,33 +1,28 @@
-using Unity.VisualScripting;
+
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class ProfileSlot : Slot
 {
-    PlayerStats playerData;
-    public EquipmentType EquipmentType;
-    public PlayerProfile PlayerProfile;
-    EquipmentItem currentEquippedItem;
+    [SerializeField] EquipmentType EquipmentSlotType;
 
-    private void Start()
-    {
-        playerData = GetComponentInParent<PlayerStats>();
-        PlayerProfile = GetComponentInParent<PlayerProfile>();
-    }
+
     override public void OnDrop(PointerEventData eventData)
     {
-        eventData.pointerDrag.TryGetComponent<OwnedItem>(out OwnedItem newItem);
-        if (newItem == null) { return; }
-        if (newItem.data.type == SlotType.Equipment && newItem.data.equipmentType == EquipmentType)
+        if(eventData.pointerDrag.TryGetComponent<OwnedItem>(out OwnedItem newItem))
         {
-            EquipmentItem Item = (EquipmentItem)newItem;
-            //currentEquippedItem = (EquipmentItem)currentItem;
-            if (currentEquippedItem != null) { currentEquippedItem.TakeOff(playerData); }
-            Item.Equip(playerData);
-            currentEquippedItem = Item;
-            PlayerProfile.UpdateUI();
-            base.OnDrop(eventData);
+            if (newItem.data.type == SlotType.Equipment && newItem.data.equipmentType == EquipmentSlotType)
+            {
+                EquipmentManager.instance.Equip(EquipmentSlotType, newItem.currentSlot.slotData.itemSpec);
+                base.OnDrop(eventData);
+            }
         }
+
+    }
+
+    public EquipmentType GetEquipmentSlotType()
+    {
+        return EquipmentSlotType;
     }
 
 }

@@ -23,6 +23,7 @@ public class PlayerProfile : MonoBehaviour
         playerStats = player.Stats;
         player.Stats.OnStatsChanged += UpdateUI;
         UpdateUI();
+        gameObject.SetActive(false);
     }
 
     private void OnDestroy()
@@ -37,9 +38,14 @@ public class PlayerProfile : MonoBehaviour
     public void UpdateUI()
     {
         abilityText.text = $"Point : {playerStats.AbilityPoint}";
-        damageText.text = $"{playerStats.damage} (+ {playerStats.bonusDamage})";
-        healthText.text = playerStats.maxHp + "(+" + playerStats.bonusmaxHp + ")";
-        defenseText.text = playerStats.maxPosture + "(+" + playerStats.bonusDefense + ")";
+        string damageBonus = playerStats.bonusDamage > 0 ? $" (+ {playerStats.bonusDamage})" : "";
+        damageText.text = $"{playerStats.damage}{damageBonus}";
+
+        string healthBonus = playerStats.bonusMaxHp > 0 ? $" (+ {playerStats.bonusMaxHp})" : "";
+        healthText.text = $"{playerStats.maxHp}{healthBonus}";
+
+        string defenseBonus = playerStats.bonusDefense > 0 ? $" (+ {playerStats.bonusDefense})" : "";
+        defenseText.text = $"{playerStats.maxPosture}{defenseBonus}";
 
         bool canUpgrade = playerStats.AbilityPoint > 0;
         damageUpButton.interactable = canUpgrade;

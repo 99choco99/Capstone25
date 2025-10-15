@@ -8,12 +8,12 @@ public class PlayerMoveState : State
 
     public override void Enter()
     {
-
+        SoundManager.Instance.PlayLoopingSFX("Walking");
     }
 
     public override void Exit()
     {
-
+        SoundManager.Instance.StopLoopingSFX("Walking");
     }
 
 
@@ -45,9 +45,18 @@ public class PlayerMoveState : State
             stateMachine.TransitionTo(stateMachine.PlayerJumpState);
             return;
         }
-        if (player.InputHandler.SprintInput)
+
+
+        if (player.InputHandler.SprintInput && player.TargetingSystem.CurrentTarget == null)
         {
             stateMachine.TransitionTo(stateMachine.PlayerSprintState);
+            return;
+        }
+
+        if (player.InputHandler.DodgeInput)
+        {
+            player.InputHandler.UseDodgeInput();
+            stateMachine.TransitionTo(stateMachine.PlayerRollingState);
             return;
         }
 

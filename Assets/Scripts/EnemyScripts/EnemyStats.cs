@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using Unity.Netcode;
 using UnityEngine;
 
 public class EnemyStats : LivingEntity
@@ -9,14 +8,14 @@ public class EnemyStats : LivingEntity
 
     [SerializeField] EnemyData enemyData;
 
-
-    public event Action<DamageInfo> OnDamaged;
     public static event Action<int> OnEnemyDied;
+    public event Action<DamageInfo> OnDamaged;
 
     private float postureBrokenDuration = 3f; // 체간 붕괴 지속 시간 (3초)
     private float postureBrokenTimer = 0f;
 
     public bool IsPostureBroken {  get; private set; }
+    public bool isDeflecting;
 
     private void Awake()
     {
@@ -65,41 +64,43 @@ public class EnemyStats : LivingEntity
     }
 
 
-    public override void OnDamage(DamageInfo damageInfo)
+    public override void OnDamage(DamageInfo result)
     {
 
-        // --- 1. 현재 자신의 상태 확인 ---
-        AnimatorStateInfo stateInfo = enemy.Anim.GetCurrentAnimatorStateInfo(0);
+        if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
+        {
+            enemy.AnimationManager.PlayAnimation("BackHit", false);
+        }
+        else
+        {
+            enemy.AnimationManager.PlayAnimation("Hit", false);
 
-        bool isDeflecting = stateInfo.IsTag("Deflect");
-        bool isGuarding = stateInfo.IsTag("Guard");
+        }
+
 
         if (isDeflecting)
         {
-            Debug.Log("적: 튕겨내기 성공!");
-
-            // a) 나는 데미지(체력, 체간)를 입지 않음
-
-            // b) 반격: 공격자의 체간에 큰 데미지를 줌 (세키로 핵심)
-            //    NetworkManager를 통해 공격자(플레이어)를 찾아 TakePostureDamage를 호출
-
-
-            // c) 튕겨내기 성공 이펙트(번쩍!), 사운드 재생 요청
-            // EffectManager.Instance.SpawnEffect("DeflectSpark", ...);
+            Quaternion effectRotation = Quaternion.LookRotation(result.hitDirection);
+            EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, effectRotation);
+            TakePostureDamage(result.finalDamage);
+            isDeflecting = false;
         }
-        // 일반 가드 성공
-        else if (isGuarding)
-        {
-            Debug.Log("적: 가드 성공!");
-            TakePostureDamage(damageInfo.finalDamage);
-        }
-        //그냥 맞음
         else
         {
-            base.OnDamage(damageInfo);
-            TakePostureDamage(damageInfo.finalDamage);
-;        }
-        OnDamaged?.Invoke(damageInfo);
+            base.OnDamage(result);
+            TakePostureDamage(result.finalDamage);
+            Quaternion effectRotation = Quaternion.LookRotation(result.hitPoint);
+            GameObject bloodEffect = EffectManager.Instance.PlayEffect("Blood", result.hitPoint, effectRotation);
+            SoundManager.Instance.PlaySFX("Cutting flesh");
+            if (bloodEffect != null)
+            {
+                // bloodEffect의 부모를 피격된 적인 result.victim으로 설정합니다.
+                bloodEffect.transform.SetParent(transform);
+            }
+        }
+
+        Debug.Log("6");
+        OnDamaged?.Invoke(result);
     }
 
     public override void Die()

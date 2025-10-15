@@ -36,9 +36,12 @@ public class InventoryManager : MonoBehaviour
         Init(SlotType.Equipment, slotCount);
         Init(SlotType.Consumption, slotCount);
         Init(SlotType.Other, slotCount);
+        Init(SlotType.Profile, 6);
+        Init(SlotType.Quick, 1);
 
         isInit = true;
         APIManager.Instance.Inventory.RequestInventory();
+        gameObject.SetActive(false);
     }
 
     private void OnDestroy()
@@ -54,7 +57,10 @@ public class InventoryManager : MonoBehaviour
         List<SlotData> slots = new List<SlotData>();
         for (int i = 0; i < count; i++)
         {
-            slots.Add(new SlotData { slotIndex = i });
+            slots.Add(new SlotData {
+                slotType = type,
+                slotIndex = i
+            });
         }
         Inventory.Add(type, slots);
         InventoryEvents.OnInventoryDataInitialized?.Invoke(type, count);
@@ -70,6 +76,13 @@ public class InventoryManager : MonoBehaviour
             Inventory[data.slotType][data.slotIndex].itemCount = data.itemCount;
             Inventory[data.slotType][data.slotIndex].itemData = ItemManager.Instance.GetItem(data.itemId);
             Inventory[data.slotType][data.slotIndex].itemSpec = data.itemSpec;
+
+
+            if (data.slotType == SlotType.Profile && data.itemSpec != null)
+            {
+                EquipmentType equipmentType = (EquipmentType)data.slotIndex;
+                EquipmentManager.instance.Equip(equipmentType, data.itemSpec);
+            }
             InventoryEvents.OnSlotDataChanged?.Invoke(data.slotType, data.slotIndex);
         }
         
@@ -169,7 +182,6 @@ public class InventoryManager : MonoBehaviour
             return;
         }
 
-        // 데이터만 변경하고, UI는 건드리지 않습니다.
         emptySlotData.itemData = data;
         emptySlotData.itemId = response.ItemId;
         emptySlotData.itemSpec = response.spec;
@@ -177,10 +189,35 @@ public class InventoryManager : MonoBehaviour
 
         Inventory[emptySlotData.slotType][emptySlotData.slotIndex] = emptySlotData;
 
-        // 데이터 변경이 완료되었음을 UI에 알립니다.
+
         InventoryEvents.OnSlotDataChanged?.Invoke(data.type, emptySlotData.slotIndex);
         InventoryEvents.OnChangedGold?.Invoke(response.gold);
     }
+
+    public void RequestUseQuickSlotItem()
+    {
+        SlotData quickSlotData = Inventory[SlotType.Quick][0];
+
+        if (!quickSlotData.hasItem || quickSlotData.itemData.type != SlotType.Consumption)
+        {
+            Debug.Log("퀵슬롯에 소비 아이템이 없습니다.");
+            return;
+        }
+
+        ItemSpec spec = quickSlotData.itemData.baseStats;
+
+        quickSlotData.itemCount--;
+
+        if (quickSlotData.itemCount <= 0)
+        {
+            quickSlotData.Clear(); // 슬롯 비우기
+        }
+
+        InventoryEvents.OnSlotDataChanged?.Invoke(SlotType.Quick, 0);
+        
+        InventoryEvents.OnQuickSlotUsed?.Invoke(spec); //퀵슬롯 쿨타임
+    }
+
 
     //비어있는 인벤토리 슬롯 찾아서 반환
     public SlotData FindEmptySlot(SlotType type)

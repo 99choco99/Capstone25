@@ -4,18 +4,20 @@ using UnityEngine.InputSystem.EnhancedTouch;
 
 public class PlayerInputHandler : MonoBehaviour
 {
+    Player player;
     [SerializeField] PlayerInput PlayerInput;
 
     [Header("PlayerSetting Input Values")]
     public Vector3 MoveInput { get; private set; }
-    [SerializeField] float horizontalInput;
-    [SerializeField] float verticalInput;
+    public float horizontalInput;
+    public float verticalInput;
     public float moveAmount;
 
     public Vector2 LookInput { get; private set; }
     public bool JumpInput { get; private set; }
     public bool AttackInput { get; private set; }
     public bool GuardInput { get; private set; }
+    public bool DodgeInput { get; private set; }
     public bool SprintInput { get; private set; }
     public bool IsShowMouse { get; private set; }
     public bool InteractionInput { get; private set; }
@@ -24,6 +26,8 @@ public class PlayerInputHandler : MonoBehaviour
     public bool IsAttackPress { get; private set; }
     public float Scroll { get; private set; }
 
+
+    public void UseDodgeInput() => DodgeInput = false;
     public void UseJumpInput() => JumpInput = false;
     public void UseAttackInput() => AttackInput = false;
     public void UseInteractionInput() => InteractionInput = false;
@@ -32,7 +36,10 @@ public class PlayerInputHandler : MonoBehaviour
     private void Start()
     {
         GameManager.instance.OnGameStateChanged += HandlerGameStateChanged;
+        player = GetComponent<Player>();
 
+        if (player.IsLocalPlayer) { PlayerInput.enabled = true; }
+        else {  PlayerInput.enabled = false; }
     }
 
     private void OnDestroy()
@@ -49,9 +56,11 @@ public class PlayerInputHandler : MonoBehaviour
     // 매 프레임 한번만 true가 되도록 처리하기 위함
     private void LateUpdate()
     {
+        DodgeInput = false;
         TargetInput = false;
         JumpInput = false;
         AttackInput = false;
+        InteractionInput = false;
     }
 
     void HandlerGameStateChanged(GameState state)
@@ -75,16 +84,10 @@ public class PlayerInputHandler : MonoBehaviour
         verticalInput = MoveInput.z;
 
         moveAmount = Mathf.Clamp01(Mathf.Abs(horizontalInput) + Mathf.Abs(verticalInput));
-        if (moveAmount > 0 && moveAmount <= 0.5f)
-        {
-            moveAmount = 0.5f;
-        }
-        else if (moveAmount > 0.5f)
+        if (moveAmount >= 0.5f)
         {
             moveAmount = 1f;
         }
-
-        
     }
 
     public void OnLook(InputAction.CallbackContext context)
@@ -125,9 +128,18 @@ public class PlayerInputHandler : MonoBehaviour
         GuardInput = context.ReadValueAsButton();
     }
 
+    public void OnDodge(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+            DodgeInput = true;
+        }
+    }
+
     public void OnSprint(InputAction.CallbackContext context)
     {
-        SprintInput = context.ReadValueAsButton();
+        if (context.performed) { SprintInput = true; }
+        else if (context.canceled) { SprintInput = false; }
     }
 
     public void OnShowMouse(InputAction.CallbackContext context)
@@ -138,7 +150,7 @@ public class PlayerInputHandler : MonoBehaviour
 
     public void OnInteraction(InputAction.CallbackContext context)
     {
-        if (context.started) { InteractionInput = true; }
+        if (context.started) {InteractionInput = true; }
     }
 
     public void OnCrouch(InputAction.CallbackContext context)
