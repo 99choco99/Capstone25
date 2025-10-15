@@ -173,7 +173,7 @@ Transform:
   m_GameObject: {fileID: 657214101168659316}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.7, z: 0}
+  m_LocalPosition: {x: 0, y: 1.6, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -254,13 +254,14 @@ MonoBehaviour:
   realCamera: {fileID: 5876407647248679130}
   cameraPivotTransform: {fileID: 1590652085082443018}
   followSpeed: 10
-  sensitivity: 15
-  minimumclampAngle: -30
+  sensitivity: 4.5
+  minimumclampAngle: -20
   maximumclampAngle: 60
+  MaximumLockAnlge: 20
+  MinimumLockAngle: -20
   collideLayer:
     serializedVersion: 2
     m_Bits: 8193
-  rotY: 0
+  rotY: 75.37133
+  cameraZPosition: -6
   smoothness: 3
-  lockOnTargetFollowSpeed: 0.2
-  isLockOn: 0

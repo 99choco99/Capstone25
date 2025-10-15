@@ -13,7 +13,7 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     [SerializeField] private List<Weapon> weapons = new List<Weapon>();
 
     [SerializeField] Attack[] attacks;
-    public int currentAttackIndex;
+    public int currentAttackIndex = 0;
     private List<Attack> _normalAttacks = new List<Attack>();
     private List<Attack> _heavyAttacks = new List<Attack>();
 

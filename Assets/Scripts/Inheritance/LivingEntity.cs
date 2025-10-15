@@ -19,7 +19,7 @@ public class LivingEntity : MonoBehaviour,IDamageable
 
     public Action<float, float> OnPostureChanged; //가드 게이지 적용
     public event Action OnPostureBroken;
-    protected event Action OnDeath; // 죽었을 때 이벤트
+    public event Action OnDeath; // 죽었을 때 이벤트
 
 
     protected virtual void OnEnable()

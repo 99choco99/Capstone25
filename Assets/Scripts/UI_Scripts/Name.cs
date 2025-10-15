@@ -8,7 +8,7 @@ public class Name : MonoBehaviour
 
     void Start()
     {
-        if(cam == null)
+        if (cam == null)
         {
             cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
         }

@@ -1,6 +1,9 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 
 
@@ -59,6 +62,15 @@ public class PlayerStats : LivingEntity
     {
         LoadPlayerData(DataManager.Instance.playerData);
         InventoryEvents.OnQuickSlotUsed += Consume;
+    }
+
+    private void OnDestroy()
+    {
+        if (DataManager.Instance != null)
+        {
+            DataManager.Instance.OnSave -= OnSavePlayerData;
+        }
+        InventoryEvents.OnQuickSlotUsed -= Consume;
     }
 
 
@@ -164,7 +176,6 @@ public class PlayerStats : LivingEntity
         };
 
         OnDamaged?.Invoke(result);
-
     }
 
     //경험치 증가
@@ -262,15 +273,6 @@ public class PlayerStats : LivingEntity
             currentHp = maxHp;
         }
         OnHpChanged?.Invoke(currentHp);
-    }
-
-    private void OnDestroy()
-    {
-        if (DataManager.Instance != null)
-        {
-            DataManager.Instance.OnSave -= OnSavePlayerData;
-        }
-        InventoryEvents.OnQuickSlotUsed -= Consume;
     }
 
 }

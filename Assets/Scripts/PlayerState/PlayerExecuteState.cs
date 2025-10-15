@@ -23,17 +23,4 @@ public class PlayerExecuteState : State
         }
         player.Combat.AttemptDeathblow(target.gameObject.GetComponent<Enemy>());
     }
-
-    public void OnExecuteClimax()
-    {
-        if (target != null && !target.dead)
-        {
-            target.Die();
-        }
-    }
-
-    public void AE_OnExecuteEnd()
-    {
-        stateMachine.TransitionTo(stateMachine.PlayerIdleState);
-    }
 }
