@@ -861,6 +861,7 @@ MonoBehaviour:
   - rid: 5497470354436915200
   - rid: 5392978387774734927
   - rid: 5392978393298632959
+  - rid: 6097195862502146904
   m_IsInitialised: 0
   m_IsStarted: 0
   NetcodeRunOnlyOnOwner: 0
@@ -886,7 +887,7 @@ MonoBehaviour:
           m_Value0: 13133700094171823055
           m_Value1: 505432888855933302
         Name: AttackRange
-        m_Value: 2.3
+        m_Value: 3
     - rid: 5497470354436915200
       type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]',
         ns: Unity.Behavior, asm: Unity.Behavior}
@@ -896,6 +897,15 @@ MonoBehaviour:
           m_Value1: 0
         Name: Self
         m_Value: {fileID: 2529435299449483087}
+    - rid: 6097195862502146904
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior,
+        asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 15278768614150432342
+          m_Value1: 13192877331068371945
+        Name: StrafeRange
+        m_Value: 3
 --- !u!195 &4354899510868587756
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -982,7 +992,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMotor
   strafeReplanningDistance: 1.5
-  deathblowVictimAnchor: {fileID: 6053522181254530859}
 --- !u!114 &2003076996461437125
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1040,7 +1049,7 @@ CharacterController:
   m_Enabled: 1
   serializedVersion: 3
   m_Height: 1.8
-  m_Radius: 0.23
+  m_Radius: 0.3
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
@@ -2855,6 +2864,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 535ba9ed11e9e7f479c111c99b837839, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyUI
+  PostureGauge: {fileID: 4126686470855178074}
+  EnemyHpUI: {fileID: 898937001165764126}
 --- !u!1 &7869843700624397499
 GameObject:
   m_ObjectHideFlags: 0

@@ -17,15 +17,17 @@ public class LivingEntity : MonoBehaviour,IDamageable
     public bool dead { get; set;}
 
 
-    public Action<float, float> OnPostureChanged; //가드 게이지 적용
+    public event Action<float> OnHpChanged;  // hp 변경
+    public event Action<float, float> OnPostureChanged; //가드 게이지 적용
     public event Action OnPostureBroken;
-    protected event Action OnDeath; // 죽었을 때 이벤트
+    public event Action OnDeath; // 죽었을 때 이벤트
 
 
     protected virtual void OnEnable()
     {
         dead = false;
     }
+
     protected virtual void Update()
     {
         if (postureRecoveryTimer > 0)
@@ -46,13 +48,14 @@ public class LivingEntity : MonoBehaviour,IDamageable
         if (dead) return;
 
         currentHp -= damageInfo.finalDamage;
-
+        OnHpChanged?.Invoke(currentHp);
         // 체력이 0 이하가 되면 사망 처리
         if (currentHp <= 0)
         {
             currentHp = 0;
             Die();
         }
+
     }
 
 
@@ -94,6 +97,8 @@ public class LivingEntity : MonoBehaviour,IDamageable
         {
             currentHp += heal;
         }
+
+        OnHpChanged?.Invoke(currentHp);
     }
 
 }

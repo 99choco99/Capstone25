@@ -1,6 +1,7 @@
 using System;
-using Unity.VisualScripting;
+
 using UnityEngine;
+
 
 
 
@@ -39,7 +40,6 @@ public class PlayerStats : LivingEntity
     public float bonusMaxHp;
 
     //PlayerEvent
-    public event Action<float> OnHpChanged;  // hp 변경
     public event Action<int, int> OnExpChanged;   // 경험치 적용
     public event Action OnStatsChanged;  // 스탯 변경사항 적용
     public event Action<DamageInfo> OnDamaged;
@@ -59,6 +59,15 @@ public class PlayerStats : LivingEntity
     {
         LoadPlayerData(DataManager.Instance.playerData);
         InventoryEvents.OnQuickSlotUsed += Consume;
+    }
+
+    private void OnDestroy()
+    {
+        if (DataManager.Instance != null)
+        {
+            DataManager.Instance.OnSave -= OnSavePlayerData;
+        }
+        InventoryEvents.OnQuickSlotUsed -= Consume;
     }
 
 
@@ -82,7 +91,6 @@ public class PlayerStats : LivingEntity
 
         UpdateTotalStats();
 
-        OnHpChanged?.Invoke(currentHp);
         OnExpChanged?.Invoke(Exp, Level);
 
         InventoryEvents.OnChangedGold?.Invoke(Gold);
@@ -149,10 +157,6 @@ public class PlayerStats : LivingEntity
         }
 
 
-        OnHpChanged?.Invoke(currentHp);
-
-
-
         DamageInfo result = new DamageInfo()
         {
             finalDamage = finalDamageToHp,
@@ -164,7 +168,6 @@ public class PlayerStats : LivingEntity
         };
 
         OnDamaged?.Invoke(result);
-
     }
 
     //경험치 증가
@@ -256,21 +259,7 @@ public class PlayerStats : LivingEntity
     {
         bonusDamage += spec.damage;
         bonusDefense += spec.defense;
-        currentHp += spec.hp;
-        if(currentHp > maxHp)
-        {
-            currentHp = maxHp;
-        }
-        OnHpChanged?.Invoke(currentHp);
-    }
-
-    private void OnDestroy()
-    {
-        if (DataManager.Instance != null)
-        {
-            DataManager.Instance.OnSave -= OnSavePlayerData;
-        }
-        InventoryEvents.OnQuickSlotUsed -= Consume;
+        RestoreHealth(spec.hp);
     }
 
 }

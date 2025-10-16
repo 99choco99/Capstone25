@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class AnimationExitSMB : StateMachineBehaviour
+public class PlayerAnimationExitSMB : StateMachineBehaviour
 {
     Player player;
 
@@ -10,7 +10,6 @@ public class AnimationExitSMB : StateMachineBehaviour
         {
             player = animator.GetComponent<Player>();
         }
-
         player.animatorManager.isPerformingAction = false;
     }
 
@@ -20,9 +19,6 @@ public class AnimationExitSMB : StateMachineBehaviour
         {
             player = animator.GetComponent<Player>();
         }
-        else
-        {
-            player.animatorManager.isPerformingAction = false;
-        }
+        player.animatorManager.isPerformingAction = false;
     }
 }

@@ -13,9 +13,7 @@ public class PlayerStateMachine : MonoBehaviour
     public PlayerGuardState PlayerGuardState { get; private set; }  // 가드 상태
     public PlayerDodgeState PlayerRollingState { get; private set; } // 구르고 있는 상태
     public PlayerSprintState PlayerSprintState { get; private set; }   // 슬라이드 상태
-    public PlayerDamagedState PlayerDamagedState { get; private set; }   // 데미지를 입은 상태
     public PlayerExecuteState PlayerExecuteState { get; private set; }
-    public PlayerDeadState PlayerDeadState { get; private set; }   // 죽은 상태
     public ConversationState ConversationState { get; private set; }  // 대화 상태
 
 
@@ -34,10 +32,8 @@ public class PlayerStateMachine : MonoBehaviour
         PlayerGuardState = new PlayerGuardState(player, this);
         PlayerRollingState = new PlayerDodgeState(player, this);
         PlayerSprintState = new PlayerSprintState(player, this);
-        PlayerDamagedState = new PlayerDamagedState(player, this);
-        ConversationState = new ConversationState(player, this);
-        PlayerDeadState = new PlayerDeadState(player, this);
         PlayerExecuteState = new PlayerExecuteState(player, this);
+        ConversationState = new ConversationState(player, this);
     }
 
 

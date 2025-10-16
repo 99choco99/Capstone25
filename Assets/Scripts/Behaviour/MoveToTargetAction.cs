@@ -29,6 +29,7 @@ public partial class MoveToTargetAction : Action
         navAgent.stoppingDistance = distance.Value * 0.9f;
         if(enemy.Senses.Target != null)
         {
+            
             enemy.Motor.MoveTo(enemy.Senses.Target.transform.position);
             return Status.Success;
         }

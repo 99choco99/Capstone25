@@ -59,6 +59,10 @@ public class PlayerUIManager : MonoBehaviour
             Destroy(instnace);
         }
         playerStats = GetComponentInParent<PlayerStats>();
+
+        playerStats.OnHpChanged += UpdateHp;
+        playerStats.OnExpChanged += UpdateExp;
+        playerStats.OnPostureChanged += UpdatePostureGauge;
     }
 
     private void Start()
@@ -74,10 +78,9 @@ public class PlayerUIManager : MonoBehaviour
             {UIPanelType.Quest, Quest },
             {UIPanelType.Dialogue, dialogUI }
         };
+        UpdateHp(playerStats.currentHp);
+        UpdatePostureGauge(playerStats.maxPosture, playerStats.currentPosture);
 
-        playerStats.OnHpChanged += UpdateHp;
-        playerStats.OnExpChanged += UpdateExp;
-        playerStats.OnPostureChanged += UpdatePostureGauge;
     }
 
     private void OnDestroy()

@@ -172,6 +172,8 @@ public class SocketManager : MonoBehaviour
                 playerComponent.IsLocalPlayer = true;
                 playerComponent.InputHandler.enabled = true;
                 playerComponent.StateMachine.enabled = true;
+                Name name = playerComponent.GetComponentInChildren<Name>();
+                name.gameObject.SetActive(false);
             }
 
         }
