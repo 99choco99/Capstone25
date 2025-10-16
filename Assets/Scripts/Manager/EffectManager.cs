@@ -49,7 +49,8 @@ public class EffectManager : MonoBehaviour
             Queue<GameObject> queue = new Queue<GameObject>();
             for (int i = 0; i < poolSize; i++)
             {
-                GameObject effectInstance = Instantiate(effectPrefab.Prefab, transform);
+                GameObject effectInstance = Instantiate(effectPrefab.Prefab, transform.position,Quaternion.identity);
+                effectInstance.transform.SetParent(transform);
                 effectInstance.SetActive(false);
                 _pooledObjects.Add(effectInstance); // 추적 리스트에 추가
                 queue.Enqueue(effectInstance);
@@ -58,7 +59,7 @@ public class EffectManager : MonoBehaviour
         }
     }
 
-    public GameObject PlayEffect(string name, Vector3 position, Quaternion rotation)
+    public GameObject PlayEffect(string name, Vector3 position, Quaternion rotation, Transform parent)
     {
         if (!_effectPool.ContainsKey(name))
         {
@@ -86,6 +87,11 @@ public class EffectManager : MonoBehaviour
         }
 
         effectInstance.transform.SetPositionAndRotation(position, rotation);
+
+        if (parent != null)
+        {
+            effectInstance.transform.SetParent(parent);
+        }
 
         // 2. 파티클 재생이 끝나면 자동으로 풀에 반환되도록 코루틴 실행
         StartCoroutine(ReturnToPoolAfterPlay(effectInstance, name));

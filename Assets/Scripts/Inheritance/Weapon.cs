@@ -23,16 +23,12 @@ public class Weapon : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("1");
         if ((layerMask.value & (1 << other.gameObject.layer)) > 0)
         {
-            Debug.Log("2");
             if (other.TryGetComponent<IDamageable>(out var target))
             {
-                Debug.Log("3");
                 if (!hitTargets.Contains(target))
                 {
-                    Debug.Log("4");
                     hitTargets.Add(target);
                     owner.OnWeaponHit(target, other, this); // 데미지 처리
                 }
@@ -53,7 +49,7 @@ public class Weapon : MonoBehaviour
 
     public void DisableWeaponCollider()
     {
-        hitTargets.Clear();
+
         weaponCollider.enabled = false;
     }
 }

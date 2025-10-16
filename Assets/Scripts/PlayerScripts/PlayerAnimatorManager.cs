@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class PlayerAnimatorManager : MonoBehaviour
@@ -6,7 +7,6 @@ public class PlayerAnimatorManager : MonoBehaviour
 
     public bool isPerformingAction = false;
 
-    private string lastAnimName;
 
     // [추가] 네트워크 전송 최적화를 위한 변수들
     private float lastAnimSendTime = 0f;
@@ -19,6 +19,15 @@ public class PlayerAnimatorManager : MonoBehaviour
         player = GetComponent<Player>();
     }
 
+    private void Start()
+    {
+        player.Stats.OnDeath += DeathProcess;
+    }
+
+    private void OnDestroy()
+    {
+        player.Stats.OnDeath -= DeathProcess;
+    }
 
     private void LateUpdate()
     {
@@ -33,6 +42,7 @@ public class PlayerAnimatorManager : MonoBehaviour
 
     }
 
+
     public void UpdateAnimMoveParameter(float horizontalInput, float verticalInput)
     {
         if (player.Motor.movementLockCoroutine != null)
@@ -41,17 +51,35 @@ public class PlayerAnimatorManager : MonoBehaviour
             player.Anim.SetFloat("Vertical", 0, 0.1f, Time.deltaTime);
             return;
         }
-        if (player.InputHandler.SprintInput && player.StateMachine.CurrentState == player.StateMachine.PlayerSprintState)
+
+        if (horizontalInput > 0.5f)
         {
-            verticalInput = 2;
+            horizontalInput = 1;
         }
-        if(horizontalInput == 0)
+        else if (horizontalInput < -0.5f)
+        {
+            horizontalInput = -1;
+        }
+        else
         {
             horizontalInput = 0;
         }
-        if(verticalInput == 0)
+        if (verticalInput > 0.5f)
+        {
+            verticalInput = 1;
+        }
+        else if (verticalInput < -0.5f)
+        {
+            verticalInput = -1;
+        }
+        else
         {
             verticalInput = 0;
+        }
+
+        if (player.InputHandler.SprintInput && player.StateMachine.CurrentState == player.StateMachine.PlayerSprintState)
+        {
+            verticalInput = 2;
         }
 
 
@@ -72,14 +100,28 @@ public class PlayerAnimatorManager : MonoBehaviour
         }
     }
 
+    public void DeathProcess()
+    {
+        PlayTargetActionAnimation("Die");
+        StartCoroutine(Disappear());
+    }
+
+    //죽은 후 2.5초뒤 시체 없어짐.
+    IEnumerator Disappear()
+    {
+        yield return new WaitForSeconds(2.5f);
+        Destroy(gameObject);
+    }
+
+
     // 구르기 등 특정 액션을 재생
     public void PlayTargetActionAnimation(string targetAnim, bool isPerformingAction = true)
     {
-        if (this.isPerformingAction && targetAnim != lastAnimName) { return; }
-        lastAnimName = targetAnim;
+        if (this.isPerformingAction) { return; }
         player.Anim.CrossFade(targetAnim, 0.2f);
         this.isPerformingAction = isPerformingAction;
     }
+
 
 
     private void OnAnimatorMove()

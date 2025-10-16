@@ -5,7 +5,7 @@ public class PlayerExecuteState : State
     public PlayerExecuteState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
     private IDamageable target;
-    public override bool UseRootMotion => false;
+    public override bool UseRootMotion => true;
 
     public override void Enter()
     {
@@ -15,25 +15,13 @@ public class PlayerExecuteState : State
             stateMachine.TransitionTo(stateMachine.PlayerIdleState);
             return;
         }
-
         player.Motor.StopMovement();
-        if (target.gameObject.GetComponent<Enemy>())
-        {
-            Debug.Log("¿ŒªÏ");
-        }
+        PlayerCamera.Instance.cameraZPosition = -4f;
         player.Combat.AttemptDeathblow(target.gameObject.GetComponent<Enemy>());
     }
 
-    public void OnExecuteClimax()
+    public override void Exit()
     {
-        if (target != null && !target.dead)
-        {
-            target.Die();
-        }
-    }
-
-    public void AE_OnExecuteEnd()
-    {
-        stateMachine.TransitionTo(stateMachine.PlayerIdleState);
+        PlayerCamera.Instance.ResetCameraZPostion();
     }
 }

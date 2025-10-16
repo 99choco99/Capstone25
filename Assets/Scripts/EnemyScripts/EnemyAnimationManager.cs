@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class EnemyAnimationManager : MonoBehaviour
@@ -10,12 +11,35 @@ public class EnemyAnimationManager : MonoBehaviour
         enemy = GetComponent<Enemy>();
     }
 
+    private void Start()
+    {
+        enemy.Stats.OnDeath += DeathProcess;
+    }
+
+    private void OnDestroy()
+    {
+        enemy.Stats.OnDeath -= DeathProcess;
+    }
+
 
     public void PlayAnimation(string animationName, bool IsPerformAction = true)
     {
         if (this.IsPerformAction) { return; }
         enemy.Anim.CrossFade(animationName, 0.2f);
         this.IsPerformAction = IsPerformAction;
+    }
+    
+    public void DeathProcess()
+    {
+        PlayAnimation("Die");
+        StartCoroutine(Disappear());
+    }
+
+    //죽은 후 2.5초뒤 시체 없어짐.
+    IEnumerator Disappear()
+    {
+        yield return new WaitForSeconds(2.5f);
+        Destroy(gameObject);
     }
 
     public void AE_PlaySFX(string name)

@@ -13,7 +13,6 @@ public partial class StrafeAction : Action
     EnemyMotor motor;
     EnemySense sense;
     [SerializeReference] public BlackboardVariable<float> Distance;
-    [SerializeReference] public BlackboardVariable<float> Duration;
 
     protected override Status OnStart()
     {
@@ -28,7 +27,7 @@ public partial class StrafeAction : Action
             return Status.Failure;
         }
 
-        motor.StartStrafe(Duration, sense.Target, Distance);
+        motor.StartStrafe(sense.Target, Distance);
         return Status.Running;
     }
 

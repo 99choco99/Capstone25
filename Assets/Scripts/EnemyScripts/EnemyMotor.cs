@@ -18,14 +18,10 @@ public class EnemyMotor : MonoBehaviour
     private float rotationSpeed = 10f;
 
 
-    [SerializeField] private float strafeReplanningDistance = 1.5f; // 이 거리 이내로 가까워지면 다음 경로 재설정
+    [SerializeField] private float strafeReplanningDistance = 0.5f; // 이 거리 이내로 가까워지면 다음 경로 재설정
     bool isStrafing;
-    float strafeEndTime;
     Transform strafeTarget;
     float strafeDistance;
-
-    public Transform deathblowVictimAnchor;
-
 
     private void Awake()
     {
@@ -51,8 +47,12 @@ public class EnemyMotor : MonoBehaviour
             if (!isStrafing)
             {
                 navAgent.nextPosition = transform.position;
+                characterController.Move(navAgent.velocity * Time.deltaTime);
             }
-            characterController.Move(navAgent.velocity * Time.deltaTime);
+            else
+            {
+                HandleStrafe();
+            }
         }
         UpdateAnimatorParameters();
         HandleKnockBack();
@@ -117,7 +117,11 @@ public class EnemyMotor : MonoBehaviour
         navAgent.SetDestination(destination);
         navAgent.isStopped = false;
     }
-
+    
+    public void Chase(Vector3 destination)
+    {
+        MoveTo(destination);
+    }
     public void Stop()
     {
         if (!navAgent.isOnNavMesh) { return; }
@@ -143,10 +147,9 @@ public class EnemyMotor : MonoBehaviour
         }
     }
 
-    public void StartStrafe(float duration, Transform Target, float distance)
+    public void StartStrafe(Transform Target, float distance)
     {
         isStrafing = true;
-        strafeEndTime = Time.time + duration;
         strafeTarget = Target;
         strafeDistance = distance;
         navAgent.stoppingDistance = default;
@@ -155,19 +158,14 @@ public class EnemyMotor : MonoBehaviour
         CalculateStrafeDestination();
     }
 
-    public void StopStrafe()
-    {
-        isStrafing = false;
-        navAgent.updateRotation = true;
-        Stop();
-    }
-
     public void HandleStrafe()
     {
-        if (Time.time > strafeEndTime) {
+        if (enemy.Combat.canPerformAction)
+        {
             StopStrafe();
             return;
         }
+
 
         if (strafeTarget != null)
         {
@@ -194,10 +192,20 @@ public class EnemyMotor : MonoBehaviour
 
         Vector3 strafeDestination = strafeTarget.position + newVector;
 
-        if (NavMesh.SamplePosition(strafeDestination, out var hit, 3f, NavMesh.AllAreas))
-        {
-            MoveTo(hit.position);
-        }
+
+        MoveTo(strafeDestination);
+        //if (NavMesh.SamplePosition(strafeDestination, out var hit, 1f, NavMesh.AllAreas))
+        //{
+        //    MoveTo(hit.position);
+        //}
+    }
+
+
+    public void StopStrafe()
+    {
+        isStrafing = false;
+        navAgent.updateRotation = true;
+        Stop();
     }
 
 
@@ -229,25 +237,6 @@ public class EnemyMotor : MonoBehaviour
         anim.SetFloat("moveDirX", moveDirX, 0.1f, Time.deltaTime);
         anim.SetFloat("moveDirZ", moveDirZ, 0.1f, Time.deltaTime);
         anim.SetFloat("Speed", speed, 0.1f, Time.deltaTime); // Speed는 여전히 전체 속도 제어에 유용
-    }
-
-
-    public void PlayAttackAnimation(int attackIndex)
-    {
-        if (isKnockingBack) return;
-        anim.SetInteger("AttackIndex", attackIndex);
-        anim.SetTrigger("Attack");
-    }
-    public void PlayHeavyAttackAnimation(int attackIndex)
-    {
-        if (isKnockingBack) return;
-        anim.SetInteger("AttackIndex", attackIndex);
-        anim.SetTrigger("HeavyAttack");
-    }
-    public void PlayDeathAnimation()
-    {
-        anim.SetTrigger("Die");
-        Stop();
     }
 
 }

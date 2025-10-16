@@ -2,20 +2,22 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 public class TargetingSystem : MonoBehaviour
 {
     [SerializeField] private LayerMask targetLayer;
-    [SerializeField] public LayerMask ObstacleLayer;
-    [SerializeField] private Transform raycastOrigin; // 플레이어 시점 (카메라 또는 머리 위치)
+    [SerializeField] private LayerMask ObstacleLayer;
+
+    [SerializeField] private float cameraHalfFov;
     [SerializeField] private float detectionRange = 5f;
-    [SerializeField] private float maximumViewAngle = 50f;
     List<IDamageable> validTargets = new List<IDamageable>();
 
     public event Action<IDamageable> OnChangedTarget;
     public event Action OnTargetDeselected;
 
     public IDamageable CurrentTarget { get; private set; }
+    public Collider targetCollider;
     private IDamageable nearestTarget;
     private IDamageable LeftTarget;
     private IDamageable RightTarget;
@@ -24,7 +26,9 @@ public class TargetingSystem : MonoBehaviour
 
     private void Awake()
     {
-        player = GetComponent<Player>();   
+        player = GetComponent<Player>();
+
+        cameraHalfFov = player.MainCamera.fieldOfView;
     }
 
 
@@ -56,8 +60,8 @@ public class TargetingSystem : MonoBehaviour
             validTargets = GetAllValidTargets();
             if (validTargets.Count > 0)
             {
-                IDamageable nearest = FindNearestTarget(validTargets);
-                SetTarget(nearest);
+                nearestTarget = validTargets[0];
+                SetTarget(nearestTarget);
             }
         }
     }
@@ -69,22 +73,25 @@ public class TargetingSystem : MonoBehaviour
             DeselectTarget();
             return;
         }
-
-        validTargets = GetAllValidTargets();
-        UpdateLeftRightTargets(validTargets);
     }
 
     private void HandleTargetSwitching()
     {
         float lookInputX = player.InputHandler.LookInput.x;
 
-        if (lookInputX > 0.5f && RightTarget != null)
+        if (Mathf.Abs(lookInputX) > 0.5f)
         {
-            SetTarget(RightTarget);
-        }
-        else if (lookInputX < -0.5f && LeftTarget != null)
-        {
-            SetTarget(LeftTarget);
+            validTargets = GetAllValidTargets();
+            UpdateLeftRightTargets(validTargets);
+
+            if (lookInputX > 0.5f && RightTarget != null)
+            {
+                SetTarget(RightTarget);
+            }
+            else if (lookInputX < -0.5f && LeftTarget != null)
+            {
+                SetTarget(LeftTarget);
+            }
         }
     }
 
@@ -92,7 +99,6 @@ public class TargetingSystem : MonoBehaviour
     private List<IDamageable> GetAllValidTargets()
     {
         validTargets.Clear();
-
 
         var colliders = Physics.OverlapSphere(transform.position, detectionRange, targetLayer);
 
@@ -102,33 +108,17 @@ public class TargetingSystem : MonoBehaviour
             {
                 if (target.dead) continue;
 
-                Vector3 directionToTarget = collider.transform.position - raycastOrigin.position;
-                if (Vector3.Angle(player.MainCamera.transform.forward, directionToTarget) > maximumViewAngle) continue;
+                Vector3 directionToTarget = collider.transform.position - player.MainCamera.transform.position;
 
-                if (Physics.Linecast(raycastOrigin.position, collider.bounds.center, ObstacleLayer)) continue;
+                if (Vector3.Angle(player.MainCamera.transform.forward, directionToTarget) > cameraHalfFov) continue;
+
+
+                if (Physics.Linecast(player.MainCamera.transform.position, collider.bounds.center, ObstacleLayer)) continue;
 
                 validTargets.Add(target);
             }
         }
         return validTargets;
-    }
-
-
-    private IDamageable FindNearestTarget(List<IDamageable> targets)
-    {
-        IDamageable nearest = null;
-        float minDistance = Mathf.Infinity;
-
-        foreach (var target in targets)
-        {
-            float distance = Vector3.Distance(transform.position, target.transform.position);
-            if (distance < minDistance)
-            {
-                minDistance = distance;
-                nearest = target;
-            }
-        }
-        return nearest;
     }
 
 
@@ -167,6 +157,7 @@ public class TargetingSystem : MonoBehaviour
         if (target != null)
         {
             player.isLockOn = true;
+            targetCollider = CurrentTarget.gameObject.GetComponent<Collider>();
             OnChangedTarget?.Invoke(target);
         }
         else
@@ -178,6 +169,8 @@ public class TargetingSystem : MonoBehaviour
     void DeselectTarget()
     {
         CurrentTarget = null;
+        nearestTarget = null;
+        targetCollider = null;
         LeftTarget = null;
         RightTarget = null;
         player.isLockOn = false;
@@ -190,6 +183,9 @@ public class TargetingSystem : MonoBehaviour
     {
         if (CurrentTarget == null || CurrentTarget.dead) return false;
 
+        float distance = Vector3.Distance(transform.position, CurrentTarget.transform.position);
+        if(distance > 2f) { return false; }
+
         //적의 방어가 무너졌을 때
         if (CurrentTarget.gameObject.TryGetComponent<EnemyStats>(out var enemyStats))
         {
@@ -199,8 +195,7 @@ public class TargetingSystem : MonoBehaviour
         //적이 발견하지 못했을 때
         if(CurrentTarget.gameObject.TryGetComponent<EnemySense>(out var enemySense))
         {
-            float angleToEnemyBack = Vector3.Angle(player.transform.forward, -CurrentTarget.transform.forward);
-            if (!enemySense.IsTargetDetected && angleToEnemyBack < 45f) // 등 뒤 90도 범위
+            if (!enemySense.IsTargetDetected)
             {
                 return true;
             }
@@ -208,4 +203,7 @@ public class TargetingSystem : MonoBehaviour
 
         return false;
     }
+
+
+
 }

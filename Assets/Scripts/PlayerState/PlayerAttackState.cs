@@ -19,6 +19,12 @@ public class PlayerAttackState : State
 
     public override void Update()
     {
+        if (player.InputHandler.AttackInput && player.TargetingSystem.IsCurrentTargetExecutable())
+        {
+            player.InputHandler.UseAttackInput();
+            stateMachine.TransitionTo(stateMachine.PlayerExecuteState);
+            return;
+        }
         if (player.InputHandler.AttackInput)
         {
             player.InputHandler.UseAttackInput(); // 입력 소비

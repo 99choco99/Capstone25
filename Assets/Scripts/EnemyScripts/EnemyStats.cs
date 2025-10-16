@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class EnemyStats : LivingEntity
@@ -20,12 +21,12 @@ public class EnemyStats : LivingEntity
     private void Awake()
     {
         enemy = GetComponent<Enemy>();
+        SetUp(enemyData);
     }
 
     protected override void OnEnable()
     {
         base.OnEnable();
-        SetUp(enemyData);
     }
 
 
@@ -58,7 +59,6 @@ public class EnemyStats : LivingEntity
             {
                 IsPostureBroken = false;
                 currentPosture = 0;
-                OnPostureChanged?.Invoke(currentPosture, maxPosture);
             }
         }
     }
@@ -74,45 +74,34 @@ public class EnemyStats : LivingEntity
         else
         {
             enemy.AnimationManager.PlayAnimation("Hit", false);
-
+            
         }
-
 
         if (isDeflecting)
         {
-            Quaternion effectRotation = Quaternion.LookRotation(result.hitDirection);
-            EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, effectRotation);
+
+            EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, Quaternion.identity, transform);
             TakePostureDamage(result.finalDamage);
-            isDeflecting = false;
+            enemy.Stats.isDeflecting = false;
         }
         else
         {
             base.OnDamage(result);
             TakePostureDamage(result.finalDamage);
-            Quaternion effectRotation = Quaternion.LookRotation(result.hitPoint);
-            GameObject bloodEffect = EffectManager.Instance.PlayEffect("Blood", result.hitPoint, effectRotation);
+            EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
             SoundManager.Instance.PlaySFX("Cutting flesh");
-            if (bloodEffect != null)
-            {
-                // bloodEffect의 부모를 피격된 적인 result.victim으로 설정합니다.
-                bloodEffect.transform.SetParent(transform);
-            }
         }
 
-        Debug.Log("6");
         OnDamaged?.Invoke(result);
     }
 
-    public override void Die()
+    public void DeathBlowProcess()
     {
-        base.Die();
-        StartCoroutine(Disappear());
-    }
-
-    //죽은 후 2.5초뒤 시체 없어짐.
-    IEnumerator Disappear()
-    {
-        yield return new WaitForSeconds(2.5f);
-        Destroy(gameObject);
+        enemy.Anim.enabled = false;
+        DamageInfo damage = new DamageInfo()
+        {
+            finalDamage = 99999
+        };
+        base.OnDamage(damage);
     }
 }

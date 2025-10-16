@@ -5,7 +5,8 @@ public class PlayerCamera : MonoBehaviour
     public static PlayerCamera Instance;
     public Player player;
     public Camera realCamera;   // 실제 카메라
-    [SerializeField] Transform cameraPivotTransform; //pivot Transform
+    public Transform cameraPivotTransform; //pivot Transform
+
 
     [Header("Camera Setting")]
     private Vector3 cameraVelocity;
@@ -13,13 +14,16 @@ public class PlayerCamera : MonoBehaviour
     public float sensitivity = 50f;  // 카메라 감도
     public float minimumclampAngle = -30f;  // 각도 제한
     public float maximumclampAngle = 60f;  // 각도 제한
+    public float MaximumLockAnlge = 20f;
+    public float MinimumLockAngle = -20f;
     [SerializeField] LayerMask collideLayer;
 
 
     private float rotX;   // 카메라 X축 회전
     public float rotY;  // 카메라 Y축 회전
 
-    private float cameraZPosition;
+    [SerializeField] private float defaultCameraZPosition;
+    public float cameraZPosition;
     private float targetCameraZPosition;
     private float cameraCollisionOffset = 0.2f;
 
@@ -42,18 +46,18 @@ public class PlayerCamera : MonoBehaviour
         }
 
 
-
         rotX = transform.rotation.eulerAngles.x;
         rotY = transform.rotation.eulerAngles.y;
 
-        cameraZPosition = realCamera.transform.localPosition.z;
+
+        cameraZPosition = defaultCameraZPosition;
     }
 
 
     private void LateUpdate()
     {
         if (player == null) { return; }
-        if (player.isLockOn && player.TargetingSystem.CurrentTarget != null)
+        if (player.isLockOn)
         {
             Vector3 targetDirection = player.TargetingSystem.CurrentTarget.transform.position - transform.position;
             targetDirection.y = 0;
@@ -61,12 +65,23 @@ public class PlayerCamera : MonoBehaviour
             Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * smoothness);
 
-
             targetDirection = player.TargetingSystem.CurrentTarget.transform.position - cameraPivotTransform.position;
+            
             targetDirection.Normalize();
-
             targetRotation = Quaternion.LookRotation(targetDirection);
-            cameraPivotTransform.rotation = Quaternion.Slerp(cameraPivotTransform.rotation, targetRotation, Time.deltaTime * smoothness);
+
+
+            Vector3 eulerAngles = targetRotation.eulerAngles;
+
+            if (eulerAngles.x > 180)
+            {
+                eulerAngles.x -= 360;
+            }
+
+            eulerAngles.x = Mathf.Clamp(eulerAngles.x, MinimumLockAngle, MaximumLockAnlge);
+            Quaternion clampedRotation = Quaternion.Euler(eulerAngles);
+
+            cameraPivotTransform.rotation = Quaternion.Slerp(cameraPivotTransform.rotation, clampedRotation, Time.deltaTime * smoothness);
 
             rotY = transform.eulerAngles.y;
             rotX = cameraPivotTransform.localEulerAngles.x;
@@ -122,4 +137,9 @@ public class PlayerCamera : MonoBehaviour
 
     }
 
+
+    public void ResetCameraZPostion()
+    {
+        cameraZPosition = defaultCameraZPosition;
+    }
 }
