@@ -49,7 +49,8 @@ public class EffectManager : MonoBehaviour
             Queue<GameObject> queue = new Queue<GameObject>();
             for (int i = 0; i < poolSize; i++)
             {
-                GameObject effectInstance = Instantiate(effectPrefab.Prefab, transform);
+                GameObject effectInstance = Instantiate(effectPrefab.Prefab, transform.position,Quaternion.identity);
+                effectInstance.transform.SetParent(transform);
                 effectInstance.SetActive(false);
                 _pooledObjects.Add(effectInstance); // 추적 리스트에 추가
                 queue.Enqueue(effectInstance);

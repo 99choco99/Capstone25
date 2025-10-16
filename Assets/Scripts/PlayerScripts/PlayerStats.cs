@@ -1,9 +1,7 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
+
 using UnityEngine;
-using static UnityEngine.EventSystems.EventTrigger;
+
 
 
 
@@ -42,7 +40,6 @@ public class PlayerStats : LivingEntity
     public float bonusMaxHp;
 
     //PlayerEvent
-    public event Action<float> OnHpChanged;  // hp 변경
     public event Action<int, int> OnExpChanged;   // 경험치 적용
     public event Action OnStatsChanged;  // 스탯 변경사항 적용
     public event Action<DamageInfo> OnDamaged;
@@ -94,7 +91,6 @@ public class PlayerStats : LivingEntity
 
         UpdateTotalStats();
 
-        OnHpChanged?.Invoke(currentHp);
         OnExpChanged?.Invoke(Exp, Level);
 
         InventoryEvents.OnChangedGold?.Invoke(Gold);
@@ -159,10 +155,6 @@ public class PlayerStats : LivingEntity
             base.OnDamage(damageInfo);
             TakePostureDamage(damageInfo.finalDamage * 0.5f);
         }
-
-
-        OnHpChanged?.Invoke(currentHp);
-
 
 
         DamageInfo result = new DamageInfo()
@@ -267,12 +259,7 @@ public class PlayerStats : LivingEntity
     {
         bonusDamage += spec.damage;
         bonusDefense += spec.defense;
-        currentHp += spec.hp;
-        if(currentHp > maxHp)
-        {
-            currentHp = maxHp;
-        }
-        OnHpChanged?.Invoke(currentHp);
+        RestoreHealth(spec.hp);
     }
 
 }

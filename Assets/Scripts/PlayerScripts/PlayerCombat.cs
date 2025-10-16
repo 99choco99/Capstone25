@@ -3,7 +3,6 @@ using System.Collections;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Playables;
-using static UnityEngine.EventSystems.EventTrigger;
 
 
 
@@ -17,8 +16,9 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     [SerializeField] private Collider weaponCollider;
 
     public PlayableDirector deathblowDirector;
-    [SerializeField] private PlayableAsset FrontdeathblowTimelineAsset; // 인스펙터에서 타임라인 에셋을 직접 할당
-    [SerializeField] private PlayableAsset BehindDeathblowTimelineAsset; // 인스펙터에서 타임라인 에셋을 직접 할당
+    [SerializeField] private PlayableAsset FrontdeathblowTimelineAsset; // 앞에서 찌르기
+    [SerializeField] private PlayableAsset BehindDeathblowTimelineAsset; // 뒤에서 찌르기
+    public event Action OnExecuteEnd;
 
     private int comboIndex = 0;
     public event Action OnAttackEnd;
@@ -93,8 +93,9 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         }
         else if (result.wasGuarded)
         {
+            EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, Quaternion.identity, transform);
             player.animatorManager.PlayTargetActionAnimation("GuardHit");
-            EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, Quaternion.identity,transform);
+            SoundManager.Instance.PlaySFX("GuardHit");
         }
         else if (result.finalDamage > 0)
         {
@@ -110,17 +111,13 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
             SoundManager.Instance.PlaySFX("Hit");
             SoundManager.Instance.PlaySFX("Cutting flesh");
             EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
-
-
-            OnAttackEnd?.Invoke();
         }
+
+        OnAttackEnd?.Invoke();
     }
 
     public void AttemptDeathblow(Enemy enemy)
     {
-        float distance = Vector3.Distance(transform.position, enemy.transform.position);
-        if (distance > 2f) return; // 너무 멀면 취소
-
         if(Vector3.Dot(enemy.transform.forward,transform.forward) < 0)
         {
             PlayFrontDeathblowTimeline(enemy);
@@ -135,13 +132,12 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     // 실제 인살
     private void PlayFrontDeathblowTimeline(Enemy enemy)
     {
-        // --- 1. 타임라인 에셋 및 바인딩 설정 ---
+
         deathblowDirector.playableAsset = FrontdeathblowTimelineAsset;
 
-        // --- 2. 준비 단계: 타임라인 시작 전 상태 변경 ---
-        // (이 부분은 시그널로 옮겨도 됩니다. 취향에 따라 선택)
         player.Motor.canMove = false;
         player.Motor.canRotate = false;
+        player.InputHandler.enabled = false;
         enemy.Motor.Stop();
 
 
@@ -154,29 +150,24 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         Vector3 directionToPlayer = (transform.position - enemy.transform.position).normalized;
         enemy.transform.rotation = Quaternion.LookRotation(directionToPlayer);
 
-        // 타임라인 트랙에 플레이어와 적을 동적으로 할당(바인딩)
-        // 타임라인 에디터의 트랙 순서와 일치해야 합니다.
-        // 예: 0번=플레이어 애니메이션, 1번=적 애니메이션, 2번=플레이어 시그널
         var outputs = FrontdeathblowTimelineAsset.outputs;
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(1).sourceObject, player.gameObject);
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(2).sourceObject, enemy.gameObject);
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, player.gameObject);
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(4).sourceObject, enemy.gameObject);
+        deathblowDirector.SetGenericBinding(outputs.ElementAt(1).sourceObject, enemy.gameObject);
+        deathblowDirector.SetGenericBinding(outputs.ElementAt(2).sourceObject, player.gameObject);
+        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, PlayerCamera.Instance.cameraPivotTransform.gameObject);
 
+        OnExecuteEnd += enemy.Stats.DeathBlowProcess;
 
-
-        // --- 3. 타임라인 재생 ---
         deathblowDirector.Play();
-        SoundManager.Instance.PlaySFX("ExecuteBGM"); // BGM은 타임라인 시작과 함께 바로 재생
+        SoundManager.Instance.PlaySFX("ExecuteBGM");
     }
 
     private void PlayBehindDeathblowTimeline(Enemy enemy)
     {
-        // --- 1. 타임라인 에셋 및 바인딩 설정 ---
         deathblowDirector.playableAsset = BehindDeathblowTimelineAsset;
 
         player.Motor.canMove = false;
         player.Motor.canRotate = false;
+        player.InputHandler.enabled = false;
         enemy.Motor.Stop();
 
         Vector3 playerTargetPosition = enemy.transform.position - enemy.transform.forward * 0.9f;
@@ -188,17 +179,22 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         var outputs = BehindDeathblowTimelineAsset.outputs;
         deathblowDirector.SetGenericBinding(outputs.ElementAt(1).sourceObject, player.gameObject);
         deathblowDirector.SetGenericBinding(outputs.ElementAt(2).sourceObject, enemy.gameObject);
+        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, PlayerCamera.Instance.cameraPivotTransform.gameObject);
 
-        // --- 3. 타임라인 재생 ---
+        OnExecuteEnd += enemy.Stats.DeathBlowProcess;
+
         deathblowDirector.Play();
-        SoundManager.Instance.PlaySFX("ExecuteBGM"); // BGM은 타임라인 시작과 함께 바로 재생
+        SoundManager.Instance.PlaySFX("ExecuteBGM");
     }
 
     public void SIG_ExcutedEnd()
     {
         player.Motor.canMove = true;
         player.Motor.canRotate = true;
+        player.InputHandler.enabled = true;
         player.StateMachine.TransitionTo(player.StateMachine.PlayerIdleState);
+        OnExecuteEnd?.Invoke();
+        OnExecuteEnd = null; // 구독해제 되나?
     }
 
     public void AE_playerAttackStart()

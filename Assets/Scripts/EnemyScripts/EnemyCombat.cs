@@ -14,14 +14,12 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
 
     [SerializeField] Attack[] attacks;
     public int currentAttackIndex = 0;
-    private List<Attack> _normalAttacks = new List<Attack>();
-    private List<Attack> _heavyAttacks = new List<Attack>();
+    private List<Attack> normalAttacks = new List<Attack>();
+    private List<Attack> heavyAttacks = new List<Attack>();
 
     [SerializeField] float guardChance;
     public bool canPerformAction = true;
 
-
-    public event Action OnAttackEnd;
 
     private void Awake()
     {
@@ -35,9 +33,9 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
         foreach (var attack in attacks)
         {
             if (attack.type == AttackType.Normal)
-                _normalAttacks.Add(attack);
+                normalAttacks.Add(attack);
             else if (attack.type == AttackType.Heavy)
-                _heavyAttacks.Add(attack);
+                heavyAttacks.Add(attack);
         }
     }
 
@@ -67,37 +65,35 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     //공격
     public void PerformAttack()
     {
-        if (!canPerformAction  || _normalAttacks.Count == 0) { return; }
+        if (!canPerformAction  || normalAttacks.Count == 0) { return; }
 
         canPerformAction  = false;
 
-        Attack selectedAttack = _normalAttacks[Random.Range(0, _normalAttacks.Count)];
+        Attack selectedAttack = normalAttacks[Random.Range(0, normalAttacks.Count)];
         currentAttackIndex = System.Array.IndexOf(attacks, selectedAttack);
-        enemy.Motor.PlayAttackAnimation(currentAttackIndex);
+        enemy.AnimationManager.PlayAnimation($"Attack{currentAttackIndex}");
     }
 
     //강공격
     public void PerformHeavyAttack()
     {
-        if (!canPerformAction  || _heavyAttacks.Count == 0) return;
+        if (!canPerformAction  || heavyAttacks.Count == 0) return;
         canPerformAction  = false;
 
-        Attack selectedAttack = _heavyAttacks[Random.Range(0, _heavyAttacks.Count)];
+        Attack selectedAttack = heavyAttacks[Random.Range(0, heavyAttacks.Count)];
         currentAttackIndex = System.Array.IndexOf(attacks, selectedAttack);
-        enemy.Motor.PlayHeavyAttackAnimation(currentAttackIndex);
+        enemy.AnimationManager.PlayAnimation($"Attack{currentAttackIndex}");
     }
 
+    //방어
     public void DecideDefenseAction()
     {
-        if (!canPerformAction ) return;
-
         float value = Random.Range(0f, 1f);
-
 
         if (value <= guardChance)
         {
             enemy.Stats.isDeflecting = true;
-            enemy.AnimationManager.PlayAnimation("Deflect", false);
+            enemy.AnimationManager.PlayAnimation("Deflect", true);
         }
 
         enemy.Motor.Stop();
@@ -113,7 +109,7 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     IEnumerator AttackTimer(float timer)
     {
         yield return new WaitForSeconds(timer);
-        canPerformAction  = true;
+        canPerformAction = true;
     }
 
     public int GetAttackCount()
@@ -136,7 +132,6 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
         {
             weapon.DisableWeaponCollider();
         }
-        OnAttackEnd?.Invoke();  //공격 끝남 알림
         ApplyAttackCooldown();  //공격 쿨타임
     }
 

@@ -797,7 +797,6 @@ GameObject:
   - component: {fileID: 2003076996461437125}
   - component: {fileID: 7566335555001652218}
   - component: {fileID: 3935712621509304411}
-  - component: {fileID: 7593344650074103464}
   m_Layer: 7
   m_Name: BOSS_Dual_Wield
   m_TagString: Enemy
@@ -862,6 +861,7 @@ MonoBehaviour:
   - rid: 5497470354436915200
   - rid: 5392978387774734927
   - rid: 5392978393298632959
+  - rid: 6097195862502146904
   m_IsInitialised: 0
   m_IsStarted: 0
   NetcodeRunOnlyOnOwner: 0
@@ -887,7 +887,7 @@ MonoBehaviour:
           m_Value0: 13133700094171823055
           m_Value1: 505432888855933302
         Name: AttackRange
-        m_Value: 2.3
+        m_Value: 3
     - rid: 5497470354436915200
       type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]',
         ns: Unity.Behavior, asm: Unity.Behavior}
@@ -897,6 +897,15 @@ MonoBehaviour:
           m_Value1: 0
         Name: Self
         m_Value: {fileID: 2529435299449483087}
+    - rid: 6097195862502146904
+      type: {class: 'BlackboardVariable`1[[System.Single, mscorlib]]', ns: Unity.Behavior,
+        asm: Unity.Behavior}
+      data:
+        GUID:
+          m_Value0: 15278768614150432342
+          m_Value1: 13192877331068371945
+        Name: StrafeRange
+        m_Value: 3
 --- !u!195 &4354899510868587756
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -983,7 +992,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMotor
   strafeReplanningDistance: 1.5
-  deathblowVictimAnchor: {fileID: 6053522181254530859}
 --- !u!114 &2003076996461437125
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1047,36 +1055,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0.9, z: 0}
---- !u!114 &7593344650074103464
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2529435299449483087}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e52de21a22b6dd44c9cc19f810c65059, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Timeline::UnityEngine.Timeline.SignalReceiver
-  m_Events:
-    m_Signals:
-    - {fileID: 11400000, guid: ecd34593c16203446835792de239fece, type: 2}
-    m_Events:
-    - m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 7566335555001652218}
-          m_TargetAssemblyTypeName: EnemyAnimationManager, Assembly-CSharp
-          m_MethodName: DeathBlowProcess
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
 --- !u!1 &2619083608637622610
 GameObject:
   m_ObjectHideFlags: 0
@@ -2886,6 +2864,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 535ba9ed11e9e7f479c111c99b837839, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyUI
+  PostureGauge: {fileID: 4126686470855178074}
+  EnemyHpUI: {fileID: 898937001165764126}
 --- !u!1 &7869843700624397499
 GameObject:
   m_ObjectHideFlags: 0

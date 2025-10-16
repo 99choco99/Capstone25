@@ -5,7 +5,7 @@ public class PlayerCamera : MonoBehaviour
     public static PlayerCamera Instance;
     public Player player;
     public Camera realCamera;   // 실제 카메라
-    [SerializeField] Transform cameraPivotTransform; //pivot Transform
+    public Transform cameraPivotTransform; //pivot Transform
 
 
     [Header("Camera Setting")]
@@ -22,7 +22,8 @@ public class PlayerCamera : MonoBehaviour
     private float rotX;   // 카메라 X축 회전
     public float rotY;  // 카메라 Y축 회전
 
-    [SerializeField] private float cameraZPosition;
+    [SerializeField] private float defaultCameraZPosition;
+    public float cameraZPosition;
     private float targetCameraZPosition;
     private float cameraCollisionOffset = 0.2f;
 
@@ -48,7 +49,8 @@ public class PlayerCamera : MonoBehaviour
         rotX = transform.rotation.eulerAngles.x;
         rotY = transform.rotation.eulerAngles.y;
 
-        cameraZPosition = realCamera.transform.localPosition.z;
+
+        cameraZPosition = defaultCameraZPosition;
     }
 
 
@@ -135,4 +137,9 @@ public class PlayerCamera : MonoBehaviour
 
     }
 
+
+    public void ResetCameraZPostion()
+    {
+        cameraZPosition = defaultCameraZPosition;
+    }
 }

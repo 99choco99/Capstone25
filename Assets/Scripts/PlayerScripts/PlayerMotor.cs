@@ -30,6 +30,7 @@ public class PlayerMotor : MonoBehaviour
     private float knockBackTimer;
     private float knockBackDuration;
     private Vector3 knockbackMovement;
+    [SerializeField] private float GroggyTime = 0f;
 
     [Header("백스탭")]
     public Vector3 rollDirection;
@@ -260,10 +261,12 @@ public class PlayerMotor : MonoBehaviour
     {
         if (!isKnockingBack) return;
 
-        knockBackTimer += Time.deltaTime;
-        controller.Move(knockbackMovement * Time.deltaTime);
+        knockBackTimer += Time.fixedDeltaTime;
+        float deceleration = 1f - (knockBackTimer / knockBackDuration);
+        deceleration = Mathf.Clamp01(deceleration);
+        controller.Move(deceleration * Time.deltaTime * knockbackMovement);
 
-        if (knockBackTimer >= knockBackDuration)
+        if (knockBackTimer >= knockBackDuration + GroggyTime)
         {
             isKnockingBack = false;
         }

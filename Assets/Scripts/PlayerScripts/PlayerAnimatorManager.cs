@@ -7,7 +7,6 @@ public class PlayerAnimatorManager : MonoBehaviour
 
     public bool isPerformingAction = false;
 
-    private string lastAnimName;
 
     // [추가] 네트워크 전송 최적화를 위한 변수들
     private float lastAnimSendTime = 0f;
@@ -118,8 +117,7 @@ public class PlayerAnimatorManager : MonoBehaviour
     // 구르기 등 특정 액션을 재생
     public void PlayTargetActionAnimation(string targetAnim, bool isPerformingAction = true)
     {
-        if (this.isPerformingAction && targetAnim != lastAnimName) { return; }
-        lastAnimName = targetAnim;
+        if (this.isPerformingAction) { return; }
         player.Anim.CrossFade(targetAnim, 0.2f);
         this.isPerformingAction = isPerformingAction;
     }

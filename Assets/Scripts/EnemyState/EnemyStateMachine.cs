@@ -31,12 +31,11 @@ public class EnemyStateMachine : MonoBehaviour
         CurrentState?.OnExit();
         CurrentState = newState;
 
-        // [핵심] 상태에 맞는 비헤이비어 트리(두뇌)로 교체합니다!
         if (newState is EnemyCombatState)
         {
             enemy.BehaviourTree.Graph = combatBT;
         }
-        else // Idle, Patrol 등 비전투 상태일 때
+        else
         {
             enemy.BehaviourTree.Graph = nonCombatBT;
         }

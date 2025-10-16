@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 public class TargetingSystem : MonoBehaviour
 {
@@ -182,6 +183,9 @@ public class TargetingSystem : MonoBehaviour
     {
         if (CurrentTarget == null || CurrentTarget.dead) return false;
 
+        float distance = Vector3.Distance(transform.position, CurrentTarget.transform.position);
+        if(distance > 2f) { return false; }
+
         //적의 방어가 무너졌을 때
         if (CurrentTarget.gameObject.TryGetComponent<EnemyStats>(out var enemyStats))
         {
@@ -191,8 +195,7 @@ public class TargetingSystem : MonoBehaviour
         //적이 발견하지 못했을 때
         if(CurrentTarget.gameObject.TryGetComponent<EnemySense>(out var enemySense))
         {
-            float angleToEnemyBack = Vector3.Angle(player.transform.forward, -CurrentTarget.transform.forward);
-            if (!enemySense.IsTargetDetected && angleToEnemyBack < 45f) // 등 뒤 90도 범위
+            if (!enemySense.IsTargetDetected)
             {
                 return true;
             }

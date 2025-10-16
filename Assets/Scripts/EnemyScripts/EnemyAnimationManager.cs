@@ -28,17 +28,10 @@ public class EnemyAnimationManager : MonoBehaviour
         enemy.Anim.CrossFade(animationName, 0.2f);
         this.IsPerformAction = IsPerformAction;
     }
-
+    
     public void DeathProcess()
     {
         PlayAnimation("Die");
-        StartCoroutine(Disappear());
-    }
-    public void DeathBlowProcess()
-    {
-        enemy.Stats.dead = true;
-        enemy.Anim.enabled = false;
-        Debug.Log("╫ехё©х");
         StartCoroutine(Disappear());
     }
 

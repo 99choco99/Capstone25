@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class EnemyStats : LivingEntity
@@ -20,12 +21,12 @@ public class EnemyStats : LivingEntity
     private void Awake()
     {
         enemy = GetComponent<Enemy>();
+        SetUp(enemyData);
     }
 
     protected override void OnEnable()
     {
         base.OnEnable();
-        SetUp(enemyData);
     }
 
 
@@ -58,7 +59,6 @@ public class EnemyStats : LivingEntity
             {
                 IsPostureBroken = false;
                 currentPosture = 0;
-                OnPostureChanged?.Invoke(currentPosture, maxPosture);
             }
         }
     }
@@ -74,16 +74,15 @@ public class EnemyStats : LivingEntity
         else
         {
             enemy.AnimationManager.PlayAnimation("Hit", false);
-
+            
         }
-
 
         if (isDeflecting)
         {
-            Quaternion effectRotation = Quaternion.LookRotation(result.hitDirection);
+
             EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, Quaternion.identity, transform);
             TakePostureDamage(result.finalDamage);
-            isDeflecting = false;
+            enemy.Stats.isDeflecting = false;
         }
         else
         {
@@ -94,5 +93,15 @@ public class EnemyStats : LivingEntity
         }
 
         OnDamaged?.Invoke(result);
+    }
+
+    public void DeathBlowProcess()
+    {
+        enemy.Anim.enabled = false;
+        DamageInfo damage = new DamageInfo()
+        {
+            finalDamage = 99999
+        };
+        base.OnDamage(damage);
     }
 }
