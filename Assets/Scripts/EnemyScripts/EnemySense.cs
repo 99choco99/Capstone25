@@ -11,23 +11,20 @@ public class EnemySense : MonoBehaviour
     [SerializeField, Range(0, 360)] private float detectionAngle = 90f; // AI의 시야각
     [SerializeField] private LayerMask playerLayer;
     [SerializeField] private LayerMask obstacleLayer;
-    [SerializeField] private float senseInterval = 0.1f; // 감지 주기 (성능 최적화)
+    [SerializeField] private float attackThreatRange = 0.8f;
+    private int lastPlayerAttackStateHash = 0;
 
-    [Header("위협 분석 (Threat Analysis)")]
-    [SerializeField] private float threatDistance = 4f;
-    [SerializeField, Range(0, 1)] private float threatAngleThreshold = 0.5f;
-
+    
     [Header("타겟 상실 (Target Lost)")]
     [SerializeField] private float loseTargetTime = 5f;
     private float loseTargetTimer;
 
 
-    public Transform Target { get; private set; }
+    public Transform CurrentTarget { get; private set; }
     public bool IsTargetDetected { get; private set; }
     public float DistanceToTarget { get; private set; }
     public bool IsPlayerAttacking { get; private set; }
     public bool IsPlayerVulnerable { get; private set; }
-    public bool IsPlayerAttackThreatening { get; private set; }
 
     private Animator playerAnimator;
 
@@ -36,25 +33,21 @@ public class EnemySense : MonoBehaviour
         enemy = GetComponent<Enemy>();
     }
 
-    private void Start()
+    private void OnDestroy()
     {
-        // 성능 최적화를 위해 Update 대신 Coroutine 사용
-        StartCoroutine(SenseRoutine());
-    }
-
-    private IEnumerator SenseRoutine()
-    {
-        WaitForSeconds wait = new WaitForSeconds(senseInterval);
-        while (true)
+        if (GameManager.instance != null && enemy != null)
         {
-            DetectTarget();
-            if (IsTargetDetected)
-            {
-                AnalyzeTarget();
-            }
-            yield return wait;
+            GameManager.instance.UnregisterEnemyInCombat(enemy);
         }
     }
+    private void Update() { 
+        DetectTarget();
+        if (IsTargetDetected)
+        {
+            AnalyzeTarget();
+        }
+    }
+
 
     private void DetectTarget()
     {
@@ -63,14 +56,14 @@ public class EnemySense : MonoBehaviour
 
         if (hitCount > 0)
         {
-            Transform potentialTarget = hits[0].transform;
-            Vector3 directionToTarget = potentialTarget.position - eyeTransform.position;
+            Collider potentialTarget = hits[0];
+            Vector3 directionToTarget = potentialTarget.transform.position - eyeTransform.position;
 
-            if (Vector3.Angle(transform.forward, directionToTarget) < detectionAngle / 2f)
+            if (Vector3.Angle(transform.forward, directionToTarget) < detectionAngle /2f)
             {
-                if (!Physics.Linecast(eyeTransform.position, potentialTarget.position + Vector3.up * 1f, obstacleLayer))
+                if (!Physics.Linecast(eyeTransform.position, potentialTarget.bounds.center, obstacleLayer))
                 {
-                    SetDetectState(true, potentialTarget);
+                    SetDetectState(true, potentialTarget.transform);
                     loseTargetTimer = loseTargetTime;
                     return;
                 }
@@ -79,8 +72,8 @@ public class EnemySense : MonoBehaviour
 
         if (IsTargetDetected)
         {
-            loseTargetTimer -= senseInterval;
-            if (loseTargetTimer <= 0)
+            loseTargetTimer -= Time.deltaTime;
+            if(loseTargetTimer <= 0)
             {
                 SetDetectState(false, null);
             }
@@ -89,44 +82,61 @@ public class EnemySense : MonoBehaviour
 
     private void AnalyzeTarget()
     {
-        if (Target == null)
+        if (CurrentTarget == null)
         {
             // 타겟이 없다면 모든 위협 정보를 초기화
             IsPlayerAttacking = false;
-            IsPlayerAttackThreatening = false;
+            lastPlayerAttackStateHash = 0;
             return;
         }
 
-        DistanceToTarget = Vector3.Distance(Target.position, transform.position);
-
-        if (playerAnimator == null) return;
-        AnimatorStateInfo stateInfo = playerAnimator.GetCurrentAnimatorStateInfo(0);
-
-        IsPlayerAttacking = stateInfo.IsTag("Attack");
-        IsPlayerAttackThreatening = false;
-
-        if (IsPlayerAttacking)
+        DistanceToTarget = Vector3.Distance(CurrentTarget.position, transform.position);
+        if(Vector3.Dot(CurrentTarget.forward, transform.forward) > -0.8f) { return; }
+        if (playerAnimator == null)
         {
-            if (DistanceToTarget <= threatDistance)
-            {
-                Vector3 directionToEnemy = (transform.position - Target.position).normalized;
-                if (Vector3.Dot(Target.forward, directionToEnemy) > threatAngleThreshold)
-                {
-                    IsPlayerAttackThreatening = true;
-                }
-            }
+            IsPlayerAttacking = false;
+            lastPlayerAttackStateHash = 0;
+            return;
         }
+        AnimatorStateInfo stateInfo = playerAnimator.GetCurrentAnimatorStateInfo(0);
+        int currentStateHash = stateInfo.fullPathHash;
+        bool isPlayerInAttackAnim = stateInfo.IsTag("Attack");
+        bool isAttackInThreatRange = DistanceToTarget <= attackThreatRange;
+
+
+        bool isPlayerAttackingNow = isPlayerInAttackAnim && isAttackInThreatRange;
+
+        if (enemy.AnimationManager.IsPerformAction)
+        {
+            lastPlayerAttackStateHash = currentStateHash;
+            return;
+        }
+
+
+        if (isPlayerAttackingNow && currentStateHash != lastPlayerAttackStateHash)
+        {
+            enemy.Combat.DecideDefenseAction();
+        }
+        lastPlayerAttackStateHash = currentStateHash;
     }
 
-    private void SetDetectState(bool detected, Transform target)
+    public void SetDetectState(bool detected, Transform target)
     {
+        if (CurrentTarget == target)
+        {
+            return;
+        }
+        Transform previousTarget = CurrentTarget;
         IsTargetDetected = detected;
-        Target = target;
+        CurrentTarget = target;
 
         if (detected)
         {
-            SoundManager.Instance.StopLoopingSFX("BGM_Main");
-            SoundManager.Instance.PlayLoopingSFX("BGM_Combat");
+            if(target == DataManager.Instance.Player.transform)
+            {
+                GameManager.instance.RegisterEnemyInCombat(enemy);
+            }
+
             if (playerAnimator == null && target != null)
             {
                 playerAnimator = target.GetComponentInParent<Animator>();
@@ -136,8 +146,10 @@ public class EnemySense : MonoBehaviour
         {
             // 타겟을 잃으면 참조도 초기화
             playerAnimator = null;
-            SoundManager.Instance.PlayLoopingSFX("BGM_Main");
-            SoundManager.Instance.StopLoopingSFX("BGM_Combat");
+            if (previousTarget == DataManager.Instance.Player)
+            {
+                GameManager.instance.UnregisterEnemyInCombat(enemy);
+            }
         }
     }
 

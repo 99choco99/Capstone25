@@ -28,6 +28,7 @@ public class EffectManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
         }
     }
 

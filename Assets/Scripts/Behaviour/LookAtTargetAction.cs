@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using Unity.Behavior;
 using Unity.Properties;
 using UnityEngine;
@@ -32,15 +33,15 @@ public partial class LookAtTargetAction : Action
 
     protected override Status OnUpdate()
     {
-        if (enemy.Senses.Target == null)
+        if (enemy.Senses.CurrentTarget == null)
         {
             return Status.Failure;
         }
+        Vector3 targetPosition = enemy.Senses.CurrentTarget.position;
+        Vector3 lookAtPosition = new Vector3(targetPosition.x, enemy.transform.position.y, targetPosition.z);
+        enemy.Motor.LookAtTarget(lookAtPosition);
 
-        enemy.Motor.LookAtTarget(enemy.Senses.Target.position);
-
-        Vector3 directionToTarget = (enemy.Senses.Target.position - enemy.transform.position).normalized;
-        directionToTarget.y = 0;
+        Vector3 directionToTarget = (lookAtPosition - enemy.transform.position).normalized;
 
         float angle = Vector3.Angle(enemy.transform.forward, directionToTarget);
 

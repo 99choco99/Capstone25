@@ -5,27 +5,30 @@ using UnityEngine.UI;
 
 public class InventoryManager : MonoBehaviour
 {
+    Player player;
     public bool isInit;
     public const int slotCount = 36;
     public Dictionary<SlotType, List<SlotData>> Inventory;
 
-    public GameObject ItemDescription;
-    public static InventoryManager instance;
+    // 특정 슬롯의 데이터가 변경되었음
+    public event Action<SlotType, int> OnSlotDataChanged;
+    // 인벤토리 데이터 초기화가 완료되었음
+    public event Action<SlotType, int> OnInventoryDataInitialized;
+    // 퀵슬롯 아이템 사용 완료
+    public event Action<ItemSpec> OnQuickSlotUsed;
 
     private void Awake()
     {
-        if(instance == null)
+        player = GetComponentInParent<Player>();
+        player.localAPI.Inventory.OnGetInventory += LoadInventory;
+        OnSlotDataChanged += SaveInventory;
+
+        if (player.IsLocalPlayer)
         {
-            instance = this;
+            PublicAPIManager.Instance.Market.OnItemRegistComplete += UpdateInventoryAfterSale;
+            PublicAPIManager.Instance.Market.OnItemPurchaseComplete += AddPurchasedItem;
+            PublicAPIManager.Instance.Market.OnCancelRegistComplete += ReturnItemFromMarket;
         }
-        else
-        {
-            Destroy(gameObject);
-            return;
-        }
-        APIEvents.OnGetInventory += LoadInventory;
-        InventoryEvents.OnSlotDataChanged += SaveInventory;
-        MarketManagerEvents.OnCancelRegistComplete += ReturnItemFromMarket;
     }
 
     private void Start()
@@ -40,15 +43,19 @@ public class InventoryManager : MonoBehaviour
         Init(SlotType.Quick, 1);
 
         isInit = true;
-        APIManager.Instance.Inventory.RequestInventory();
-        gameObject.SetActive(false);
+        player.localAPI.Inventory.RequestInventory();
     }
 
     private void OnDestroy()
     {
-        APIEvents.OnGetInventory -= LoadInventory;
-        InventoryEvents.OnSlotDataChanged -= SaveInventory;
-        MarketManagerEvents.OnCancelRegistComplete -= ReturnItemFromMarket;
+        player.localAPI.Inventory.OnGetInventory -= LoadInventory;
+        OnSlotDataChanged -= SaveInventory;
+        if (player.IsLocalPlayer)
+        {
+            PublicAPIManager.Instance.Market.OnItemRegistComplete -= UpdateInventoryAfterSale;
+            PublicAPIManager.Instance.Market.OnItemPurchaseComplete -= AddPurchasedItem;
+            PublicAPIManager.Instance.Market.OnCancelRegistComplete -= ReturnItemFromMarket;
+        }
     }
 
 
@@ -63,7 +70,7 @@ public class InventoryManager : MonoBehaviour
             });
         }
         Inventory.Add(type, slots);
-        InventoryEvents.OnInventoryDataInitialized?.Invoke(type, count);
+        OnInventoryDataInitialized?.Invoke(type, count);
     }
 
     //인벤토리 불러오기
@@ -81,16 +88,16 @@ public class InventoryManager : MonoBehaviour
             if (data.slotType == SlotType.Profile && data.itemSpec != null)
             {
                 EquipmentType equipmentType = (EquipmentType)data.slotIndex;
-                EquipmentManager.instance.Equip(equipmentType, data.itemSpec);
+                player.Equipment.Equip(equipmentType, data.itemSpec);
             }
-            InventoryEvents.OnSlotDataChanged?.Invoke(data.slotType, data.slotIndex);
+            OnSlotDataChanged?.Invoke(data.slotType, data.slotIndex);
         }
         
     }
 
     public void SaveInventory(SlotType type, int slotIndex)
     {
-        APIManager.Instance.Inventory.RequestSaveInventory(Inventory[type][slotIndex]);
+        player.localAPI.Inventory.RequestSaveInventory(Inventory[type][slotIndex]);
     }
 
 
@@ -107,8 +114,8 @@ public class InventoryManager : MonoBehaviour
         (sourceData.itemSpec, destinationData.itemSpec) = (destinationData.itemSpec, sourceData.itemSpec);
 
         // 변경된 두 슬롯에 대해 UI 업데이트를 요청합니다.
-        InventoryEvents.OnSlotDataChanged?.Invoke(sourceSlotType, sourceSlotIndex);
-        InventoryEvents.OnSlotDataChanged?.Invoke(destinationSlotType, destinationSlotIndex);
+        OnSlotDataChanged?.Invoke(sourceSlotType, sourceSlotIndex);
+        OnSlotDataChanged?.Invoke(destinationSlotType, destinationSlotIndex);
     }
 
     // 아이템을 빈 슬롯으로 이동
@@ -130,9 +137,23 @@ public class InventoryManager : MonoBehaviour
         sourceData.itemSpec = null;
 
         // 변경된 두 슬롯에 대해 UI 업데이트를 요청합니다.
-        InventoryEvents.OnSlotDataChanged?.Invoke(sourceSlotType, sourceSlotIndex);
-        InventoryEvents.OnSlotDataChanged?.Invoke(destinationSlotType, destinationSlotIndex);
+        OnSlotDataChanged?.Invoke(sourceSlotType, sourceSlotIndex);
+        OnSlotDataChanged?.Invoke(destinationSlotType, destinationSlotIndex);
     }
+
+    //아이템 등록 성공 후 처리
+    // 인벤토리에서 해당 아이템 개수 차감.
+    void UpdateInventoryAfterSale(ItemRegistResponse response)
+    {
+        SlotData saleSlotData = MarketManager.Instance.saleSlot.slotData;
+        if (saleSlotData == null)
+        {
+            Debug.LogWarning("판매할 아이템이 없습니다.");
+            return;
+        }
+        RegisterItemToMarket(saleSlotData, response.ItemCount);
+    }
+
 
     //마켓에 아이템을 등록했을 때
     public void RegisterItemToMarket(SlotData saleSlotData, int saleCount)
@@ -150,7 +171,7 @@ public class InventoryManager : MonoBehaviour
         Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemSpec = saleSlotData.itemSpec;
         Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemId = saleSlotData.itemId;
         Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemCount = saleSlotData.itemCount;
-        InventoryEvents.OnSlotDataChanged?.Invoke(saleSlotData.slotType, saleSlotData.slotIndex);
+        OnSlotDataChanged?.Invoke(saleSlotData.slotType, saleSlotData.slotIndex);
     }
 
 
@@ -165,7 +186,7 @@ public class InventoryManager : MonoBehaviour
             slotData.itemSpec = response.spec;
             slotData.itemCount = response.ItemCount;
             slotData.itemId = response.ItemId;
-            InventoryEvents.OnSlotDataChanged?.Invoke(GetSlotType(slotData), slotData.slotIndex);
+            OnSlotDataChanged?.Invoke(GetSlotType(slotData), slotData.slotIndex);
             
         }
     }
@@ -187,12 +208,16 @@ public class InventoryManager : MonoBehaviour
         emptySlotData.itemSpec = response.spec;
         emptySlotData.itemCount = response.purchasedItemCount;
 
+
         Inventory[emptySlotData.slotType][emptySlotData.slotIndex] = emptySlotData;
 
 
-        InventoryEvents.OnSlotDataChanged?.Invoke(data.type, emptySlotData.slotIndex);
-        InventoryEvents.OnChangedGold?.Invoke(response.gold);
+        player.Stats.SetGold(response.gold);
+        OnSlotDataChanged?.Invoke(data.type, emptySlotData.slotIndex);
     }
+
+
+
 
     public void RequestUseQuickSlotItem()
     {
@@ -213,9 +238,9 @@ public class InventoryManager : MonoBehaviour
             quickSlotData.Clear(); // 슬롯 비우기
         }
 
-        InventoryEvents.OnSlotDataChanged?.Invoke(SlotType.Quick, 0);
-        
-        InventoryEvents.OnQuickSlotUsed?.Invoke(spec); //퀵슬롯 쿨타임
+        OnSlotDataChanged?.Invoke(SlotType.Quick, 0);
+
+        OnQuickSlotUsed?.Invoke(spec); //퀵슬롯 쿨타임
     }
 
 

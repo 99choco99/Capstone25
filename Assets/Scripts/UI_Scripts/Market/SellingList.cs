@@ -1,25 +1,27 @@
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using static APIManager;
+using static PublicAPIManager;
 
 public class SellingList : MonoBehaviour
 {
     [SerializeField] private bool isMySellingList;
     [SerializeField] GameObject SellContainer;
 
+
     private void Awake()
     {
-        MarketManagerEvents.OnGetSellingListComplete += UpdateSellingList;
-        MarketManagerEvents.OnGetMySellingListComplete += UpdateSellingList;
-        MarketManagerEvents.OnItemRegistComplete += UpdateSellingList;
+        PublicAPIManager.Instance.Market.OnGetSellingListComplete += UpdateSellingList;
+        PublicAPIManager.Instance.Market.OnGetMySellingListComplete += UpdateSellingList;
+        PublicAPIManager.Instance.Market.OnItemRegistComplete += UpdateSellingList;
     }
     private void OnDestroy()
     {
-        MarketManagerEvents.OnGetSellingListComplete -= UpdateSellingList;
-        MarketManagerEvents.OnGetMySellingListComplete -= UpdateSellingList;
-        MarketManagerEvents.OnItemRegistComplete -= UpdateSellingList;
+        PublicAPIManager.Instance.Market.OnGetSellingListComplete -= UpdateSellingList;
+        PublicAPIManager.Instance.Market.OnGetMySellingListComplete -= UpdateSellingList;
+        PublicAPIManager.Instance.Market.OnItemRegistComplete -= UpdateSellingList;
     }
 
 
@@ -32,16 +34,19 @@ public class SellingList : MonoBehaviour
     // 마켓 목록 갱신을 요청
     public void RequestMarketListUpdate()
     {
-
+        if (MarketManager.Instance == null || PublicAPIManager.Instance.Market == null)
+        {
+            return;
+        }
         if (isMySellingList)
         {
             // 내 판매 목록만 가져오기
-            Instance.Market.RequestToGetMyList();
+            MarketManager.Instance.GetMyList();
         }
         else
         {
             // 전체 마켓 목록 가져오기
-            Instance.Market.RequestToGetSellingList();
+            MarketManager.Instance.GetAllList();
         }
     }
 
@@ -78,7 +83,7 @@ public class SellingList : MonoBehaviour
             itemInfoText[2].text = $"{response.price} Gold";
         }
 
-        if (isMySellingList) { MarketManagerEvents.OnSetCancelButtonUI?.Invoke(isMySellingList); }
+        if (isMySellingList) { itemContainer.GetComponent<MarketBuy>().SetActiveItemCancelButton(isMySellingList); }
     }
 
     void Clear()

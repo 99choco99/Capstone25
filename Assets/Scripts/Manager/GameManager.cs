@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum GameState
@@ -11,11 +12,15 @@ public enum GameState
 public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
-
+    private HashSet<Enemy> enemiesInCombat = new HashSet<Enemy>();
     public GameState CurrentState { get; private set; }
     public event Action<GameState> OnGameStateChanged;
 
+    [Header("BGM 설정")]
+    [SerializeField] private string mainBgmKey = "BGM_Main";
+    [SerializeField] private string combatBgmKey = "BGM_Combat";
 
+    private HashSet<Enemy> enemiesInCombatWithMe = new HashSet<Enemy>();
 
     private void Awake()
     {
@@ -27,6 +32,7 @@ public class GameManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
         }
     }
 
@@ -48,6 +54,33 @@ public class GameManager : MonoBehaviour
         }
 
         OnGameStateChanged?.Invoke(CurrentState);
+    }
+
+    public void RegisterEnemyInCombat(Enemy enemy)
+    {
+        if (enemy == null || !enemiesInCombatWithMe.Add(enemy)) return;
+
+        if (enemiesInCombatWithMe.Count == 1)
+        {
+            SoundManager.Instance.StopLoopingSFX(mainBgmKey);
+            SoundManager.Instance.PlayLoopingSFX(combatBgmKey);
+        }
+    }
+
+    /// <summary>
+    /// "나"와의 전투에서 벗어난 적을 등록 해제
+    /// </summary>
+    public void UnregisterEnemyInCombat(Enemy enemy)
+    {
+        // 등록된 적이 아니거나, Enemy가 null이면 무시
+        if (enemy == null || !enemiesInCombatWithMe.Remove(enemy)) return;
+
+        // "나"와 싸우는 적이 1명에서 0명이 되는 순간
+        if (enemiesInCombatWithMe.Count == 0)
+        {
+            SoundManager.Instance.StopLoopingSFX(combatBgmKey);
+            SoundManager.Instance.PlayLoopingSFX(mainBgmKey);
+        }
     }
 
 }

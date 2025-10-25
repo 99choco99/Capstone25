@@ -15,6 +15,7 @@ public class LivingEntity : MonoBehaviour,IDamageable
     [SerializeField] protected float postureRecoveryTimer = 2f;
 
     public bool dead { get; set;}
+    protected Player lastAttacker;
 
 
     public event Action<float> OnHpChanged;  // hp º¯°æ
@@ -46,6 +47,12 @@ public class LivingEntity : MonoBehaviour,IDamageable
     public virtual void OnDamage(DamageInfo damageInfo)
     {
         if (dead) return;
+
+        if (damageInfo.player != null)
+        {
+            lastAttacker = damageInfo.player;
+        }
+
 
         currentHp -= damageInfo.finalDamage;
         OnHpChanged?.Invoke(currentHp);

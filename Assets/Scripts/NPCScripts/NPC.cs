@@ -21,18 +21,16 @@ public class NPC : MonoBehaviour, IInteractable
 
     public virtual void Interact(Player player) {
         StartCoroutine(LookAtPlayer(player.transform));
-        var questInteraction = QuestManager.Instance.GetQuestInteractionForNpc(this.id);
+        var questInteraction = player.Quest.GetQuestInteractionForNpc(this.id);
 
         if (questInteraction != null)
         {
-            // 2. 퀘스트 관련 상호작용이 있다면, 즉시 그 대화를 시작합니다.
-            DialogueManager.instance.StartConversation(questInteraction);
+            player.Dialogue.StartConversation(questInteraction);
         }
         else
         {
-            // 3. 퀘스트 관련 상호작용이 없을 때만, 기본 대화를 시작합니다.
             var defaultInteraction = new QuestInteractionInfo(defaultDialogueKey, -1, this.id, QuestInteractionType.None);
-            DialogueManager.instance.StartConversation(defaultInteraction);
+            player.Dialogue.StartConversation(defaultInteraction);
         }
     }
 
@@ -41,6 +39,7 @@ public class NPC : MonoBehaviour, IInteractable
     IEnumerator LookAtPlayer(Transform target)
     {
         Vector3 dir = target.position - transform.position;     // NPC가 바라볼 방향
+        dir.y = 0;
         Quaternion Targetrot = Quaternion.LookRotation(dir);   // NPC가 바라볼 회전
         float ElapsedTime = 0f; // 경과된 시간
         float rotationDuration = 0.5f; // 회전 시간

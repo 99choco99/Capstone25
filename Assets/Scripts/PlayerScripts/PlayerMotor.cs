@@ -295,11 +295,6 @@ public class PlayerMotor : MonoBehaviour
         transform.rotation = targetRot;
     }
 
-    public void AE_playerMoveEnable()
-    {
-        canRotate = true;
-        canMove = true;
-    }
     public void AE_playerMoveDisable()
     {
         canMove = false;

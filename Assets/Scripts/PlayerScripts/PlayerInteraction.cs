@@ -7,6 +7,7 @@ using UnityEngine;
 
 public class PlayerInteraction : MonoBehaviour
 {
+    private Player player;
 
     [Header("¼³Á¤")]
     [SerializeField] private float interactRange = 3f;
@@ -19,7 +20,7 @@ public class PlayerInteraction : MonoBehaviour
 
     public IInteractable currentSelection { get; private set; }
 
-    private Player player;
+
     public int selectionIndex = 0;
     public List<IInteractable> interactablesInRange = new List<IInteractable>();
 
@@ -27,16 +28,16 @@ public class PlayerInteraction : MonoBehaviour
     private void Start()
     {
         player = GetComponent<Player>();
-        DialogueManager.instance.OnConversationStart += HandleConversationStart;
-        DialogueManager.instance.OnConversationEnd += HandleConversationEnd;
+        player.Dialogue.OnConversationStart += HandleConversationStart;
+        player.Dialogue.OnConversationEnd += HandleConversationEnd;
     }
 
     private void OnDestroy()
     {
-        if(DialogueManager.instance != null)
+        if(player.Dialogue != null)
         {
-            DialogueManager.instance.OnConversationStart -= HandleConversationStart;
-            DialogueManager.instance.OnConversationEnd -= HandleConversationEnd;
+            player.Dialogue.OnConversationStart -= HandleConversationStart;
+            player.Dialogue.OnConversationEnd -= HandleConversationEnd;
         }
 
     }
@@ -84,7 +85,7 @@ public class PlayerInteraction : MonoBehaviour
         float scroll = player.InputHandler.Scroll;
         if(scroll != 0)
         {
-            selectionIndex += (scroll > 0) ? -1 : 1;
+            selectionIndex += (scroll < 0) ? -1 : 1;
             UpdateSelection();
         }
     }

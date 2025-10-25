@@ -12,12 +12,11 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
     public RectTransform rect;
     public Image image;
          
-    GameObject ItemDescription;           //아이템 설명 박스
-    TextMeshProUGUI ItemDescriptionText;  //아이템 설명
     [SerializeField] private TextMeshProUGUI countText; //현재 아이템 개수 표기
 
 
     public Slot currentSlot;             //현재 슬롯
+    private MarketInventoryUI rootWindow;
 
     public void Awake()
     {
@@ -27,19 +26,8 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
         countText = GetComponentInChildren<TextMeshProUGUI>();
 
         currentSlot = GetComponentInParent<Slot>();
+        rootWindow = GetComponentInParent<MarketInventoryUI>();
 
-
-    }
-
-    private void OnEnable()
-    {
-        if (InventoryManager.instance == null)
-        {
-            Debug.LogError("InventoryManager.instance가 null입니다.");
-            return;
-        }
-        ItemDescription = InventoryManager.instance.ItemDescription;
-        ItemDescriptionText = ItemDescription.GetComponentInChildren<TextMeshProUGUI>(true);
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -55,7 +43,8 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
 
         if (currentSlot is ProfileSlot profileSlot)
         {
-            EquipmentManager.instance.Unequip(profileSlot.GetEquipmentSlotType());
+            Player player = GetComponentInParent<Player>();
+            player.Equipment.Unequip(profileSlot.GetEquipmentSlotType());
         }
     }
 
@@ -72,7 +61,8 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
             rect.position = currentSlot.GetComponent<RectTransform>().position;
             if (currentSlot is ProfileSlot profileSlot)
             {
-                EquipmentManager.instance.Equip(profileSlot.GetEquipmentSlotType(), currentSlot.slotData.itemSpec);
+                Player player = GetComponentInParent<Player>();
+                player.Equipment.Equip(profileSlot.GetEquipmentSlotType(), currentSlot.slotData.itemSpec);
             }
         }
 
@@ -82,14 +72,12 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
 
     public virtual void OnPointerEnter(PointerEventData eventData)
     {
-        ItemDescriptionText.text = data.script;
-        ItemDescription.transform.position = transform.position + Vector3.down * 50;
-        ItemDescription.SetActive(true);
+        rootWindow.ShowTooltip(data.script, transform.position);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        ItemDescription.SetActive(false);
+        rootWindow.HideTooltip();
     }
 
     public void SetAlphaValue(float alpha)

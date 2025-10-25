@@ -27,10 +27,10 @@ public partial class MoveToTargetAction : Action
 
         enemy.BehaviourTree.GetVariable<float>("AttackRange", out var distance);
         navAgent.stoppingDistance = distance.Value * 0.9f;
-        if(enemy.Senses.Target != null)
+        if(enemy.Senses.CurrentTarget != null)
         {
             
-            enemy.Motor.MoveTo(enemy.Senses.Target.transform.position);
+            enemy.Motor.MoveTo(enemy.Senses.CurrentTarget.transform.position);
             return Status.Success;
         }
         else

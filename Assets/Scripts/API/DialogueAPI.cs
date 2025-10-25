@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -6,7 +7,9 @@ using UnityEngine.Networking;
 public class DialogueAPI
 {
     private MonoBehaviour coroutineRunner;
-    private string userId;
+
+    //대화 내용 가져오기
+    public event Action<Dialogue[]> OnGetDialogue;
 
     public DialogueAPI(MonoBehaviour runner)
     {
@@ -28,7 +31,7 @@ public class DialogueAPI
                 try
                 {
                     Dialogue[] data = JsonConvert.DeserializeObject<Dialogue[]>(webRequest.downloadHandler.text);
-                    APIEvents.OnGetDialogue?.Invoke(data);
+                    OnGetDialogue?.Invoke(data);
                 }
                 catch (JsonException ex)
                 {

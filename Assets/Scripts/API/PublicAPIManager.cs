@@ -8,20 +8,20 @@ using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Networking;
 
-public class APIManager : MonoBehaviour
+public class PublicAPIManager : MonoBehaviour
 {
 #if UNITY_WEBGL
     [DllImport("__Internal")]
     private static extern void MySignalReady();
 #endif
+    
+    public static PublicAPIManager Instance { get; private set; }
 
-    public static APIManager Instance { get; private set; }
-    public PlayerDataAPI PlayerData;
-    public MarketAPI Market;
-    public InventoryAPI Inventory;
-    public QuestAPI Quest;
-    public DialogueAPI Dialogue;
+
     public LoginData loginData;
+    public DialogueAPI Dialogue;
+    public MarketAPI Market;
+    public PlayerDataAPI PlayerData;
 
 
 
@@ -43,15 +43,15 @@ public class APIManager : MonoBehaviour
     public void Start()
     {
 #if UNITY_WEBGL
-        MySignalReady();
-        Debug.Log("Unity -> 웹: 준비 완료 신호 보냄");
+        //MySignalReady();
+        //Debug.Log("Unity -> 웹: 준비 완료 신호 보냄");
 #endif
 
 
 #if UNITY_EDITOR
-        //LoginData testData = new LoginData { user_id = "editor_user_id2", nickname = "에디터_테스터" };
-        //Debug.Log("에디터로 실행");
-        //ReceiveLoginData(JsonConvert.SerializeObject(testData));
+        LoginData testData = new LoginData { user_id = "editor_user_id", nickname = "에디터_테스터" };
+        Debug.Log("에디터로 실행");
+        ReceiveLoginData(JsonConvert.SerializeObject(testData));
 #endif
 
 
@@ -62,15 +62,13 @@ public class APIManager : MonoBehaviour
     public void ReceiveLoginData(string loginJson)
     {
         Debug.Log("웹으로부터 로그인 데이터 수신: " + loginJson);
-
+        
         //JSON 문자열을 파싱
         loginData = JsonConvert.DeserializeObject<LoginData>(loginJson);
 
-        PlayerData = new PlayerDataAPI(this);
-        Market = new MarketAPI(this, loginData.user_id);
-        Inventory = new InventoryAPI(this, loginData.user_id);
-        Quest = new QuestAPI(this, loginData.user_id);
+        Market = new MarketAPI(this);
         Dialogue = new DialogueAPI(this);
+        PlayerData = new PlayerDataAPI(this);
 
         PlayerData.RequestLoadPlayerData(loginData.user_id);
     }

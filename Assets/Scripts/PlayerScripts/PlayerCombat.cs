@@ -18,7 +18,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     public PlayableDirector deathblowDirector;
     [SerializeField] private PlayableAsset FrontdeathblowTimelineAsset; // 앞에서 찌르기
     [SerializeField] private PlayableAsset BehindDeathblowTimelineAsset; // 뒤에서 찌르기
-    public event Action OnExecuteEnd;
+    public event Action<Player> OnExecuteEnd;
 
     private int comboIndex = 0;
     public event Action OnAttackEnd;
@@ -43,15 +43,16 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         }
     }
 
+
     //공격 시작
-    public void StartAttack()
+    public bool StartAttack()
     {
-        if(normalAttacks.Length <= 0) { return; }
+        if(player.animatorManager.isPerformingAction || normalAttacks.Length <= 0) { return false; }
         player.Anim.SetTrigger("Attack");
 
         // 다음 공격을 위해 콤보 인덱스 증가
         comboIndex = (comboIndex + 1) % normalAttacks.Length;
-
+        return true;
     }
 
     //콤보 리셋
@@ -69,6 +70,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
 
         DamageInfo result = new DamageInfo
         {
+            player = player,
             finalDamage = currentAttackData.damage,
             knockbackForce = currentAttackData.knockbackPower,
             knockbackDuration = currentAttackData.knockbackDuration,
@@ -86,18 +88,20 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     {
         if (player.Stats.dead) return;
 
-        if (result.wasParried)
+
+        Quaternion effectRotation = Quaternion.LookRotation(result.hitDirection);
+        if (result.attackType != AttackType.Heavy && result.wasParried)
         {
             player.animatorManager.PlayTargetActionAnimation("Parry");
-            EffectManager.Instance.PlayEffect("Parry", result.hitPoint, Quaternion.identity, transform);
+            EffectManager.Instance.PlayEffect("Parry", result.hitPoint, effectRotation, transform);
         }
-        else if (result.wasGuarded)
+        else if (result.attackType != AttackType.Heavy && result.wasGuarded)
         {
-            EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, Quaternion.identity, transform);
+            EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, effectRotation, transform);
             player.animatorManager.PlayTargetActionAnimation("GuardHit");
             SoundManager.Instance.PlaySFX("GuardHit");
         }
-        else if (result.finalDamage > 0)
+        else if (result.finalDamage >= 0)
         {
             if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
             {
@@ -113,6 +117,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
             EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
         }
 
+        weapon.DisableWeaponCollider();
         OnAttackEnd?.Invoke();
     }
 
@@ -193,7 +198,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         player.Motor.canRotate = true;
         player.InputHandler.enabled = true;
         player.StateMachine.TransitionTo(player.StateMachine.PlayerIdleState);
-        OnExecuteEnd?.Invoke();
+        OnExecuteEnd?.Invoke(player);
         OnExecuteEnd = null; // 구독해제 되나?
     }
 

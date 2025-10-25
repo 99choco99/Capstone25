@@ -3,25 +3,38 @@ using UnityEngine;
 
 public class DialogueUI : MonoBehaviour
 {
+    DialogueManager DialogueManager;
+
+
     [SerializeField] private GameObject dialoguePanel;
     [SerializeField] private TextMeshProUGUI dialogueText;
     [SerializeField] private TextMeshProUGUI speakerText;
 
+    private void Awake()
+    {
+        DialogueManager = GetComponent<DialogueManager>();
+        if (DialogueManager != null)
+        {
+            Debug.Log("DialogueManager 없음");
+        }
+    }
+
+
     private void Start()
     {
-        DialogueManager.instance.OnConversationStart += OpenPanel;
-        DialogueManager.instance.OnConversationEnd += ClosePanel;
-        DialogueManager.instance.OnShowLine += SetDialogue;
+        DialogueManager.OnConversationStart += OpenPanel;
+        DialogueManager.OnConversationEnd += ClosePanel;
+        DialogueManager.OnShowLine += SetDialogue;
 
         dialoguePanel.SetActive(false);
     }
     private void OnDestroy()
     {
-        if (DialogueManager.instance != null)
+        if (DialogueManager != null)
         {
-            DialogueManager.instance.OnConversationStart -= OpenPanel;
-            DialogueManager.instance.OnConversationEnd -= ClosePanel;
-            DialogueManager.instance.OnShowLine -= SetDialogue;
+            DialogueManager.OnConversationStart -= OpenPanel;
+            DialogueManager.OnConversationEnd -= ClosePanel;
+            DialogueManager.OnShowLine -= SetDialogue;
         }
     }
 
@@ -30,7 +43,6 @@ public class DialogueUI : MonoBehaviour
         dialoguePanel.SetActive(true);
     }
 
-    // [추가] 패널을 닫는 함수
     private void ClosePanel()
     {
         dialoguePanel.SetActive(false);
