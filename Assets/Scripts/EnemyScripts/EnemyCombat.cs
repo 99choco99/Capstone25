@@ -82,8 +82,8 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
 
         if (value <= guardChance)
         {
-            enemy.Stats.isDeflecting = true;
             enemy.AnimationManager.PlayAnimation("Deflect", false);
+            enemy.Stats.isDeflecting = true;
         }
 
         enemy.Motor.Stop();

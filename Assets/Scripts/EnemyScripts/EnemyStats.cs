@@ -68,12 +68,9 @@ public class EnemyStats : LivingEntity
     {
         if (dead) return;
 
-        if (!enemy.AnimationManager.IsPerformAction || !enemy.Combat.canAttack)
+        if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
         {
-            if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
-            {
-                enemy.AnimationManager.PlayAnimation("BackHit", false);
-            }
+            enemy.AnimationManager.PlayAnimation("BackHit", false);
         }
 
         else if (isDeflecting)
@@ -95,7 +92,7 @@ public class EnemyStats : LivingEntity
             SoundManager.Instance.PlaySFX("Cutting flesh");
         }
 
-        enemy.Senses.SetDetectState(true, result.player.transform);
+        enemy.Senses.DetectWithAttack(result.player);
         OnDamaged?.Invoke(result);
     }
 

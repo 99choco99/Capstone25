@@ -1101,8 +1101,8 @@ MonoBehaviour:
   obstacleLayer:
     serializedVersion: 2
     m_Bits: 8192
-  attackThreatRange: 3
-  loseTargetTime: 5
+  attackThreatRange: 1.5
+  loseTargetTime: 4
 --- !u!114 &7566335555001652218
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1135,7 +1135,7 @@ CharacterController:
   m_Enabled: 1
   serializedVersion: 3
   m_Height: 1.8
-  m_Radius: 0.3
+  m_Radius: 0.45
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
@@ -2075,6 +2075,8 @@ MonoBehaviour:
   layerMask:
     serializedVersion: 2
     m_Bits: 64
+  hitCheckRadius: 0.5
+  hitCheckPoint: {fileID: 0}
 --- !u!1 &5564016713243747751
 GameObject:
   m_ObjectHideFlags: 0
@@ -2405,6 +2407,8 @@ MonoBehaviour:
   layerMask:
     serializedVersion: 2
     m_Bits: 64
+  hitCheckRadius: 0.5
+  hitCheckPoint: {fileID: 0}
 --- !u!1 &7213528172492797134
 GameObject:
   m_ObjectHideFlags: 0

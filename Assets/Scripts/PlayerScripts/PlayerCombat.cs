@@ -49,6 +49,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     {
         if(player.animatorManager.isPerformingAction || normalAttacks.Length <= 0) { return false; }
         player.Anim.SetTrigger("Attack");
+        Debug.Log("Attack 호출 수 ");
 
         // 다음 공격을 위해 콤보 인덱스 증가
         comboIndex = (comboIndex + 1) % normalAttacks.Length;

@@ -6095,9 +6095,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMotor
   controller: {fileID: 3583144350004820185}
   rotationSpeed: 15
-  MoveSpeed: 3
-  SprintSpeed: 5
-  GuardSpeed: 2
+  MoveSpeed: 4
+  SprintSpeed: 6
+  GuardSpeed: 2.5
   JumpPower: 4
   verticalVelocity: {x: 0, y: 0, z: 0}
   gravity: -9.81
@@ -6194,7 +6194,7 @@ CharacterController:
   m_Enabled: 1
   serializedVersion: 3
   m_Height: 1.8
-  m_Radius: 0.3
+  m_Radius: 0.5
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
@@ -14870,6 +14870,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Layer
       value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 8512664672420464168, guid: 2eabdd352d70ab5468bd0fa1b6858940,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

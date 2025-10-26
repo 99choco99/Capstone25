@@ -40,6 +40,7 @@ public class PlayerAttackState : State
     public override void Exit()
     {
         player.Combat.OnAttackEnd -= HandleAttackEnd;
+        isComboInputQueued = false;
     }
 
     private void HandleAttackEnd()

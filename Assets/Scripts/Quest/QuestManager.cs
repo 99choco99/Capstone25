@@ -26,8 +26,8 @@ public class QuestManager : MonoBehaviour
 
     private void Awake()
     {
-        player = GetComponentInParent<Player>();  
-
+        player = GetComponentInParent<Player>();
+        OnQuestStatusChanged = null;
         player.localAPI.Quest.OnGetQuestData += Initialize;
         player.Stats.OnLevelUp += UnlockQuests;
         OnQuestStatusChanged += SaveQuestStatus;

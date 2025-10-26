@@ -11,12 +11,12 @@ public class EnemySense : MonoBehaviour
     [SerializeField, Range(0, 360)] private float detectionAngle = 90f; // AI의 시야각
     [SerializeField] private LayerMask playerLayer;
     [SerializeField] private LayerMask obstacleLayer;
-    [SerializeField] private float attackThreatRange = 0.8f;
+    [SerializeField] private float attackThreatRange = 1f;
     private int lastPlayerAttackStateHash = 0;
 
     
     [Header("타겟 상실 (Target Lost)")]
-    [SerializeField] private float loseTargetTime = 5f;
+    [SerializeField] private float loseTargetTime = 4f;
     private float loseTargetTimer;
 
 
@@ -45,6 +45,11 @@ public class EnemySense : MonoBehaviour
         if (IsTargetDetected)
         {
             AnalyzeTarget();
+            loseTargetTimer -= Time.deltaTime;
+            if (loseTargetTimer <= 0)
+            {
+                SetDetectState(false, null);
+            }
         }
     }
 
@@ -70,46 +75,68 @@ public class EnemySense : MonoBehaviour
             }
         }
 
-        if (IsTargetDetected)
-        {
-            loseTargetTimer -= Time.deltaTime;
-            if(loseTargetTimer <= 0)
-            {
-                SetDetectState(false, null);
-            }
-        }
     }
 
     private void AnalyzeTarget()
+
     {
+
         if (CurrentTarget == null)
+
         {
+
             // 타겟이 없다면 모든 위협 정보를 초기화
+
             IsPlayerAttacking = false;
+
             lastPlayerAttackStateHash = 0;
+
             return;
+
         }
 
+
+
         DistanceToTarget = Vector3.Distance(CurrentTarget.position, transform.position);
-        if(Vector3.Dot(CurrentTarget.forward, transform.forward) > -0.8f) { return; }
+
+        if (Vector3.Dot(CurrentTarget.forward, transform.forward) > -0.8f) { return; }
+
+
+
+
+
+
+
         if (playerAnimator == null)
+
         {
+
             IsPlayerAttacking = false;
+
             lastPlayerAttackStateHash = 0;
+
             return;
+
         }
+
         AnimatorStateInfo stateInfo = playerAnimator.GetCurrentAnimatorStateInfo(0);
         int currentStateHash = stateInfo.fullPathHash;
         bool isPlayerInAttackAnim = stateInfo.IsTag("Attack");
         bool isAttackInThreatRange = DistanceToTarget <= attackThreatRange;
 
 
+
+
+
         bool isPlayerAttackingNow = isPlayerInAttackAnim && isAttackInThreatRange;
 
+
+
         if (enemy.AnimationManager.IsPerformAction)
-        {
+        { 
             lastPlayerAttackStateHash = currentStateHash;
             return;
+
         }
 
 
@@ -117,7 +144,15 @@ public class EnemySense : MonoBehaviour
         {
             enemy.Combat.DecideDefenseAction();
         }
+
         lastPlayerAttackStateHash = currentStateHash;
+
+    }
+
+    public void DetectWithAttack(Player player)
+    {
+        SetDetectState(true, player.transform);
+        loseTargetTimer = loseTargetTime;
     }
 
     public void SetDetectState(bool detected, Transform target)
