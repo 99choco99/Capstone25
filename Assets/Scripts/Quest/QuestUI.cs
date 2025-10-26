@@ -7,6 +7,8 @@ using UnityEngine.UI;
 
 public class QuestUI : MonoBehaviour
 {
+    QuestManager QuestManager;
+
     [SerializeField] GameObject questPrefab;                    //퀘스트 양식
     [SerializeField] Transform content;                         //퀘스트 목록
     [SerializeField] TextMeshProUGUI questNameText;             //선택된 퀘스트 이름
@@ -18,9 +20,10 @@ public class QuestUI : MonoBehaviour
     private int? selectedQuestId = null;
 
     private void Awake()
-    { 
+    {
+        QuestManager = GetComponentInParent<QuestManager>();
         // 퀘스트 이벤트 구독
-        QuestManager.Instance.OnQuestStatusChanged += HandleQuestStatusChanged;
+        QuestManager.OnQuestStatusChanged += HandleQuestStatusChanged;
 
     }
 
@@ -28,10 +31,10 @@ public class QuestUI : MonoBehaviour
     {
         InitializedList();
     }
-    private void OnDisable()
+    private void OnDestroy()
     {
         // 구독 해제
-        QuestManager.Instance.OnQuestStatusChanged -= HandleQuestStatusChanged;
+        QuestManager.OnQuestStatusChanged -= HandleQuestStatusChanged;
         selectedQuestId = null;
     }
 
@@ -43,13 +46,13 @@ public class QuestUI : MonoBehaviour
         }
         questUIItems.Clear();
 
-        List<QuestStatus> questStatuses = QuestManager.Instance.GetAllStatuses();
+        List<QuestStatus> questStatuses = QuestManager.GetAllStatuses();
         foreach(QuestStatus status in questStatuses)
         {
             if(status.state != QuestState.Locked)
             {
                 Debug.Log(status);
-                var data = QuestManager.Instance.GetQuestData(status.questId);
+                var data = QuestManager.GetQuestData(status.questId);
                 UpdateQuest(data, status);
             }
         }
@@ -98,8 +101,8 @@ public class QuestUI : MonoBehaviour
     //퀘스트 정보 표시
     public void ShowQuestInfo(int questId)
     {
-        QuestDefinition data = QuestManager.Instance.GetQuestData(questId);
-        QuestStatus status = QuestManager.Instance.GetQuestStatus(questId);
+        QuestDefinition data = QuestManager.GetQuestData(questId);
+        QuestStatus status = QuestManager.GetQuestStatus(questId);
 
         if(data == null || status == null) { return; }
 
@@ -129,7 +132,7 @@ public class QuestUI : MonoBehaviour
     {
         if(selectedQuestId != null)
         {
-            QuestManager.Instance.SetCurrentQuest(selectedQuestId.Value);
+            QuestManager.SetCurrentQuest(selectedQuestId.Value);
         }
     }
 

@@ -36,7 +36,7 @@ public class PlayerIdleState : State
         }
 
 
-        if (player.InputHandler.GuardInput)
+        if (player.InputHandler.GuardInput && !player.animatorManager.isPerformingAction)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGuardState);
             return;
@@ -56,5 +56,7 @@ public class PlayerIdleState : State
             stateMachine.TransitionTo(stateMachine.PlayerMoveState);
             return;
         }
+        player.Motor.Move();
     }
+
 }

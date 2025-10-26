@@ -51,7 +51,6 @@ public class PlayerGuardState : State
             stateMachine.TransitionTo(stateMachine.PlayerJumpState);
             return;
         }
-
         player.Motor.Move();
     }
 

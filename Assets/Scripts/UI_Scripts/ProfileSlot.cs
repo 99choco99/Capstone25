@@ -4,8 +4,14 @@ using UnityEngine.EventSystems;
 
 public class ProfileSlot : Slot
 {
+    Player player;
     [SerializeField] EquipmentType EquipmentSlotType;
 
+
+    private void Awake()
+    {
+        player = GetComponentInParent<Player>();
+    }
 
     override public void OnDrop(PointerEventData eventData)
     {
@@ -13,7 +19,7 @@ public class ProfileSlot : Slot
         {
             if (newItem.data.type == SlotType.Equipment && newItem.data.equipmentType == EquipmentSlotType)
             {
-                EquipmentManager.instance.Equip(EquipmentSlotType, newItem.currentSlot.slotData.itemSpec);
+                player.Equipment.Equip(EquipmentSlotType, newItem.currentSlot.slotData.itemSpec);
                 base.OnDrop(eventData);
             }
         }

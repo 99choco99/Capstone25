@@ -14,43 +14,33 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
 
     [SerializeField] Attack[] attacks;
     public int currentAttackIndex = 0;
-    private List<Attack> normalAttacks = new List<Attack>();
-    private List<Attack> heavyAttacks = new List<Attack>();
+
 
     [SerializeField] float guardChance;
-    public bool canPerformAction = true;
+    public bool canAttack = true;
 
 
     private void Awake()
     {
         enemy = GetComponent<Enemy>();
-        InitializeAttacks();
-        canPerformAction  = true;
-    }
-
-    private void InitializeAttacks()
-    {
-        foreach (var attack in attacks)
-        {
-            if (attack.type == AttackType.Normal)
-                normalAttacks.Add(attack);
-            else if (attack.type == AttackType.Heavy)
-                heavyAttacks.Add(attack);
-        }
     }
 
 
-    // 적을 공격했을 때
+
+    // 플레이어를 공격했을 때
     public void OnWeaponHit(IDamageable target, Collider targetCollider, Weapon weapon)
     {
         Attack currentAttackData = attacks[currentAttackIndex];
         Collider weaponCollider = weapon.GetComponent<Collider>();
-        Vector3 hitPoint = targetCollider.ClosestPoint(transform.position);
-        Vector3 hitDirection = transform.forward;
+        Vector3 hitPoint = targetCollider.ClosestPoint(weaponCollider.transform.position);
+        Vector3 hitDirection = (targetCollider.transform.position - transform.position);
+        hitDirection.y = 0;
+        hitDirection.Normalize();
 
         DamageInfo damageInfo = new DamageInfo
         {
             finalDamage = currentAttackData.damage,
+            attackType = currentAttackData.type,
             knockbackForce = currentAttackData.knockbackPower,
             knockbackDuration = currentAttackData.knockbackDuration,
             hitPoint = hitPoint,
@@ -65,35 +55,35 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     //공격
     public void PerformAttack()
     {
-        if (!canPerformAction  || normalAttacks.Count == 0) { return; }
+        if (enemy.AnimationManager.IsPerformAction || !canAttack) { return; }
+        canAttack  = false;
 
-        canPerformAction  = false;
 
-        Attack selectedAttack = normalAttacks[Random.Range(0, normalAttacks.Count)];
+        Attack selectedAttack = attacks[Random.Range(0, attacks.Length)];
+        if(selectedAttack.type == AttackType.Heavy)
+        {
+            SoundManager.Instance.PlaySFX("HeavyAttack");
+            if (enemy.UI != null)
+            {
+                enemy.UI.ShowHeavyAttackIndicator();
+            }
+        }
         currentAttackIndex = System.Array.IndexOf(attacks, selectedAttack);
-        enemy.AnimationManager.PlayAnimation($"Attack{currentAttackIndex}");
-    }
-
-    //강공격
-    public void PerformHeavyAttack()
-    {
-        if (!canPerformAction  || heavyAttacks.Count == 0) return;
-        canPerformAction  = false;
-
-        Attack selectedAttack = heavyAttacks[Random.Range(0, heavyAttacks.Count)];
-        currentAttackIndex = System.Array.IndexOf(attacks, selectedAttack);
-        enemy.AnimationManager.PlayAnimation($"Attack{currentAttackIndex}");
+        
+        enemy.AnimationManager.PlayAnimation($"Attack{currentAttackIndex}", true);
+        ApplyAttackCooldown();  //공격 쿨타임
     }
 
     //방어
     public void DecideDefenseAction()
     {
+        if (enemy.AnimationManager.IsPerformAction) return;
         float value = Random.Range(0f, 1f);
 
         if (value <= guardChance)
         {
+            enemy.AnimationManager.PlayAnimation("Deflect", false);
             enemy.Stats.isDeflecting = true;
-            enemy.AnimationManager.PlayAnimation("Deflect", true);
         }
 
         enemy.Motor.Stop();
@@ -109,12 +99,7 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     IEnumerator AttackTimer(float timer)
     {
         yield return new WaitForSeconds(timer);
-        canPerformAction = true;
-    }
-
-    public int GetAttackCount()
-    {
-        return attacks.Count();
+        canAttack = true;
     }
 
     public void AE_EnemyAttackStart()
@@ -124,15 +109,15 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
             weapon.EnableWeaponCollider();
         }
         SoundManager.Instance.PlaySFX("Attack");
+
     }
 
-    public void AE_EnemyAttackEnd()
+    public void EnemyAttackEnd()
     {
         foreach (var weapon in weapons)
         {
             weapon.DisableWeaponCollider();
         }
-        ApplyAttackCooldown();  //공격 쿨타임
     }
 
 

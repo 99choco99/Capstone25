@@ -4942,7 +4942,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -337.5}
+  m_AnchoredPosition: {x: 0, y: -697.5}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2035778619641080832
@@ -5050,7 +5050,7 @@ GameObject:
   - component: {fileID: 4394808459076079089}
   - component: {fileID: 4030553584609187479}
   - component: {fileID: 6847195354247072339}
-  - component: {fileID: 2057464012990571942}
+  - component: {fileID: 2429643912931821211}
   m_Layer: 5
   m_Name: Market
   m_TagString: Untagged
@@ -5067,7 +5067,7 @@ RectTransform:
   m_GameObject: {fileID: 5890927762657721120}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6832642210777556160}
@@ -5158,7 +5158,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a29c463e2399d349a2dc469ba56b4f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MarketManager
---- !u!114 &2057464012990571942
+  saleSlot: {fileID: 6467603188740233701}
+--- !u!114 &2429643912931821211
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5167,9 +5168,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 5890927762657721120}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cd135be323e871342b7cdc491a6ad785, type: 3}
+  m_Script: {fileID: 11500000, guid: ce8a23527ed51b34f93569ff33d4573f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::InventoryUI
+  m_EditorClassIdentifier: Assembly-CSharp::MarketInventoryUI
+  itemDescriptionObject: {fileID: 3707326943012751547}
+  itemDescriptionText: {fileID: 1725763755607154057}
   slotPrefab: {fileID: 7035120506843336247, guid: a67848212ccbeb740a1d3cd46ddc6788,
     type: 3}
   itemPrefab: {fileID: 4612311100988310853, guid: c77084d86f02e594eb5f2d498a8c285f,
@@ -5177,8 +5180,6 @@ MonoBehaviour:
   equipmentParent: {fileID: 5203193445179217003}
   consumptionParent: {fileID: 8626485167400453581}
   otherParent: {fileID: 5524603718845084053}
-  ProfileParent: {fileID: 0}
-  QuickParent: {fileID: 0}
   goldText: {fileID: 7578803273396986829}
 --- !u!1 &5950824508698913155
 GameObject:

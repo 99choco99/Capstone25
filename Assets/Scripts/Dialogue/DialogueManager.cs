@@ -18,8 +18,7 @@ public class Dialogue
 
 public class DialogueManager : MonoBehaviour
 {
-    public static DialogueManager instance;
-
+    Player player;
 
     public event Action OnConversationStart;
     public event Action OnConversationEnd;
@@ -27,27 +26,17 @@ public class DialogueManager : MonoBehaviour
 
     Dictionary<string, List<DialogueLine>> DialogueData = new();
     Queue<DialogueLine> currentDialogueQueue = new();
-    private QuestInteractionInfo currentInteraction; // 현재 대화의 목적과 정보를 담는 변수
 
     private void Awake()
     {
-        if(instance == null)
-        {
-            instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        APIEvents.OnGetDialogue += GenerateData;
-        APIManager.Instance.Dialogue.RequestGetDialogue();
+        player = GetComponentInParent<Player>();
+        PublicAPIManager.Instance.Dialogue.OnGetDialogue += GenerateData;
+        PublicAPIManager.Instance.Dialogue.RequestGetDialogue();
     }
 
     private void OnDestroy()
     {
-        APIEvents.OnGetDialogue -= GenerateData;
+        PublicAPIManager.Instance.Dialogue.OnGetDialogue -= GenerateData;
     }
 
     void GenerateData(Dialogue[] data)
@@ -57,7 +46,6 @@ public class DialogueManager : MonoBehaviour
         {
             DialogueData.Add(s.dialogueID, s.lines);
         }
-
     }
 
     public void StartConversation(QuestInteractionInfo interactionInfo)
@@ -67,19 +55,22 @@ public class DialogueManager : MonoBehaviour
             switch (interactionInfo.Type)
             {
                 case QuestInteractionType.Start:
-                    QuestManager.Instance.StartQuest(interactionInfo.QuestId);
+                    player.Quest.StartQuest(interactionInfo.QuestId);
                     break;
                 case QuestInteractionType.Complete:
-                    QuestManager.Instance.TurnInQuest(interactionInfo.QuestId);
+                    player.Quest.TurnInQuest(interactionInfo.QuestId);
                     break;
                 case QuestInteractionType.Talk:
-                    QuestManager.Instance.ReportTalkToNPC(interactionInfo.NpcId);
+                    player.Quest.ReportTalkToNPC(interactionInfo.NpcId);
                     break;
             }
         }
+        else
+        {
+            return;
+        }
         if (DialogueData.TryGetValue(interactionInfo.DialogueKey, out List<DialogueLine> lines))
         {
-            currentInteraction = interactionInfo;
             currentDialogueQueue.Clear();
             foreach (var dialog in lines)
             {
@@ -105,9 +96,7 @@ public class DialogueManager : MonoBehaviour
 
     private void EndConversation()
     {
-
-        currentInteraction = null;
+        player.InputHandler.UseInteractionInput();
         OnConversationEnd?.Invoke();
-
     }
 }

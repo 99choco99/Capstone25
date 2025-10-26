@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-using static APIManager;
+using static PublicAPIManager;
 
 public class SocketManager : MonoBehaviour
 {
@@ -172,6 +172,10 @@ public class SocketManager : MonoBehaviour
                 playerComponent.IsLocalPlayer = true;
                 playerComponent.InputHandler.enabled = true;
                 playerComponent.StateMachine.enabled = true;
+                if (DataManager.Instance != null)
+                {
+                    DataManager.Instance.Register(playerComponent);
+                }
                 Name name = playerComponent.GetComponentInChildren<Name>();
                 name.gameObject.SetActive(false);
             }

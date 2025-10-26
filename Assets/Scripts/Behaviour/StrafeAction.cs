@@ -22,12 +22,12 @@ public partial class StrafeAction : Action
             motor = GameObject.GetComponent<Enemy>()?.Motor;
             sense = GameObject.GetComponent<EnemySense>();
         }
-        if (motor == null || sense == null || sense.Target == null)
+        if (motor == null || sense == null || sense.CurrentTarget == null)
         {
             return Status.Failure;
         }
 
-        motor.StartStrafe(sense.Target, Distance);
+        motor.StartStrafe(sense.CurrentTarget, Distance);
         return Status.Running;
     }
 

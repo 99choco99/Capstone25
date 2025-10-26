@@ -12,6 +12,9 @@ public class InventoryAPI
     private MonoBehaviour coroutineRunner;
     private string userId;
 
+    //인벤토리 목록 가져오기
+    public event Action<InventoryResponse> OnGetInventory;
+
     // 생성자를 통해 MonoBehaviour 인스턴스를 주입받습니다.
     public InventoryAPI(MonoBehaviour runner, string userId)
     {
@@ -35,7 +38,7 @@ public class InventoryAPI
 
                     InventoryResponse response = JsonConvert.DeserializeObject<InventoryResponse>(jsonResponse);
 
-                    APIEvents.OnGetInventory?.Invoke(response);
+                    OnGetInventory?.Invoke(response);
                 }catch(JsonException ex)
                 {
                     Debug.Log("역직렬화 오류"  + ex.Message);

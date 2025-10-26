@@ -5,6 +5,9 @@ using UnityEngine.EventSystems;
 
 public class InventoryUI : MonoBehaviour
 {
+    private Player player;
+    [SerializeField] private GameObject itemDescriptionObject;
+    [SerializeField] private TextMeshProUGUI itemDescriptionText;
 
     [SerializeField] private GameObject slotPrefab;
     [SerializeField] private GameObject itemPrefab;
@@ -19,17 +22,20 @@ public class InventoryUI : MonoBehaviour
 
     private void Awake()
     {
-        InventoryEvents.OnInventoryDataInitialized += InitUI;
-        InventoryEvents.OnSlotDataChanged += UpdateSlotUI;
-        InventoryEvents.OnChangedGold += UpdateGoldUI;
+        player = GetComponentInParent<Player>();
+        player.Inventory.OnInventoryDataInitialized += InitUI;
+        player.Inventory.OnSlotDataChanged += UpdateSlotUI;
+        player.Stats.OnChangedGold += UpdateGoldUI;
     }
-
 
     private void OnDestroy()
     {
-        InventoryEvents.OnInventoryDataInitialized -= InitUI;
-        InventoryEvents.OnSlotDataChanged -= UpdateSlotUI;
-        InventoryEvents.OnChangedGold -= UpdateGoldUI;
+        if(player != null)
+        {
+            player.Inventory.OnInventoryDataInitialized -= InitUI;
+            player.Inventory.OnSlotDataChanged -= UpdateSlotUI;
+            player.Stats.OnChangedGold -= UpdateGoldUI;
+        }
     }
 
     private void InitUI(SlotType type, int count)
@@ -48,7 +54,7 @@ public class InventoryUI : MonoBehaviour
                 if (i >= count) break;
 
                 Slot slot = existingSlots[i];
-                slot.slotData = InventoryManager.instance.Inventory[type][i];
+                slot.slotData = player.Inventory.Inventory[type][i];
 
                 slot.OnDropRequest += OnDropHandler;
 
@@ -64,16 +70,13 @@ public class InventoryUI : MonoBehaviour
                 GameObject slotObject = Instantiate(slotPrefab, parent);
                 Slot slot = slotObject.GetComponent<Slot>();
 
-                slot.slotData = InventoryManager.instance.Inventory[type][i];
+                slot.slotData = player.Inventory.Inventory[type][i];
 
                 slot.OnDropRequest += OnDropHandler;
 
                 uiSlots[type].Add(slot);
             }
         }
-
-        //모든 준비가 완료되면 끔
-        gameObject.SetActive(false);
     }
 
     private void OnDropHandler(Slot droppedSlot, PointerEventData eventData)
@@ -83,13 +86,13 @@ public class InventoryUI : MonoBehaviour
         if (droppedSlot == draggedSlot) { return; }
         if (droppedSlot.slotData.hasItem)
         {
-            InventoryManager.instance.SwapItems(
+            player.Inventory.SwapItems(
                 draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
                 droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
         }
         else
         {
-            InventoryManager.instance.MoveToEmptySlot(
+            player.Inventory.MoveToEmptySlot(
                 draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
                 droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
         }
@@ -105,7 +108,7 @@ public class InventoryUI : MonoBehaviour
     {
         if(!uiSlots.ContainsKey(type)) { return; }
         Slot uiSlot = uiSlots[type][index];
-        SlotData slotData = InventoryManager.instance.Inventory[type][index];
+        SlotData slotData = player.Inventory.Inventory[type][index];
 
         if (slotData.hasItem)
         {
@@ -155,5 +158,20 @@ public class InventoryUI : MonoBehaviour
         };
 
         return uiParent;
+    }
+
+
+    public void ShowTooltip(string text, Vector3 position)
+    {
+        if (itemDescriptionObject == null) return;
+        itemDescriptionText.text = text;
+        itemDescriptionObject.transform.position = position + Vector3.down * 50;
+        itemDescriptionObject.SetActive(true);
+    }
+
+    public void HideTooltip()
+    {
+        if (itemDescriptionObject == null) return;
+        itemDescriptionObject.SetActive(false);
     }
 }

@@ -15,17 +15,14 @@ public class MarketBuy : MonoBehaviour
 
     private void Awake()
     {
-        MarketManagerEvents.OnItemPurchaseComplete += OnBuyItemSuccessHandler;
-        MarketManagerEvents.OnSetCancelButtonUI += SetActiveItemCancelButton;
-        MarketManagerEvents.OnCancelRegistComplete += RemoveRegistedItem;
-
+        PublicAPIManager.Instance.Market.OnItemPurchaseComplete += OnBuyItemSuccessHandler;
+        PublicAPIManager.Instance.Market.OnCancelRegistComplete += RemoveRegistedItem;
     }
 
     private void OnDestroy()
     {
-        MarketManagerEvents.OnItemPurchaseComplete -= OnBuyItemSuccessHandler;
-        MarketManagerEvents.OnSetCancelButtonUI -= SetActiveItemCancelButton;
-        MarketManagerEvents.OnCancelRegistComplete -= RemoveRegistedItem;
+        PublicAPIManager.Instance.Market.OnItemPurchaseComplete -= OnBuyItemSuccessHandler;
+        PublicAPIManager.Instance.Market.OnCancelRegistComplete -= RemoveRegistedItem;
     }
 
 
@@ -71,7 +68,7 @@ public class MarketBuy : MonoBehaviour
     }
 
     // 내 판매목록 가져올 때 취소버튼 활성화
-    void SetActiveItemCancelButton(bool value)
+    public void SetActiveItemCancelButton(bool value)
     {
         cancelButton.SetActive(value);
         gameObject.GetComponent<Button>().enabled = !value;

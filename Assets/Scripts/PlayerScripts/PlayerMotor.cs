@@ -127,8 +127,6 @@ public class PlayerMotor : MonoBehaviour
         if (player.InputHandler.MoveInput != Vector3.zero)
         {
             rollDirection = (player.MainCamera.transform.forward * player.InputHandler.MoveInput.z + player.MainCamera.transform.right * player.InputHandler.MoveInput.x).normalized;
-            RotateTowardsDirection(rollDirection);
-
             player.animatorManager.PlayTargetActionAnimation("Roll", true);
         }
         else
@@ -194,35 +192,18 @@ public class PlayerMotor : MonoBehaviour
 
     private void HandleRotation()
     {
-        if (player.isLockOn && player.TargetingSystem.CurrentTarget != null)
-        {
-            Vector3 targetDirection = player.TargetingSystem.CurrentTarget.transform.position - transform.position;
-            RotateTowardsDirection(targetDirection);
-            return; // 타겟 추적 후 다른 회전 로직은 무시하고 종료
-        }
-
 
         if (!canRotate || isKnockingBack) { return; }
 
-        if (player.isLockOn)
+        if (player.StateMachine.CurrentState == player.StateMachine.PlayerRollingState)
         {
-            //sprint 는 예외
-            if (player.InputHandler.DodgeInput)
-            {
-                Vector3 targetDirection = Vector3.zero;
-                targetDirection = player.MainCamera.transform.forward * player.InputHandler.MoveInput.z;
-                targetDirection += player.MainCamera.transform.right * player.InputHandler.MoveInput.x;
-
-                RotateTowardsDirection(targetDirection);
-            }
-            else
-            {
-                if(player.TargetingSystem.CurrentTarget == null) { return; }
-                Vector3 targetDirection = Vector3.zero;
-                targetDirection = player.TargetingSystem.CurrentTarget.transform.position - transform.position;
-
-                RotateTowardsDirection(targetDirection);
-            }
+            RotateTowardsDirection(rollDirection);
+        }
+        else if (player.isLockOn)
+        {
+            if (player.TargetingSystem.CurrentTarget == null) { return; }
+            Vector3 targetDirection = player.TargetingSystem.CurrentTarget.transform.position - transform.position;
+            RotateTowardsDirection(targetDirection);
         }
         else
         {
@@ -231,7 +212,6 @@ public class PlayerMotor : MonoBehaviour
 
             Vector3 RotationDirection = (cameraForward.normalized * player.InputHandler.MoveInput.z + cameraRight.normalized * player.InputHandler.MoveInput.x);
 
-            // 계산된 방향으로 부드럽게 회전
             RotateTowardsDirection(RotationDirection);
         }
     }
@@ -295,11 +275,6 @@ public class PlayerMotor : MonoBehaviour
         transform.rotation = targetRot;
     }
 
-    public void AE_playerMoveEnable()
-    {
-        canRotate = true;
-        canMove = true;
-    }
     public void AE_playerMoveDisable()
     {
         canMove = false;

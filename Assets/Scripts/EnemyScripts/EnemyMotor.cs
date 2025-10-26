@@ -132,8 +132,8 @@ public class EnemyMotor : MonoBehaviour
 
     public void Retreat(float distance)
     {
-        if(enemy.Senses.Target == null) { return; }
-        Vector3 directionAwayFromTarget = (transform.position - enemy.Senses.Target.position).normalized;
+        if(enemy.Senses.CurrentTarget == null) { return; }
+        Vector3 directionAwayFromTarget = (transform.position - enemy.Senses.CurrentTarget.position).normalized;
 
         Vector3 retreatDestination = transform.position + directionAwayFromTarget * distance;
 
@@ -160,7 +160,7 @@ public class EnemyMotor : MonoBehaviour
 
     public void HandleStrafe()
     {
-        if (enemy.Combat.canPerformAction)
+        if (enemy.Combat.canAttack)
         {
             StopStrafe();
             return;

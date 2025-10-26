@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class PlayerProfile : MonoBehaviour
 {
-    [SerializeField] Player player;
+    Player player;
     PlayerStats playerStats;
 
     [Header("UI ÄÄÆ÷³ÍÆ®")]

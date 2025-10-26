@@ -33,7 +33,7 @@ public class PlayerMoveState : State
             return;
         }
 
-        if (player.InputHandler.GuardInput)
+        if (player.InputHandler.GuardInput && !player.animatorManager.isPerformingAction)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGuardState);
             return;

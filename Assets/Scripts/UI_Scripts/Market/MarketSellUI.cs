@@ -3,7 +3,7 @@ using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
-using static APIManager;
+using static PublicAPIManager;
 
 public class MarketSellUI : MonoBehaviour
 {
@@ -49,8 +49,8 @@ public class MarketSellUI : MonoBehaviour
 
     private void OnEnable()
     {
-        MarketManagerEvents.OnItemRegistComplete += ItemRegistComplete;
-        MarketManagerEvents.OnItemRegistFailed += ShowNotice;
+        PublicAPIManager.Instance.Market.OnItemRegistComplete += ItemRegistComplete;
+        PublicAPIManager.Instance.Market.OnItemRegistFailed += ShowNotice;
     }
 
     private void OnDestroy()
@@ -58,8 +58,8 @@ public class MarketSellUI : MonoBehaviour
         SellBtn.onClick.RemoveAllListeners();
         notice.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
         check.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
-        MarketManagerEvents.OnItemRegistComplete -= ItemRegistComplete;
-        MarketManagerEvents.OnItemRegistFailed -= ShowNotice;
+        PublicAPIManager.Instance.Market.OnItemRegistComplete -= ItemRegistComplete;
+        PublicAPIManager.Instance.Market.OnItemRegistFailed -= ShowNotice;
     }
 
     //등록 가능한지 검사

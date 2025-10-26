@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -11,7 +12,10 @@ public class QuestAPI
     private MonoBehaviour coroutineRunner;
     private string userId;
 
-    // 생성자를 통해 MonoBehaviour 인스턴스를 주입받습니다.
+    //퀘스트 데이터 가져오기
+    public event Action<QuestDefinition[], QuestStatus[]> OnGetQuestData;
+
+    // 생성자를 통해 MonoBehaviour 인스턴스를 주입
     public QuestAPI(MonoBehaviour runner, string userId)
     {
         coroutineRunner = runner;
@@ -34,7 +38,7 @@ public class QuestAPI
                     QuestDefinition[] questDataArray = response.questData;
                     QuestStatus[] questStatusesArray = response.questStatuses;
 
-                    APIEvents.OnGetQuestData?.Invoke(questDataArray, questStatusesArray);
+                    OnGetQuestData?.Invoke(questDataArray, questStatusesArray);
                 }
                 catch (JsonException ex)
                 {
