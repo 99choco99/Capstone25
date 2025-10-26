@@ -5,12 +5,14 @@ using System.Collections;
 
 public class QuickSlot : Slot
 {
+    Player player;
     [SerializeField] Slider slider;
     bool isCoolingDown = false;
 
     private void Awake()
     {
-        InventoryEvents.OnQuickSlotUsed += StartCooldownVisual;
+        player = GetComponentInParent<Player>();
+        player.Inventory.OnQuickSlotUsed += StartCooldownVisual;
     }
 
     private void Start()
@@ -20,7 +22,7 @@ public class QuickSlot : Slot
 
     private void OnDestroy()
     {
-        InventoryEvents.OnQuickSlotUsed -= StartCooldownVisual;
+        player.Inventory.OnQuickSlotUsed -= StartCooldownVisual;
     }
 
 
@@ -41,15 +43,15 @@ public class QuickSlot : Slot
             return;
         }
 
-        // 실제 사용 로직은 InventoryManager에게 위임
-        InventoryManager.instance.RequestUseQuickSlotItem();
+        // 실제 사용 로직은 InventoryManager에게
+        player.Inventory.RequestUseQuickSlotItem();
     }
 
     private void StartCooldownVisual(ItemSpec spec)
     {
         if (slotData == null || !slotData.hasItem)
         {
-            return; // 슬롯이 비었으면 쿨타임 UI를 표시하지 않고 종료
+            return;
         }
         StartCoroutine(CooldownCoroutine(spec.coolTime));
     }

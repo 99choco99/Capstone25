@@ -9,15 +9,37 @@ using Unity.Properties;
 public partial class PerformDeflectAction : Action
 {
     EnemyCombat combat;
+    EnemyAnimationManager animManager;
+
     protected override Status OnStart()
     {
         combat = GameObject.GetComponent<EnemyCombat>();
-        return Status.Running;
+        animManager = GameObject.GetComponent<EnemyAnimationManager>();
+
+
+        if (animManager.IsPerformAction)
+        {
+            return Status.Failure;
+        }
+
+        combat.DecideDefenseAction();
+
+        if (animManager.IsPerformAction)
+        {
+            return Status.Running;
+        }
+        else
+        {
+            return Status.Failure;
+        }
     }
 
     protected override Status OnUpdate()
     {
-        combat.DecideDefenseAction();
+        if (animManager.IsPerformAction)
+        {
+            return Status.Running;
+        }
         return Status.Success;
     }
 

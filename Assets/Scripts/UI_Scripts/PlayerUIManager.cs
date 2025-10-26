@@ -37,7 +37,7 @@ public class PlayerUIManager : MonoBehaviour
     public List<UIPanelType> currentOpenUI = new List<UIPanelType>();
 
     [Header("UI_Panel")]
-    public GameObject Market;
+    GameObject Market;
     public GameObject Inventory;
     public GameObject PlayerProfile;
     public GameObject Setting;
@@ -67,7 +67,10 @@ public class PlayerUIManager : MonoBehaviour
 
     private void Start()
     {
-
+        if (MarketManager.Instance != null)
+        {
+            Market = MarketManager.Instance.gameObject;
+        }
         // 딕셔너리에 UI 패널들을 등록
         panelDictionary = new Dictionary<UIPanelType, GameObject>()
         {
@@ -78,6 +81,8 @@ public class PlayerUIManager : MonoBehaviour
             {UIPanelType.Quest, Quest },
             {UIPanelType.Dialogue, dialogUI }
         };
+
+
         UpdateHp(playerStats.currentHp);
         UpdatePostureGauge(playerStats.maxPosture, playerStats.currentPosture);
 

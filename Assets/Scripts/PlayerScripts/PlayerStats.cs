@@ -7,6 +7,8 @@ using UnityEngine;
 
 public class DamageInfo
 {
+    public Player player;
+    public AttackType attackType;
     public float finalDamage;
     public float knockbackForce;
     public float knockbackDuration;
@@ -44,6 +46,7 @@ public class PlayerStats : LivingEntity
     public event Action OnStatsChanged;  // 스탯 변경사항 적용
     public event Action<DamageInfo> OnDamaged;
     public event Action OnLevelUp;  //레벨업시
+    public event Action<int> OnChangedGold;  // 소유 골드가 변경됨.
 
 
     public bool isGuarding;
@@ -53,12 +56,12 @@ public class PlayerStats : LivingEntity
     private void Awake()
     {
         player = GetComponent<Player>();
-
+        player.Inventory.OnQuickSlotUsed += Consume;
     }
     private void Start()
     {
         LoadPlayerData(DataManager.Instance.playerData);
-        InventoryEvents.OnQuickSlotUsed += Consume;
+
     }
 
     private void OnDestroy()
@@ -67,13 +70,14 @@ public class PlayerStats : LivingEntity
         {
             DataManager.Instance.OnSave -= OnSavePlayerData;
         }
-        InventoryEvents.OnQuickSlotUsed -= Consume;
+        player.Inventory.OnQuickSlotUsed -= Consume;
     }
 
 
     //게임 데이터 불러오기
     public void LoadPlayerData(PlayerData data)
     {
+        Debug.Log(data.id);
         ID = data.id;
         Nickname = data.nickname;
         gameObject.name = Nickname;
@@ -92,8 +96,7 @@ public class PlayerStats : LivingEntity
         UpdateTotalStats();
 
         OnExpChanged?.Invoke(Exp, Level);
-
-        InventoryEvents.OnChangedGold?.Invoke(Gold);
+        OnChangedGold?.Invoke(Gold);
 
         if (DataManager.Instance != null)
         {
@@ -118,6 +121,7 @@ public class PlayerStats : LivingEntity
         dataToSave.gold = Gold;
 
         Debug.Log($"[{Nickname}] 데이터 저장 준비 완료.");
+        PublicAPIManager.Instance.PlayerData.RequestSavePlayerData(dataToSave);
     }
 
 
@@ -160,6 +164,8 @@ public class PlayerStats : LivingEntity
         DamageInfo result = new DamageInfo()
         {
             finalDamage = finalDamageToHp,
+            attackType = damageInfo.attackType,
+            hitPoint = damageInfo.hitPoint,
             hitDirection = damageInfo.hitDirection,
             knockbackDuration = damageInfo.knockbackDuration,
             knockbackForce = damageInfo.knockbackForce,
@@ -176,13 +182,16 @@ public class PlayerStats : LivingEntity
         if (dead) return;
         Exp += addExp;
         int maxExp = DataManager.Instance.GetMaxExpForLevel(Level);
-
+        if(maxExp == int.MaxValue) { Exp = 0; }
         // 레벨업 조건 체크
         while(Exp >= maxExp)
         {
             Exp -= maxExp;
             Level++;
+            AbilityPoint += 3;
             OnLevelUp?.Invoke();
+            OnStatsChanged?.Invoke();
+            SoundManager.Instance.PlaySFX("LevelUp");
         }
         OnExpChanged?.Invoke(Exp, Level);
     }
@@ -190,7 +199,12 @@ public class PlayerStats : LivingEntity
     public void AddGold(int addGold)
     {
         Gold += addGold;
-        InventoryEvents.OnChangedGold?.Invoke(Gold);
+        OnChangedGold?.Invoke(Gold);
+    }
+    public void SetGold(int gold)
+    {
+        Gold = gold;
+        OnChangedGold?.Invoke(Gold);
     }
 
 
@@ -202,8 +216,8 @@ public class PlayerStats : LivingEntity
         switch (statToUpgrade)
         {
             case PlayerStatType.Damage: baseDamage++; break;
-            case PlayerStatType.Defense: baseDefense++; break;
-            case PlayerStatType.Health: baseMaxHp++; break;
+            case PlayerStatType.Defense: baseDefense += 3; break;
+            case PlayerStatType.Health: baseMaxHp += 10; break;
         }
 
         UpdateTotalStats();

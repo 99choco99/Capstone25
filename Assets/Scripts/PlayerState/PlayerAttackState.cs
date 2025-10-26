@@ -12,9 +12,14 @@ public class PlayerAttackState : State
     {
         isComboInputQueued = false;
         player.Motor.StopMovement();
-        player.Combat.StartAttack();
+        bool attackStarted = player.Combat.StartAttack();
         player.Combat.OnAttackEnd += HandleAttackEnd;
 
+        if (!attackStarted)
+        {
+            HandleAttackEnd();
+            return;
+        }
     }
 
     public override void Update()
@@ -35,6 +40,7 @@ public class PlayerAttackState : State
     public override void Exit()
     {
         player.Combat.OnAttackEnd -= HandleAttackEnd;
+        isComboInputQueued = false;
     }
 
     private void HandleAttackEnd()
@@ -42,7 +48,19 @@ public class PlayerAttackState : State
         if (isComboInputQueued)
         {
             isComboInputQueued = false;
-            player.Combat.StartAttack();
+            bool comboAttackStarted = player.Combat.StartAttack();
+
+            if (!comboAttackStarted)
+            {
+                if (player.InputHandler.MoveInput == Vector3.zero)
+                {
+                    stateMachine.TransitionTo(stateMachine.PlayerIdleState);
+                }
+                else
+                {
+                    stateMachine.TransitionTo(stateMachine.PlayerMoveState);
+                }
+            }
         }
         else
         {

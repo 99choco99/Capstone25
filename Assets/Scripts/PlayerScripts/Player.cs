@@ -15,6 +15,12 @@ public class Player : MonoBehaviour
     public TargetingSystem TargetingSystem { get; private set; }   //플레이어의 타겟 선정을 정리
     public PlayerCombat Combat { get; private set; }               //플레이어의 전투 관련 정의.
     public PlayerAnimatorManager animatorManager {get;private set;}//플레이어의 애니메이션 정의.
+    public InventoryManager Inventory { get; private set; }        //플레이어의 인벤토리 매니저
+    public QuestManager Quest { get; private set; }
+    public DialogueManager Dialogue { get; private set; }
+    public EquipmentManager Equipment { get; private set; }
+    public LocalAPIManager localAPI { get; private set; }
+    
     public Animator Anim { get; private set; }
     public Camera MainCamera { get; private set; }
 
@@ -27,6 +33,11 @@ public class Player : MonoBehaviour
         Stats = GetComponent<PlayerStats>();
         Combat = GetComponent<PlayerCombat>();
         TargetingSystem = GetComponent<TargetingSystem>();
+        localAPI = GetComponent<LocalAPIManager>();
+        Inventory = GetComponentInChildren<InventoryManager>();
+        Quest = GetComponentInChildren<QuestManager>();
+        Dialogue = GetComponentInChildren<DialogueManager>();
+        Equipment = GetComponentInChildren<EquipmentManager>();
         Anim = GetComponentInChildren<Animator>();
         MainCamera = Camera.main;
 
@@ -38,7 +49,7 @@ public class Player : MonoBehaviour
         }
 
         Cursor.lockState = CursorLockMode.Locked;
-
+        
     }
 
 }

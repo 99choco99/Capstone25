@@ -9,55 +9,42 @@ using UnityEngine;
 
 public class QuestManager : MonoBehaviour
 {
-    public static QuestManager Instance;
+    Player player;
+
 
     //퀘스트id, 퀘스트데이터
     public Dictionary<int, QuestDefinition> QuestDefinition = new();
     //퀘스트id, 퀘스트 상태
     public Dictionary<int, QuestStatus> playerQuestState = new();
 
+
+
     public event Action<QuestDefinition, QuestStatus> OnQuestStatusChanged;
 
-    PlayerStats playerStats;
+
     private int? currentQuestId = null;
 
     private void Awake()
     {
-        if(Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(this);
-            return;
-        }
-
-        playerStats = GetComponentInParent<PlayerStats>();  
-
-        APIEvents.OnGetQuestData += Initialize;
-
-        APIManager.Instance.Quest.RequestGetQuestData();
-
-        playerStats.OnLevelUp += UnlockQuests;
-        EnemyStats.OnEnemyDied += HandleEnemyKilled;
+        player = GetComponentInParent<Player>();
+        OnQuestStatusChanged = null;
+        player.localAPI.Quest.OnGetQuestData += Initialize;
+        player.Stats.OnLevelUp += UnlockQuests;
         OnQuestStatusChanged += SaveQuestStatus;
     }
 
     private void Start()
     {
-
+        player.localAPI.Quest.RequestGetQuestData();
     }
 
     private void OnDestroy()
     {
-        EnemyStats.OnEnemyDied -= HandleEnemyKilled;
-
-        APIEvents.OnGetQuestData -= Initialize;
+        player.localAPI.Quest.OnGetQuestData -= Initialize;
         OnQuestStatusChanged -= SaveQuestStatus;
-        if (playerStats != null)
+        if (player.Stats != null)
         {
-            playerStats.OnLevelUp -= UnlockQuests;
+            player.Stats.OnLevelUp -= UnlockQuests;
         }
     }
 
@@ -107,7 +94,7 @@ public class QuestManager : MonoBehaviour
     //퀘스트 서버에 저장하기
     public void SaveQuestStatus(QuestDefinition data, QuestStatus status)
     {
-        APIManager.Instance.Quest.RequestSaveQuestStatus(status);
+        player.localAPI.Quest.RequestSaveQuestStatus(status);
     }
 
     //퀘스트 지정
@@ -236,7 +223,7 @@ public class QuestManager : MonoBehaviour
         foreach(var quest in QuestDefinition.Values)
         {
             var status = GetQuestStatus(quest.questID);
-            if(playerStats.Level >= quest.requiredLevel && status.state == QuestState.Locked)
+            if(player.Stats.Level >= quest.requiredLevel && status.state == QuestState.Locked)
             {
                 status.state = QuestState.Ready;
                 OnQuestStatusChanged?.Invoke(quest, status);
@@ -248,7 +235,7 @@ public class QuestManager : MonoBehaviour
 
 
 
-    private void HandleEnemyKilled(int enemyId)
+    public void ReportEnemyKilled(int enemyId)
     {
         UpdateMissionProgress(MissionType.Kill, enemyId, 1);
     }
@@ -318,10 +305,8 @@ public class QuestManager : MonoBehaviour
     {
         if (reward == null) return;
 
-        // 예시: 경험치, 골드, 아이템 지급 로직
-        // 실제로는 PlayerStats나 InventoryManager 같은 다른 매니저의 함수를 호출해야 합니다.
-        playerStats.AddExp(reward.exp);
-        playerStats.AddGold(reward.gold);
+        player.Stats.AddExp(reward.exp);
+        player.Stats.AddGold(reward.gold);
         //InventoryManager.Instance.AddItem(reward.itemId);
 
         SoundManager.Instance.PlaySFX("missionComplete");

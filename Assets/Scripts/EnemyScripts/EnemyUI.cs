@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,6 +11,11 @@ public class EnemyUI : MonoBehaviour
 
     [SerializeField] Slider PostureGauge;
     [SerializeField] Slider EnemyHpUI;
+
+    [Header("강공격 알림")]
+    [SerializeField] private CanvasGroup heavyAttackIndicator;
+    [SerializeField] private float heavyIndicatorDuration = 1.0f;
+    private Coroutine indicatorCoroutine;
 
     private void Awake()
     {
@@ -32,6 +38,10 @@ public class EnemyUI : MonoBehaviour
             UpdateHp(enemyStats.currentHp);
             UpdatePostureGauge(enemyStats.maxPosture, enemyStats.currentPosture);
         }
+        if (heavyAttackIndicator != null)
+        {
+            heavyAttackIndicator.alpha = 0f;
+        }
     }
 
     private void OnDestroy()
@@ -48,6 +58,7 @@ public class EnemyUI : MonoBehaviour
             mainCamera = Camera.main;
         }
         transform.LookAt(mainCamera.transform);
+        transform.rotation = mainCamera.transform.rotation;
     }
 
     public void UpdatePostureGauge(float currentPosture, float maxPosture)
@@ -61,4 +72,30 @@ public class EnemyUI : MonoBehaviour
         EnemyHpUI.value = currenthp / enemyStats.maxHp;
     }
 
+    public void ShowHeavyAttackIndicator()
+    {
+        if (heavyAttackIndicator == null)
+        {
+            Debug.LogWarning("강공격 표시기가 EnemyUI에 할당되지 않음");
+            return;
+        }
+
+        if (indicatorCoroutine != null)
+        {
+            StopCoroutine(indicatorCoroutine);
+        }
+
+        indicatorCoroutine = StartCoroutine(ShowIndicatorCoroutine());
+    }
+
+
+    private IEnumerator ShowIndicatorCoroutine()
+    {
+        heavyAttackIndicator.alpha = 1f;
+
+        yield return new WaitForSeconds(heavyIndicatorDuration);
+
+        heavyAttackIndicator.alpha = 0f;
+        indicatorCoroutine = null;
+    }
 }

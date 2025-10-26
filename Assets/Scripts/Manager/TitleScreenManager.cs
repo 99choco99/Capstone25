@@ -10,7 +10,7 @@ public class TitleScreenManager : MonoBehaviour
 
         if (SocketManager.instance != null)
         {
-            SocketManager.instance.ConnectToServer(APIManager.Instance.loginData.user_id);
+            SocketManager.instance.ConnectToServer(PublicAPIManager.Instance.loginData.user_id);
             GameManager.instance.ChangeState(GameState.Gameplay);
         }
         else

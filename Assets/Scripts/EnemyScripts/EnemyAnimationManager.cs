@@ -22,11 +22,11 @@ public class EnemyAnimationManager : MonoBehaviour
     }
 
 
-    public void PlayAnimation(string animationName, bool IsPerformAction = true)
+    public void PlayAnimation(string animationName, bool IsLockAction = true)
     {
-        if (this.IsPerformAction) { return; }
-        enemy.Anim.CrossFade(animationName, 0.2f);
-        this.IsPerformAction = IsPerformAction;
+        if (IsPerformAction) { return; }
+        enemy.Anim.CrossFade(animationName, 0.1f);
+        this.IsPerformAction = IsLockAction;
     }
     
     public void DeathProcess()

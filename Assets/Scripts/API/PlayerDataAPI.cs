@@ -3,14 +3,14 @@ using System.Collections;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
-using static APIManager;
+using static PublicAPIManager;
 
 public class PlayerDataAPI
 {
     private MonoBehaviour coroutineRunner;
     private string userId;
 
-    // 생성자를 통해 MonoBehaviour 인스턴스를 주입받습니다.
+    // 생성자를 통해 MonoBehaviour 인스턴스를 주입
     public PlayerDataAPI(MonoBehaviour runner)
     {
         this.coroutineRunner = runner;
@@ -31,10 +31,7 @@ public class PlayerDataAPI
                 {
                     PlayerData data = JsonConvert.DeserializeObject<PlayerData>(webRequest.downloadHandler.text);
                     Debug.Log("플레이어 데이터 로드 성공: " + data.id);
-                    DataManager.Instance.LoadPlayerData(data);
-
-
-                    //LoadingScene.LoadScene("Main");
+                    DataManager.Instance.playerData = data;
                 }
                 catch (JsonException ex)
                 {

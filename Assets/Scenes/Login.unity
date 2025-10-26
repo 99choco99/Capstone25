@@ -447,7 +447,7 @@ PrefabInstance:
     - target: {fileID: 1287138886941852863, guid: 030177db03be37f44a66a5939200ca01,
         type: 3}
       propertyPath: m_Name
-      value: APIManager
+      value: PublicAPIManager
       objectReference: {fileID: 0}
     - target: {fileID: 7926318737399842079, guid: 030177db03be37f44a66a5939200ca01,
         type: 3}
@@ -1381,6 +1381,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 399b8eb877e850c43a2f4f7d5044c2e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
+  mainBgmKey: BGM_Main
+  combatBgmKey: BGM_Combat
 --- !u!95 &1702405507
 Animator:
   serializedVersion: 7

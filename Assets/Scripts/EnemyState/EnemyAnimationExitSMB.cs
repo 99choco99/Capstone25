@@ -10,10 +10,7 @@ public class EnemyAnimationExitSMB : StateMachineBehaviour
         {
             enemy = animator.GetComponent<Enemy>();
         }
-        else
-        {
-            enemy.AnimationManager.IsPerformAction = false;
-        }
+        enemy.AnimationManager.IsPerformAction = false;
     }
 
     public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)
@@ -22,9 +19,6 @@ public class EnemyAnimationExitSMB : StateMachineBehaviour
         {
             enemy = animator.GetComponent<Enemy>();
         }
-        else
-        {
-            enemy.AnimationManager.IsPerformAction = false;
-        }
+        enemy.AnimationManager.IsPerformAction = false;
     }
 }

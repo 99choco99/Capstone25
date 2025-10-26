@@ -16,7 +16,7 @@ public class Name : MonoBehaviour
         nametext.text = gameObject.transform.root.name;
         if(gameObject.tag == "Player")
         {
-            nametext.text = APIManager.Instance.loginData.nickname;
+            nametext.text = PublicAPIManager.Instance.loginData.nickname;
         }
     }
 

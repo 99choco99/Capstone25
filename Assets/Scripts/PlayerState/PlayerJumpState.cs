@@ -11,6 +11,8 @@ public class PlayerJumpState : State
         player.animatorManager.PlayTargetActionAnimation("Jump", true);
         player.Motor.Jump(player.Motor.JumpPower);
         SoundManager.Instance.PlaySFX("Jump");
+        player.Motor.canMove = true;
+        player.Motor.canRotate = true;
     }
 
     public override void Update()
@@ -26,7 +28,7 @@ public class PlayerJumpState : State
             {
                 stateMachine.TransitionTo(stateMachine.PlayerMoveState);
             }
-            return; // 상태가 변경되었으면 아래 로직을 실행할 필요 없음
+            return;
         }
         player.Motor.Move();
     }

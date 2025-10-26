@@ -18,7 +18,7 @@ public class ConversationState : State
         if (player.InputHandler.InteractionInput)
         {
             player.InputHandler.UseInteractionInput();
-            DialogueManager.instance.ShowNextLine();
+            player.Dialogue.ShowNextLine();
         }
     }
     public override void Exit() {

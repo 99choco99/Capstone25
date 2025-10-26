@@ -15,8 +15,9 @@ public class PlayerInteractUI : MonoBehaviour
 
 
     private PlayerInteraction playerInteraction; // 플레이어의 interact 참조
-    private List<GameObject> uiInteractables = new List<GameObject>();
-
+    private List<PromptUIItem> promptPool = new List<PromptUIItem>();
+    [SerializeField] private Color selectedColor = Color.green;
+    [SerializeField] private Color defaultColor = Color.white;
 
     private void Awake()
     {
@@ -27,25 +28,42 @@ public class PlayerInteractUI : MonoBehaviour
         uiContainer.SetActive(false);
     }
 
-
+    private void OnDestroy()
+    {
+        if (playerInteraction != null)
+        {
+            playerInteraction.OnInteractableChanged -= UpdateInteractablesList;
+            playerInteraction.OnSelectionChanged -= UpdateSelection;
+        }
+    }
 
     void UpdateInteractablesList(List<IInteractable> interactables)
     {
-        foreach (Transform child in promptParent) { Destroy(child.gameObject); }
-        uiInteractables.Clear();
+        int count = interactables.Count;
+        uiContainer.SetActive(count > 0);
 
-        if (interactables.Count == 0) { 
-            uiContainer.SetActive(false); 
-            return; 
-        }
-        uiContainer.SetActive(true);
-        
-        foreach(var interactable in interactables)
+        for (int i = 0; i < count; i++)
         {
-            var promptInstance = Instantiate(promptPrefab, promptParent);
-            var promptText = promptInstance.GetComponentInChildren<TextMeshProUGUI>();
-            promptText.text = interactable.InteractionPrompt;
-            uiInteractables.Add(promptInstance);
+            PromptUIItem promptInstance;
+            if (i < promptPool.Count)
+            {
+                promptInstance = promptPool[i];
+            }
+            else
+            {
+                GameObject newPromptObject = Instantiate(promptPrefab, promptParent);
+                promptInstance = newPromptObject.GetComponent<PromptUIItem>();
+                promptPool.Add(promptInstance);
+            }
+
+            promptInstance.gameObject.SetActive(true);
+
+            promptInstance.SetText(interactables[i].InteractionPrompt);
+        }
+
+        for (int i = count; i < promptPool.Count; i++)
+        {
+            promptPool[i].gameObject.SetActive(false);
         }
 
         UpdateSelection(playerInteraction.currentSelection);
@@ -53,9 +71,26 @@ public class PlayerInteractUI : MonoBehaviour
 
     void UpdateSelection(IInteractable newSelection)
     {
-        for(int i = 0; i < uiInteractables.Count; i++)
+        // 현재 선택된 항목의 인덱스를 찾음
+        int selectedIndex = -1;
+        if (newSelection != null)
         {
-            uiInteractables[i].GetComponent<Image>().color = (playerInteraction.interactablesInRange[i] == playerInteraction.currentSelection) ? Color.green : Color.red;
+            selectedIndex = playerInteraction.interactablesInRange.IndexOf(newSelection);
+        }
+
+        int activePromptCount = playerInteraction.interactablesInRange.Count;
+
+        for (int i = 0; i < promptPool.Count; i++)
+        {
+            if (i < activePromptCount)
+            {
+                Color colorToSet = (i == selectedIndex) ? selectedColor : defaultColor;
+                promptPool[i].SetColor(colorToSet);
+            }
+            else
+            {
+                break;
+            }
         }
     }
 }

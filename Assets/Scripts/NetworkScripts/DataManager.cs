@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using static APIManager;
+using static PublicAPIManager;
 
 public class DataManager : MonoBehaviour
 {
@@ -10,6 +10,14 @@ public class DataManager : MonoBehaviour
     public PlayerData playerData;
     [SerializeField] private int[] maxExp;
     public event Action OnSave;
+
+
+    public Player Player { get; private set; }
+    public InventoryManager Inventory { get; private set; }
+    public PlayerStats Stats { get; private set; }
+    public LocalAPIManager LocalAPI { get; private set; }
+
+
 
     private void Awake()
     {
@@ -25,32 +33,53 @@ public class DataManager : MonoBehaviour
         }
         InvokeRepeating("AutoSaveData", 10f, 10f);
     }
-    
 
-    public void Save()
+
+    public void Register(Player localPlayer)
     {
-        OnSave?.Invoke();
+        if (localPlayer == null)
+        {
+            Debug.LogError("로컬 플레이어 없음", this);
+            return;
+        }
+
+        Player = localPlayer;
+        Inventory = localPlayer.Inventory;
+        Stats = localPlayer.Stats;
+        LocalAPI = localPlayer.localAPI;
+
+        if (Inventory == null || Stats == null || LocalAPI == null)
+        {
+            Debug.LogError("플레이어 참조 문제 발생", localPlayer);
+        }
     }
 
-    public void LoadPlayerData(PlayerData data)
+    public void Unregister()
     {
-        playerData = data;
+        // 모든 참조를 null로 설정
+        Player = null;
+        Inventory = null;
+        Stats = null;
+        LocalAPI = null;
+
     }
 
     //플레이어 데이터 자동 저장
     private void AutoSaveData()
     {
-        Save();
-        APIManager.Instance.PlayerData.RequestSavePlayerData(playerData);
+        OnSave?.Invoke();
     }
 
     public int GetMaxExpForLevel(int level)
     {
-        if(maxExp.Length < level)
+        if (maxExp.Length <= level)
         {
             return int.MaxValue;
         }
-        return maxExp[level];
+        else
+        {
+            return maxExp[level];
+        }
     }
 
 

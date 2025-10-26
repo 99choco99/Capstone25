@@ -4,18 +4,33 @@ using System.Collections;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
-using static APIManager;
+using static PublicAPIManager;
 
 public class MarketAPI
 {
-
     private MonoBehaviour coroutineRunner;
-    private string userId;
 
-    // 생성자를 통해 MonoBehaviour 인스턴스를 주입받습니다.
-    public MarketAPI(MonoBehaviour runner, string userId)
+    // 아이템 등록 로직 완료
+    public event Action<ItemRegistResponse> OnItemRegistComplete;
+    public event Action<string> OnItemRegistFailed;
+
+    //아이템 구매
+    public event Action<BuyItemResponse> OnItemPurchaseComplete;
+    public event Action<string> OnItemPurchaseFailed;
+
+    //아이템 취소
+    public event Action<CancelRegistResponse> OnCancelRegistComplete;
+    public event Action<string> OnCancelRegistFailed;
+
+    // 아이템 목록 불러오기 완료
+    public event Action<IMarketItemResponse> OnGetSellingListComplete;
+    public event Action<IMarketItemResponse> OnGetMySellingListComplete;
+
+
+
+    // 생성자를 통해 MonoBehaviour 인스턴스를 주입
+    public MarketAPI(MonoBehaviour runner)
     {
-        this.userId = userId;
         this.coroutineRunner = runner;
     }
 
@@ -34,7 +49,7 @@ public class MarketAPI
                     IMarketItemResponse[] responseList = JsonConvert.DeserializeObject<IMarketItemResponse[]>(webRequest.downloadHandler.text);
                     foreach (var response in responseList)
                     {
-                        APIEvents.OnGetSellingListSuccess?.Invoke(response);
+                        OnGetSellingListComplete?.Invoke(response);
                     }
                 }
                 catch (JsonException ex)
@@ -66,7 +81,7 @@ public class MarketAPI
                     foreach (var response in responseList)
                     {
                         Debug.Log($"{response}");
-                        APIEvents.OnGetMySellingListSuccess?.Invoke(response);
+                        OnGetMySellingListComplete?.Invoke(response);
                     }
                 }
                 catch (JsonException ex)
@@ -78,7 +93,7 @@ public class MarketAPI
     }
 
     //판매 요청
-    IEnumerator RequestToSell(int ItemId, ItemSpec spec, string price, string count)
+    IEnumerator RequestToSell(string userId, int ItemId, ItemSpec spec, string price, string count)
     {
         var itemData = new
         {
@@ -112,7 +127,12 @@ public class MarketAPI
 
                     if (response.success)
                     {
-                        APIEvents.OnItemRegister?.Invoke(response);
+                        OnItemRegistComplete?.Invoke(response);
+                    }
+                    else
+                    {
+                        Debug.LogError("아이템 등록 실패: " + response.message);
+                        OnItemRegistFailed?.Invoke(response.message);
                     }
                 }
                 catch { }
@@ -126,7 +146,7 @@ public class MarketAPI
     }
 
     // 구매 요청
-    IEnumerator RequestToBuy(int marketId, string count)
+    IEnumerator RequestToBuy(string userId, int marketId, string count)
     {
         string url = $"{APIConstants.BASE_API_URL}/market/buy?userId={userId}&marketId={marketId}&count={count}";
 
@@ -146,7 +166,11 @@ public class MarketAPI
 
                     if (response.success)
                     {
-                        APIEvents.OnBuyItem?.Invoke(response);
+                        OnItemPurchaseComplete?.Invoke(response);
+                    }
+                    else
+                    {
+                        OnItemPurchaseFailed?.Invoke(response.message);
                     }
                 }
                 catch (JsonException ex)
@@ -162,7 +186,7 @@ public class MarketAPI
     }
 
     //아이템 등록 취소
-    IEnumerator CancelRegistItem(int marketId)
+    IEnumerator CancelRegistItem(string userId, int marketId)
     {
         string url = $"{APIConstants.BASE_API_URL}/market/items/{userId}/{marketId}";
 
@@ -181,7 +205,12 @@ public class MarketAPI
                     CancelRegistResponse response = JsonConvert.DeserializeObject<CancelRegistResponse>(responseJson);
                     if (response.success)
                     {
-                        APIEvents.OnCancelItem?.Invoke(response);
+                        OnCancelRegistComplete?.Invoke(response);
+                    }
+                    else
+                    {
+                        Debug.LogError("아이템 등록 취소 실패: " + response.message);
+                        OnCancelRegistFailed?.Invoke(response.message);
                     }
                 }
                 catch (JsonException ex)
@@ -197,32 +226,30 @@ public class MarketAPI
     }
 
 
-    //아이템 목록 가져오기 요청
-    public void RequestToGetSellingList()
+    public void RequestToSellItem(string userId, int Itemid, ItemSpec itemspec, string price, string count)
     {
-        coroutineRunner.StartCoroutine(GetSellingList());
+        coroutineRunner.StartCoroutine(RequestToSell(userId, Itemid, itemspec, price, count));
     }
-    public void RequestToGetMyList()
+
+    public void RequestToBuyItem(string userId, int marketId, string count)
+    {
+        coroutineRunner.StartCoroutine(RequestToBuy(userId, marketId, count));
+    }
+
+    public void RequestToCancelItem(string userId, int marketId)
+    {
+        coroutineRunner.StartCoroutine(CancelRegistItem(userId, marketId));
+    }
+
+    public void RequestToGetMyList(string userId)
     {
         coroutineRunner.StartCoroutine(GetSellingList(userId));
     }
 
-    //아이템 구매 요청
-    public void RequestToBuyItem(int marketId, string count)
+    // "공용" 함수는 userId가 필요 없음
+    public void RequestToGetSellingList()
     {
-        coroutineRunner.StartCoroutine(RequestToBuy(marketId, count));
-    }
-
-    //아이템 판매 요청
-    public void RequestToSellItem(int Itemid, ItemSpec itemspec, string price, string count)
-    {
-        coroutineRunner.StartCoroutine(RequestToSell(Itemid, itemspec, price, count));
-    }
-
-    //아이템 등록 취소 요청
-    public void RequestToCancelItem(int marketId)
-    {
-        coroutineRunner.StartCoroutine(CancelRegistItem(marketId));
+        coroutineRunner.StartCoroutine(GetSellingList());
     }
 }
 

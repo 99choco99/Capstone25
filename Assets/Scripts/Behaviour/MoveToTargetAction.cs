@@ -27,29 +27,40 @@ public partial class MoveToTargetAction : Action
 
         enemy.BehaviourTree.GetVariable<float>("AttackRange", out var distance);
         navAgent.stoppingDistance = distance.Value * 0.9f;
-        if(enemy.Senses.Target != null)
-        {
-            
-            enemy.Motor.MoveTo(enemy.Senses.Target.transform.position);
-            return Status.Success;
-        }
-        else
-        {
-            return Status.Failure;
-        }
+
+        enemy.Motor.MoveTo(enemy.Senses.CurrentTarget.transform.position);
+        return Status.Running;
 
 
-    }
+        }
 
 
     protected override Status OnUpdate()
     {
-        return Status.Success;
+        if (enemy.Senses.CurrentTarget == null)
+        {
+            enemy.Motor.Stop();
+            return Status.Failure;
+        }
+
+        enemy.Motor.MoveTo(enemy.Senses.CurrentTarget.transform.position);
+
+        if (!navAgent.pathPending && navAgent.remainingDistance <= navAgent.stoppingDistance)
+        {
+            enemy.Motor.Stop();
+            return Status.Success;
+        }
+
+        // 아직 이동 중
+        return Status.Running;
     }
 
     protected override void OnEnd()
     {
-
+        if (enemy != null && enemy.Motor != null)
+        {
+            enemy.Motor.Stop();
+        }
     }
 }
 
