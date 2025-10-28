@@ -1,4 +1,5 @@
 
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,6 +47,7 @@ public class QuestManager : MonoBehaviour
         {
             player.Stats.OnLevelUp -= UnlockQuests;
         }
+        OnQuestStatusChanged = null;
     }
 
     void Initialize(QuestDefinition[] questData, QuestStatus[] questProgress)
@@ -58,6 +60,7 @@ public class QuestManager : MonoBehaviour
             {
                 QuestDefinition.Add(quest.questID, quest);
             }
+
             if (!playerQuestState.ContainsKey(quest.questID))
             {
                 playerQuestState.Add(quest.questID, new QuestStatus(quest));
@@ -72,15 +75,14 @@ public class QuestManager : MonoBehaviour
                 {
                     playerQuestState[progress.questId] = progress;
                 }
+
                 if (progress.IsFocused)
                 {
                     currentQuestId = progress.questId;
                 }
-                OnQuestStatusChanged?.Invoke(GetQuestData(progress.questId), GetQuestStatus(progress.questId));
             }
         }
     }
-
 
     //퀘스트 상태 가져오기
     public QuestStatus GetQuestStatus(int questId) => playerQuestState.GetValueOrDefault(questId);

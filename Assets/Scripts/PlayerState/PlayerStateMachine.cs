@@ -16,6 +16,7 @@ public class PlayerStateMachine : MonoBehaviour
     public PlayerExecuteState PlayerExecuteState { get; private set; }
     public ConversationState ConversationState { get; private set; }  // 대화 상태
 
+    public PlayerDeadState playerDeadState { get; private set; }
 
     Player player;
 
@@ -33,6 +34,7 @@ public class PlayerStateMachine : MonoBehaviour
         PlayerRollingState = new PlayerDodgeState(player, this);
         PlayerSprintState = new PlayerSprintState(player, this);
         PlayerExecuteState = new PlayerExecuteState(player, this);
+        playerDeadState = new PlayerDeadState(player, this);
         ConversationState = new ConversationState(player, this);
     }
 

@@ -10,7 +10,7 @@ public class DataManager : MonoBehaviour
     public PlayerData playerData;
     [SerializeField] private int[] maxExp;
     public event Action OnSave;
-
+    public event Action OnPlayerRegistered;
 
     public Player Player { get; private set; }
     public InventoryManager Inventory { get; private set; }
@@ -31,7 +31,7 @@ public class DataManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        InvokeRepeating("AutoSaveData", 10f, 10f);
+        InvokeRepeating("AutoSaveData", 10.0f, 10.0f);
     }
 
 
@@ -52,6 +52,7 @@ public class DataManager : MonoBehaviour
         {
             Debug.LogError("플레이어 참조 문제 발생", localPlayer);
         }
+        OnPlayerRegistered?.Invoke();
     }
 
     public void Unregister()
@@ -67,6 +68,7 @@ public class DataManager : MonoBehaviour
     //플레이어 데이터 자동 저장
     private void AutoSaveData()
     {
+        if (Stats != null && Stats.dead) { return; }
         OnSave?.Invoke();
     }
 

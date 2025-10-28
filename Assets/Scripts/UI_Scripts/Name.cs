@@ -13,11 +13,16 @@ public class Name : MonoBehaviour
             cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
         }
         nametext = GetComponentInChildren<TextMeshProUGUI>();
-        nametext.text = gameObject.transform.root.name;
-        if(gameObject.tag == "Player")
+    }
+
+
+    public void SetNickname(string nickname)
+    {
+        if (nametext == null)
         {
-            nametext.text = PublicAPIManager.Instance.loginData.nickname;
+            nametext = GetComponentInChildren<TextMeshProUGUI>();
         }
+        nametext.text = nickname;
     }
 
     // Update is called once per frame

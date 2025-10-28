@@ -14,6 +14,7 @@ public class PlayerData
     public int level { get; set; }
     public bool dead { get; set; }
     public int gold { get; set; }
+    public int AbilityPoint {  get; set; }
 
 }
 

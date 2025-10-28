@@ -16,7 +16,6 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
 
 
     public Slot currentSlot;             //ÇöÀç ½½·Ô
-    private MarketInventoryUI rootWindow;
 
     public void Awake()
     {
@@ -26,8 +25,6 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
         countText = GetComponentInChildren<TextMeshProUGUI>();
 
         currentSlot = GetComponentInParent<Slot>();
-        rootWindow = GetComponentInParent<MarketInventoryUI>();
-
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -72,12 +69,12 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
 
     public virtual void OnPointerEnter(PointerEventData eventData)
     {
-        rootWindow.ShowTooltip(data.script, transform.position);
+        PlayerUIManager.instance.ShowTooltip(data.script, transform.position);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        rootWindow.HideTooltip();
+        PlayerUIManager.instance.HideTooltip();
     }
 
     public void SetAlphaValue(float alpha)

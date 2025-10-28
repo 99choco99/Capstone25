@@ -19,8 +19,7 @@ public class NetworkPlayer : MonoBehaviour
     {
         if (player.IsLocalPlayer) return;
 
-        transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * 10f);
-        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * 15f);
+        transform.SetPositionAndRotation(Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * 10f), Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * 15f));
         player.Anim.SetFloat("Horizontal", horizontal);
         player.Anim.SetFloat("Vertical", vertical);
     }

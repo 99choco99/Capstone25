@@ -36,7 +36,11 @@ public class DialogueManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        PublicAPIManager.Instance.Dialogue.OnGetDialogue -= GenerateData;
+        if(PublicAPIManager.Instance != null)
+        {
+            PublicAPIManager.Instance.Dialogue.OnGetDialogue -= GenerateData;
+        }
+
     }
 
     void GenerateData(Dialogue[] data)

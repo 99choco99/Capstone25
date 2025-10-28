@@ -25,7 +25,6 @@ public class InventoryManager : MonoBehaviour
 
         if (player.IsLocalPlayer)
         {
-            PublicAPIManager.Instance.Market.OnItemRegistComplete += UpdateInventoryAfterSale;
             PublicAPIManager.Instance.Market.OnItemPurchaseComplete += AddPurchasedItem;
             PublicAPIManager.Instance.Market.OnCancelRegistComplete += ReturnItemFromMarket;
         }
@@ -52,7 +51,6 @@ public class InventoryManager : MonoBehaviour
         OnSlotDataChanged -= SaveInventory;
         if (player.IsLocalPlayer)
         {
-            PublicAPIManager.Instance.Market.OnItemRegistComplete -= UpdateInventoryAfterSale;
             PublicAPIManager.Instance.Market.OnItemPurchaseComplete -= AddPurchasedItem;
             PublicAPIManager.Instance.Market.OnCancelRegistComplete -= ReturnItemFromMarket;
         }
@@ -141,18 +139,7 @@ public class InventoryManager : MonoBehaviour
         OnSlotDataChanged?.Invoke(destinationSlotType, destinationSlotIndex);
     }
 
-    //아이템 등록 성공 후 처리
-    // 인벤토리에서 해당 아이템 개수 차감.
-    void UpdateInventoryAfterSale(ItemRegistResponse response)
-    {
-        SlotData saleSlotData = MarketManager.Instance.saleSlot.slotData;
-        if (saleSlotData == null)
-        {
-            Debug.LogWarning("판매할 아이템이 없습니다.");
-            return;
-        }
-        RegisterItemToMarket(saleSlotData, response.ItemCount);
-    }
+
 
 
     //마켓에 아이템을 등록했을 때

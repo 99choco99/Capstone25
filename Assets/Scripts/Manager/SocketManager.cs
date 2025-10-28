@@ -1,10 +1,11 @@
 using Firesplash.GameDevAssets.SocketIO; // Asset의 네임스페이스 사용
 using Newtonsoft.Json;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-using static PublicAPIManager;
+
 
 public class SocketManager : MonoBehaviour
 {
@@ -16,6 +17,9 @@ public class SocketManager : MonoBehaviour
     private string userId;
     private NetworkPlayerData myInitialData = null;
 
+
+    private bool isWaitingForDataToSpawn = false;
+    private Coroutine spawnTimeoutCoroutine;
 
     // 서버에 접속된 플레이어들을 관리
     private Dictionary<string, GameObject> networkPlayers = new Dictionary<string, GameObject>();
@@ -35,7 +39,7 @@ public class SocketManager : MonoBehaviour
 
     void Start()
     {
-
+        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoaded;
         sioCom = GetComponent<SocketIOCommunicator>();
 
         // ========== 서버로부터 오는 이벤트 리스너 설정 ==========
@@ -49,7 +53,6 @@ public class SocketManager : MonoBehaviour
             {
                 sioCom.Instance.Emit("initialize", userId,true);
             }
-
 
         });
 
@@ -88,6 +91,7 @@ public class SocketManager : MonoBehaviour
         //다른 플레이어의 움직임을 업데이트
         sioCom.Instance.On("updatePlayerMovement", (string payload) =>
         {
+
             var data = JsonConvert.DeserializeObject<NetworkPlayerData>(payload);
             if (networkPlayers.ContainsKey(data.id))
             {
@@ -125,6 +129,14 @@ public class SocketManager : MonoBehaviour
             {
                 Animator anim = networkPlayers[data.id].GetComponent<Animator>();
                 if (anim != null) anim.SetTrigger("attack");
+            }
+        });
+
+        sioCom.Instance.On("respawn", (string payload) =>
+        {
+            if (!string.IsNullOrEmpty(userId))
+            {
+                sioCom.Instance.Emit("initialize", userId, true);
             }
         });
 
@@ -172,6 +184,7 @@ public class SocketManager : MonoBehaviour
                 playerComponent.IsLocalPlayer = true;
                 playerComponent.InputHandler.enabled = true;
                 playerComponent.StateMachine.enabled = true;
+                
                 if (DataManager.Instance != null)
                 {
                     DataManager.Instance.Register(playerComponent);
@@ -184,8 +197,12 @@ public class SocketManager : MonoBehaviour
         else
         {
             player.GetComponent<PlayerInput>().enabled = false;
-
             networkPlayers.Add(data.id, player);
+            Name nameTag = player.GetComponentInChildren<Name>();
+            if (nameTag != null)
+            {
+                nameTag.SetNickname(data.nickname);
+            }
         }
     }
 
@@ -208,6 +225,7 @@ public class SocketManager : MonoBehaviour
 
     }
 
+
     public void EmitPlayerMoveAnimation(float vertical, float horizontal)
     {
         NetworkAnimationData data = new();
@@ -224,6 +242,10 @@ public class SocketManager : MonoBehaviour
         sioCom.Instance.Emit("playerAttack");
     }
 
+    public void EmitPlayerDied()
+    {
+        sioCom.Instance.Emit("playerDied");
+    }
 
     public void ConnectToServer(string userId)
     {
@@ -240,19 +262,87 @@ public class SocketManager : MonoBehaviour
     }
 
 
-    // [추가] 씬 로딩 완료 시 호출될 함수
+    // 씬 로딩 완료 시 호출될 함수
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if(scene.name != "Loading")
         {
-            SpawnPlayer(myInitialData, true);
-            sioCom.Instance.Emit("LoadSceneComplete");
+            CleanupSpawnEvents();
+
+            isWaitingForDataToSpawn = true;
+            PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded += HandlePlayerDataLoaded;
+            PublicAPIManager.Instance.PlayerData.OnPlayerDataLoadFailed += HandlePlayerDataLoadFailed;
+
+
+            spawnTimeoutCoroutine = StartCoroutine(SpawnTimeoutCoroutine(10.0f));
+
+            if (PublicAPIManager.Instance != null && PublicAPIManager.Instance.PlayerData != null)
+            {
+                PublicAPIManager.Instance.PlayerData.RequestLoadPlayerData(this.userId);
+            }
+            else
+            {
+                Debug.LogError("PublicAPIManager 또는 PlayerDataAPI 없음.");
+                isWaitingForDataToSpawn = false;
+                PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoaded;
+                HandlePlayerDataLoadFailed("PublicAPIManager가 null입니다.");
+            }
         }
 
     }
 
+    private void HandlePlayerDataLoaded()
+    {
+        if (!isWaitingForDataToSpawn)
+        {
+            return;
+        }
+        isWaitingForDataToSpawn = false;
+        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoaded;
+        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoadFailed -= HandlePlayerDataLoadFailed;
+        SpawnAndNotifyServer();
+    }
 
-    // OnDestroy는 Unity 오브젝트가 파괴될 때 호출됨
+    // 실패 핸들러
+    private void HandlePlayerDataLoadFailed(string reason)
+    {
+        if (!isWaitingForDataToSpawn) return;
+        CleanupSpawnEvents();
+    }
+
+    //타임아웃 코루틴
+    private IEnumerator SpawnTimeoutCoroutine(float timeoutSeconds)
+    {
+        yield return new WaitForSeconds(timeoutSeconds);
+
+        if (!isWaitingForDataToSpawn)
+        {
+            yield break;
+        }
+        Debug.LogError("PlayerData 갱신 시간 초과!");
+        HandlePlayerDataLoadFailed("데이터 로드 시간 초과");
+    }
+
+    private void CleanupSpawnEvents()
+    {
+        isWaitingForDataToSpawn = false;
+
+        if (spawnTimeoutCoroutine != null)
+        {
+            StopCoroutine(spawnTimeoutCoroutine);
+            spawnTimeoutCoroutine = null;
+        }
+
+        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoaded;
+        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoadFailed -= HandlePlayerDataLoadFailed;
+    }
+
+    private void SpawnAndNotifyServer()
+    {
+        SpawnPlayer(myInitialData, true);
+        sioCom.Instance.Emit("LoadSceneComplete");
+    }
+
     private void OnApplicationQuit()
     {
         if (sioCom != null && sioCom.Instance.IsConnected())
@@ -260,6 +350,11 @@ public class SocketManager : MonoBehaviour
             SceneManager.sceneLoaded -= OnSceneLoaded;
             sioCom.Instance.Close();
         }
+        if(PublicAPIManager.Instance != null)
+        {
+            PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoaded;
+        }
+
     }
 }
 
@@ -270,6 +365,7 @@ public class NetworkPlayerData
     public string id;
     public NetworKPosition position;
     public NetworkRotation rotation;
+    public string nickname;
 }
 
 public class NetworKPosition

@@ -20,6 +20,8 @@ public class PlayerUIManager : MonoBehaviour
 {
     public PlayerStats playerStats;
 
+    [SerializeField] private GameObject itemDescriptionObject;
+    [SerializeField] private TextMeshProUGUI itemDescriptionText;
 
     public Slider PlayerHpUI;
     public Slider PostureGauge;
@@ -37,7 +39,7 @@ public class PlayerUIManager : MonoBehaviour
     public List<UIPanelType> currentOpenUI = new List<UIPanelType>();
 
     [Header("UI_Panel")]
-    GameObject Market;
+    [SerializeField] GameObject Market;
     public GameObject Inventory;
     public GameObject PlayerProfile;
     public GameObject Setting;
@@ -45,18 +47,18 @@ public class PlayerUIManager : MonoBehaviour
     public GameObject dialogUI;
 
 
-    public static PlayerUIManager instnace;
+    public static PlayerUIManager instance;
 
 
     private void Awake()
     {
-        if (instnace == null)
+        if (instance == null)
         {
-            instnace = this;
+            instance = this;
         }
         else
         {
-            Destroy(instnace);
+            Destroy(instance);
         }
         playerStats = GetComponentInParent<PlayerStats>();
 
@@ -67,14 +69,11 @@ public class PlayerUIManager : MonoBehaviour
 
     private void Start()
     {
-        if (MarketManager.Instance != null)
-        {
-            Market = MarketManager.Instance.gameObject;
-        }
+        Market = MarketManager.Instance.MarketUI;
         // 딕셔너리에 UI 패널들을 등록
         panelDictionary = new Dictionary<UIPanelType, GameObject>()
         {
-            {UIPanelType.Market, Market },
+            {UIPanelType.Market,Market},
             { UIPanelType.Inventory, Inventory },
             { UIPanelType.Profile, PlayerProfile },
             { UIPanelType.Setting, Setting },
@@ -82,10 +81,8 @@ public class PlayerUIManager : MonoBehaviour
             {UIPanelType.Dialogue, dialogUI }
         };
 
-
         UpdateHp(playerStats.currentHp);
         UpdatePostureGauge(playerStats.maxPosture, playerStats.currentPosture);
-
     }
 
     private void OnDestroy()
@@ -127,21 +124,20 @@ public class PlayerUIManager : MonoBehaviour
         EnemyName.gameObject.SetActive(false);
     }
 
-    public void SetNpcText(string text)
+
+    public void ShowTooltip(string text, Vector3 position)
     {
-        NpcText.text = text;
+        if (itemDescriptionObject == null) return;
+        itemDescriptionText.text = text;
+        itemDescriptionObject.transform.position = position + Vector3.down * 50;
+        itemDescriptionObject.SetActive(true);
     }
 
-    public void SetNpcName(string name)
+    public void HideTooltip()
     {
-        NpcName.text = name;
+        if (itemDescriptionObject == null) return;
+        itemDescriptionObject.SetActive(false);
     }
-
-    public void SetMaxExp(float maxExp)
-    {
-        ExpUI.maxValue = maxExp;
-    }
-
 
     public void ToggleUI(UIPanelType type)
     {

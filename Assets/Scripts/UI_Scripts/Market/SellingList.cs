@@ -19,6 +19,7 @@ public class SellingList : MonoBehaviour
     }
     private void OnDestroy()
     {
+        if (PublicAPIManager.Instance == null) { return; }
         PublicAPIManager.Instance.Market.OnGetSellingListComplete -= UpdateSellingList;
         PublicAPIManager.Instance.Market.OnGetMySellingListComplete -= UpdateSellingList;
         PublicAPIManager.Instance.Market.OnItemRegistComplete -= UpdateSellingList;

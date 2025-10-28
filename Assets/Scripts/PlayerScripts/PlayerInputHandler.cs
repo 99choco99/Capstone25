@@ -176,7 +176,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Started)
         {
-            PlayerUIManager.instnace.CloseLastUI();
+            PlayerUIManager.instance.CloseLastUI();
         }
     }
 
@@ -186,7 +186,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Started)
         {
-            PlayerUIManager.instnace.ToggleUI(UIPanelType.Inventory);
+            PlayerUIManager.instance.ToggleUI(UIPanelType.Inventory);
         }
     }
 
@@ -194,7 +194,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Started)
         {
-            PlayerUIManager.instnace.ToggleUI(UIPanelType.Profile);
+            PlayerUIManager.instance.ToggleUI(UIPanelType.Profile);
         }
     }
 
@@ -202,7 +202,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Started)
         {
-            PlayerUIManager.instnace.ToggleUI(UIPanelType.Setting);
+            PlayerUIManager.instance.ToggleUI(UIPanelType.Setting);
         }
     }
 
@@ -212,7 +212,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Started)
         {
-            PlayerUIManager.instnace.ToggleUI(UIPanelType.Quest);
+            PlayerUIManager.instance.ToggleUI(UIPanelType.Quest);
 
         }
     }

@@ -23,10 +23,6 @@ public enum PlayerStatType { Damage, Health, Defense }
 
 public class PlayerStats : LivingEntity
 {
-    // 데이터를 보관하고, 변경 시 외부에 이벤트를 통해 알리는 것
-    // 플레이어만의 고유한 데이터
-    public string ID { get; private set; }
-    public string Nickname { get; private set; }
     public int Gold { get; private set; }
     public int Level { get; private set; }
     public int Exp { get; private set; }
@@ -57,11 +53,12 @@ public class PlayerStats : LivingEntity
     {
         player = GetComponent<Player>();
         player.Inventory.OnQuickSlotUsed += Consume;
+
     }
+
     private void Start()
     {
         LoadPlayerData(DataManager.Instance.playerData);
-
     }
 
     private void OnDestroy()
@@ -73,20 +70,16 @@ public class PlayerStats : LivingEntity
         player.Inventory.OnQuickSlotUsed -= Consume;
     }
 
-
     //게임 데이터 불러오기
     public void LoadPlayerData(PlayerData data)
     {
-        Debug.Log(data.id);
-        ID = data.id;
-        Nickname = data.nickname;
-        gameObject.name = Nickname;
+        gameObject.name = data.nickname;
 
         baseMaxHp = data.maxHp;
         baseDefense = data.defense;
         baseDamage = data.damage;
         currentHp = data.currentHp;
-
+        AbilityPoint = data.AbilityPoint;
 
 
         Level = data.level;
@@ -102,6 +95,7 @@ public class PlayerStats : LivingEntity
         {
             DataManager.Instance.OnSave += OnSavePlayerData;
         }
+
 
         Debug.Log("데이터 불러오기 성공");
     }
@@ -119,8 +113,8 @@ public class PlayerStats : LivingEntity
         dataToSave.level = Level;
         dataToSave.exp = Exp;
         dataToSave.gold = Gold;
+        dataToSave.AbilityPoint = AbilityPoint;
 
-        Debug.Log($"[{Nickname}] 데이터 저장 준비 완료.");
         PublicAPIManager.Instance.PlayerData.RequestSavePlayerData(dataToSave);
     }
 
