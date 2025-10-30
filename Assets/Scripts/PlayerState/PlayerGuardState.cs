@@ -51,6 +51,12 @@ public class PlayerGuardState : State
             stateMachine.TransitionTo(stateMachine.PlayerJumpState);
             return;
         }
+        if (player.InputHandler.AttackInput)
+        {
+            player.InputHandler.UseAttackInput(); // 입력 소비
+            stateMachine.TransitionTo(stateMachine.PlayerAttackState);
+            return;
+        }
         player.Motor.Move();
     }
 

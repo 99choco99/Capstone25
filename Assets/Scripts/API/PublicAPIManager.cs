@@ -1,12 +1,7 @@
 
 using Newtonsoft.Json;
-using System;
-using System.Collections;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Networking;
 
 public class PublicAPIManager : MonoBehaviour
 {
@@ -49,7 +44,7 @@ public class PublicAPIManager : MonoBehaviour
 
 
 #if UNITY_EDITOR
-        LoginData testData = new LoginData { user_id = "editor_user_id", nickname = "에디터_테스터" };
+        LoginData testData = new LoginData { user_id = "editor_user_id2", nickname = "에디터_테스터2" };
         Debug.Log("에디터로 실행");
         ReceiveLoginData(JsonConvert.SerializeObject(testData));
 #endif

@@ -6,7 +6,4 @@ public class QuestNPC : NPC
         base.Interact(player);
         anim.SetBool("Talk", true);
     }
-
-
-
 }

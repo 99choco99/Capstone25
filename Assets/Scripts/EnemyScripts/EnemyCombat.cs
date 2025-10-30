@@ -23,9 +23,9 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     private void Awake()
     {
         enemy = GetComponent<Enemy>();
+
+
     }
-
-
 
     // 플레이어를 공격했을 때
     public void OnWeaponHit(IDamageable target, Collider targetCollider, Weapon weapon)

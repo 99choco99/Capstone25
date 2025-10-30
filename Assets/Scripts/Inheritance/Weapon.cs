@@ -29,6 +29,11 @@ public class Weapon : MonoBehaviour
     }
     private void Update()
     {
+        if (owner == null || owner.Equals(null))
+        {
+            isAttackActive = false;
+            return;
+        }
         PerformHitCheck();
     }
     public void PerformHitCheck()
@@ -41,6 +46,7 @@ public class Weapon : MonoBehaviour
         {
             if (col.TryGetComponent<IDamageable>(out var target))
             {
+                if (target as UnityEngine.Object == null) continue;
                 if (!hitTargets.Contains(target))
                 {
                     hitTargets.Add(target);

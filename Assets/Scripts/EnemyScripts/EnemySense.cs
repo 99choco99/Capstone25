@@ -78,33 +78,19 @@ public class EnemySense : MonoBehaviour
     }
 
     private void AnalyzeTarget()
-
     {
-
         if (CurrentTarget == null)
-
         {
-
             // 타겟이 없다면 모든 위협 정보를 초기화
-
             IsPlayerAttacking = false;
-
             lastPlayerAttackStateHash = 0;
-
             return;
-
         }
 
 
 
         DistanceToTarget = Vector3.Distance(CurrentTarget.position, transform.position);
-
         if (Vector3.Dot(CurrentTarget.forward, transform.forward) > -0.8f) { return; }
-
-
-
-
-
 
 
         if (playerAnimator == null)
@@ -124,10 +110,6 @@ public class EnemySense : MonoBehaviour
         bool isPlayerInAttackAnim = stateInfo.IsTag("Attack");
         bool isAttackInThreatRange = DistanceToTarget <= attackThreatRange;
 
-
-
-
-
         bool isPlayerAttackingNow = isPlayerInAttackAnim && isAttackInThreatRange;
 
 
@@ -136,7 +118,6 @@ public class EnemySense : MonoBehaviour
         { 
             lastPlayerAttackStateHash = currentStateHash;
             return;
-
         }
 
 

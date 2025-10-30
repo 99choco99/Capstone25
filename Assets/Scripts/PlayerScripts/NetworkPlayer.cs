@@ -19,8 +19,7 @@ public class NetworkPlayer : MonoBehaviour
     {
         if (player.IsLocalPlayer) return;
 
-        transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * 10f);
-        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * 15f);
+        transform.SetPositionAndRotation(Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * 10f), Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * 15f));
         player.Anim.SetFloat("Horizontal", horizontal);
         player.Anim.SetFloat("Vertical", vertical);
     }
@@ -28,16 +27,19 @@ public class NetworkPlayer : MonoBehaviour
     // SocketManager가 호출해줄 함수
     public void UpdatePosition(Vector3 newPosition)
     {
+        if (player.IsLocalPlayer) return;
         targetPosition = newPosition;
     }
 
     public void UpdateRotation(Quaternion newRotation)
     {
+        if (player.IsLocalPlayer) return;
         targetRotation = newRotation;
     }
 
     public void UpdateMoveAnimation(float newHorizontal, float newVertical)
     {
+        if (player.IsLocalPlayer) return;
         horizontal = newHorizontal;
         vertical = newVertical;
     }

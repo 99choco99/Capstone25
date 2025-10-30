@@ -3,8 +3,7 @@ using UnityEngine;
 public class PlayerIdleState : State
 {
     public PlayerIdleState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
-
-
+    public override bool UseRootMotion => true;
     public override void Enter()
     {
         player.Anim.SetBool("Jump", false);

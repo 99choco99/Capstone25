@@ -13,6 +13,10 @@ public class TargetingSystem : MonoBehaviour
     [SerializeField] private float detectionRange = 5f;
     List<IDamageable> validTargets = new List<IDamageable>();
 
+    [Header("타겟 전환 쿨다운")]
+    [SerializeField] private float targetSwitchCooldown = 2f; // 2초 쿨다운
+    private float lastSwitchTime = 0f; // 마지막으로 타겟을 바꾼 시간
+
     public event Action<IDamageable> OnChangedTarget;
     public event Action OnTargetDeselected;
 
@@ -77,6 +81,11 @@ public class TargetingSystem : MonoBehaviour
 
     private void HandleTargetSwitching()
     {
+        if (Time.time < targetSwitchCooldown + lastSwitchTime)
+        {
+            return;
+        }
+
         float lookInputX = player.InputHandler.LookInput.x;
 
         if (Mathf.Abs(lookInputX) > 0.5f)
@@ -84,11 +93,11 @@ public class TargetingSystem : MonoBehaviour
             validTargets = GetAllValidTargets();
             UpdateLeftRightTargets(validTargets);
 
-            if (lookInputX > 0.5f && RightTarget != null)
+            if (lookInputX > 0.8f && RightTarget != null)
             {
                 SetTarget(RightTarget);
             }
-            else if (lookInputX < -0.5f && LeftTarget != null)
+            else if (lookInputX < -0.8f && LeftTarget != null)
             {
                 SetTarget(LeftTarget);
             }
@@ -138,6 +147,7 @@ public class TargetingSystem : MonoBehaviour
             Vector3 directionToTarget = target.transform.position - transform.position;
             float angle = Vector3.SignedAngle(cameraForward, directionToTarget, Vector3.up);
 
+            if(angle > cameraHalfFov) { return; }
             if (angle > 0 && angle < closestRightAngle) // 오른쪽에 있는 타겟들 중 가장 중앙에 가까운 타겟
             {
                 closestRightAngle = angle;
@@ -159,6 +169,7 @@ public class TargetingSystem : MonoBehaviour
             player.isLockOn = true;
             targetCollider = CurrentTarget.gameObject.GetComponent<Collider>();
             OnChangedTarget?.Invoke(target);
+            lastSwitchTime = Time.time;
         }
         else
         {

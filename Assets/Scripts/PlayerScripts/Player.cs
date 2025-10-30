@@ -33,6 +33,7 @@ public class Player : MonoBehaviour
         Stats = GetComponent<PlayerStats>();
         Combat = GetComponent<PlayerCombat>();
         TargetingSystem = GetComponent<TargetingSystem>();
+        Interaction = GetComponent<PlayerInteraction>();
         localAPI = GetComponent<LocalAPIManager>();
         Inventory = GetComponentInChildren<InventoryManager>();
         Quest = GetComponentInChildren<QuestManager>();
@@ -41,15 +42,38 @@ public class Player : MonoBehaviour
         Anim = GetComponentInChildren<Animator>();
         MainCamera = Camera.main;
 
-
-        if(PlayerCamera.Instance.player == null)
-        {
-            PlayerCamera.Instance.player = this;
-            SoundManager.Instance.PlayLoopingSFX("BGM_Main");
-        }
-
-        Cursor.lockState = CursorLockMode.Locked;
         
+    }
+
+    private void Start()
+    {
+        if (IsLocalPlayer)
+        {
+            if (PlayerCamera.Instance != null && PlayerCamera.Instance.player == null)
+            {
+                PlayerCamera.Instance.player = this;
+            }
+
+            if (SoundManager.Instance != null)
+            {
+                SoundManager.Instance.PlayLoopingSFX("BGM_Main");
+            }
+
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        // 내가 로컬 플레이어일 경우에만
+        if (IsLocalPlayer)
+        {
+            if (DataManager.Instance != null)
+            {
+                // DataManager에게 내 참조를 모두 null로 만들라고 알림
+                DataManager.Instance.Unregister();
+            }
+        }
     }
 
 }

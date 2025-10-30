@@ -4,7 +4,7 @@ using UnityEngine;
 public class PlayerMoveState : State
 {
     public PlayerMoveState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
-
+    public override bool UseRootMotion => true;
 
     public override void Enter()
     {

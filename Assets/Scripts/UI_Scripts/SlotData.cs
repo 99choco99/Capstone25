@@ -8,7 +8,7 @@ public class SlotData
 
     public SlotType slotType;
     public int slotIndex;
-    public int itemId;
+    public int? itemId;
     public ItemSpec itemSpec;
 
     [NonSerialized]

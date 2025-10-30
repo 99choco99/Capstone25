@@ -5,7 +5,7 @@ using UnityEngine;
 public class MarketManager : MonoBehaviour
 {
     public static MarketManager Instance;
-    public SaleSlot saleSlot;   //판매 슬롯
+    public GameObject MarketUI;
 
     private void Awake()
     {
@@ -18,14 +18,6 @@ public class MarketManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-
-        saleSlot = GetComponentInChildren<SaleSlot>();
-
-    }
-
-    private void Start()
-    {
-        gameObject.SetActive(false);
     }
 
     //API 호출 함수

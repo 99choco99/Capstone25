@@ -28,7 +28,7 @@ public class PlayerProfile : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (player.Stats != null)
+        if (player != null && player.Stats != null)
         {
             playerStats.OnStatsChanged -= UpdateUI;
         }

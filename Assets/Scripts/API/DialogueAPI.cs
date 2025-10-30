@@ -9,7 +9,7 @@ public class DialogueAPI
     private MonoBehaviour coroutineRunner;
 
     //대화 내용 가져오기
-    public event Action<Dialogue[]> OnGetDialogue;
+    public event Action<string> OnGetDialogue;
 
     public DialogueAPI(MonoBehaviour runner)
     {
@@ -30,8 +30,13 @@ public class DialogueAPI
             {
                 try
                 {
-                    Dialogue[] data = JsonConvert.DeserializeObject<Dialogue[]>(webRequest.downloadHandler.text);
-                    OnGetDialogue?.Invoke(data);
+                    string jsonText = webRequest.downloadHandler.text;
+                    if (string.IsNullOrEmpty(jsonText))
+                    {
+                        Debug.LogError("서버에서 받은 대화문 JSON이 비어있습니다.");
+                        yield break;
+                    }
+                    OnGetDialogue?.Invoke(jsonText);
                 }
                 catch (JsonException ex)
                 {

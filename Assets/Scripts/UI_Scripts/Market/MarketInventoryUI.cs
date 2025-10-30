@@ -6,8 +6,7 @@ using UnityEngine.EventSystems;
 public class MarketInventoryUI : MonoBehaviour
 {
     private Player player;
-    [SerializeField] private GameObject itemDescriptionObject;
-    [SerializeField] private TextMeshProUGUI itemDescriptionText;
+
 
     [SerializeField] private GameObject slotPrefab;
     [SerializeField] private GameObject itemPrefab;
@@ -18,9 +17,51 @@ public class MarketInventoryUI : MonoBehaviour
 
     private Dictionary<SlotType, List<Slot>> uiSlots = new();
 
-    private void Start()
+    private void Awake()
     {
+        if (DataManager.Instance == null)
+        {
+            Debug.LogError("MarketInventoryUI: DataManager.Instance가 없습니다!");
+            return;
+        }
+        DataManager.Instance.OnPlayerRegistered += InitializePlayerSubscriptions;
+
         player = DataManager.Instance.Player;
+    }
+
+    // OnPlayerRegistered 이벤트가 발생했을 때(Player가 준비됐을 때) 호출될 메서드
+    private void InitializePlayerSubscriptions()
+    {
+        if (player != null)
+        {
+            // 이전 Player의 이벤트에서 구독을 해제
+            player.Inventory.OnInventoryDataInitialized -= InitUI;
+            player.Inventory.OnSlotDataChanged -= UpdateSlotUI;
+            player.Stats.OnChangedGold -= UpdateGoldUI;
+        }
+        // 이전 씬에서 만든 모든 슬롯 UI를 파괴
+        foreach (var slotList in uiSlots.Values)
+        {
+            foreach (Slot slot in slotList)
+            {
+                // 씬 이동으로 이미 파괴되었을 수 있으므로, null이 아닌지 확인
+                if (slot != null)
+                {
+                    Destroy(slot.gameObject);
+                }
+            }
+        }
+        // 슬롯 딕셔너리를 깨끗하게 비웁니다.
+        uiSlots.Clear();
+
+        player = DataManager.Instance.Player;
+
+        if (player == null || player.Inventory == null || player.Stats == null)
+        {
+            Debug.LogError("MarketInventoryUI: Player 등록 이벤트가 발생했으나 참조가 여전히 null입니다.");
+            return;
+        }
+
         player.Inventory.OnInventoryDataInitialized += InitUI;
         player.Inventory.OnSlotDataChanged += UpdateSlotUI;
         player.Stats.OnChangedGold += UpdateGoldUI;
@@ -54,6 +95,7 @@ public class MarketInventoryUI : MonoBehaviour
 
             uiSlots[type].Add(slot);
         }
+
     }
 
     private void OnDropHandler(Slot droppedSlot, PointerEventData eventData)
@@ -115,6 +157,8 @@ public class MarketInventoryUI : MonoBehaviour
                 Destroy(child.gameObject);
             }
         }
+
+        
     }
 
     private void UpdateGoldUI(int gold)
@@ -136,17 +180,4 @@ public class MarketInventoryUI : MonoBehaviour
     }
 
 
-    public void ShowTooltip(string text, Vector3 position)
-    {
-        if (itemDescriptionObject == null) return;
-        itemDescriptionText.text = text;
-        itemDescriptionObject.transform.position = position + Vector3.down * 50;
-        itemDescriptionObject.SetActive(true);
-    }
-
-    public void HideTooltip()
-    {
-        if (itemDescriptionObject == null) return;
-        itemDescriptionObject.SetActive(false);
-    }
 }
