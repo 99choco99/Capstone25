@@ -10,6 +10,7 @@ public class PlayerDeadState : State
     {
         player.Motor.canMove = false;
         player.Motor.canRotate = false;
+        player.Combat.AE_playerAttackEnd();
     }
 
 }

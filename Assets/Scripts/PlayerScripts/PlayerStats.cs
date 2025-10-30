@@ -39,9 +39,9 @@ public class PlayerStats : LivingEntity
 
     //PlayerEvent
     public event Action<int, int> OnExpChanged;   // 경험치 적용
-    public event Action OnStatsChanged;  // 스탯 변경사항 적용
+    public event Action OnStatsChanged;             // 스탯 변경사항 적용
     public event Action<DamageInfo> OnDamaged;
-    public event Action OnLevelUp;  //레벨업시
+    public event Action OnLevelUp;           //레벨업시
     public event Action<int> OnChangedGold;  // 소유 골드가 변경됨.
 
 

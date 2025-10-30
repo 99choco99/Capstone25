@@ -53,12 +53,16 @@ public class EnemyUI : MonoBehaviour
     // Update is called once per frame
     void LateUpdate()
     {
-        if(mainCamera == null)
+        if (mainCamera == null)
         {
             mainCamera = Camera.main;
         }
-        transform.LookAt(mainCamera.transform);
-        transform.rotation = mainCamera.transform.rotation;
+        else
+        {
+            transform.LookAt(mainCamera.transform);
+            transform.rotation = mainCamera.transform.rotation;
+        }
+
     }
 
     public void UpdatePostureGauge(float currentPosture, float maxPosture)

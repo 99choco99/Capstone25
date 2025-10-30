@@ -34,7 +34,6 @@ public class InventoryAPI
                 try
                 {
                     string jsonResponse = webRequest.downloadHandler.text;
-                    Debug.Log($"Inventory Data Received: {jsonResponse}");
 
                     InventoryResponse response = JsonConvert.DeserializeObject<InventoryResponse>(jsonResponse);
 

@@ -23,11 +23,7 @@ public class InventoryManager : MonoBehaviour
         player.localAPI.Inventory.OnGetInventory += LoadInventory;
         OnSlotDataChanged += SaveInventory;
 
-        if (player.IsLocalPlayer)
-        {
-            PublicAPIManager.Instance.Market.OnItemPurchaseComplete += AddPurchasedItem;
-            PublicAPIManager.Instance.Market.OnCancelRegistComplete += ReturnItemFromMarket;
-        }
+
     }
 
     private void Start()
@@ -43,11 +39,20 @@ public class InventoryManager : MonoBehaviour
 
         isInit = true;
         player.localAPI.Inventory.RequestInventory();
+
+        if (player.IsLocalPlayer)
+        {
+            PublicAPIManager.Instance.Market.OnItemPurchaseComplete += AddPurchasedItem;
+            PublicAPIManager.Instance.Market.OnCancelRegistComplete += ReturnItemFromMarket;
+        }
     }
 
     private void OnDestroy()
     {
-        player.localAPI.Inventory.OnGetInventory -= LoadInventory;
+        if (player != null && player.localAPI != null && player.localAPI.Inventory != null)
+        {
+            player.localAPI.Inventory.OnGetInventory -= LoadInventory;
+        }
         OnSlotDataChanged -= SaveInventory;
         if (player.IsLocalPlayer)
         {
@@ -173,6 +178,9 @@ public class InventoryManager : MonoBehaviour
             slotData.itemSpec = response.spec;
             slotData.itemCount = response.ItemCount;
             slotData.itemId = response.ItemId;
+
+            Inventory[slotData.slotType][slotData.slotIndex] = slotData;
+
             OnSlotDataChanged?.Invoke(GetSlotType(slotData), slotData.slotIndex);
             
         }
@@ -203,7 +211,28 @@ public class InventoryManager : MonoBehaviour
         OnSlotDataChanged?.Invoke(data.type, emptySlotData.slotIndex);
     }
 
+    //아이템 획득
+    public void AddItem(int? ItemId)
+    {
+        ItemData data = ItemManager.Instance.GetItem(ItemId);
+        if(data == null) { return; }
+        SlotData emptySlotData = FindEmptySlot(data.type);
 
+        if (emptySlotData == null)
+        {
+            Debug.LogWarning("인벤토리 공간 없음");
+            return;
+        }
+
+        emptySlotData.itemData = data;
+        emptySlotData.itemId = ItemId;
+        emptySlotData.itemSpec = data.baseStats;
+        emptySlotData.itemCount = 1;
+
+
+        Inventory[emptySlotData.slotType][emptySlotData.slotIndex] = emptySlotData;
+        OnSlotDataChanged?.Invoke(data.type, emptySlotData.slotIndex);
+    }
 
 
     public void RequestUseQuickSlotItem()

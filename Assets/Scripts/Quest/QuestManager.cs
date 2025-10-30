@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 
 
@@ -82,6 +83,7 @@ public class QuestManager : MonoBehaviour
                 }
             }
         }
+        UnlockQuests();
     }
 
     //퀘스트 상태 가져오기
@@ -141,6 +143,36 @@ public class QuestManager : MonoBehaviour
             var questDef = GetQuestData(questId);
             var currentStep = questDef.steps[status.currentStepIndex];
 
+
+            if (questId == 102) // "사라진 동생" 퀘스트
+            {
+                if (status.currentStepIndex == 1) // 1번 스텝(아리사 제안 수락) 완료 시
+                {
+                    // Combat Scene으로 이동
+                    string targetSceneName = "Combat";
+                    Vector3 targetPosition = new Vector3(254.249f, 2.32969f, 390.802f);
+                    transform.position = targetPosition;
+                    LoadingScene.LoadScene("Combat");
+                    if (SocketManager.instance != null)
+                    {
+                        SocketManager.instance.EmitSceneChange(targetSceneName, targetPosition);
+                    }
+                }
+                else if (status.currentStepIndex == 2) // 2번 스텝(카야 구출) 완료 시
+                {
+                    // Main Scene으로 복귀
+                    string targetSceneName = "Main";
+                    Vector3 targetPosition = new Vector3(-15.76f, 3.866f, 49.78f);
+                    transform.position = targetPosition;
+                    LoadingScene.LoadScene("Main");
+                    if (SocketManager.instance != null)
+                    {
+                        SocketManager.instance.EmitSceneChange(targetSceneName, targetPosition);
+                    }
+                }
+            }
+
+
             // 보상 지급
             GiveReward(currentStep.rewards);
 
@@ -162,6 +194,7 @@ public class QuestManager : MonoBehaviour
     }
 
 
+    //NPC가 퀘스트를 가지고있느지 확인
     public QuestInteractionInfo GetQuestInteractionForNpc(int npcId)
     {
         if (!currentQuestId.HasValue) { return null; }
@@ -185,11 +218,6 @@ public class QuestManager : MonoBehaviour
             return new QuestInteractionInfo(currentStep.dialogueKey_Start, status.questId, npcId, QuestInteractionType.Start);
         }
 
-        if (status.state == QuestState.InProgress && (currentStep.turnInNpcId == npcId))
-        {
-            return new QuestInteractionInfo(currentStep.dialogueKey_InProgress, status.questId, npcId, QuestInteractionType.None);
-        }
-
         if (status.state == QuestState.InProgress)
         {
             // 현재 단계의 미션 목록에서 이 NPC와 관련된 'TalkTo' 미션이 있는지 찾기
@@ -210,6 +238,11 @@ public class QuestManager : MonoBehaviour
                     }
                 }
             }
+        }
+
+        if (currentStep.startNpcId == npcId)
+        {
+            return new QuestInteractionInfo(currentStep.dialogueKey_InProgress, status.questId, npcId, QuestInteractionType.None);
         }
 
         // 위 모든 경우에 해당하지 않으면 퀘스트와 관련 없는 상호작용
@@ -309,8 +342,9 @@ public class QuestManager : MonoBehaviour
 
         player.Stats.AddExp(reward.exp);
         player.Stats.AddGold(reward.gold);
-        //InventoryManager.Instance.AddItem(reward.itemId);
+        DataManager.Instance.Inventory.AddItem(reward.itemId);
 
+        DataManager.Instance.SaveData();
         SoundManager.Instance.PlaySFX("missionComplete");
         Debug.Log($"보상 획득: 경험치 {reward.exp}, 골드 {reward.gold}");
     }

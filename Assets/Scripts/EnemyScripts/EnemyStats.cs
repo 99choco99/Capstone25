@@ -76,7 +76,8 @@ public class EnemyStats : LivingEntity
         else if (isDeflecting)
         {
             TakePostureDamage(result.finalDamage);
-            EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, Quaternion.identity, transform);
+            Quaternion effectRotation = Quaternion.LookRotation(result.hitDirection);
+            EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, effectRotation, transform);
             SoundManager.Instance.PlaySFX("GuardHit");
             enemy.Stats.isDeflecting = false;
         }
@@ -98,6 +99,9 @@ public class EnemyStats : LivingEntity
 
     public override void Die()
     {
+        if(dead) return;//한번만 실행되도록
+
+        enemy.Combat.EnemyAttackEnd();
         base.Die();
         if (lastAttacker == null)
         {
@@ -109,6 +113,16 @@ public class EnemyStats : LivingEntity
             lastAttacker.Stats.AddExp(enemyData.exp);
             lastAttacker.Stats.AddGold(enemyData.gold);
             lastAttacker.Quest.ReportEnemyKilled(enemyData.id);
+            int? droppedItemID = ItemManager.Instance.RandomItem();
+
+            if (droppedItemID != null)
+            {
+                lastAttacker.Inventory.AddItem(droppedItemID);
+            }
+            else
+            {
+                Debug.Log("아이템이 드랍되지 않았습니다.");
+            }
         }
     }
 
@@ -116,6 +130,7 @@ public class EnemyStats : LivingEntity
     public void DeathBlowProcess(Player player)
     {
         enemy.Anim.enabled = false;
+        enemy.Combat.EnemyAttackEnd();
         DamageInfo damage = new DamageInfo()
         {
             player = player,

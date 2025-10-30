@@ -34,6 +34,7 @@ public class PlayerAttackState : State
         {
             player.InputHandler.UseAttackInput(); // 입력 소비
             isComboInputQueued = true;
+            return;
         }
     }
 

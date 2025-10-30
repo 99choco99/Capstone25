@@ -18,9 +18,6 @@ public class SocketManager : MonoBehaviour
     private NetworkPlayerData myInitialData = null;
 
 
-    private bool isWaitingForDataToSpawn = false;
-    private Coroutine spawnTimeoutCoroutine;
-
     // 서버에 접속된 플레이어들을 관리
     private Dictionary<string, GameObject> networkPlayers = new Dictionary<string, GameObject>();
 
@@ -39,7 +36,6 @@ public class SocketManager : MonoBehaviour
 
     void Start()
     {
-        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoaded;
         sioCom = GetComponent<SocketIOCommunicator>();
 
         // ========== 서버로부터 오는 이벤트 리스너 설정 ==========
@@ -59,7 +55,12 @@ public class SocketManager : MonoBehaviour
         sioCom.Instance.On("initializeComplete", (payload) =>
         {
             myInitialData = JsonConvert.DeserializeObject<NetworkPlayerData>(payload);
-            LoadingScene.LoadScene("Main");
+            string sceneToLoad = "Main";
+            if (myInitialData != null && !string.IsNullOrEmpty(myInitialData.currentSceneName))
+            {
+                sceneToLoad = myInitialData.currentSceneName;
+            }
+            LoadingScene.LoadScene(sceneToLoad);
         });
 
         // 다른 플레이어들의 현재 목록을 받았을 때
@@ -177,26 +178,66 @@ public class SocketManager : MonoBehaviour
     {
         GameObject player = Instantiate(playerPrefab, data.position.ToVector3(),data.rotation.ToQuaternion());
 
+        if (!player.TryGetComponent<Player>(out var playerComponent))
+        {
+            Debug.LogError("Player 프리팹에 Player.cs 컴포넌트가 없습니다! 스폰을 중단합니다.");
+            Destroy(player);
+            return;
+        }
+
         if (isLocal)
         {
-            if (player.TryGetComponent<Player>(out var playerComponent))
+            // ========== 로컬 플레이어 설정 ==========
+            playerComponent.IsLocalPlayer = true;
+            player.GetComponent<PlayerInput>().enabled = true;
+            playerComponent.InputHandler.enabled = true;
+            playerComponent.StateMachine.enabled = true;
+
+            if (player.TryGetComponent<CharacterController>(out var controller))
             {
-                playerComponent.IsLocalPlayer = true;
-                playerComponent.InputHandler.enabled = true;
-                playerComponent.StateMachine.enabled = true;
-                
-                if (DataManager.Instance != null)
-                {
-                    DataManager.Instance.Register(playerComponent);
-                }
-                Name name = playerComponent.GetComponentInChildren<Name>();
-                name.gameObject.SetActive(false);
+                controller.enabled = true;
             }
+
+            if (DataManager.Instance != null)
+            {
+                DataManager.Instance.Register(playerComponent);
+            }
+            Name name = playerComponent.GetComponentInChildren<Name>();
+            name.gameObject.SetActive(false);
 
         }
         else
         {
+            // ========== 더미 (원격) 플레이어 설정 ==========
+            playerComponent.IsLocalPlayer = false;
+
             player.GetComponent<PlayerInput>().enabled = false;
+
+            playerComponent.InputHandler.enabled = false;
+            playerComponent.StateMachine.enabled = false;
+            playerComponent.Motor.enabled = false;            
+            playerComponent.Stats.enabled = false;            
+            playerComponent.Interaction.enabled = false;      
+            playerComponent.TargetingSystem.enabled = false;  
+            playerComponent.Combat.enabled = false;           
+            playerComponent.animatorManager.enabled = false;  
+            playerComponent.Inventory.enabled = false;        
+            playerComponent.Quest.enabled = false;            
+            playerComponent.Dialogue.enabled = false;         
+            playerComponent.Equipment.enabled = false;        
+            playerComponent.localAPI.enabled = false;         
+
+            // PlayerInteractUI도 비활성화
+            if (player.TryGetComponent<PlayerInteractUI>(out var interactUI))
+            {
+                interactUI.enabled = false;
+            }
+
+            if (player.TryGetComponent<CharacterController>(out var controller))
+            {
+                controller.enabled = false;
+            }
+
             networkPlayers.Add(data.id, player);
             Name nameTag = player.GetComponentInChildren<Name>();
             if (nameTag != null)
@@ -210,6 +251,20 @@ public class SocketManager : MonoBehaviour
 
 
     // ========== 서버로 데이터를 보내는 함수들 ==========
+
+    public void EmitSceneChange(string sceneName, Vector3 position)
+    {
+        // 서버로 보낼 데이터 구성 (씬 이름, 새 위치)
+        var json = new
+        {
+            scene = sceneName,
+            pos = new { x = position.x, y = position.y, z = position.z }
+        };
+        var data = JsonConvert.SerializeObject(json);
+
+
+        sioCom.Instance.Emit("requestSceneChange", data, false);
+    }
 
 
     public void EmitPlayerMovement(Vector3 position, Quaternion rotation)
@@ -265,76 +320,10 @@ public class SocketManager : MonoBehaviour
     // 씬 로딩 완료 시 호출될 함수
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if(scene.name != "Loading")
+        if (scene.name != "Loading")
         {
-            CleanupSpawnEvents();
-
-            isWaitingForDataToSpawn = true;
-            PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded += HandlePlayerDataLoaded;
-            PublicAPIManager.Instance.PlayerData.OnPlayerDataLoadFailed += HandlePlayerDataLoadFailed;
-
-
-            spawnTimeoutCoroutine = StartCoroutine(SpawnTimeoutCoroutine(10.0f));
-
-            if (PublicAPIManager.Instance != null && PublicAPIManager.Instance.PlayerData != null)
-            {
-                PublicAPIManager.Instance.PlayerData.RequestLoadPlayerData(this.userId);
-            }
-            else
-            {
-                Debug.LogError("PublicAPIManager 또는 PlayerDataAPI 없음.");
-                isWaitingForDataToSpawn = false;
-                PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoaded;
-                HandlePlayerDataLoadFailed("PublicAPIManager가 null입니다.");
-            }
+            SpawnAndNotifyServer();
         }
-
-    }
-
-    private void HandlePlayerDataLoaded()
-    {
-        if (!isWaitingForDataToSpawn)
-        {
-            return;
-        }
-        isWaitingForDataToSpawn = false;
-        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoaded;
-        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoadFailed -= HandlePlayerDataLoadFailed;
-        SpawnAndNotifyServer();
-    }
-
-    // 실패 핸들러
-    private void HandlePlayerDataLoadFailed(string reason)
-    {
-        if (!isWaitingForDataToSpawn) return;
-        CleanupSpawnEvents();
-    }
-
-    //타임아웃 코루틴
-    private IEnumerator SpawnTimeoutCoroutine(float timeoutSeconds)
-    {
-        yield return new WaitForSeconds(timeoutSeconds);
-
-        if (!isWaitingForDataToSpawn)
-        {
-            yield break;
-        }
-        Debug.LogError("PlayerData 갱신 시간 초과!");
-        HandlePlayerDataLoadFailed("데이터 로드 시간 초과");
-    }
-
-    private void CleanupSpawnEvents()
-    {
-        isWaitingForDataToSpawn = false;
-
-        if (spawnTimeoutCoroutine != null)
-        {
-            StopCoroutine(spawnTimeoutCoroutine);
-            spawnTimeoutCoroutine = null;
-        }
-
-        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoaded;
-        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoadFailed -= HandlePlayerDataLoadFailed;
     }
 
     private void SpawnAndNotifyServer()
@@ -350,11 +339,6 @@ public class SocketManager : MonoBehaviour
             SceneManager.sceneLoaded -= OnSceneLoaded;
             sioCom.Instance.Close();
         }
-        if(PublicAPIManager.Instance != null)
-        {
-            PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoaded;
-        }
-
     }
 }
 
@@ -366,6 +350,7 @@ public class NetworkPlayerData
     public NetworKPosition position;
     public NetworkRotation rotation;
     public string nickname;
+    public string currentSceneName;
 }
 
 public class NetworKPosition

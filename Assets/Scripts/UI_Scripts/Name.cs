@@ -25,7 +25,6 @@ public class Name : MonoBehaviour
         nametext.text = nickname;
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (cam != null)

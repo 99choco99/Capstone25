@@ -32,6 +32,28 @@ public class MarketInventoryUI : MonoBehaviour
     // OnPlayerRegistered 이벤트가 발생했을 때(Player가 준비됐을 때) 호출될 메서드
     private void InitializePlayerSubscriptions()
     {
+        if (player != null)
+        {
+            // 이전 Player의 이벤트에서 구독을 해제
+            player.Inventory.OnInventoryDataInitialized -= InitUI;
+            player.Inventory.OnSlotDataChanged -= UpdateSlotUI;
+            player.Stats.OnChangedGold -= UpdateGoldUI;
+        }
+        // 이전 씬에서 만든 모든 슬롯 UI를 파괴
+        foreach (var slotList in uiSlots.Values)
+        {
+            foreach (Slot slot in slotList)
+            {
+                // 씬 이동으로 이미 파괴되었을 수 있으므로, null이 아닌지 확인
+                if (slot != null)
+                {
+                    Destroy(slot.gameObject);
+                }
+            }
+        }
+        // 슬롯 딕셔너리를 깨끗하게 비웁니다.
+        uiSlots.Clear();
+
         player = DataManager.Instance.Player;
 
         if (player == null || player.Inventory == null || player.Stats == null)

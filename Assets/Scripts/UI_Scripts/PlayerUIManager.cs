@@ -69,7 +69,11 @@ public class PlayerUIManager : MonoBehaviour
 
     private void Start()
     {
-        Market = MarketManager.Instance.MarketUI;
+        if(MarketManager.Instance != null)
+        {
+            Market = MarketManager.Instance.MarketUI;
+        }
+
         // 딕셔너리에 UI 패널들을 등록
         panelDictionary = new Dictionary<UIPanelType, GameObject>()
         {

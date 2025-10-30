@@ -34,7 +34,7 @@ public class PlayerInteraction : MonoBehaviour
 
     private void OnDestroy()
     {
-        if(player.Dialogue != null)
+        if(player != null && player.Dialogue != null)
         {
             player.Dialogue.OnConversationStart -= HandleConversationStart;
             player.Dialogue.OnConversationEnd -= HandleConversationEnd;

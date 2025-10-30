@@ -27,16 +27,19 @@ public class NetworkPlayer : MonoBehaviour
     // SocketManager가 호출해줄 함수
     public void UpdatePosition(Vector3 newPosition)
     {
+        if (player.IsLocalPlayer) return;
         targetPosition = newPosition;
     }
 
     public void UpdateRotation(Quaternion newRotation)
     {
+        if (player.IsLocalPlayer) return;
         targetRotation = newRotation;
     }
 
     public void UpdateMoveAnimation(float newHorizontal, float newVertical)
     {
+        if (player.IsLocalPlayer) return;
         horizontal = newHorizontal;
         vertical = newVertical;
     }

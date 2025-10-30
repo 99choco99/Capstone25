@@ -2115,7 +2115,6 @@ MonoBehaviour:
   slotData:
     slotType: 3
     slotIndex: 3
-    itemId: 0
     itemSpec:
       damage: 0
       defense: 0
@@ -2837,7 +2836,6 @@ MonoBehaviour:
   slotData:
     slotType: 3
     slotIndex: 1
-    itemId: 0
     itemSpec:
       damage: 0
       defense: 0
@@ -4189,7 +4187,6 @@ MonoBehaviour:
   slotData:
     slotType: 3
     slotIndex: 4
-    itemId: 0
     itemSpec:
       damage: 0
       defense: 0
@@ -6162,6 +6159,7 @@ MonoBehaviour:
     m_Bits: 8192
   cameraHalfFov: 0
   detectionRange: 25
+  targetSwitchCooldown: 2
   targetCollider: {fileID: 0}
 --- !u!114 &2902769873250695862
 MonoBehaviour:
@@ -8724,7 +8722,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: Gold
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 07bca07bb8318e34cbb305c02f5aa1c6, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -8790,7 +8788,7 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
+  m_hasFontAssetChanged: 1
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &5365346617675041655
@@ -9120,7 +9118,6 @@ MonoBehaviour:
   slotData:
     slotType: 3
     slotIndex: 5
-    itemId: 0
     itemSpec:
       damage: 0
       defense: 0
@@ -10171,7 +10168,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 75, y: 75}
+  m_SizeDelta: {x: 100, y: 10}
   m_Pivot: {x: 1, y: 0}
 --- !u!222 &8841078801006065258
 CanvasRenderer:
@@ -10226,7 +10223,6 @@ MonoBehaviour:
   slotData:
     slotType: 4
     slotIndex: 0
-    itemId: 0
     itemSpec:
       damage: 0
       defense: 0
@@ -10968,7 +10964,6 @@ MonoBehaviour:
   slotData:
     slotType: 3
     slotIndex: 2
-    itemId: 0
     itemSpec:
       damage: 0
       defense: 0
@@ -13166,7 +13161,6 @@ MonoBehaviour:
   slotData:
     slotType: 3
     slotIndex: 0
-    itemId: 0
     itemSpec:
       damage: 0
       defense: 0

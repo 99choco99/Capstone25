@@ -472,6 +472,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -495,6 +497,7 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
@@ -1063,7 +1066,6 @@ GameObject:
   m_Component:
   - component: {fileID: 7897442353486091983}
   - component: {fileID: 2673601602348455162}
-  - component: {fileID: 5033272715349216978}
   - component: {fileID: 4737812411390075424}
   m_Layer: 8
   m_Name: NPC
@@ -1112,19 +1114,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &5033272715349216978
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3588989709868335766}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0cc55bbb415ddc142a5c3826b12fcab8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  InteractName: 
 --- !u!136 &4737812411390075424
 CapsuleCollider:
   m_ObjectHideFlags: 0

@@ -80,6 +80,7 @@ public class PlayerMotor : MonoBehaviour
     //기본적인 이동
     public void Move()
     {
+        if (!player.IsLocalPlayer) { return; }
         if (!canMove || isKnockingBack) return;
 
         Vector3 cameraForward = player.MainCamera.transform.forward;
@@ -101,8 +102,6 @@ public class PlayerMotor : MonoBehaviour
         {
             controller.Move(MoveSpeed * Time.deltaTime * moveDirection);
         }
-
-
 
         if (Time.time - lastSendTime > sendInterval)
         {
@@ -131,7 +130,7 @@ public class PlayerMotor : MonoBehaviour
         }
         else
         {
-            player.animatorManager.PlayTargetActionAnimation("BackStep",true);
+            player.animatorManager.PlayTargetActionAnimation("BackStep", true);
         }
 
     }

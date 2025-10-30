@@ -37,6 +37,10 @@ public class DataManager : MonoBehaviour
 
     public void Register(Player localPlayer)
     {
+        if (Player != null)
+        {
+            Unregister();
+        }
         if (localPlayer == null)
         {
             Debug.LogError("로컬 플레이어 없음", this);
@@ -71,6 +75,13 @@ public class DataManager : MonoBehaviour
         if (Stats != null && Stats.dead) { return; }
         OnSave?.Invoke();
     }
+
+    public void SaveData()
+    {
+        if (Stats != null && Stats.dead) { return; }
+        OnSave?.Invoke();
+    }
+
 
     public int GetMaxExpForLevel(int level)
     {
