@@ -6,7 +6,7 @@ using UnityEngine;
 public class ItemManager : MonoBehaviour
 {
     [SerializeField] List<ItemData> ItemDatas;
-    Dictionary<int, ItemData> Items;
+    Dictionary<int?, ItemData> Items;
 
     public static ItemManager Instance;
     void Awake()
@@ -20,7 +20,7 @@ public class ItemManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        Items = new Dictionary<int, ItemData>();
+        Items = new Dictionary<int?, ItemData>();
         foreach (ItemData data in ItemDatas)
         {
             Items[data.id] = data;
@@ -28,7 +28,7 @@ public class ItemManager : MonoBehaviour
 
     }
 
-    public ItemData GetItem(int id)
+    public ItemData GetItem(int? id)
     {
         if (Items.ContainsKey(id))
         {
@@ -41,4 +41,26 @@ public class ItemManager : MonoBehaviour
         }
 
     }
+
+    public int? RandomItem()
+    {
+        if (ItemDatas == null || ItemDatas.Count == 0)
+        {
+            Debug.LogWarning("아이템 데이터가 없습니다.");
+            return null;
+        }
+
+        // 10% 확률로 ItemDatas 리스트에서 랜덤한 인덱스 선택
+        if(Random.value <= 0.1f)
+        {
+            int randomIndex = Random.Range(0, ItemDatas.Count);
+            return ItemDatas[randomIndex].id;
+        }
+        else
+        {
+            return null;
+        }
+
+
+    } 
 }

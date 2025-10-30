@@ -1,4 +1,6 @@
 using Newtonsoft.Json;
+using SocketIOClient.Messages;
+using System;
 using System.Collections;
 using System.Text;
 using UnityEngine;
@@ -7,6 +9,8 @@ using static PublicAPIManager;
 
 public class PlayerDataAPI
 {
+    public event Action OnPlayerDataLoaded;
+    public event Action<string> OnPlayerDataLoadFailed;
     private MonoBehaviour coroutineRunner;
     private string userId;
 
@@ -23,6 +27,7 @@ public class PlayerDataAPI
         string url = $"{APIConstants.BASE_API_URL}/playerData/{userId}";
         using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
         {
+
             yield return webRequest.SendWebRequest();
 
             if (webRequest.result == UnityWebRequest.Result.Success)
@@ -30,8 +35,8 @@ public class PlayerDataAPI
                 try
                 {
                     PlayerData data = JsonConvert.DeserializeObject<PlayerData>(webRequest.downloadHandler.text);
-                    Debug.Log("플레이어 데이터 로드 성공: " + data.id);
                     DataManager.Instance.playerData = data;
+                    OnPlayerDataLoaded?.Invoke();
                 }
                 catch (JsonException ex)
                 {
@@ -40,6 +45,8 @@ public class PlayerDataAPI
             }
             else
             {
+                string errorMessage = "서버로부터 데이터를 가져오는 데 실패했습니다.";
+                OnPlayerDataLoadFailed?.Invoke(errorMessage);
                 Debug.LogError($"플레이어 데이터 로드 실패: {webRequest.error}");
             }
         }

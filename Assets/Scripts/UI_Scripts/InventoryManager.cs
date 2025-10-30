@@ -23,12 +23,7 @@ public class InventoryManager : MonoBehaviour
         player.localAPI.Inventory.OnGetInventory += LoadInventory;
         OnSlotDataChanged += SaveInventory;
 
-        if (player.IsLocalPlayer)
-        {
-            PublicAPIManager.Instance.Market.OnItemRegistComplete += UpdateInventoryAfterSale;
-            PublicAPIManager.Instance.Market.OnItemPurchaseComplete += AddPurchasedItem;
-            PublicAPIManager.Instance.Market.OnCancelRegistComplete += ReturnItemFromMarket;
-        }
+
     }
 
     private void Start()
@@ -44,15 +39,23 @@ public class InventoryManager : MonoBehaviour
 
         isInit = true;
         player.localAPI.Inventory.RequestInventory();
+
+        if (player.IsLocalPlayer)
+        {
+            PublicAPIManager.Instance.Market.OnItemPurchaseComplete += AddPurchasedItem;
+            PublicAPIManager.Instance.Market.OnCancelRegistComplete += ReturnItemFromMarket;
+        }
     }
 
     private void OnDestroy()
     {
-        player.localAPI.Inventory.OnGetInventory -= LoadInventory;
+        if (player != null && player.localAPI != null && player.localAPI.Inventory != null)
+        {
+            player.localAPI.Inventory.OnGetInventory -= LoadInventory;
+        }
         OnSlotDataChanged -= SaveInventory;
         if (player.IsLocalPlayer)
         {
-            PublicAPIManager.Instance.Market.OnItemRegistComplete -= UpdateInventoryAfterSale;
             PublicAPIManager.Instance.Market.OnItemPurchaseComplete -= AddPurchasedItem;
             PublicAPIManager.Instance.Market.OnCancelRegistComplete -= ReturnItemFromMarket;
         }
@@ -141,18 +144,7 @@ public class InventoryManager : MonoBehaviour
         OnSlotDataChanged?.Invoke(destinationSlotType, destinationSlotIndex);
     }
 
-    //아이템 등록 성공 후 처리
-    // 인벤토리에서 해당 아이템 개수 차감.
-    void UpdateInventoryAfterSale(ItemRegistResponse response)
-    {
-        SlotData saleSlotData = MarketManager.Instance.saleSlot.slotData;
-        if (saleSlotData == null)
-        {
-            Debug.LogWarning("판매할 아이템이 없습니다.");
-            return;
-        }
-        RegisterItemToMarket(saleSlotData, response.ItemCount);
-    }
+
 
 
     //마켓에 아이템을 등록했을 때
@@ -186,6 +178,9 @@ public class InventoryManager : MonoBehaviour
             slotData.itemSpec = response.spec;
             slotData.itemCount = response.ItemCount;
             slotData.itemId = response.ItemId;
+
+            Inventory[slotData.slotType][slotData.slotIndex] = slotData;
+
             OnSlotDataChanged?.Invoke(GetSlotType(slotData), slotData.slotIndex);
             
         }
@@ -216,7 +211,28 @@ public class InventoryManager : MonoBehaviour
         OnSlotDataChanged?.Invoke(data.type, emptySlotData.slotIndex);
     }
 
+    //아이템 획득
+    public void AddItem(int? ItemId)
+    {
+        ItemData data = ItemManager.Instance.GetItem(ItemId);
+        if(data == null) { return; }
+        SlotData emptySlotData = FindEmptySlot(data.type);
 
+        if (emptySlotData == null)
+        {
+            Debug.LogWarning("인벤토리 공간 없음");
+            return;
+        }
+
+        emptySlotData.itemData = data;
+        emptySlotData.itemId = ItemId;
+        emptySlotData.itemSpec = data.baseStats;
+        emptySlotData.itemCount = 1;
+
+
+        Inventory[emptySlotData.slotType][emptySlotData.slotIndex] = emptySlotData;
+        OnSlotDataChanged?.Invoke(data.type, emptySlotData.slotIndex);
+    }
 
 
     public void RequestUseQuickSlotItem()

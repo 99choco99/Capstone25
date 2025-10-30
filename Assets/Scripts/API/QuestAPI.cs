@@ -37,7 +37,6 @@ public class QuestAPI
                     QuestDataList response = JsonConvert.DeserializeObject<QuestDataList>(webRequest.downloadHandler.text);
                     QuestDefinition[] questDataArray = response.questData;
                     QuestStatus[] questStatusesArray = response.questStatuses;
-
                     OnGetQuestData?.Invoke(questDataArray, questStatusesArray);
                 }
                 catch (JsonException ex)

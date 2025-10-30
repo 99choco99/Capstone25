@@ -8,8 +8,10 @@ public class NPC : MonoBehaviour, IInteractable
 {
     [SerializeField] TextMeshProUGUI NPCName;
     protected Animator anim;
-    public string defaultDialogueKey;
+
+    [Header("Data Identifiers")]
     public int id;
+    public string npcIdentifier;
     public string InteractionPrompt => NPCName.text;
 
     private void Start()
@@ -29,7 +31,13 @@ public class NPC : MonoBehaviour, IInteractable
         }
         else
         {
-            var defaultInteraction = new QuestInteractionInfo(defaultDialogueKey, -1, this.id, QuestInteractionType.None);
+            if (string.IsNullOrEmpty(npcIdentifier))
+            {
+                Debug.LogError($"{name}에 npcIdentifier가 설정되지 않았습니다!");
+                return;
+            }
+            string defaultKey = npcIdentifier + "_DEFAULT";
+            var defaultInteraction = new QuestInteractionInfo(defaultKey, -1, this.id, QuestInteractionType.None);
             player.Dialogue.StartConversation(defaultInteraction);
         }
     }

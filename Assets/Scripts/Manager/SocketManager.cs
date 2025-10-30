@@ -1,10 +1,11 @@
 using Firesplash.GameDevAssets.SocketIO; // Asset의 네임스페이스 사용
 using Newtonsoft.Json;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
-using static PublicAPIManager;
+
 
 public class SocketManager : MonoBehaviour
 {
@@ -35,7 +36,6 @@ public class SocketManager : MonoBehaviour
 
     void Start()
     {
-
         sioCom = GetComponent<SocketIOCommunicator>();
 
         // ========== 서버로부터 오는 이벤트 리스너 설정 ==========
@@ -50,13 +50,17 @@ public class SocketManager : MonoBehaviour
                 sioCom.Instance.Emit("initialize", userId,true);
             }
 
-
         });
 
         sioCom.Instance.On("initializeComplete", (payload) =>
         {
             myInitialData = JsonConvert.DeserializeObject<NetworkPlayerData>(payload);
-            LoadingScene.LoadScene("Main");
+            string sceneToLoad = "Main";
+            if (myInitialData != null && !string.IsNullOrEmpty(myInitialData.currentSceneName))
+            {
+                sceneToLoad = myInitialData.currentSceneName;
+            }
+            LoadingScene.LoadScene(sceneToLoad);
         });
 
         // 다른 플레이어들의 현재 목록을 받았을 때
@@ -88,6 +92,7 @@ public class SocketManager : MonoBehaviour
         //다른 플레이어의 움직임을 업데이트
         sioCom.Instance.On("updatePlayerMovement", (string payload) =>
         {
+
             var data = JsonConvert.DeserializeObject<NetworkPlayerData>(payload);
             if (networkPlayers.ContainsKey(data.id))
             {
@@ -128,6 +133,14 @@ public class SocketManager : MonoBehaviour
             }
         });
 
+        sioCom.Instance.On("respawn", (string payload) =>
+        {
+            if (!string.IsNullOrEmpty(userId))
+            {
+                sioCom.Instance.Emit("initialize", userId, true);
+            }
+        });
+
 
         // 다른 플레이어의 접속이 끊겼을 때 서버가 보내주는 커스텀 이벤트
         sioCom.Instance.On("playerDisconnected", (string payload) =>
@@ -165,27 +178,72 @@ public class SocketManager : MonoBehaviour
     {
         GameObject player = Instantiate(playerPrefab, data.position.ToVector3(),data.rotation.ToQuaternion());
 
+        if (!player.TryGetComponent<Player>(out var playerComponent))
+        {
+            Debug.LogError("Player 프리팹에 Player.cs 컴포넌트가 없습니다! 스폰을 중단합니다.");
+            Destroy(player);
+            return;
+        }
+
         if (isLocal)
         {
-            if (player.TryGetComponent<Player>(out var playerComponent))
+            // ========== 로컬 플레이어 설정 ==========
+            playerComponent.IsLocalPlayer = true;
+            player.GetComponent<PlayerInput>().enabled = true;
+            playerComponent.InputHandler.enabled = true;
+            playerComponent.StateMachine.enabled = true;
+
+            if (player.TryGetComponent<CharacterController>(out var controller))
             {
-                playerComponent.IsLocalPlayer = true;
-                playerComponent.InputHandler.enabled = true;
-                playerComponent.StateMachine.enabled = true;
-                if (DataManager.Instance != null)
-                {
-                    DataManager.Instance.Register(playerComponent);
-                }
-                Name name = playerComponent.GetComponentInChildren<Name>();
-                name.gameObject.SetActive(false);
+                controller.enabled = true;
             }
+
+            if (DataManager.Instance != null)
+            {
+                DataManager.Instance.Register(playerComponent);
+            }
+            Name name = playerComponent.GetComponentInChildren<Name>();
+            name.gameObject.SetActive(false);
 
         }
         else
         {
+            // ========== 더미 (원격) 플레이어 설정 ==========
+            playerComponent.IsLocalPlayer = false;
+
             player.GetComponent<PlayerInput>().enabled = false;
 
+            playerComponent.InputHandler.enabled = false;
+            playerComponent.StateMachine.enabled = false;
+            playerComponent.Motor.enabled = false;            
+            playerComponent.Stats.enabled = false;            
+            playerComponent.Interaction.enabled = false;      
+            playerComponent.TargetingSystem.enabled = false;  
+            playerComponent.Combat.enabled = false;           
+            playerComponent.animatorManager.enabled = false;  
+            playerComponent.Inventory.enabled = false;        
+            playerComponent.Quest.enabled = false;            
+            playerComponent.Dialogue.enabled = false;         
+            playerComponent.Equipment.enabled = false;        
+            playerComponent.localAPI.enabled = false;         
+
+            // PlayerInteractUI도 비활성화
+            if (player.TryGetComponent<PlayerInteractUI>(out var interactUI))
+            {
+                interactUI.enabled = false;
+            }
+
+            if (player.TryGetComponent<CharacterController>(out var controller))
+            {
+                controller.enabled = false;
+            }
+
             networkPlayers.Add(data.id, player);
+            Name nameTag = player.GetComponentInChildren<Name>();
+            if (nameTag != null)
+            {
+                nameTag.SetNickname(data.nickname);
+            }
         }
     }
 
@@ -193,6 +251,20 @@ public class SocketManager : MonoBehaviour
 
 
     // ========== 서버로 데이터를 보내는 함수들 ==========
+
+    public void EmitSceneChange(string sceneName, Vector3 position)
+    {
+        // 서버로 보낼 데이터 구성 (씬 이름, 새 위치)
+        var json = new
+        {
+            scene = sceneName,
+            pos = new { x = position.x, y = position.y, z = position.z }
+        };
+        var data = JsonConvert.SerializeObject(json);
+
+
+        sioCom.Instance.Emit("requestSceneChange", data, false);
+    }
 
 
     public void EmitPlayerMovement(Vector3 position, Quaternion rotation)
@@ -207,6 +279,7 @@ public class SocketManager : MonoBehaviour
         sioCom.Instance.Emit("playerMovement",data,false);
 
     }
+
 
     public void EmitPlayerMoveAnimation(float vertical, float horizontal)
     {
@@ -224,6 +297,10 @@ public class SocketManager : MonoBehaviour
         sioCom.Instance.Emit("playerAttack");
     }
 
+    public void EmitPlayerDied()
+    {
+        sioCom.Instance.Emit("playerDied");
+    }
 
     public void ConnectToServer(string userId)
     {
@@ -240,19 +317,21 @@ public class SocketManager : MonoBehaviour
     }
 
 
-    // [추가] 씬 로딩 완료 시 호출될 함수
+    // 씬 로딩 완료 시 호출될 함수
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if(scene.name != "Loading")
+        if (scene.name != "Loading")
         {
-            SpawnPlayer(myInitialData, true);
-            sioCom.Instance.Emit("LoadSceneComplete");
+            SpawnAndNotifyServer();
         }
-
     }
 
+    private void SpawnAndNotifyServer()
+    {
+        SpawnPlayer(myInitialData, true);
+        sioCom.Instance.Emit("LoadSceneComplete");
+    }
 
-    // OnDestroy는 Unity 오브젝트가 파괴될 때 호출됨
     private void OnApplicationQuit()
     {
         if (sioCom != null && sioCom.Instance.IsConnected())
@@ -270,6 +349,8 @@ public class NetworkPlayerData
     public string id;
     public NetworKPosition position;
     public NetworkRotation rotation;
+    public string nickname;
+    public string currentSceneName;
 }
 
 public class NetworKPosition

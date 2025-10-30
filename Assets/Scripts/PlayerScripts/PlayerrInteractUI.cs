@@ -21,6 +21,7 @@ public class PlayerInteractUI : MonoBehaviour
 
     private void Awake()
     {
+        
         playerInteraction = GetComponentInParent<PlayerInteraction>();
         playerInteraction.OnInteractableChanged += UpdateInteractablesList;
         playerInteraction.OnSelectionChanged += UpdateSelection;

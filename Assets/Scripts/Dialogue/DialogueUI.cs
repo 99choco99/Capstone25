@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class DialogueUI : MonoBehaviour
 {
-    DialogueManager DialogueManager;
+    [SerializeField] DialogueManager DialogueManager;
 
 
     [SerializeField] private GameObject dialoguePanel;

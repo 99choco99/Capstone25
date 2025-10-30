@@ -6,9 +6,6 @@ using UnityEngine.EventSystems;
 public class InventoryUI : MonoBehaviour
 {
     private Player player;
-    [SerializeField] private GameObject itemDescriptionObject;
-    [SerializeField] private TextMeshProUGUI itemDescriptionText;
-
     [SerializeField] private GameObject slotPrefab;
     [SerializeField] private GameObject itemPrefab;
     [SerializeField] private Transform equipmentParent;
@@ -160,18 +157,4 @@ public class InventoryUI : MonoBehaviour
         return uiParent;
     }
 
-
-    public void ShowTooltip(string text, Vector3 position)
-    {
-        if (itemDescriptionObject == null) return;
-        itemDescriptionText.text = text;
-        itemDescriptionObject.transform.position = position + Vector3.down * 50;
-        itemDescriptionObject.SetActive(true);
-    }
-
-    public void HideTooltip()
-    {
-        if (itemDescriptionObject == null) return;
-        itemDescriptionObject.SetActive(false);
-    }
 }

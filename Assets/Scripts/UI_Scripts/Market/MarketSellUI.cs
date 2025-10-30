@@ -58,8 +58,11 @@ public class MarketSellUI : MonoBehaviour
         SellBtn.onClick.RemoveAllListeners();
         notice.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
         check.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
-        PublicAPIManager.Instance.Market.OnItemRegistComplete -= ItemRegistComplete;
-        PublicAPIManager.Instance.Market.OnItemRegistFailed -= ShowNotice;
+        if(PublicAPIManager.Instance !=null)
+        {
+            PublicAPIManager.Instance.Market.OnItemRegistComplete -= ItemRegistComplete;
+            PublicAPIManager.Instance.Market.OnItemRegistFailed -= ShowNotice;
+        }
     }
 
     //등록 가능한지 검사
@@ -86,12 +89,21 @@ public class MarketSellUI : MonoBehaviour
         return false;
     }
 
+
     //등록 성공시 UI 업데이트
     void ItemRegistComplete(ItemRegistResponse response)
     {
+        SlotData saleSlotData = saleSlot.slotData;
+        if (saleSlotData == null)
+        {
+            Debug.LogWarning("판매할 아이템이 없습니다.");
+            return;
+        }
+        DataManager.Instance.Inventory.RegisterItemToMarket(saleSlotData, response.ItemCount);
         ShowNotice(response.message);
         ClearSaleSlot();
     }
+
 
 
     // 판매 슬롯을 초기화하는 전용 함수

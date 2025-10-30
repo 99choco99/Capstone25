@@ -102,6 +102,7 @@ public class PlayerAnimatorManager : MonoBehaviour
 
     public void DeathProcess()
     {
+        player.StateMachine.TransitionTo(player.StateMachine.playerDeadState);
         PlayTargetActionAnimation("Die");
         StartCoroutine(Disappear());
     }
@@ -109,7 +110,8 @@ public class PlayerAnimatorManager : MonoBehaviour
     //죽은 후 2.5초뒤 시체 없어짐.
     IEnumerator Disappear()
     {
-        yield return new WaitForSeconds(2.5f);
+        yield return new WaitForSeconds(6f);
+        SocketManager.instance.EmitPlayerDied();
         Destroy(gameObject);
     }
 
