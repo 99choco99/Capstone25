@@ -50,7 +50,6 @@ public class EnemyUI : MonoBehaviour
         enemyStats.OnPostureChanged -= UpdatePostureGauge;
     }
 
-    // Update is called once per frame
     void LateUpdate()
     {
         if (mainCamera == null)

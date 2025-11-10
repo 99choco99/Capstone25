@@ -103,7 +103,7 @@ public class PlayerAnimatorManager : MonoBehaviour
     public void DeathProcess()
     {
         player.StateMachine.TransitionTo(player.StateMachine.playerDeadState);
-        PlayTargetActionAnimation("Die");
+        PlayTargetActionAnimation("Die",true,true);
         StartCoroutine(Disappear());
     }
 
@@ -117,9 +117,9 @@ public class PlayerAnimatorManager : MonoBehaviour
 
 
     // 구르기 등 특정 액션을 재생
-    public void PlayTargetActionAnimation(string targetAnim, bool isPerformingAction = true)
+    public void PlayTargetActionAnimation(string targetAnim, bool isPerformingAction = true, bool isHigherPriority = false)
     {
-        if (this.isPerformingAction) { return; }
+        if (!isHigherPriority && this.isPerformingAction) { return; }
         player.Anim.CrossFade(targetAnim, 0.2f);
         this.isPerformingAction = isPerformingAction;
     }

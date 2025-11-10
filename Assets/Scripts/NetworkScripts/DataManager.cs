@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using static PublicAPIManager;
@@ -8,7 +9,7 @@ public class DataManager : MonoBehaviour
     public static DataManager Instance;
 
     public PlayerData playerData;
-    [SerializeField] private int[] maxExp;
+    public bool canSave = true;
     public event Action OnSave;
     public event Action OnPlayerRegistered;
 
@@ -72,27 +73,27 @@ public class DataManager : MonoBehaviour
     //플레이어 데이터 자동 저장
     private void AutoSaveData()
     {
-        if (Stats != null && Stats.dead) { return; }
+        if (!canSave || Stats == null || Stats.dead) { return; }
         OnSave?.Invoke();
     }
 
     public void SaveData()
     {
-        if (Stats != null && Stats.dead) { return; }
+        if (Stats == null || Stats.dead) { return; }
         OnSave?.Invoke();
+        StartCoroutine(StopSaveCoroutine());
     }
 
+    IEnumerator StopSaveCoroutine()
+    {
+        canSave = false;
+        yield return new WaitForSeconds(5f);
+        canSave = true;
+    }
 
     public int GetMaxExpForLevel(int level)
     {
-        if (maxExp.Length <= level)
-        {
-            return int.MaxValue;
-        }
-        else
-        {
-            return maxExp[level];
-        }
+        return level * 10;
     }
 
 

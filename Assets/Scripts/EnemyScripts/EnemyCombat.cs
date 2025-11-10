@@ -39,6 +39,7 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
 
         DamageInfo damageInfo = new DamageInfo
         {
+            enemy = enemy,
             finalDamage = currentAttackData.damage,
             attackType = currentAttackData.type,
             knockbackForce = currentAttackData.knockbackPower,

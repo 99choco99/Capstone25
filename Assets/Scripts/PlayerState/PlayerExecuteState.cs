@@ -9,6 +9,7 @@ public class PlayerExecuteState : State
 
     public override void Enter()
     {
+        player.Stats.isInvincible = true;
         target = player.TargetingSystem.CurrentTarget;
         if(target == null)
         {
@@ -23,5 +24,6 @@ public class PlayerExecuteState : State
     public override void Exit()
     {
         PlayerCamera.Instance.ResetCameraZPostion();
+        player.Stats.isInvincible = false;
     }
 }

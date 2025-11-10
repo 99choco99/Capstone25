@@ -30,6 +30,12 @@ public class EnemyStats : LivingEntity
         base.OnEnable();
     }
 
+    private void OnDestroy()
+    {
+        OnPostureBroken -= HandlePostureBroken;
+        OnDeath -= Die;
+    }
+
 
     public void SetUp(EnemyData enemyData)
     {
@@ -68,14 +74,16 @@ public class EnemyStats : LivingEntity
     {
         if (dead) return;
 
+        TakePostureDamage(result.finalDamage);
         if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
         {
             enemy.AnimationManager.PlayAnimation("BackHit", false);
+            base.OnDamage(result);
+            EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
+            SoundManager.Instance.PlaySFX("Cutting flesh");
         }
-
         else if (isDeflecting)
         {
-            TakePostureDamage(result.finalDamage);
             Quaternion effectRotation = Quaternion.LookRotation(result.hitDirection);
             EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, effectRotation, transform);
             SoundManager.Instance.PlaySFX("GuardHit");
@@ -84,7 +92,6 @@ public class EnemyStats : LivingEntity
         else
         {
             base.OnDamage(result);
-            TakePostureDamage(result.finalDamage);
             if (!enemy.AnimationManager.IsPerformAction || !enemy.Combat.canAttack)
             {
                 enemy.AnimationManager.PlayAnimation("Hit", false);

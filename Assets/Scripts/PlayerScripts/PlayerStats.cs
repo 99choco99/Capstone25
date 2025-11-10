@@ -7,6 +7,7 @@ using UnityEngine;
 
 public class DamageInfo
 {
+    public Enemy enemy;
     public Player player;
     public AttackType attackType;
     public float finalDamage;
@@ -16,7 +17,6 @@ public class DamageInfo
     public Vector3 hitDirection;
     public bool wasGuarded;
     public bool wasParried;
-
 }
 
 public enum PlayerStatType { Damage, Health, Defense }
@@ -46,6 +46,8 @@ public class PlayerStats : LivingEntity
 
 
     public bool isGuarding;
+    public bool isGroggy;
+    public bool isInvincible;
 
     private Player player;
 
@@ -53,7 +55,8 @@ public class PlayerStats : LivingEntity
     {
         player = GetComponent<Player>();
         player.Inventory.OnQuickSlotUsed += Consume;
-
+        OnStatsChanged += DataManager.Instance.SaveData;
+        OnLevelUp += DataManager.Instance.SaveData;
     }
 
     private void Start()
@@ -68,6 +71,8 @@ public class PlayerStats : LivingEntity
             DataManager.Instance.OnSave -= OnSavePlayerData;
         }
         player.Inventory.OnQuickSlotUsed -= Consume;
+        OnStatsChanged -= DataManager.Instance.SaveData;
+        OnLevelUp -= DataManager.Instance.SaveData;
     }
 
     //게임 데이터 불러오기
@@ -80,7 +85,6 @@ public class PlayerStats : LivingEntity
         baseDamage = data.damage;
         currentHp = data.currentHp;
         AbilityPoint = data.AbilityPoint;
-
 
         Level = data.level;
         Exp = data.exp;
@@ -98,6 +102,30 @@ public class PlayerStats : LivingEntity
 
 
         Debug.Log("데이터 불러오기 성공");
+        //플레이어 위치 검증
+        GameObject boundaryObj = GameObject.FindGameObjectWithTag("MapBoundary");
+        BoxCollider mapBoundary = boundaryObj.GetComponent<BoxCollider>();
+        GameObject spawnObj = GameObject.FindGameObjectWithTag("Respawn");
+        if (!mapBoundary.bounds.Contains(transform.position))
+        {
+            if (spawnObj != null)
+            {
+                if (spawnObj == null) return;
+
+                Debug.Log("플레이어를 스폰 지점으로 이동");
+
+                if (player.Motor.controller != null)
+                {
+                    player.Motor.controller.enabled = false;
+                    transform.position = spawnObj.transform.position;
+                    player.Motor.controller.enabled = true;
+                }
+                else
+                {
+                    transform.position = spawnObj.transform.position;
+                }
+            }
+        }
     }
 
     //게임 데이터 저장하기
@@ -122,7 +150,7 @@ public class PlayerStats : LivingEntity
     //데미지를 입었을 때
     public override void OnDamage(DamageInfo damageInfo)
     {
-        if (dead) return;
+        if (dead || isInvincible) return;
 
         // --- 가드 및 패링 판정 ---
         isGuarding = player.StateMachine.CurrentState is PlayerGuardState;
@@ -139,19 +167,26 @@ public class PlayerStats : LivingEntity
         // --- 데미지 계산 ---
         float finalDamageToHp = damageInfo.finalDamage;
 
-        if (isParrying)
+        if(Vector3.Dot(transform.forward, damageInfo.hitDirection) > 0)
+        {
+            base.OnDamage(damageInfo);
+            TakePostureDamage(damageInfo.finalDamage);
+        }
+        else if (isParrying)
         {
             finalDamageToHp = 0;
+            damageInfo.enemy.Stats.TakePostureDamage(damageInfo.finalDamage);
         }
         else if (isGuarding)
         {
             finalDamageToHp = 0;
-            TakePostureDamage(damageInfo.finalDamage);
+            damageInfo.enemy.Stats.TakePostureDamage(damageInfo.finalDamage * 0.3f);
+            TakePostureDamage(damageInfo.finalDamage * 0.5f);
         }
         else
         {
             base.OnDamage(damageInfo);
-            TakePostureDamage(damageInfo.finalDamage * 0.5f);
+            TakePostureDamage(damageInfo.finalDamage);
         }
 
 
@@ -176,7 +211,7 @@ public class PlayerStats : LivingEntity
         if (dead) return;
         Exp += addExp;
         int maxExp = DataManager.Instance.GetMaxExpForLevel(Level);
-        if(maxExp == int.MaxValue) { Exp = 0; }
+
         // 레벨업 조건 체크
         while(Exp >= maxExp)
         {

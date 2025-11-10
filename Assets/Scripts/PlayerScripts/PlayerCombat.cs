@@ -63,6 +63,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         comboIndex = 0;
     }
 
+
     //플레이어가 적을 공격했을 때
     public void OnWeaponHit(IDamageable target, Collider targetCollider, Weapon weapon)
     {
@@ -133,7 +134,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         {
             PlayBehindDeathblowTimeline(enemy);
         }
-
+        player.TargetingSystem.DeselectTarget();
     }
 
     // 실제 인살
@@ -146,7 +147,6 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         player.Motor.canRotate = false;
         player.InputHandler.enabled = false;
         enemy.Motor.Stop();
-
 
         Vector3 playerTargetPosition = enemy.transform.position + enemy.transform.forward * 0.9f;
         transform.position = playerTargetPosition;
@@ -196,12 +196,14 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
 
     public void SIG_ExcutedEnd()
     {
+        OnExecuteEnd?.Invoke(player);
+        OnExecuteEnd = null; // 구독해제
+
+        player.StateMachine.TransitionTo(player.StateMachine.PlayerIdleState);
+
         player.Motor.canMove = true;
         player.Motor.canRotate = true;
         player.InputHandler.enabled = true;
-        player.StateMachine.TransitionTo(player.StateMachine.PlayerIdleState);
-        OnExecuteEnd?.Invoke(player);
-        OnExecuteEnd = null; // 구독해제 되나?
     }
 
     public void AE_playerAttackStart()

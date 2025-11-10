@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using static PublicAPIManager;
 
 
 public class SocketManager : MonoBehaviour
@@ -17,7 +18,8 @@ public class SocketManager : MonoBehaviour
     private string userId;
     private NetworkPlayerData myInitialData = null;
 
-
+    //씬 전환중인 플래그
+    private bool isSceneChangeInProgress = false;
     // 서버에 접속된 플레이어들을 관리
     private Dictionary<string, GameObject> networkPlayers = new Dictionary<string, GameObject>();
 
@@ -43,8 +45,6 @@ public class SocketManager : MonoBehaviour
         // 서버에 성공적으로 연결되었을 때
         sioCom.Instance.On("connect", (string payload) =>
         {
-            SceneManager.sceneLoaded += OnSceneLoaded;
-
             if (!string.IsNullOrEmpty(userId))
             {
                 sioCom.Instance.Emit("initialize", userId,true);
@@ -55,12 +55,20 @@ public class SocketManager : MonoBehaviour
         sioCom.Instance.On("initializeComplete", (payload) =>
         {
             myInitialData = JsonConvert.DeserializeObject<NetworkPlayerData>(payload);
-            string sceneToLoad = "Main";
-            if (myInitialData != null && !string.IsNullOrEmpty(myInitialData.currentSceneName))
+            if (PublicAPIManager.Instance != null && PublicAPIManager.Instance.PlayerData != null)
             {
-                sceneToLoad = myInitialData.currentSceneName;
+                PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded += HandlePlayerDataLoadedForRespawn;
+                PublicAPIManager.Instance.PlayerData.OnPlayerDataLoadFailed += HandlePlayerDataLoadFailedForRespawn;
+
+                // 이제 데이터 로드를 요청
+                PublicAPIManager.Instance.RequestPlayerData();
             }
-            LoadingScene.LoadScene(sceneToLoad);
+            else
+            {
+                // [예외 처리]
+                Debug.LogError("PublicAPIManager or PlayerDataAPI is missing. Cannot fetch updated stats. Loading scene anyway...");
+                LoadSceneFromInitialData();
+            }
         });
 
         // 다른 플레이어들의 현재 목록을 받았을 때
@@ -133,10 +141,22 @@ public class SocketManager : MonoBehaviour
             }
         });
 
+
+        // 죽었을 때 혹은 씬 이동시
         sioCom.Instance.On("respawn", (string payload) =>
         {
             if (!string.IsNullOrEmpty(userId))
             {
+                //씬 로드 완료 리스너를 제거 (새로 initialize할 것이므로)
+                SceneManager.sceneLoaded -= OnSceneLoaded;
+
+                // 기존 맵에 있던 플레이어 객체들 제거
+                foreach (var player in networkPlayers.Values)
+                {
+                    Destroy(player);
+                }
+                networkPlayers.Clear();
+
                 sioCom.Instance.Emit("initialize", userId, true);
             }
         });
@@ -187,6 +207,8 @@ public class SocketManager : MonoBehaviour
 
         if (isLocal)
         {
+            isSceneChangeInProgress = false;
+
             // ========== 로컬 플레이어 설정 ==========
             playerComponent.IsLocalPlayer = true;
             player.GetComponent<PlayerInput>().enabled = true;
@@ -252,8 +274,27 @@ public class SocketManager : MonoBehaviour
 
     // ========== 서버로 데이터를 보내는 함수들 ==========
 
+    //플레이어가 씬이 바뀔때
     public void EmitSceneChange(string sceneName, Vector3 position)
     {
+        if (isSceneChangeInProgress) { return; }
+        isSceneChangeInProgress = true;
+
+        var localPlayer = DataManager.Instance.Player;
+        if (localPlayer != null)
+        {
+            if (localPlayer.TryGetComponent<PlayerInput>(out var playerInput))
+            {
+                playerInput.enabled = false;
+            }
+            if (localPlayer.TryGetComponent<PlayerMotor>(out var playerMotor))
+            {
+                playerMotor.enabled = false;
+            }
+        }
+
+        DataManager.Instance.SaveData();
+
         // 서버로 보낼 데이터 구성 (씬 이름, 새 위치)
         var json = new
         {
@@ -266,7 +307,7 @@ public class SocketManager : MonoBehaviour
         sioCom.Instance.Emit("requestSceneChange", data, false);
     }
 
-
+    //플레이어가 움직일때 (좌표 동기화)
     public void EmitPlayerMovement(Vector3 position, Quaternion rotation)
     {
         var json = new
@@ -280,7 +321,7 @@ public class SocketManager : MonoBehaviour
 
     }
 
-
+    //플레이어가 움직일때 (애니메이션 동기화)
     public void EmitPlayerMoveAnimation(float vertical, float horizontal)
     {
         NetworkAnimationData data = new();
@@ -292,16 +333,18 @@ public class SocketManager : MonoBehaviour
         sioCom.Instance.Emit("playerAnimation", json, false);
     }
 
+    //플레이어가 공격했을 때 (동기화)
     public void EmitPlayerAttack()
     {
         sioCom.Instance.Emit("playerAttack");
     }
-
+    //플레이어 죽었을 떄.
     public void EmitPlayerDied()
     {
         sioCom.Instance.Emit("playerDied");
     }
 
+    //서버 연결 메소드
     public void ConnectToServer(string userId)
     {
 
@@ -316,6 +359,46 @@ public class SocketManager : MonoBehaviour
         }
     }
 
+    // initializeComplete 이후 PlayerData 로드가 성공했을 때
+    private void HandlePlayerDataLoadedForRespawn()
+    {
+        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoadedForRespawn;
+        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoadFailed -= HandlePlayerDataLoadFailedForRespawn;
+
+        Debug.Log("Respawn: Fetched latest player data (HP reset). Loading scene...");
+
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        LoadSceneFromInitialData();
+    }
+
+    //PlayerData 로드 실패 시 예외 처리
+    private void HandlePlayerDataLoadFailedForRespawn(string error)
+    {
+        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoadedForRespawn;
+        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoadFailed -= HandlePlayerDataLoadFailedForRespawn;
+
+        Debug.LogError($"Respawn: Failed to fetch updated player data ({error}). Loading scene with potentially stale stats...");
+
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        LoadSceneFromInitialData();
+    }
+
+    // 씬 로드 로직
+    private void LoadSceneFromInitialData()
+    {
+        string sceneToLoad = "Main";
+        if (myInitialData != null && !string.IsNullOrEmpty(myInitialData.currentSceneName))
+        {
+            sceneToLoad = myInitialData.currentSceneName;
+        }
+        LoadingScene.LoadScene(sceneToLoad);
+    }
+
+    private void SpawnAndNotifyServer()
+    {
+        SpawnPlayer(myInitialData, true);
+        sioCom.Instance.Emit("LoadSceneComplete");
+    }
 
     // 씬 로딩 완료 시 호출될 함수
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -324,12 +407,6 @@ public class SocketManager : MonoBehaviour
         {
             SpawnAndNotifyServer();
         }
-    }
-
-    private void SpawnAndNotifyServer()
-    {
-        SpawnPlayer(myInitialData, true);
-        sioCom.Instance.Emit("LoadSceneComplete");
     }
 
     private void OnApplicationQuit()

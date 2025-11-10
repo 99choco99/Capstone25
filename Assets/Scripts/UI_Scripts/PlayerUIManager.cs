@@ -133,7 +133,7 @@ public class PlayerUIManager : MonoBehaviour
     {
         if (itemDescriptionObject == null) return;
         itemDescriptionText.text = text;
-        itemDescriptionObject.transform.position = position + Vector3.down * 50;
+        itemDescriptionObject.transform.position = position + Vector3.down * 10;
         itemDescriptionObject.SetActive(true);
     }
 

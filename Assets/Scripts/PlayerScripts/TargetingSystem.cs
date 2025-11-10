@@ -177,7 +177,7 @@ public class TargetingSystem : MonoBehaviour
         }
     }
 
-    void DeselectTarget()
+    public void DeselectTarget()
     {
         CurrentTarget = null;
         nearestTarget = null;

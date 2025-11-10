@@ -38,15 +38,14 @@ public class PublicAPIManager : MonoBehaviour
     public void Start()
     {
 #if UNITY_WEBGL
-        //MySignalReady();
-        //Debug.Log("Unity -> 웹: 준비 완료 신호 보냄");
+        MySignalReady();
 #endif
 
 
 #if UNITY_EDITOR
-        LoginData testData = new LoginData { user_id = "editor_user_id2", nickname = "에디터_테스터2" };
-        Debug.Log("에디터로 실행");
-        ReceiveLoginData(JsonConvert.SerializeObject(testData));
+        //LoginData testData = new LoginData { user_id = "editor_user_id2", nickname = "에디터_테스터2" };
+        //Debug.Log("에디터로 실행");
+        //ReceiveLoginData(JsonConvert.SerializeObject(testData));
 #endif
 
 
@@ -65,10 +64,13 @@ public class PublicAPIManager : MonoBehaviour
         Dialogue = new DialogueAPI(this);
         PlayerData = new PlayerDataAPI(this);
 
-        PlayerData.RequestLoadPlayerData(loginData.user_id);
+        RequestPlayerData();
     }
 
-
+    public void RequestPlayerData()
+    {
+        PlayerData.RequestLoadPlayerData(loginData.user_id);
+    }
 
     // 애플리케이션 종료 시 소켓 연결을 끊기
     private void OnApplicationQuit()

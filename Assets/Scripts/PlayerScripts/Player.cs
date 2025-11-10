@@ -56,7 +56,7 @@ public class Player : MonoBehaviour
 
             if (SoundManager.Instance != null)
             {
-                SoundManager.Instance.PlayLoopingSFX("BGM_Main");
+                SoundManager.Instance.PlayBGM("BGM_Main");
             }
 
             Cursor.lockState = CursorLockMode.Locked;

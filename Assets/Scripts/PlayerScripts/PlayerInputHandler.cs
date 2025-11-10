@@ -213,7 +213,6 @@ public class PlayerInputHandler : MonoBehaviour
         if (context.phase == InputActionPhase.Started)
         {
             PlayerUIManager.instance.ToggleUI(UIPanelType.Quest);
-
         }
     }
 }

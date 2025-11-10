@@ -30,7 +30,6 @@ public class PlayerMotor : MonoBehaviour
     private float knockBackTimer;
     private float knockBackDuration;
     private Vector3 knockbackMovement;
-    [SerializeField] private float GroggyTime = 0f;
 
     [Header("백스탭")]
     public Vector3 rollDirection;
@@ -58,11 +57,13 @@ public class PlayerMotor : MonoBehaviour
     private void Start()
     {
         player.Stats.OnDamaged += StartKnockBack;
+        player.Stats.OnPostureBroken += Groggy;
     }
 
     private void OnDestroy()
     {
         player.Stats.OnDamaged -= StartKnockBack;
+        player.Stats.OnPostureBroken -= Groggy;
     }
 
 
@@ -125,7 +126,15 @@ public class PlayerMotor : MonoBehaviour
         //구르기 shift 
         if (player.InputHandler.MoveInput != Vector3.zero)
         {
-            rollDirection = (player.MainCamera.transform.forward * player.InputHandler.MoveInput.z + player.MainCamera.transform.right * player.InputHandler.MoveInput.x).normalized;
+            Vector3 cameraForward = player.MainCamera.transform.forward;
+            cameraForward.y = 0f;
+            Vector3 cameraRight = player.MainCamera.transform.right;
+            cameraRight.y = 0f;
+
+            Vector3 rollDirection = (cameraForward.normalized * player.InputHandler.MoveInput.z + cameraRight.normalized * player.InputHandler.MoveInput.x).normalized;
+
+            Quaternion targetRotation = Quaternion.LookRotation(rollDirection);
+            transform.rotation = targetRotation;
             player.animatorManager.PlayTargetActionAnimation("Roll", true);
         }
         else
@@ -163,6 +172,11 @@ public class PlayerMotor : MonoBehaviour
         controller.Move(Vector3.zero);
     }
 
+    public void Groggy()
+    {
+        player.animatorManager.PlayTargetActionAnimation("GuardBreak", true, true);
+    }
+
 
     //점프
     public void Jump(float jumpForce)
@@ -191,14 +205,13 @@ public class PlayerMotor : MonoBehaviour
 
     private void HandleRotation()
     {
-
-        if (!canRotate || isKnockingBack) { return; }
-
         if (player.StateMachine.CurrentState == player.StateMachine.PlayerRollingState)
         {
-            RotateTowardsDirection(rollDirection);
+            return;
         }
-        else if (player.isLockOn)
+        if (!canRotate || isKnockingBack) { return; }
+
+        if (player.isLockOn)
         {
             if (player.TargetingSystem.CurrentTarget == null) { return; }
             Vector3 targetDirection = player.TargetingSystem.CurrentTarget.transform.position - transform.position;
@@ -245,7 +258,7 @@ public class PlayerMotor : MonoBehaviour
         deceleration = Mathf.Clamp01(deceleration);
         controller.Move(deceleration * Time.deltaTime * knockbackMovement);
 
-        if (knockBackTimer >= knockBackDuration + GroggyTime)
+        if (knockBackTimer >= knockBackDuration)
         {
             isKnockingBack = false;
         }

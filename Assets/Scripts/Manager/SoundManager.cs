@@ -45,16 +45,15 @@ public class SoundManager : MonoBehaviour
         _loopingSfxPlayers = new Dictionary<string, AudioSource>();
         for (int i = 0; i < sfxPoolSize; i++)
         {
-            AudioSource sfxPlayer = Instantiate(sfxPlayerPrefab, transform);
-            sfxPlayer.gameObject.SetActive(false);
-            _sfxPlayers.Add(sfxPlayer);
+            CreateNewSFXPlayer();
         }
     }
 
-    public void PlayBGM(AudioClip clip)
+    public void PlayBGM(string clipName)
     {
-        if (clip == null) return;
-        bgmPlayer.clip = clip;
+        AudioClip clipToPlay = soundDB.GetClipByName(clipName);
+        if (clipToPlay == null) return;
+        bgmPlayer.clip = clipToPlay;
         bgmPlayer.loop = true;
         bgmPlayer.Play();
     }
@@ -62,7 +61,6 @@ public class SoundManager : MonoBehaviour
     // PlaySFX는 이제 AudioClip이 아닌, 사운드 파일의 '이름(string)'을 받습니다.
     public void PlaySFX(string clipName, Vector3? position = null)
     {
-        // 1. 데이터베이스에게 이름으로 오디오 클립을 물어봅니다.
         AudioClip clipToPlay = soundDB.GetClipByName(clipName);
         if (clipToPlay == null) return; // 클립이 없으면 재생하지 않음
 
@@ -133,12 +131,24 @@ public class SoundManager : MonoBehaviour
         {
             if (!player.gameObject.activeSelf) return player;
         }
-        return null;
+        return CreateNewSFXPlayer();
+    }
+    private AudioSource CreateNewSFXPlayer()
+    {
+        AudioSource newPlayer = Instantiate(sfxPlayerPrefab, transform);
+        newPlayer.gameObject.SetActive(false); // 일단 비활성화 상태로
+        _sfxPlayers.Add(newPlayer); // 풀 리스트에 추가
+        return newPlayer;
     }
 
     private IEnumerator ReturnToPoolAfterPlay(AudioSource player)
     {
-        yield return new WaitForSeconds(player.clip.length);
-        player.gameObject.SetActive(false);
+        //  player가 재생 중인 동안(isPlaying) 계속 대기
+        yield return new WaitWhile(() => player != null && player.isPlaying);
+
+        if (player != null)
+        {
+            player.gameObject.SetActive(false);
+        }
     }
 }
