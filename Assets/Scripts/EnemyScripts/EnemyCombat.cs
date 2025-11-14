@@ -39,6 +39,7 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
 
         DamageInfo damageInfo = new DamageInfo
         {
+            enemy = enemy,
             finalDamage = currentAttackData.damage,
             attackType = currentAttackData.type,
             knockbackForce = currentAttackData.knockbackPower,
@@ -77,6 +78,7 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     //¹æ¾î
     public void DecideDefenseAction()
     {
+        if (enemy.Stats.dead || enemy.Stats.IsPlayingDeathBlow) { return; }
         if (enemy.AnimationManager.IsPerformAction) return;
         float value = Random.Range(0f, 1f);
 
@@ -84,9 +86,8 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
         {
             enemy.AnimationManager.PlayAnimation("Deflect", false);
             enemy.Stats.isDeflecting = true;
+            enemy.Motor.Stop();
         }
-
-        enemy.Motor.Stop();
     }
 
     public void ApplyAttackCooldown()

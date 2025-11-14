@@ -70,59 +70,81 @@ public class EffectManager : MonoBehaviour
 
         Queue<GameObject> pool = _effectPool[name];
 
-        // 1. 풀에서 사용 가능한 이펙트를 가져옵니다.
-        GameObject effectInstance;
-        if (pool.Count > 0)
+        GameObject effectInstance = null;
+
+        while (pool.Count > 0)
         {
             effectInstance = pool.Dequeue();
-            effectInstance.SetActive(true);
+
+            if ((effectInstance as UnityEngine.Object) != null)
+            {
+                break;
+            }
+            else
+            {
+                Debug.LogWarning($"[EffectManager] 풀에 있던 '{name}' 이펙트가 파괴되어 있었습니다. 풀에서 제거합니다.");
+                effectInstance = null;
+            }
         }
-        else // 만약 풀이 비었다면 새로 생성 (비상용)
+
+        if (effectInstance == null)
         {
+            Debug.LogWarning(name + " 이펙트 풀이 부족하거나 손상되어 새로 생성합니다. Pool Size를 늘리는 것을 고려해보세요.");
             GameObject prefab = effectDB.GetEffectByName(name);
             if (prefab == null) return null;
 
             effectInstance = Instantiate(prefab, transform);
-            _pooledObjects.Add(effectInstance); // 새로 만든 것도 추적
-            Debug.LogWarning(name + " 이펙트 풀이 부족하여 새로 생성합니다. Pool Size를 늘리는 것을 고려해보세요.");
+            _pooledObjects.Add(effectInstance);
         }
 
+        effectInstance.SetActive(true);
         effectInstance.transform.SetPositionAndRotation(position, rotation);
 
         if (parent != null)
         {
             effectInstance.transform.SetParent(parent);
         }
+        else
+        {
+            effectInstance.transform.SetParent(transform);
+        }
 
-        // 2. 파티클 재생이 끝나면 자동으로 풀에 반환되도록 코루틴 실행
         StartCoroutine(ReturnToPoolAfterPlay(effectInstance, name));
         return effectInstance;
     }
 
     private IEnumerator ReturnToPoolAfterPlay(GameObject effectInstance, string name)
     {
+
+        if ((effectInstance as UnityEngine.Object) == null)
+        {
+            yield break; // 시작할 때 이미 파괴됨
+        }
+
         ParticleSystem particle = effectInstance.GetComponent<ParticleSystem>();
         if (particle == null)
         {
             Debug.LogError($"'{name}' 이펙트에 파티클 시스템이 없습니다!");
-            // 파티클이 없으면 1초 뒤에 그냥 반납
             yield return new WaitForSeconds(1f);
-            if (effectInstance.activeSelf)
+
+            if ((effectInstance as UnityEngine.Object) != null && effectInstance.activeSelf)
                 ReturnToPool(effectInstance, name);
+
             yield break;
         }
 
-        // 파티클이 살아있는 동안 대기 (null 체크 추가)
-        yield return new WaitWhile(() => particle != null && particle.IsAlive(true));
+        yield return new WaitWhile(() => (particle as UnityEngine.Object) != null && particle.IsAlive(true));
 
         ReturnToPool(effectInstance, name);
     }
 
     private void ReturnToPool(GameObject effectInstance, string name)
     {
-        if (effectInstance != null && effectInstance.activeSelf)
+        if ((effectInstance as UnityEngine.Object) != null && effectInstance.activeSelf)
         {
             effectInstance.SetActive(false);
+            effectInstance.transform.SetParent(transform);
+
             _effectPool[name].Enqueue(effectInstance);
         }
     }

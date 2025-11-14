@@ -126,7 +126,7 @@ public class EnemyMotor : MonoBehaviour
     {
         if (!navAgent.isOnNavMesh) { return; }
         navAgent.isStopped = true;
-
+        enemy.Combat.EnemyAttackEnd();
         navAgent.ResetPath();
     }
 

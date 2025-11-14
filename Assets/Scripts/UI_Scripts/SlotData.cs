@@ -5,7 +5,6 @@ using System;
 [Serializable]
 public class SlotData
 {
-
     public SlotType slotType;
     public int slotIndex;
     public int? itemId;

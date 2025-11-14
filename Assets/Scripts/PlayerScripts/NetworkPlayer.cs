@@ -13,6 +13,7 @@ public class NetworkPlayer : MonoBehaviour
     {
         player = GetComponent<Player>();
         targetPosition = transform.position;
+        targetRotation = transform.rotation;
     }
 
     void Update()

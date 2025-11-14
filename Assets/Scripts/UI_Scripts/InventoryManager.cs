@@ -20,14 +20,15 @@ public class InventoryManager : MonoBehaviour
     private void Awake()
     {
         player = GetComponentInParent<Player>();
-        player.localAPI.Inventory.OnGetInventory += LoadInventory;
-        OnSlotDataChanged += SaveInventory;
-
-
     }
 
     private void Start()
     {
+        if (!player.IsLocalPlayer) { return; }
+
+        player.localAPI.Inventory.OnGetInventory += LoadInventory;
+        OnSlotDataChanged += SaveInventory;
+
         //슬롯타입, 전체슬롯, 빈슬롯 정보를 초기화
         Inventory = new();
 
@@ -49,6 +50,7 @@ public class InventoryManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (!player.IsLocalPlayer) { return; }
         if (player != null && player.localAPI != null && player.localAPI.Inventory != null)
         {
             player.localAPI.Inventory.OnGetInventory -= LoadInventory;
@@ -82,9 +84,10 @@ public class InventoryManager : MonoBehaviour
         if(response?.inventory == null) { return; }
         foreach(SlotData data in response.inventory)
         {
+            ItemData baseItemData = ItemManager.Instance.GetItem(data.itemId);
             Inventory[data.slotType][data.slotIndex].itemId = data.itemId;
             Inventory[data.slotType][data.slotIndex].itemCount = data.itemCount;
-            Inventory[data.slotType][data.slotIndex].itemData = ItemManager.Instance.GetItem(data.itemId);
+            Inventory[data.slotType][data.slotIndex].itemData = baseItemData;
             Inventory[data.slotType][data.slotIndex].itemSpec = data.itemSpec;
 
 
@@ -144,26 +147,79 @@ public class InventoryManager : MonoBehaviour
         OnSlotDataChanged?.Invoke(destinationSlotType, destinationSlotIndex);
     }
 
+    public void MergeItems(SlotType sourceSlotType, int sourceSlotIndex, SlotType destinationSlotType, int destinationSlotIndex)
+    {
+        SlotData sourceData = Inventory[sourceSlotType][sourceSlotIndex];
+        SlotData destinationData = Inventory[destinationSlotType][destinationSlotIndex];
 
+        if (sourceData.itemData == null || destinationData.itemData == null || sourceData.itemId != destinationData.itemId)
+        {
+            return;
+        }
+
+
+        //  Equipment나 Profile이면 스택 불가능
+        SlotType itemType = destinationData.itemData.type;
+        if (itemType == SlotType.Equipment || itemType == SlotType.Profile)
+        {
+            // 스택 불가능 아이템이면 대신 스왑을 실행
+            SwapItems(sourceSlotType, sourceSlotIndex, destinationSlotType, destinationSlotIndex);
+            return;
+        }
+
+        int maxStackSize = 99;
+        int availableSpace = maxStackSize - destinationData.itemCount;
+
+        if (availableSpace <= 0)
+        {
+            // 꽉 찼으면 스왑을 실행합니다.
+            SwapItems(sourceSlotType, sourceSlotIndex, destinationSlotType, destinationSlotIndex);
+            return;
+        }
+
+        int amountToMove = Mathf.Min(availableSpace, sourceData.itemCount);
+
+
+
+        // 소스 데이터를 목적지 슬롯으로 복사
+        destinationData.itemCount += amountToMove;
+        sourceData.itemCount -= amountToMove;
+
+        if (sourceData.itemCount <= 0)
+        {
+            sourceData.itemId = 0;
+            sourceData.itemCount = 0;
+            sourceData.itemData = null;
+            sourceData.itemSpec = null;
+        }
+
+        Inventory[sourceSlotType][sourceSlotIndex] = sourceData;
+        Inventory[destinationSlotType][destinationSlotIndex] = destinationData;
+
+        OnSlotDataChanged?.Invoke(sourceSlotType, sourceSlotIndex);
+        OnSlotDataChanged?.Invoke(destinationSlotType, destinationSlotIndex);
+    }
 
 
     //마켓에 아이템을 등록했을 때
     public void RegisterItemToMarket(SlotData saleSlotData, int saleCount)
     {
-        saleSlotData.itemCount -= saleCount;
-        saleSlotData.slotType = saleSlotData.itemData.type;
-        if (saleSlotData.itemCount <= 0)
+        SlotType originalSlotType = saleSlotData.itemData.type;
+        int originalSlotIndex = saleSlotData.slotIndex;
+
+        SlotData originalSlotData = Inventory[originalSlotType][originalSlotIndex];
+
+        originalSlotData.itemCount -= saleCount;
+
+        if (originalSlotData.itemCount <= 0)
         {
-            saleSlotData.itemData = null;
-            saleSlotData.itemSpec = null;
-            saleSlotData.itemId = 0;
-            saleSlotData.itemCount = 0;
+            originalSlotData.itemData = null;
+            originalSlotData.itemSpec = null;
+            originalSlotData.itemId = 0;
+            originalSlotData.itemCount = 0;
         }
-        Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemData = saleSlotData.itemData;
-        Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemSpec = saleSlotData.itemSpec;
-        Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemId = saleSlotData.itemId;
-        Inventory[saleSlotData.slotType][saleSlotData.slotIndex].itemCount = saleSlotData.itemCount;
-        OnSlotDataChanged?.Invoke(saleSlotData.slotType, saleSlotData.slotIndex);
+
+        OnSlotDataChanged?.Invoke(originalSlotType, originalSlotIndex);
     }
 
 

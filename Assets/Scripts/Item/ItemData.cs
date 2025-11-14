@@ -18,7 +18,6 @@ public class ItemData : ScriptableObject
 {
     public int id;
     public string itemName;
-    public string script;
     public Sprite icon;
     public SlotType type;
     public EquipmentType equipmentType;

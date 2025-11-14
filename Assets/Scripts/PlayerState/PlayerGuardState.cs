@@ -32,8 +32,7 @@ public class PlayerGuardState : State
     {
         guardTimer += Time.deltaTime;
 
-
-        if (!player.InputHandler.GuardInput)
+        if (!player.InputHandler.GuardInput || player.Stats.isGroggy)
         {
             if (player.InputHandler.MoveInput == Vector3.zero)
             {

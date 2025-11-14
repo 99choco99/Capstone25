@@ -153,6 +153,7 @@ public class QuestManager : MonoBehaviour
                     Vector3 targetPosition = new Vector3(254.249f, 2.32969f, 390.802f);
                     transform.position = targetPosition;
                     LoadingScene.LoadScene("Combat");
+
                     if (SocketManager.instance != null)
                     {
                         SocketManager.instance.EmitSceneChange(targetSceneName, targetPosition);
@@ -203,6 +204,37 @@ public class QuestManager : MonoBehaviour
         var questDef = GetCurerntQuestDefinition();
 
         if (status == null || questDef == null || status.currentStepIndex >= questDef.steps.Count) { return null; }
+
+
+        // ========== [신규 로직: 퀘스트 102 완료 후 재입장] ==========
+        // 퀘스트 102 (사라진 동생)의 상태를 별도로 확인
+        if (playerQuestState.TryGetValue(102, out var quest102Status) &&
+            QuestDefinition.TryGetValue(102, out var quest102Def))
+        {
+            // 1번 스텝을 완료시킨 NPC (아리사) ID 확인
+            int arisaNpcId = quest102Def.steps[1].turnInNpcId;
+
+            // 아리사와 "Main" 씬에서 대화하는지 확인
+            if (npcId == arisaNpcId && SceneManager.GetActiveScene().name == "Main")
+            {
+                // [기존 재입장 로직] 퀘스트 진행 중(스텝 2) 사망/복귀 시
+                if (quest102Status.currentStepIndex == 2 && quest102Status.state == QuestState.InProgress)
+                {
+                    // (참고: DialogueManager에 "COMBAT_REENTRY_ARISA" 같은 새 대화 키가 필요할 수 있습니다)
+                    return new QuestInteractionInfo("COMBAT_REENTRY_ARISA", 102, npcId, QuestInteractionType.Talk);
+                }
+
+                // [사용자 요청] 퀘스트를 완료한(TurnedIn) 후
+                if (quest102Status.state == QuestState.TurnedIn)
+                {
+                    // 퀘스트 완료 후 재입장용 대화 키 (새로 만드는 것을 추천)
+                    // 예: "COMBAT_POST_QUEST_ENTRY" -> "그곳에 다시 가보시겠어요?"
+                    return new QuestInteractionInfo("COMBAT_POST_QUEST_ENTRY", 102, npcId, QuestInteractionType.Talk);
+                }
+            }
+        }
+        // ==================================
+
 
         var currentStep = questDef.steps[status.currentStepIndex];
 
@@ -276,6 +308,40 @@ public class QuestManager : MonoBehaviour
     }
     public void ReportTalkToNPC(int npcId)
     {
+        // ========== [수정된 퀘스트 102 재입장 로직] ==========
+        // 퀘스트 102 (사라진 동생)의 상태를 별도로 확인
+        if (playerQuestState.TryGetValue(102, out var quest102Status) &&
+            QuestDefinition.TryGetValue(102, out var quest102Def))
+        {
+            // 1번 스텝을 완료시킨 NPC (아리사) ID 확인
+            int arisaNpcId = quest102Def.steps[1].turnInNpcId;
+
+            // 아리사와 "Main" 씬에서 대화하는지 확인
+            if (npcId == arisaNpcId && SceneManager.GetActiveScene().name == "Main")
+            {
+                // [기존 재입장] 퀘스트 진행 중(스텝 2)이거나,
+                // [신규 재입장] 퀘스트를 완료(TurnedIn)했거나.
+                if ((quest102Status.currentStepIndex == 2 && quest102Status.state == QuestState.InProgress) ||
+                     (quest102Status.state == QuestState.TurnedIn))
+                {
+                    // "Combat" 씬으로 즉시 이동시킵니다.
+                    string targetSceneName = "Combat";
+                    Vector3 targetPosition = new Vector3(254.249f, 2.32969f, 390.802f);
+
+                    // QuestManager가 Player에 붙어있으므로 player.transform을 사용합니다.
+                    player.transform.position = targetPosition;
+                    LoadingScene.LoadScene(targetSceneName);
+
+                    if (SocketManager.instance != null)
+                    {
+                        SocketManager.instance.EmitSceneChange(targetSceneName, targetPosition);
+                    }
+                    return; // 일반 미션 진행 로직(UpdateMissionProgress)을 건너뜁니다.
+                }
+            }
+        }
+        // ==================================
+
         UpdateMissionProgress(MissionType.TalkTo, npcId, 1);
     }
 

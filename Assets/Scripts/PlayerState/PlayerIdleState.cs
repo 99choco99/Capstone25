@@ -12,6 +12,7 @@ public class PlayerIdleState : State
 
     public override void Update()
     {
+        if (player.Stats.isGroggy) { return; }
         if (player.InputHandler.AttackInput && player.TargetingSystem.IsCurrentTargetExecutable())
         {
             player.InputHandler.UseAttackInput();

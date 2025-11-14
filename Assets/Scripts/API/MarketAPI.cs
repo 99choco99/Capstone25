@@ -49,7 +49,10 @@ public class MarketAPI
                     IMarketItemResponse[] responseList = JsonConvert.DeserializeObject<IMarketItemResponse[]>(webRequest.downloadHandler.text);
                     foreach (var response in responseList)
                     {
-                        OnGetSellingListComplete?.Invoke(response);
+                        if(response.userId != PublicAPIManager.Instance.loginData.user_id)
+                        {
+                            OnGetSellingListComplete?.Invoke(response);
+                        }
                     }
                 }
                 catch (JsonException ex)
@@ -80,7 +83,6 @@ public class MarketAPI
                     IMarketItemResponse[] responseList = JsonConvert.DeserializeObject<IMarketItemResponse[]>(webRequest.downloadHandler.text);
                     foreach (var response in responseList)
                     {
-                        Debug.Log($"{response}");
                         OnGetMySellingListComplete?.Invoke(response);
                     }
                 }
@@ -93,7 +95,7 @@ public class MarketAPI
     }
 
     //판매 요청
-    IEnumerator RequestToSell(string userId, int ItemId, ItemSpec spec, string price, string count)
+    IEnumerator RequestToSell(string userId, int ItemId, ItemSpec spec, string price, string count, SlotType slotType, int slotIndex)
     {
         var itemData = new
         {
@@ -101,7 +103,10 @@ public class MarketAPI
             ItemId = ItemId,
             itemSpec = spec,
             price = price,
-            itemCount = count
+            itemCount = count,
+            slotType = slotType,
+            slotIndex = slotIndex
+
         };
         string json = JsonConvert.SerializeObject(itemData);
 
@@ -226,9 +231,9 @@ public class MarketAPI
     }
 
 
-    public void RequestToSellItem(string userId, int Itemid, ItemSpec itemspec, string price, string count)
+    public void RequestToSellItem(string userId, int Itemid, ItemSpec itemspec, string price, string count, SlotType slotType, int slotIndex)
     {
-        coroutineRunner.StartCoroutine(RequestToSell(userId, Itemid, itemspec, price, count));
+        coroutineRunner.StartCoroutine(RequestToSell(userId, Itemid, itemspec, price, count, slotType, slotIndex));
     }
 
     public void RequestToBuyItem(string userId, int marketId, string count)
@@ -258,6 +263,7 @@ public class MarketAPI
 
 public class IMarketItemResponse
 {
+    public string userId { get; set; } //등록한 유저 아이디
     public int marketId { get; set; }  //마켓 id
     public int ItemId { get; set; }     //아이템 id
     public int ItemCount { get; set; }  // 등록된 아이템 개수

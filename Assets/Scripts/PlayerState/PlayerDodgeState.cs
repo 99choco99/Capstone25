@@ -11,6 +11,8 @@ public class PlayerDodgeState : State
     public override void Enter()
     {
         player.Motor.Dodge();
+        player.Motor.canRotate = false;
+        player.Stats.isInvincible = true;
     }
 
 
@@ -30,8 +32,10 @@ public class PlayerDodgeState : State
     }
 
     public override void Exit() 
-    { 
-
+    {
+        player.Motor.canMove = true;
+        player.Motor.canRotate = true;
+        player.Stats.isInvincible = false;
     }
 
 }

@@ -50,7 +50,6 @@ public class PlayerStateMachine : MonoBehaviour
         CurrentState?.Exit();
         CurrentState = nextState;
         nextState.Enter();
-        Debug.Log(CurrentState);
     }
 
     private void Update() => CurrentState?.Update();

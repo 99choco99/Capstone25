@@ -11,7 +11,7 @@ public class LivingEntity : MonoBehaviour,IDamageable
     public float damage { get; protected set; }
     public float maxPosture { get; protected set; }
     public float currentPosture { get; protected set; }
-    protected float postureRecoveryRate = 3f;
+    protected float postureRecoveryRate = 1f;
     [SerializeField] protected float postureRecoveryTimer = 2f;
 
     public bool dead { get; set;}

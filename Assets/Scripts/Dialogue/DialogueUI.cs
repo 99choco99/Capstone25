@@ -13,7 +13,7 @@ public class DialogueUI : MonoBehaviour
     private void Awake()
     {
         DialogueManager = GetComponent<DialogueManager>();
-        if (DialogueManager != null)
+        if (DialogueManager == null)
         {
             Debug.Log("DialogueManager ¾øÀ½");
         }

@@ -29,9 +29,10 @@ public class Weapon : MonoBehaviour
     }
     private void Update()
     {
-        if (owner == null || owner.Equals(null))
+        if (owner == null || (owner as UnityEngine.Object) == null)
         {
             isAttackActive = false;
+            this.enabled = false;
             return;
         }
         PerformHitCheck();
