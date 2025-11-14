@@ -21,10 +21,10 @@ public class MarketManager : MonoBehaviour
     }
 
     //API 호출 함수
-    public void SellItem(int Itemid, ItemSpec itemspec, string price, string count)
+    public void SellItem(int Itemid, ItemSpec itemspec, string price, string count, SlotType slotType, int slotIndex)
     {
         string myUserId = PublicAPIManager.Instance.loginData.user_id;
-        PublicAPIManager.Instance.Market.RequestToSellItem(myUserId, Itemid, itemspec, price, count);
+        PublicAPIManager.Instance.Market.RequestToSellItem(myUserId, Itemid, itemspec, price, count, slotType, slotIndex);
     }
 
     public void CancelMyItem(int marketId)

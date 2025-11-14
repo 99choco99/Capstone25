@@ -56,20 +56,21 @@ public class GameManager : MonoBehaviour
         OnGameStateChanged?.Invoke(CurrentState);
     }
 
+    public GameState GetGameState()
+    {
+        return CurrentState;
+    }
+
     public void RegisterEnemyInCombat(Enemy enemy)
     {
         if (enemy == null || !enemiesInCombatWithMe.Add(enemy)) return;
 
         if (enemiesInCombatWithMe.Count == 1)
         {
-            SoundManager.Instance.StopLoopingSFX(mainBgmKey);
-            SoundManager.Instance.PlayLoopingSFX(combatBgmKey);
+            SoundManager.Instance.PlayBGM(combatBgmKey);
         }
     }
 
-    /// <summary>
-    /// "나"와의 전투에서 벗어난 적을 등록 해제
-    /// </summary>
     public void UnregisterEnemyInCombat(Enemy enemy)
     {
         // 등록된 적이 아니거나, Enemy가 null이면 무시
@@ -78,8 +79,7 @@ public class GameManager : MonoBehaviour
         // "나"와 싸우는 적이 1명에서 0명이 되는 순간
         if (enemiesInCombatWithMe.Count == 0)
         {
-            SoundManager.Instance.StopLoopingSFX(combatBgmKey);
-            SoundManager.Instance.PlayLoopingSFX(mainBgmKey);
+            SoundManager.Instance.PlayBGM(mainBgmKey);
         }
     }
 

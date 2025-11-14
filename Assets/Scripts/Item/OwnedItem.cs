@@ -1,3 +1,4 @@
+using System.Text;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -6,6 +7,7 @@ using UnityEngine.UI;
 
 public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerEnterHandler,IPointerExitHandler
 {
+    Player player;
     CanvasGroup canvasGroup;
     protected Transform canvas;
 
@@ -19,6 +21,7 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
 
     public void Awake()
     {
+        player = GetComponentInParent<Player>();
         rect = GetComponent<RectTransform>();
         image = GetComponent<Image>();
         canvasGroup = GetComponent<CanvasGroup>();
@@ -40,7 +43,6 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
 
         if (currentSlot is ProfileSlot profileSlot)
         {
-            Player player = GetComponentInParent<Player>();
             player.Equipment.Unequip(profileSlot.GetEquipmentSlotType());
         }
     }
@@ -58,7 +60,6 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
             rect.position = currentSlot.GetComponent<RectTransform>().position;
             if (currentSlot is ProfileSlot profileSlot)
             {
-                Player player = GetComponentInParent<Player>();
                 player.Equipment.Equip(profileSlot.GetEquipmentSlotType(), currentSlot.slotData.itemSpec);
             }
         }
@@ -69,12 +70,39 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
 
     public virtual void OnPointerEnter(PointerEventData eventData)
     {
-        PlayerUIManager.instance.ShowTooltip(data.script, transform.position);
+        if (data == null) return;
+
+        ItemSpec stats = currentSlot.slotData.itemSpec;
+
+        StringBuilder statsBuilder = new StringBuilder();
+
+        // 0보다 큰 스탯만 툴팁에 추가
+        if (stats.damage >= 0) statsBuilder.AppendLine($"공격력: {stats.damage}");
+        if (stats.defense >= 0) statsBuilder.AppendLine($"방어력: {stats.defense}");
+        if (stats.hp >= 0) statsBuilder.AppendLine($"체력: {stats.hp}");
+        if (stats.duration > 0) statsBuilder.AppendLine($"지속시간: {stats.duration}초");
+        if (stats.coolTime > 0) statsBuilder.AppendLine($"쿨타임: {stats.coolTime}초");
+
+        string tooltipText = "";
+
+        // 표시할 스탯이 하나라도 있다면
+        if (statsBuilder.Length > 0)
+        {
+            // 설명과 스탯 사이에 공백 한 줄 추가
+            tooltipText += statsBuilder.ToString().TrimEnd(); // 마지막 줄바꿈 제거
+        }
+        else
+        {
+            statsBuilder.AppendLine($"효과없음");
+        }
+
+         // 5. 완성된 툴팁 텍스트로 툴팁 표시
+         TooltipManager.Instance.ShowTooltip(tooltipText, transform.position);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        PlayerUIManager.instance.HideTooltip();
+        TooltipManager.Instance.HideTooltip();
     }
 
     public void SetAlphaValue(float alpha)

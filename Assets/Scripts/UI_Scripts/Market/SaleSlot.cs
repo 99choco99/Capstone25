@@ -11,11 +11,18 @@ public class SaleSlot : Slot
         OwnedItem draggedItem = eventData.pointerDrag?.GetComponent<OwnedItem>();
 
         if (draggedItem == null) { return; }
-        slotData.itemData = draggedItem.data;
-        slotData.slotIndex = draggedItem.currentSlot.slotData.slotIndex;
-        slotData.itemSpec = draggedItem.currentSlot.slotData.itemSpec;
-        slotData.itemId = draggedItem.data.id;
+
+        SlotData originalSlot = draggedItem.currentSlot.slotData;
+
+        slotData.itemData = originalSlot.itemData;
+        slotData.itemSpec = originalSlot.itemSpec;
+        slotData.itemId = originalSlot.itemId;
+        slotData.itemCount = originalSlot.itemCount;
+
+        //원본 슬롯의 위치를 정확히 저장
+        slotData.slotType = originalSlot.slotType;
+        slotData.slotIndex = originalSlot.slotIndex;
+
         itemImage.sprite = draggedItem.data.icon;
-        slotData.itemCount = draggedItem.currentSlot.slotData.itemCount;
     }
 }

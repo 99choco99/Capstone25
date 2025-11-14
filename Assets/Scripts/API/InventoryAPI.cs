@@ -15,7 +15,7 @@ public class InventoryAPI
     //인벤토리 목록 가져오기
     public event Action<InventoryResponse> OnGetInventory;
 
-    // 생성자를 통해 MonoBehaviour 인스턴스를 주입받습니다.
+    // 생성자를 통해 MonoBehaviour 인스턴스를 주입
     public InventoryAPI(MonoBehaviour runner, string userId)
     {
         this.coroutineRunner = runner;

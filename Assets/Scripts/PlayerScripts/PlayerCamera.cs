@@ -11,7 +11,7 @@ public class PlayerCamera : MonoBehaviour
     [Header("Camera Setting")]
     private Vector3 cameraVelocity;
     public float followSpeed = 10f;  // 카메라 이동속도
-    public float sensitivity = 50f;  // 카메라 감도
+    public float baseSensitivity = 50f;// 카메라 감도
     public float minimumclampAngle = -30f;  // 각도 제한
     public float maximumclampAngle = 60f;  // 각도 제한
     public float MaximumLockAnlge = 20f;
@@ -53,7 +53,6 @@ public class PlayerCamera : MonoBehaviour
         cameraZPosition = defaultCameraZPosition;
     }
 
-
     private void LateUpdate()
     {
         if (player == null) { return; }
@@ -89,8 +88,10 @@ public class PlayerCamera : MonoBehaviour
         }
         else
         {
-            rotX -= player.InputHandler.LookInput.y * sensitivity * Time.deltaTime;
-            rotY += player.InputHandler.LookInput.x * sensitivity * Time.deltaTime;
+            float currentSensitivityMultiplier = SettingManager.instance.MouseSensitivity;
+
+            rotX -= player.InputHandler.LookInput.y * baseSensitivity * currentSensitivityMultiplier * Time.deltaTime;
+            rotY += player.InputHandler.LookInput.x * baseSensitivity * currentSensitivityMultiplier * Time.deltaTime;
             rotX = Mathf.Clamp(rotX, minimumclampAngle, maximumclampAngle);
 
             Vector3 cameraRotation = Vector3.zero;

@@ -24,18 +24,23 @@ public class PlayerInteraction : MonoBehaviour
     public int selectionIndex = 0;
     public List<IInteractable> interactablesInRange = new List<IInteractable>();
 
+    private void Awake()
+    {
+        player = GetComponent<Player>();
+    }
 
     private void Start()
     {
-        player = GetComponent<Player>();
+        if (!player.IsLocalPlayer) { return; }
         player.Dialogue.OnConversationStart += HandleConversationStart;
         player.Dialogue.OnConversationEnd += HandleConversationEnd;
     }
 
     private void OnDestroy()
     {
-        if(player != null && player.Dialogue != null)
+        if (player != null && player.Dialogue != null)
         {
+            if (!player.IsLocalPlayer) { return; }
             player.Dialogue.OnConversationStart -= HandleConversationStart;
             player.Dialogue.OnConversationEnd -= HandleConversationEnd;
         }

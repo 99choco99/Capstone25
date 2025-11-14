@@ -101,26 +101,9 @@ public class MarketInventoryUI : MonoBehaviour
     private void OnDropHandler(Slot droppedSlot, PointerEventData eventData)
     {
         OwnedItem draggedItemUI = eventData.pointerDrag?.GetComponent<OwnedItem>();
-        Slot draggedSlot = draggedItemUI?.currentSlot;
-        if (droppedSlot == draggedSlot) { return; }
-        if (droppedSlot.slotData.hasItem)
-        {
-            player.Inventory.SwapItems(
-                draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
-                droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
-        }
-        else
-        {
-            player.Inventory.MoveToEmptySlot(
-                draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
-                droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
-        }
-
-        if (draggedItemUI != null)
-        {
-            Destroy(draggedItemUI.gameObject);
-        }
-
+        if(draggedItemUI == null) { return; }
+        draggedItemUI.transform.SetParent(draggedItemUI.currentSlot.transform);
+        draggedItemUI.transform.localPosition = Vector3.zero;
     }
 
     private void UpdateSlotUI(SlotType type, int index)
