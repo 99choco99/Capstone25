@@ -25,8 +25,8 @@ public class EnemyAnimationManager : MonoBehaviour
     public void PlayAnimation(string animationName, bool IsLockAction = true)
     {
         if (IsPerformAction) { return; }
-        enemy.Anim.CrossFade(animationName, 0.1f);
         this.IsPerformAction = IsLockAction;
+        enemy.Anim.CrossFade(animationName, 0.1f);
     }
     
     public void DeathProcess()

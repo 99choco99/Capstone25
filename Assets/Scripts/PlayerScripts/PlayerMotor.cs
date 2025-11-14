@@ -56,12 +56,14 @@ public class PlayerMotor : MonoBehaviour
 
     private void Start()
     {
+        if (!player.IsLocalPlayer) { return; }
         player.Stats.OnDamaged += StartKnockBack;
         player.Stats.OnPostureBroken += Groggy;
     }
 
     private void OnDestroy()
     {
+        if (!player.IsLocalPlayer) { return; }
         player.Stats.OnDamaged -= StartKnockBack;
         player.Stats.OnPostureBroken -= Groggy;
     }
@@ -69,6 +71,11 @@ public class PlayerMotor : MonoBehaviour
 
     private void Update()
     {
+        if (player.Combat.IsPlayingDirector) { 
+            canMove = false;
+            canRotate = false;
+            return; 
+        }
         HandleGroundCheck();
         HandleGravity();
 

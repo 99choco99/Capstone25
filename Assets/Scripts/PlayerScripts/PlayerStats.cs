@@ -54,18 +54,21 @@ public class PlayerStats : LivingEntity
     private void Awake()
     {
         player = GetComponent<Player>();
-        player.Inventory.OnQuickSlotUsed += Consume;
-        OnStatsChanged += DataManager.Instance.SaveData;
-        OnLevelUp += DataManager.Instance.SaveData;
+
     }
 
     private void Start()
     {
+        if (!player.IsLocalPlayer) { return; }
+        player.Inventory.OnQuickSlotUsed += Consume;
+        OnStatsChanged += DataManager.Instance.SaveData;
+        OnLevelUp += DataManager.Instance.SaveData;
         LoadPlayerData(DataManager.Instance.playerData);
     }
 
     private void OnDestroy()
     {
+        if (!player.IsLocalPlayer) { return; }
         if (DataManager.Instance != null)
         {
             DataManager.Instance.OnSave -= OnSavePlayerData;
@@ -111,8 +114,6 @@ public class PlayerStats : LivingEntity
             if (spawnObj != null)
             {
                 if (spawnObj == null) return;
-
-                Debug.Log("플레이어를 스폰 지점으로 이동");
 
                 if (player.Motor.controller != null)
                 {
@@ -180,7 +181,7 @@ public class PlayerStats : LivingEntity
         else if (isGuarding)
         {
             finalDamageToHp = 0;
-            damageInfo.enemy.Stats.TakePostureDamage(damageInfo.finalDamage * 0.3f);
+            damageInfo.enemy.Stats.TakePostureDamage(damageInfo.finalDamage * 0.5f);
             TakePostureDamage(damageInfo.finalDamage * 0.5f);
         }
         else

@@ -6220,7 +6220,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1522985824110387632}
         m_TargetAssemblyTypeName: PlayerInputHandler, Assembly-CSharp
-        m_MethodName: OnInteraction
+        m_MethodName: OnMarketUIClose
         m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -6352,6 +6352,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Player
   isLockOn: 0
+  PreviewCamera: {fileID: 8152184355599617953}
 --- !u!114 &6637452115546161285
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6374,6 +6375,7 @@ MonoBehaviour:
   weapon: {fileID: 4777398382559806726}
   weaponCollider: {fileID: 6628339175506975799}
   deathblowDirector: {fileID: 210393610305550311}
+  IsPlayingDirector: 0
   FrontdeathblowTimelineAsset: {fileID: 11400000, guid: f029f9c862faf7545b9e07c582060aad,
     type: 2}
   BehindDeathblowTimelineAsset: {fileID: 11400000, guid: 746dd2a78e249b34b890190740495a3d,
@@ -6593,19 +6595,7 @@ MonoBehaviour:
     - {fileID: 11400000, guid: ecd34593c16203446835792de239fece, type: 2}
     m_Events:
     - m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 6637452115546161285}
-          m_TargetAssemblyTypeName: PlayerCombat, Assembly-CSharp
-          m_MethodName: SIG_ExcutedEnd
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
+        m_Calls: []
 --- !u!114 &5769276046586513802
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8783,7 +8773,7 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  m_hasFontAssetChanged: 1
+  m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &5365346617675041655
@@ -9847,8 +9837,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerStats: {fileID: 1236270409340426741}
-  itemDescriptionObject: {fileID: 3219074529463330204}
-  itemDescriptionText: {fileID: 6201182135231275276}
   PlayerHpUI: {fileID: 6678809048340345792}
   PostureGauge: {fileID: 7022683536620304897}
   EnemyHpUI: {fileID: 1599913206497538220}

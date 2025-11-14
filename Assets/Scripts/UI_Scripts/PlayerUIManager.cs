@@ -18,10 +18,8 @@ public enum UIPanelType {
 }
 public class PlayerUIManager : MonoBehaviour
 {
+    Player player;
     public PlayerStats playerStats;
-
-    [SerializeField] private GameObject itemDescriptionObject;
-    [SerializeField] private TextMeshProUGUI itemDescriptionText;
 
     public Slider PlayerHpUI;
     public Slider PostureGauge;
@@ -46,30 +44,21 @@ public class PlayerUIManager : MonoBehaviour
     public GameObject Quest;
     public GameObject dialogUI;
 
-
-    public static PlayerUIManager instance;
-
-
     private void Awake()
     {
-        if (instance == null)
-        {
-            instance = this;
-        }
-        else
-        {
-            Destroy(instance);
-        }
+        player = GetComponentInParent<Player>();
         playerStats = GetComponentInParent<PlayerStats>();
 
-        playerStats.OnHpChanged += UpdateHp;
-        playerStats.OnExpChanged += UpdateExp;
-        playerStats.OnPostureChanged += UpdatePostureGauge;
+
     }
 
     private void Start()
     {
-        if(MarketManager.Instance != null)
+        if (!player.IsLocalPlayer) { return; }
+        playerStats.OnHpChanged += UpdateHp;
+        playerStats.OnExpChanged += UpdateExp;
+        playerStats.OnPostureChanged += UpdatePostureGauge;
+        if (MarketManager.Instance != null)
         {
             Market = MarketManager.Instance.MarketUI;
         }
@@ -91,6 +80,7 @@ public class PlayerUIManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (!player.IsLocalPlayer) { return; }
         playerStats.OnHpChanged -= UpdateHp;
         playerStats.OnExpChanged -= UpdateExp;
         playerStats.OnPostureChanged -= UpdatePostureGauge;
@@ -129,19 +119,7 @@ public class PlayerUIManager : MonoBehaviour
     }
 
 
-    public void ShowTooltip(string text, Vector3 position)
-    {
-        if (itemDescriptionObject == null) return;
-        itemDescriptionText.text = text;
-        itemDescriptionObject.transform.position = position + Vector3.down * 10;
-        itemDescriptionObject.SetActive(true);
-    }
 
-    public void HideTooltip()
-    {
-        if (itemDescriptionObject == null) return;
-        itemDescriptionObject.SetActive(false);
-    }
 
     public void ToggleUI(UIPanelType type)
     {
@@ -158,6 +136,7 @@ public class PlayerUIManager : MonoBehaviour
 
     public void OpenUI(UIPanelType type)
     {
+        if (currentOpenUI.Count > 0 && currentOpenUI.Last() == UIPanelType.Market) { return; } //마켓있을땐 UI못열게
         GameManager.instance.ChangeState(GameState.UIMode);
         panelDictionary[type].SetActive(true);
         currentOpenUI.Add(type);
@@ -166,11 +145,13 @@ public class PlayerUIManager : MonoBehaviour
     public void CloseUI(UIPanelType type)
     {
         panelDictionary[type].SetActive(false);
+        TooltipManager.Instance.HideTooltip();
         currentOpenUI.Remove(type);
         if (currentOpenUI.Count == 0)
         {
             GameManager.instance.ChangeState(GameState.Gameplay);
         }
+        
     }
 
     public void CloseLastUI()
@@ -180,6 +161,11 @@ public class PlayerUIManager : MonoBehaviour
             UIPanelType lastPanel = currentOpenUI.Last();
             CloseUI(lastPanel);
         }
+    }
+
+    public bool IsPanelOpen(UIPanelType type)
+    {
+        return panelDictionary[type].activeSelf;
     }
 
 

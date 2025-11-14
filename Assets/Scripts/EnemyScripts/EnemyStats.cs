@@ -16,7 +16,7 @@ public class EnemyStats : LivingEntity
 
     public bool IsPostureBroken {  get; private set; }
     public bool isDeflecting;
-
+    public bool IsPlayingDeathBlow;
 
 
     private void Awake()
@@ -74,20 +74,21 @@ public class EnemyStats : LivingEntity
     {
         if (dead) return;
 
-        TakePostureDamage(result.finalDamage);
-        if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
-        {
-            enemy.AnimationManager.PlayAnimation("BackHit", false);
-            base.OnDamage(result);
-            EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
-            SoundManager.Instance.PlaySFX("Cutting flesh");
-        }
-        else if (isDeflecting)
+        if (isDeflecting)
         {
             Quaternion effectRotation = Quaternion.LookRotation(result.hitDirection);
             EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, effectRotation, transform);
             SoundManager.Instance.PlaySFX("GuardHit");
             enemy.Stats.isDeflecting = false;
+            TakePostureDamage(result.finalDamage * 0.5f);
+        }
+        else if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
+        {
+            enemy.AnimationManager.PlayAnimation("BackHit", false);
+            base.OnDamage(result);
+            EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
+            SoundManager.Instance.PlaySFX("Cutting flesh");
+            TakePostureDamage(result.finalDamage);
         }
         else
         {
@@ -98,6 +99,7 @@ public class EnemyStats : LivingEntity
             }
             EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
             SoundManager.Instance.PlaySFX("Cutting flesh");
+            TakePostureDamage(result.finalDamage);
         }
 
         enemy.Senses.DetectWithAttack(result.player);

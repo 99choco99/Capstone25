@@ -79,13 +79,24 @@ public class InventoryUI : MonoBehaviour
     private void OnDropHandler(Slot droppedSlot, PointerEventData eventData)
     {
         OwnedItem draggedItemUI = eventData.pointerDrag?.GetComponent<OwnedItem>();
+        if (draggedItemUI == null) { return; }
         Slot draggedSlot = draggedItemUI?.currentSlot;
         if (droppedSlot == draggedSlot) { return; }
+
         if (droppedSlot.slotData.hasItem)
         {
-            player.Inventory.SwapItems(
+            if(draggedSlot.slotData.itemId == droppedSlot.slotData.itemId)
+            {
+            player.Inventory.MergeItems(
                 draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
                 droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
+            }
+            else
+            {
+                player.Inventory.SwapItems(
+                    draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
+                    droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
+            }
         }
         else
         {

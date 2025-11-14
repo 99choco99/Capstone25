@@ -11,7 +11,7 @@ public class EnemySense : MonoBehaviour
     [SerializeField, Range(0, 360)] private float detectionAngle = 90f; // AI의 시야각
     [SerializeField] private LayerMask playerLayer;
     [SerializeField] private LayerMask obstacleLayer;
-    [SerializeField] private float attackThreatRange = 1f;
+    [SerializeField] private float attackThreatRange = 1.5f;
     private int lastPlayerAttackStateHash = 0;
 
     
@@ -40,7 +40,8 @@ public class EnemySense : MonoBehaviour
             GameManager.instance.UnregisterEnemyInCombat(enemy);
         }
     }
-    private void Update() { 
+    private void Update() {
+        if (enemy.Stats.dead) return;
         DetectTarget();
         if (IsTargetDetected)
         {

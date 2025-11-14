@@ -56,6 +56,11 @@ public class GameManager : MonoBehaviour
         OnGameStateChanged?.Invoke(CurrentState);
     }
 
+    public GameState GetGameState()
+    {
+        return CurrentState;
+    }
+
     public void RegisterEnemyInCombat(Enemy enemy)
     {
         if (enemy == null || !enemiesInCombatWithMe.Add(enemy)) return;

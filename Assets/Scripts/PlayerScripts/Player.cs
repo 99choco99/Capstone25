@@ -15,6 +15,7 @@ public class Player : MonoBehaviour
     public TargetingSystem TargetingSystem { get; private set; }   //플레이어의 타겟 선정을 정리
     public PlayerCombat Combat { get; private set; }               //플레이어의 전투 관련 정의.
     public PlayerAnimatorManager animatorManager {get;private set;}//플레이어의 애니메이션 정의.
+    public PlayerUIManager PlayerUIManager { get; private set; }   //플레이어의 UI를 정의.
     public InventoryManager Inventory { get; private set; }        //플레이어의 인벤토리 매니저
     public QuestManager Quest { get; private set; }
     public DialogueManager Dialogue { get; private set; }
@@ -23,6 +24,7 @@ public class Player : MonoBehaviour
     
     public Animator Anim { get; private set; }
     public Camera MainCamera { get; private set; }
+    public Camera PreviewCamera;
 
     void Awake()
     {
@@ -35,6 +37,7 @@ public class Player : MonoBehaviour
         TargetingSystem = GetComponent<TargetingSystem>();
         Interaction = GetComponent<PlayerInteraction>();
         localAPI = GetComponent<LocalAPIManager>();
+        PlayerUIManager = GetComponentInChildren<PlayerUIManager>();
         Inventory = GetComponentInChildren<InventoryManager>();
         Quest = GetComponentInChildren<QuestManager>();
         Dialogue = GetComponentInChildren<DialogueManager>();
@@ -52,6 +55,7 @@ public class Player : MonoBehaviour
             if (PlayerCamera.Instance != null && PlayerCamera.Instance.player == null)
             {
                 PlayerCamera.Instance.player = this;
+                PreviewCamera.enabled = true;
             }
 
             if (SoundManager.Instance != null)

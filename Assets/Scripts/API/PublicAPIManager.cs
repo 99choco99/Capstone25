@@ -37,7 +37,7 @@ public class PublicAPIManager : MonoBehaviour
 
     public void Start()
     {
-#if UNITY_WEBGL
+#if UNITY_WEBGL && !UNITY_EDITOR
         MySignalReady();
 #endif
 

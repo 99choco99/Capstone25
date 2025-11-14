@@ -10,6 +10,8 @@ public class PlayerGuardBreakSMB : StateMachineBehaviour
             player = animator.GetComponent<Player>();
         }
         player.Stats.isGroggy = true;
+        player.Motor.canRotate = false;
+        player.Motor.canMove = false;
     }
 
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
@@ -19,5 +21,7 @@ public class PlayerGuardBreakSMB : StateMachineBehaviour
             player = animator.GetComponent<Player>();
         }
         player.Stats.isGroggy = false;
+        player.Motor.canRotate = true;
+        player.Motor.canMove = true;
     }
 }

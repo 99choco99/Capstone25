@@ -33,18 +33,26 @@ public class PlayerInputHandler : MonoBehaviour
     public void UseInteractionInput() => InteractionInput = false;
     public void UseTargetInput() => TargetInput = false;
 
+    bool blockInputAfterMapSwitch;
+
+    private void Awake()
+    {
+        player = GetComponent<Player>();
+    }
+
     private void Start()
     {
-        GameManager.instance.OnGameStateChanged += HandlerGameStateChanged;
-        player = GetComponent<Player>();
-
-        if (player.IsLocalPlayer) { PlayerInput.enabled = true; }
+        if (player.IsLocalPlayer) { 
+            PlayerInput.enabled = true; 
+            GameManager.instance.OnGameStateChanged += HandlerGameStateChanged; 
+        }
         else {  PlayerInput.enabled = false; }
     }
 
     private void OnDestroy()
     {
-        if(GameManager.instance != null)
+        if (!player.IsLocalPlayer) { return; }
+        if (GameManager.instance != null)
         {
             GameManager.instance.OnGameStateChanged -= HandlerGameStateChanged;
         }
@@ -73,7 +81,10 @@ public class PlayerInputHandler : MonoBehaviour
         {
             PlayerInput.SwitchCurrentActionMap("UI");
         }
+        blockInputAfterMapSwitch = true;
     }
+
+
 
 
     public void OnMove(InputAction.CallbackContext context)
@@ -150,7 +161,23 @@ public class PlayerInputHandler : MonoBehaviour
 
     public void OnInteraction(InputAction.CallbackContext context)
     {
-        if (context.started) {InteractionInput = true; }
+        if (blockInputAfterMapSwitch)
+        {
+            blockInputAfterMapSwitch = false;
+            return;
+        }
+        if (context.started)
+        {
+            InteractionInput = true;
+        }
+    }
+
+    public void OnMarketUIClose(InputAction.CallbackContext context)
+    {
+        if (context.started && player.PlayerUIManager.IsPanelOpen(UIPanelType.Market))
+        {
+            player.PlayerUIManager.CloseUI(UIPanelType.Market);
+        }
     }
 
     public void OnCrouch(InputAction.CallbackContext context)
@@ -176,7 +203,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Started)
         {
-            PlayerUIManager.instance.CloseLastUI();
+            player.PlayerUIManager.CloseLastUI();
         }
     }
 
@@ -186,7 +213,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Started)
         {
-            PlayerUIManager.instance.ToggleUI(UIPanelType.Inventory);
+            player.PlayerUIManager.ToggleUI(UIPanelType.Inventory);
         }
     }
 
@@ -194,7 +221,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Started)
         {
-            PlayerUIManager.instance.ToggleUI(UIPanelType.Profile);
+            player.PlayerUIManager.ToggleUI(UIPanelType.Profile);
         }
     }
 
@@ -202,7 +229,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Started)
         {
-            PlayerUIManager.instance.ToggleUI(UIPanelType.Setting);
+            player.PlayerUIManager.ToggleUI(UIPanelType.Setting);
         }
     }
 
@@ -212,7 +239,7 @@ public class PlayerInputHandler : MonoBehaviour
     {
         if (context.phase == InputActionPhase.Started)
         {
-            PlayerUIManager.instance.ToggleUI(UIPanelType.Quest);
+            player.PlayerUIManager.ToggleUI(UIPanelType.Quest);
         }
     }
 }

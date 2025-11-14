@@ -54,7 +54,7 @@ public class SellingList : MonoBehaviour
     //판매목록 업데이트
     private void UpdateSellingList(IMarketItemResponse response)
     {
-        if (!gameObject.activeSelf) { return; }
+        if (!gameObject.activeSelf || response.userId == PublicAPIManager.Instance.loginData.user_id) { return; }
         GameObject container = Instantiate(SellContainer,transform);
         ItemData itemData = ItemManager.Instance.GetItem(response.ItemId);
 

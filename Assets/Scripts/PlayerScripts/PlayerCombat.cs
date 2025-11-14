@@ -16,6 +16,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     [SerializeField] private Collider weaponCollider;
 
     public PlayableDirector deathblowDirector;
+    public bool IsPlayingDirector;
     [SerializeField] private PlayableAsset FrontdeathblowTimelineAsset; // 앞에서 찌르기
     [SerializeField] private PlayableAsset BehindDeathblowTimelineAsset; // 뒤에서 찌르기
     public event Action<Player> OnExecuteEnd;
@@ -32,16 +33,27 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     }
     private void Start()
     {
+        if (!player.IsLocalPlayer) { return; }
         player.Stats.OnDamaged += HandleDamageReaction;
         player.Stats.OnDeath += AE_playerAttackEnd;
+
+        if (deathblowDirector != null)
+        {
+            deathblowDirector.stopped += OnDeathblowTimelineFinished;
+        }
     }
     private void OnDestroy()
     {
 
         if (player != null && player.Stats != null)
         {
+            if (!player.IsLocalPlayer) { return; }
             player.Stats.OnDamaged -= HandleDamageReaction;
             player.Stats.OnDeath -= AE_playerAttackEnd;
+            if (deathblowDirector != null)
+            {
+                deathblowDirector.stopped -= OnDeathblowTimelineFinished;
+            }
         }
     }
 
@@ -134,18 +146,17 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         {
             PlayBehindDeathblowTimeline(enemy);
         }
+        weapon.DisableWeaponCollider();
         player.TargetingSystem.DeselectTarget();
     }
 
     // 실제 인살
     private void PlayFrontDeathblowTimeline(Enemy enemy)
     {
-
+        IsPlayingDirector = true;
         deathblowDirector.playableAsset = FrontdeathblowTimelineAsset;
 
-        player.Motor.canMove = false;
-        player.Motor.canRotate = false;
-        player.InputHandler.enabled = false;
+
         enemy.Motor.Stop();
 
         Vector3 playerTargetPosition = enemy.transform.position + enemy.transform.forward * 0.9f;
@@ -162,6 +173,8 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         deathblowDirector.SetGenericBinding(outputs.ElementAt(2).sourceObject, player.gameObject);
         deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, PlayerCamera.Instance.cameraPivotTransform.gameObject);
 
+        enemy.Stats.isDeflecting = false;
+        enemy.Stats.IsPlayingDeathBlow = true;
         OnExecuteEnd += enemy.Stats.DeathBlowProcess;
 
         deathblowDirector.Play();
@@ -170,11 +183,9 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
 
     private void PlayBehindDeathblowTimeline(Enemy enemy)
     {
+        IsPlayingDirector = true;
         deathblowDirector.playableAsset = BehindDeathblowTimelineAsset;
 
-        player.Motor.canMove = false;
-        player.Motor.canRotate = false;
-        player.InputHandler.enabled = false;
         enemy.Motor.Stop();
 
         Vector3 playerTargetPosition = enemy.transform.position - enemy.transform.forward * 0.9f;
@@ -194,13 +205,14 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         SoundManager.Instance.PlaySFX("ExecuteBGM");
     }
 
-    public void SIG_ExcutedEnd()
+    public void OnDeathblowTimelineFinished(PlayableDirector director)
     {
         OnExecuteEnd?.Invoke(player);
         OnExecuteEnd = null; // 구독해제
 
         player.StateMachine.TransitionTo(player.StateMachine.PlayerIdleState);
-
+        player.Combat.IsPlayingDirector = false;
+        player.Stats.isInvincible = false;
         player.Motor.canMove = true;
         player.Motor.canRotate = true;
         player.InputHandler.enabled = true;

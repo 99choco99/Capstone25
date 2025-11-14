@@ -37,6 +37,11 @@ public class DialogueManager : MonoBehaviour
     private void Awake()
     {
         player = GetComponentInParent<Player>();
+    }
+
+    private void Start()
+    {
+        if (!player.IsLocalPlayer) { return; }
         PublicAPIManager.Instance.Dialogue.OnGetDialogue += GenerateData;
         PublicAPIManager.Instance.Dialogue.RequestGetDialogue();
     }

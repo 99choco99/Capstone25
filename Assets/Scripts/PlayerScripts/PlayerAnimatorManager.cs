@@ -21,11 +21,13 @@ public class PlayerAnimatorManager : MonoBehaviour
 
     private void Start()
     {
+        if (!player.IsLocalPlayer) { return; }
         player.Stats.OnDeath += DeathProcess;
     }
 
     private void OnDestroy()
     {
+        if (!player.IsLocalPlayer) { return; }
         player.Stats.OnDeath -= DeathProcess;
     }
 

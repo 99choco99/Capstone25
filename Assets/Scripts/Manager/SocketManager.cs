@@ -1,7 +1,9 @@
 using Firesplash.GameDevAssets.SocketIO; // Asset의 네임스페이스 사용
 using Newtonsoft.Json;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Multiplayer.Center.NetcodeForGameObjectsExample.DistributedAuthority;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
@@ -162,6 +164,25 @@ public class SocketManager : MonoBehaviour
         });
 
 
+        sioCom.Instance.On("updateGold", (string payload) =>
+        {
+            try
+            {
+                // 1. 올바른 방법으로 JSON을 파싱합니다.
+                var data = JsonConvert.DeserializeObject<GoldUpdateData>(payload);
+
+                int newGoldAmount = data.gold;
+
+                Debug.Log($"물품 판매됨. 서버 골드: {newGoldAmount}");
+
+                DataManager.Instance.Player.Stats.SetGold(newGoldAmount);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[Socket.IO] updateGold 파싱 오류: {e.Message}\nPayload: {payload}");
+            }
+        });
+
         // 다른 플레이어의 접속이 끊겼을 때 서버가 보내주는 커스텀 이벤트
         sioCom.Instance.On("playerDisconnected", (string payload) =>
         {
@@ -214,6 +235,7 @@ public class SocketManager : MonoBehaviour
             player.GetComponent<PlayerInput>().enabled = true;
             playerComponent.InputHandler.enabled = true;
             playerComponent.StateMachine.enabled = true;
+            playerComponent.PreviewCamera.enabled = true;
 
             if (player.TryGetComponent<CharacterController>(out var controller))
             {
@@ -247,7 +269,9 @@ public class SocketManager : MonoBehaviour
             playerComponent.Quest.enabled = false;            
             playerComponent.Dialogue.enabled = false;         
             playerComponent.Equipment.enabled = false;        
-            playerComponent.localAPI.enabled = false;         
+            playerComponent.localAPI.enabled = false;
+            playerComponent.PreviewCamera.enabled = false;
+            playerComponent.PlayerUIManager.gameObject.SetActive(false);
 
             // PlayerInteractUI도 비활성화
             if (player.TryGetComponent<PlayerInteractUI>(out var interactUI))
@@ -457,4 +481,9 @@ public class NetworkAnimationData
 public class NetworkAttackData
 {
     public string id;
+}
+
+public class GoldUpdateData
+{
+    public int gold;
 }

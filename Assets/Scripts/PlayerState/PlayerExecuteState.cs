@@ -10,7 +10,12 @@ public class PlayerExecuteState : State
     public override void Enter()
     {
         player.Stats.isInvincible = true;
+        player.Motor.canMove = false;
+        player.Motor.canRotate = false;
+        player.InputHandler.enabled = false;
+
         target = player.TargetingSystem.CurrentTarget;
+
         if(target == null)
         {
             stateMachine.TransitionTo(stateMachine.PlayerIdleState);
@@ -25,5 +30,8 @@ public class PlayerExecuteState : State
     {
         PlayerCamera.Instance.ResetCameraZPostion();
         player.Stats.isInvincible = false;
+        player.Motor.canMove = true;
+        player.Motor.canRotate = true;
+        player.InputHandler.enabled = true;
     }
 }

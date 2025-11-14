@@ -23,8 +23,12 @@ public class MarketSellUI : MonoBehaviour
     {
         saleSlot = GetComponentInChildren<SaleSlot>();
         notice_text = notice.GetComponentInChildren<TextMeshProUGUI>(true);
-        notice.GetComponentInChildren<Button>().onClick.AddListener(() => { notice.SetActive(false); });
+        Button noticeBtn = notice.GetComponentInChildren<Button>();
+        noticeBtn.onClick.RemoveAllListeners(); // 중복 방지
+        noticeBtn.onClick.AddListener(() => { notice.SetActive(false); });
 
+
+        SellBtn.onClick.RemoveAllListeners();
         SellBtn.onClick.AddListener(() => {
             //판매 가능한 상태인지 검사
             if (CheckState())
@@ -37,9 +41,18 @@ public class MarketSellUI : MonoBehaviour
             }
         });
 
-        //판매버튼 클릭시 서버에 판매 목록 등록 요청
-        check.GetComponentInChildren<Button>().onClick.AddListener(() => {
-            MarketManager.Instance.SellItem(saleSlot.slotData.itemData.id, saleSlot.slotData.itemSpec, price.text ,count.text);
+        Button confirmBtn = check.GetComponentInChildren<Button>();
+        confirmBtn.onClick.RemoveAllListeners(); //여기서 중복 등록을 막아야 두 번 판매되지 않음
+        confirmBtn.onClick.AddListener(() => {
+
+            MarketManager.Instance.SellItem(
+                saleSlot.slotData.itemData.id,
+                saleSlot.slotData.itemSpec,
+                price.text,
+                count.text,
+                saleSlot.slotData.slotType,
+                saleSlot.slotData.slotIndex
+            );
             check.SetActive(false);
         });
 
@@ -47,10 +60,15 @@ public class MarketSellUI : MonoBehaviour
     }
 
 
-    private void OnEnable()
+    private void Start()
     {
         PublicAPIManager.Instance.Market.OnItemRegistComplete += ItemRegistComplete;
         PublicAPIManager.Instance.Market.OnItemRegistFailed += ShowNotice;
+    }
+
+    private void OnDisable()
+    {
+        ClearSaleSlot();
     }
 
     private void OnDestroy()
@@ -74,12 +92,12 @@ public class MarketSellUI : MonoBehaviour
             notice_text.text = "Slot Error";
         }
         //가격이 적혀있지 않을 시
-        else if (!int.TryParse(price.text, out price_result) && price_result <= 0)
+        else if (!int.TryParse(price.text, out price_result) || price_result <= 0)
         {
             notice_text.text = "price Error";
         }
         //개수가 적혀있지 않을 시
-        else if((!int.TryParse(count.text, out count_result) && count_result <= 0) || count_result > saleSlot.slotData.itemCount) {
+        else if((!int.TryParse(count.text, out count_result) || count_result <= 0) || count_result > saleSlot.slotData.itemCount) {
             notice_text.text = "count Error";
         }
         else
@@ -109,6 +127,7 @@ public class MarketSellUI : MonoBehaviour
     // 판매 슬롯을 초기화하는 전용 함수
     private void ClearSaleSlot()
     {
+        saleSlot.slotData = new SlotData();
         saleSlot.itemImage.sprite = null;
         saleSlot.slotData.itemCount = 0;
         price.text = string.Empty;
