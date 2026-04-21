@@ -1,9 +1,5 @@
 using System;
-
 using UnityEngine;
-
-
-
 
 public class DamageInfo
 {
@@ -38,11 +34,11 @@ public class PlayerStats : LivingEntity
     public float bonusMaxHp;
 
     //PlayerEvent
-    public event Action<int, int> OnExpChanged;   // 경험치 적용
+    public event Action<int, int> OnExpChanged;     // 경험치 적용
     public event Action OnStatsChanged;             // 스탯 변경사항 적용
     public event Action<DamageInfo> OnDamaged;
-    public event Action OnLevelUp;           //레벨업시
-    public event Action<int> OnChangedGold;  // 소유 골드가 변경됨.
+    public event Action OnLevelUp;                  //레벨업시
+    public event Action<int> OnChangedGold;         // 소유 골드가 변경됨.
 
 
     public bool isGuarding;
@@ -63,7 +59,7 @@ public class PlayerStats : LivingEntity
         player.Inventory.OnQuickSlotUsed += Consume;
         OnStatsChanged += DataManager.Instance.SaveData;
         OnLevelUp += DataManager.Instance.SaveData;
-        LoadPlayerData(DataManager.Instance.playerData);
+
     }
 
     private void OnDestroy()
@@ -134,17 +130,17 @@ public class PlayerStats : LivingEntity
     {
         if (DataManager.Instance == null) return;
 
-        PlayerData dataToSave = DataManager.Instance.playerData;
-        dataToSave.maxHp = baseMaxHp;
-        dataToSave.currentHp = currentHp;
-        dataToSave.damage = baseDamage;
-        dataToSave.defense = baseDefense;
-        dataToSave.level = Level;
-        dataToSave.exp = Exp;
-        dataToSave.gold = Gold;
-        dataToSave.AbilityPoint = AbilityPoint;
+        //PlayerData dataToSave = DataManager.Instance.playerData;
+        //dataToSave.maxHp = baseMaxHp;
+        //dataToSave.currentHp = currentHp;
+        //dataToSave.damage = baseDamage;
+        //dataToSave.defense = baseDefense;
+        //dataToSave.level = Level;
+        //dataToSave.exp = Exp;
+        //dataToSave.gold = Gold;
+        //dataToSave.AbilityPoint = AbilityPoint;
 
-        PublicAPIManager.Instance.PlayerData.RequestSavePlayerData(dataToSave);
+        ////APIManager.Instance.PlayerData.RequestSavePlayerData(dataToSave);
     }
 
 

@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public enum GameState
 {
@@ -12,7 +15,6 @@ public enum GameState
 public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
-    private HashSet<Enemy> enemiesInCombat = new HashSet<Enemy>();
     public GameState CurrentState { get; private set; }
     public event Action<GameState> OnGameStateChanged;
 
@@ -22,12 +24,19 @@ public class GameManager : MonoBehaviour
 
     private HashSet<Enemy> enemiesInCombatWithMe = new HashSet<Enemy>();
 
+
+    [SerializeField] private PlayerSpawner playerSpawner;
+    [SerializeField] private PlayerMoveSync playerMoveSync;
+
+    private PlayerRepository playerRepository;
+
     private void Awake()
     {
         if(instance == null)
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
+            playerRepository = new PlayerRepository();
         }
         else
         {
@@ -35,6 +44,49 @@ public class GameManager : MonoBehaviour
             return;
         }
     }
+
+
+    public void GameStart(PlayerData data)
+    {
+        playerSpawner.Init(playerRepository);
+
+        NetworkManager.instance.socket.OnCurrentPlayersReceived += HandleCurrentPlayers;
+        NetworkManager.instance.socket.OnRemotePlayerJoined += playerSpawner.RemotePlayerSpawn;
+        NetworkManager.instance.socket.OnRemotePlayerLeft += playerSpawner.RemotePlayerDespawn;
+
+        string targetScene = string.IsNullOrEmpty(data.currentSceneName) ? SceneName.Main : data.currentSceneName;
+
+        UpdateRoomState(data, targetScene);
+
+        ChangeState(GameState.Gameplay);
+    }
+
+    //Scene 상태 업데이트
+    public async void UpdateRoomState(PlayerData data, string targetScene)
+    {
+        await LoadingScene.LoadScene(targetScene);
+
+        playerRepository.ClearAllPlayers();
+
+        data.currentSceneName = targetScene;
+        Debug.Log($"현재 활성화된 씬: {SceneManager.GetActiveScene().name}");
+        playerSpawner.LocalPlayerSpawn(data);
+
+        NetworkManager.instance.socket.EmitJoinScene(data, targetScene);
+    }
+
+    public void HandleCurrentPlayers(List<NetworkPlayerData> RemotePlayers)
+    {
+        Debug.Log(RemotePlayers.Count);
+        foreach(NetworkPlayerData RemotePlayer in RemotePlayers)
+        {
+            if(RemotePlayer.id != DataManager.Instance.Server_PlayerData.id)
+            {
+                playerSpawner.RemotePlayerSpawn(RemotePlayer);
+            }
+        }
+    }
+
 
     public void ChangeState(GameState state)
     {

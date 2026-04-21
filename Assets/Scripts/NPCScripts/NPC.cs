@@ -23,23 +23,7 @@ public class NPC : MonoBehaviour, IInteractable
 
     public virtual void Interact(Player player) {
         StartCoroutine(LookAtPlayer(player.transform));
-        var questInteraction = player.Quest.GetQuestInteractionForNpc(this.id);
 
-        if (questInteraction != null)
-        {
-            player.Dialogue.StartConversation(questInteraction);
-        }
-        else
-        {
-            if (string.IsNullOrEmpty(npcIdentifier))
-            {
-                Debug.LogError($"{name}에 npcIdentifier가 설정되지 않았습니다!");
-                return;
-            }
-            string defaultKey = npcIdentifier + "_DEFAULT";
-            var defaultInteraction = new QuestInteractionInfo(defaultKey, -1, this.id, QuestInteractionType.None);
-            player.Dialogue.StartConversation(defaultInteraction);
-        }
     }
 
 
