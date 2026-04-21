@@ -19,7 +19,7 @@ public class QuestUIItem : MonoBehaviour
         button.onClick.AddListener(OnItemClicked);
     }
 
-    public void Initialize(QuestDefinition data, QuestStatus status, System.Action<int> OnSelectCallback)
+    public void Initialize(QuestTemplate data, QuestProgress status, System.Action<int> OnSelectCallback)
     {
         this.QuestId = data.questID;
         OnItemSelected += OnSelectCallback;
@@ -27,7 +27,7 @@ public class QuestUIItem : MonoBehaviour
         UpdateUI(status);
     }
 
-    public void UpdateUI(QuestStatus status)
+    public void UpdateUI(QuestProgress status)
     {
         switch (status.state)
         {
@@ -50,11 +50,6 @@ public class QuestUIItem : MonoBehaviour
             default:
 
                 break;
-        }
-        if (status.IsFocused)
-        {
-            questStatusText.text = "[С§Сп]";
-            questStatusText.color = Color.red;
         }
     }
 

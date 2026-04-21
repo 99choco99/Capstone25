@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 
 [System.Serializable]
-public class ItemSpec
+public struct ItemSpec
 {
     public float damage;
     public float defense;
@@ -14,7 +14,7 @@ public class ItemSpec
 }
 
 [CreateAssetMenu(fileName = "ItemSpec", menuName = "Scriptable Objects/ItemSpec")]
-public class ItemData : ScriptableObject
+public class ItemBase : ScriptableObject
 {
     public int id;
     public string itemName;

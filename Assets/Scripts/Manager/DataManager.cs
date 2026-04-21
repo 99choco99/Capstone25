@@ -1,14 +1,21 @@
+using NUnit.Framework;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using static PublicAPIManager;
+using static APIManager;
 
 public class DataManager : MonoBehaviour
 {
     public static DataManager Instance;
 
-    public PlayerData playerData;
+    public PlayerData Server_PlayerData;
+    public QuestData Server_QuestData;
+    public Dictionary<string, List<DialogueLine>> Server_DialogueData;
+    public InventoryData Server_InventoryData;
+
+
     public bool canSave = true;
     public event Action OnSave;
     public event Action OnPlayerRegistered;
@@ -16,7 +23,6 @@ public class DataManager : MonoBehaviour
     public Player Player { get; private set; }
     public InventoryManager Inventory { get; private set; }
     public PlayerStats Stats { get; private set; }
-    public LocalAPIManager LocalAPI { get; private set; }
 
 
 
@@ -33,41 +39,6 @@ public class DataManager : MonoBehaviour
             return;
         }
         InvokeRepeating("AutoSaveData", 10.0f, 10.0f);
-    }
-
-
-    public void Register(Player localPlayer)
-    {
-        if (Player != null)
-        {
-            Unregister();
-        }
-        if (localPlayer == null)
-        {
-            Debug.LogError("로컬 플레이어 없음", this);
-            return;
-        }
-
-        Player = localPlayer;
-        Inventory = localPlayer.Inventory;
-        Stats = localPlayer.Stats;
-        LocalAPI = localPlayer.localAPI;
-
-        if (Inventory == null || Stats == null || LocalAPI == null)
-        {
-            Debug.LogError("플레이어 참조 문제 발생", localPlayer);
-        }
-        OnPlayerRegistered?.Invoke();
-    }
-
-    public void Unregister()
-    {
-        // 모든 참조를 null로 설정
-        Player = null;
-        Inventory = null;
-        Stats = null;
-        LocalAPI = null;
-
     }
 
     //플레이어 데이터 자동 저장

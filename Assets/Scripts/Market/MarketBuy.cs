@@ -13,26 +13,11 @@ public class MarketBuy : MonoBehaviour
     [SerializeField] TextMeshProUGUI count_text;
 
 
-    private void Awake()
-    {
-        PublicAPIManager.Instance.Market.OnItemPurchaseComplete += OnBuyItemSuccessHandler;
-        PublicAPIManager.Instance.Market.OnCancelRegistComplete += RemoveRegistedItem;
-    }
-
-    private void OnDestroy()
-    {
-        PublicAPIManager.Instance.Market.OnItemPurchaseComplete -= OnBuyItemSuccessHandler;
-        PublicAPIManager.Instance.Market.OnCancelRegistComplete -= RemoveRegistedItem;
-    }
-
-
     public void CreateRecipe()
     {
         GameObject recipe = Instantiate(Recipe, transform.root);
         recipe.GetComponent<Recipe>().marketId = marketId;
     }
-
-
 
     private void OnBuyItemSuccessHandler(BuyItemResponse response)
     {
@@ -61,10 +46,7 @@ public class MarketBuy : MonoBehaviour
     //취소된 아이템을 등록현황에서 제거
     public void RemoveRegistedItem(CancelRegistResponse response)
     {
-        if (response.success && response.marketId == marketId)
-        {
-            Destroy(gameObject);
-        }
+
     }
 
     // 내 판매목록 가져올 때 취소버튼 활성화
@@ -77,6 +59,6 @@ public class MarketBuy : MonoBehaviour
     //아이템 등록 취소 요청
     public void CancelRegistMyItem()
     {
-        MarketManager.Instance.CancelMyItem(marketId);
+
     }
 }

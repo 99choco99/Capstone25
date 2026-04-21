@@ -3,7 +3,7 @@ using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
-using static PublicAPIManager;
+using static APIManager;
 
 public class MarketSellUI : MonoBehaviour
 {
@@ -46,12 +46,12 @@ public class MarketSellUI : MonoBehaviour
         confirmBtn.onClick.AddListener(() => {
 
             MarketManager.Instance.SellItem(
-                saleSlot.slotData.itemData.id,
-                saleSlot.slotData.itemSpec,
-                price.text,
-                count.text,
-                saleSlot.slotData.slotType,
-                saleSlot.slotData.slotIndex
+                //saleSlot.slotData.itemData.id,
+                //saleSlot.slotData.itemSpec,
+                //price.text,
+                //count.text,
+                //saleSlot.slotData.slotType,
+                //saleSlot.slotData.slotIndex
             );
             check.SetActive(false);
         });
@@ -62,8 +62,7 @@ public class MarketSellUI : MonoBehaviour
 
     private void Start()
     {
-        PublicAPIManager.Instance.Market.OnItemRegistComplete += ItemRegistComplete;
-        PublicAPIManager.Instance.Market.OnItemRegistFailed += ShowNotice;
+
     }
 
     private void OnDisable()
@@ -76,11 +75,7 @@ public class MarketSellUI : MonoBehaviour
         SellBtn.onClick.RemoveAllListeners();
         notice.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
         check.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
-        if(PublicAPIManager.Instance !=null)
-        {
-            PublicAPIManager.Instance.Market.OnItemRegistComplete -= ItemRegistComplete;
-            PublicAPIManager.Instance.Market.OnItemRegistFailed -= ShowNotice;
-        }
+
     }
 
     //등록 가능한지 검사
@@ -117,8 +112,8 @@ public class MarketSellUI : MonoBehaviour
             Debug.LogWarning("판매할 아이템이 없습니다.");
             return;
         }
-        DataManager.Instance.Inventory.RegisterItemToMarket(saleSlotData, response.ItemCount);
-        ShowNotice(response.message);
+        //DataManager.Instance.Inventory.RegisterItemToMarket(saleSlotData, response.ItemCount);
+        //ShowNotice(response.message);
         ClearSaleSlot();
     }
 
@@ -142,4 +137,6 @@ public class MarketSellUI : MonoBehaviour
         notice_text.text = message;
         notice.transform.SetAsLastSibling();
     }
+
+
 }

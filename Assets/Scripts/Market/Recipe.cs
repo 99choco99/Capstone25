@@ -25,14 +25,10 @@ public class Recipe : MonoBehaviour
     private void OnEnable()
     {
 
-        PublicAPIManager.Instance.Market.OnItemPurchaseComplete += SuccessBuyItem;
-        PublicAPIManager.Instance.Market.OnItemPurchaseFailed += ShowNotice;
     }
 
     private void OnDisable()
     {
-        PublicAPIManager.Instance.Market.OnItemPurchaseComplete -= SuccessBuyItem;
-        PublicAPIManager.Instance.Market.OnItemPurchaseFailed -= ShowNotice;
         notice.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
         recipe_yesButton.onClick.RemoveAllListeners();
     }
@@ -54,7 +50,7 @@ public class Recipe : MonoBehaviour
     public void OnCheckYesButtonClick()
     {
         checkBox.SetActive(false);
-        MarketManager.Instance.BuyItem(marketId, count);
+        //MarketManager.Instance.BuyItem(marketId, count);
         Debug.Log("구매시도");
     }
 

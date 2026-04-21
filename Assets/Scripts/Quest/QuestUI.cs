@@ -46,8 +46,8 @@ public class QuestUI : MonoBehaviour
         }
         questUIItems.Clear();
 
-        List<QuestStatus> questStatuses = QuestManager.GetAllStatuses();
-        foreach(QuestStatus status in questStatuses)
+        List<QuestProgress> questStatuses = QuestManager.GetAllStatuses();
+        foreach(QuestProgress status in questStatuses)
         {
             if(status.state != QuestState.Locked)
             {
@@ -61,7 +61,7 @@ public class QuestUI : MonoBehaviour
 
 
     //퀘스트 상태 변경시 발생하는 함수
-    private void HandleQuestStatusChanged(QuestDefinition data, QuestStatus status)
+    private void HandleQuestStatusChanged(QuestTemplate data, QuestProgress status)
     {
         if (status.state != QuestState.Locked)
         {
@@ -74,7 +74,7 @@ public class QuestUI : MonoBehaviour
     }
 
     //퀘스트 상태 업데이트
-    public void UpdateQuest(QuestDefinition data, QuestStatus status)
+    public void UpdateQuest(QuestTemplate data, QuestProgress status)
     {
         if (questUIItems.TryGetValue(data.questID, out var uiItem))
         {
@@ -101,8 +101,8 @@ public class QuestUI : MonoBehaviour
     //퀘스트 정보 표시
     public void ShowQuestInfo(int questId)
     {
-        QuestDefinition data = QuestManager.GetQuestData(questId);
-        QuestStatus status = QuestManager.GetQuestStatus(questId);
+        QuestTemplate data = QuestManager.GetQuestData(questId);
+        QuestProgress status = QuestManager.GetQuestStatus(questId);
 
         if(data == null || status == null) { return; }
 
@@ -115,13 +115,12 @@ public class QuestUI : MonoBehaviour
             var currentStep = data.steps[status.currentStepIndex];
             var stepScript = currentStep.stepDescription + "\n";
 
-            for (int i = 0; i < currentStep.missions.Count; i++) {
-                var mission = currentStep.missions[i];
+            for (int i = 0; i < currentStep.objectives.Count; i++) {
+                var mission = currentStep.objectives[i];
                 var missionKey = status.currentStepIndex * 100 + i; 
                 //if(mission.type == MissionType.TalkTo) { continue; }
-                int currentAmount = status.MissionProgress.ContainsKey(missionKey) ? status.MissionProgress[missionKey] : 0;
-                // 예: "고블린 처치 (2/5)"
-                stepScript += $"- {mission.missionScript} ({currentAmount} / {mission.requiredAmount})\n";
+                //int currentAmount = status.MissionProgress.ContainsKey(missionKey) ? status.MissionProgress[missionKey] : 0;
+                //stepScript += $"- {mission.missionScript} ({currentAmount} / {mission.requiredAmount})\n";
             }
             queststepDescriptionText.text = stepScript;
         }
@@ -132,7 +131,7 @@ public class QuestUI : MonoBehaviour
     {
         if(selectedQuestId != null)
         {
-            QuestManager.SetCurrentQuest(selectedQuestId.Value);
+            //QuestManager.SetCurrentQuest(selectedQuestId.Value);
         }
     }
 

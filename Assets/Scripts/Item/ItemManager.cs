@@ -5,8 +5,8 @@ using UnityEngine;
 
 public class ItemManager : MonoBehaviour
 {
-    [SerializeField] List<ItemData> ItemDatas;
-    Dictionary<int?, ItemData> Items;
+    [SerializeField] List<ItemBase> ItemDatas;
+    Dictionary<int?, ItemBase> Items;
 
     public static ItemManager Instance;
     void Awake()
@@ -20,15 +20,15 @@ public class ItemManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        Items = new Dictionary<int?, ItemData>();
-        foreach (ItemData data in ItemDatas)
+        Items = new Dictionary<int?, ItemBase>();
+        foreach (ItemBase data in ItemDatas)
         {
             Items[data.id] = data;
         }
 
     }
 
-    public ItemData GetItem(int? id)
+    public ItemBase GetItem(int? id)
     {
         if (Items.ContainsKey(id))
         {

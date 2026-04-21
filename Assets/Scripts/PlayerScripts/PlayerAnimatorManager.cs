@@ -93,7 +93,7 @@ public class PlayerAnimatorManager : MonoBehaviour
             if (Mathf.Abs(verticalInput - lastVertical) > 0.01f ||
                 Mathf.Abs(horizontalInput - lastHorizontal) > 0.01f)
             {
-                SocketManager.instance.EmitPlayerMoveAnimation(verticalInput, horizontalInput);
+                NetworkManager.instance.socket.EmitPlayerMoveAnimation(verticalInput, horizontalInput);
 
                 lastAnimSendTime = Time.time;
                 lastVertical = verticalInput;
@@ -113,7 +113,7 @@ public class PlayerAnimatorManager : MonoBehaviour
     IEnumerator Disappear()
     {
         yield return new WaitForSeconds(6f);
-        SocketManager.instance.EmitPlayerDied();
+        NetworkManager.instance.socket.EmitPlayerDied();
         Destroy(gameObject);
     }
 

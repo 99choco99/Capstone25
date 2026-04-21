@@ -5,59 +5,51 @@ using System.Collections;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
-using static PublicAPIManager;
 
+
+//플레이어 데이터를 관리하는 클래스.
 public class PlayerDataAPI
 {
-    public event Action OnPlayerDataLoaded;
-    public event Action<string> OnPlayerDataLoadFailed;
-    private MonoBehaviour coroutineRunner;
-    private string userId;
+    private readonly string userId;
 
-    // 생성자를 통해 MonoBehaviour 인스턴스를 주입
-    public PlayerDataAPI(MonoBehaviour runner)
-    {
-        this.coroutineRunner = runner;
-    }
-
+    public PlayerDataAPI(string userId) { this.userId = userId; }
 
     // 플레이어 데이터 요청
-    IEnumerator RequestLoadPlayerDataCoroutine(string userId)
+    public async Awaitable<PlayerData> LoadPlayerData()
     {
         string url = $"{APIConstants.BASE_API_URL}/playerData/{userId}";
+
         using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
         {
-
-            yield return webRequest.SendWebRequest();
+            await webRequest.SendWebRequest();
 
             if (webRequest.result == UnityWebRequest.Result.Success)
             {
                 try
                 {
-                    PlayerData data = JsonConvert.DeserializeObject<PlayerData>(webRequest.downloadHandler.text);
-                    DataManager.Instance.playerData = data;
-                    OnPlayerDataLoaded?.Invoke();
+                    string jsonText = webRequest.downloadHandler.text;
+                    Debug.Log(jsonText);
+                    return JsonConvert.DeserializeObject<PlayerData>(jsonText); 
                 }
                 catch (JsonException ex)
                 {
                     Debug.LogError("JSON 역직렬화 오류: " + ex.Message);
+                    return null;
                 }
             }
             else
             {
-                string errorMessage = "서버로부터 데이터를 가져오는 데 실패했습니다.";
-                OnPlayerDataLoadFailed?.Invoke(errorMessage);
                 Debug.LogError($"플레이어 데이터 로드 실패: {webRequest.error}");
+                return null;
             }
         }
     }
 
     //플레이어 데이터 저장
-    IEnumerator SavePlayerDataCourotine(PlayerData data)
+     public async Awaitable<bool> SavePlayerData(PlayerData data)
     {
-        string json = JsonConvert.SerializeObject(data);
-
         string url = $"{APIConstants.BASE_API_URL}/playerData/{userId}";
+        string json = JsonConvert.SerializeObject(data);
 
         using (UnityWebRequest webRequest = new UnityWebRequest(url, "POST"))
         {
@@ -66,32 +58,20 @@ public class PlayerDataAPI
             webRequest.downloadHandler = new DownloadHandlerBuffer();
             webRequest.SetRequestHeader("Content-Type", "application/json");
 
-            yield return webRequest.SendWebRequest();
+            await webRequest.SendWebRequest();
 
             if (webRequest.result == UnityWebRequest.Result.Success)
             {
                 Debug.Log($"Client {userId} : 데이터 저장 완료");
+                return true;
             }
             else
             {
                 Debug.LogError("데이터 저장 실패: " + webRequest.error);
+                return false;
             }
         }
 
     }
-
-
-    public void RequestLoadPlayerData(string userId)
-    {
-        this.userId = userId;
-        coroutineRunner.StartCoroutine(RequestLoadPlayerDataCoroutine(userId));
-    }
-
-    public void RequestSavePlayerData(PlayerData data)
-    {
-        coroutineRunner.StartCoroutine(SavePlayerDataCourotine(data));
-    }
-
-
 
 }

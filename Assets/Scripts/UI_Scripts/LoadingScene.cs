@@ -1,5 +1,6 @@
 
 using System.Collections;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -10,10 +11,14 @@ public class LoadingScene : MonoBehaviour
 
     [SerializeField] Slider slider;
 
-    public static void LoadScene(string sceneName)
+    public static async Awaitable LoadScene(string sceneName)
     {
         nextScene = sceneName;
-        SceneManager.LoadScene("Loading");
+        await SceneManager.LoadSceneAsync(SceneName.Loading);
+
+        while(SceneManager.GetActiveScene().name != nextScene){
+            await Awaitable.NextFrameAsync();
+        }
     }
 
     private void Start()
@@ -25,7 +30,10 @@ public class LoadingScene : MonoBehaviour
     IEnumerator LoadSceneProcess()
     {
         Debug.Log("로딩 시작");
-        AsyncOperation op  = SceneManager.LoadSceneAsync(nextScene);
+        //System.GC.Collect();
+        //yield return Resources.UnloadUnusedAssets();
+        //Application.backgroundLoadingPriority = UnityEngine.ThreadPriority.Low;
+        AsyncOperation op = SceneManager.LoadSceneAsync(nextScene);
         op.allowSceneActivation = false;
 
         float timer = 0f;
@@ -35,14 +43,18 @@ public class LoadingScene : MonoBehaviour
 
             if (op.progress < 0.9f)
             {
-                slider.value = op.progress;
+                slider.value = Mathf.Lerp(slider.value, op.progress, timer);
+                if (slider.value >= op.progress) timer = 0f;
             }
             else
             {
                 timer += Time.unscaledDeltaTime;
                 slider.value = Mathf.Lerp(0.9f, 1f, timer);
-                if(slider.value >= 1f)
+                if (slider.value >= 1f)
                 {
+                    slider.value = 1f;
+                    yield return new WaitForSecondsRealtime(1f);
+
                     op.allowSceneActivation = true;
                     yield break;
                 }
