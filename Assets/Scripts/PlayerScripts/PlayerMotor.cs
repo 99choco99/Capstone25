@@ -118,7 +118,7 @@ public class PlayerMotor : MonoBehaviour
                 Quaternion.Angle(transform.rotation, lastSentRotation) > 0.1f)
             {
 
-                SocketManager.instance.EmitPlayerMovement(transform.position, transform.rotation);
+                NetworkManager.instance.socket.EmitPlayerMovement(transform.position, transform.rotation);
 
                 lastSendTime = Time.time;
                 lastSentPosition = transform.position;

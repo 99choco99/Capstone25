@@ -9,46 +9,40 @@ using UnityEngine.Networking;
 
 public class InventoryAPI
 {
-    private MonoBehaviour coroutineRunner;
     private string userId;
 
-    //인벤토리 목록 가져오기
-    public event Action<InventoryResponse> OnGetInventory;
-
-    // 생성자를 통해 MonoBehaviour 인스턴스를 주입
-    public InventoryAPI(MonoBehaviour runner, string userId)
+    public InventoryAPI(string userId)
     {
-        this.coroutineRunner = runner;
         this.userId = userId;
     }
 
-    IEnumerator GetInventoryItem()
+    public async Awaitable<InventoryData> GetInventoryItem()
     {
         string url = $"{APIConstants.BASE_API_URL}/playerData/inventory/{userId}";
 
         using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
         {
-            yield return webRequest.SendWebRequest();
+            await webRequest.SendWebRequest();
             if(webRequest.result == UnityWebRequest.Result.Success)
             {
                 try
                 {
                     string jsonResponse = webRequest.downloadHandler.text;
 
-                    InventoryResponse response = JsonConvert.DeserializeObject<InventoryResponse>(jsonResponse);
-
-                    OnGetInventory?.Invoke(response);
+                    return JsonConvert.DeserializeObject<InventoryData>(jsonResponse);
                 }catch(JsonException ex)
                 {
                     Debug.Log("역직렬화 오류"  + ex.Message);
+                    return null;
                 }
 
             }
+            return null;
         }
 
     }
 
-    IEnumerator SaveInventoryItem(SlotData slotData)
+    public async Awaitable<bool> SaveInventoryItem(SlotData slotData)
     {
         string url = $"{APIConstants.BASE_API_URL}/playerData/inventory/{userId}";
 
@@ -61,28 +55,20 @@ public class InventoryAPI
             webRequest.downloadHandler = new DownloadHandlerBuffer();
             webRequest.SetRequestHeader("Content-Type", "application/json");
 
-            yield return webRequest.SendWebRequest();
+            await webRequest.SendWebRequest();
 
             if(webRequest.result != UnityWebRequest.Result.Success)
             {
                 Debug.LogError($"Error: {webRequest.error}");
+                return false;
             }
+            return true;
         }
-    }
-
-    public void RequestInventory()
-    {
-        coroutineRunner.StartCoroutine(GetInventoryItem());
-    }
-
-    public void RequestSaveInventory(SlotData slotData)
-    {
-        coroutineRunner.StartCoroutine(SaveInventoryItem(slotData));
     }
 
 }
 
-public class InventoryResponse{
+public class InventoryData{
     public SlotData[] inventory;
 }
 

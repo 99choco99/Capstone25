@@ -32,6 +32,7 @@ public class NetworkPlayer : MonoBehaviour
         targetPosition = newPosition;
     }
 
+    //È¸Àü
     public void UpdateRotation(Quaternion newRotation)
     {
         if (player.IsLocalPlayer) return;

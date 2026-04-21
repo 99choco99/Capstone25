@@ -1,6 +1,5 @@
-using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Playables;
+
 public class Player : MonoBehaviour
 {
     public bool IsLocalPlayer { get; set; } = false;
@@ -20,7 +19,6 @@ public class Player : MonoBehaviour
     public QuestManager Quest { get; private set; }
     public DialogueManager Dialogue { get; private set; }
     public EquipmentManager Equipment { get; private set; }
-    public LocalAPIManager localAPI { get; private set; }
     
     public Animator Anim { get; private set; }
     public Camera MainCamera { get; private set; }
@@ -36,7 +34,6 @@ public class Player : MonoBehaviour
         Combat = GetComponent<PlayerCombat>();
         TargetingSystem = GetComponent<TargetingSystem>();
         Interaction = GetComponent<PlayerInteraction>();
-        localAPI = GetComponent<LocalAPIManager>();
         PlayerUIManager = GetComponentInChildren<PlayerUIManager>();
         Inventory = GetComponentInChildren<InventoryManager>();
         Quest = GetComponentInChildren<QuestManager>();
@@ -69,15 +66,7 @@ public class Player : MonoBehaviour
 
     private void OnDestroy()
     {
-        // 내가 로컬 플레이어일 경우에만
-        if (IsLocalPlayer)
-        {
-            if (DataManager.Instance != null)
-            {
-                // DataManager에게 내 참조를 모두 null로 만들라고 알림
-                DataManager.Instance.Unregister();
-            }
-        }
+
     }
 
 }

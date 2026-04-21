@@ -3,39 +3,73 @@ using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.Multiplayer.Center.NetcodeForGameObjectsExample.DistributedAuthority;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
-using static PublicAPIManager;
 
 
 public class SocketManager : MonoBehaviour
 {
-    public static SocketManager instance;
-    public GameObject playerPrefab;
 
     // SocketIOCommunicator 컴포넌트를 담을 변수
     private SocketIOCommunicator sioCom;
     private string userId;
-    private NetworkPlayerData myInitialData = null;
 
-    //씬 전환중인 플래그
-    private bool isSceneChangeInProgress = false;
-    // 서버에 접속된 플레이어들을 관리
-    private Dictionary<string, GameObject> networkPlayers = new Dictionary<string, GameObject>();
+    //서버 이벤트
+    public event Action<bool> OnServerConnected;                //서버 연결 여부
+    public event Action<bool> OnServerDisconnected;
 
-    void Awake()
+    public event Action<PlayerData> OnLocalPlayerJoined;                    //내 플레이어 참석
+    public event Action<List<NetworkPlayerData>> OnCurrentPlayersReceived;  //현재 접속된 플레이어 목록 받음.
+    public event Action<NetworkPlayerData> OnRemotePlayerJoined;            //플레이어 참석
+    public event Action<string> OnRemotePlayerLeft;                         //플레이어 나감
+    public event Action<NetworkPosition> OnRemotePlayerMoved;               //플레이어 움직임
+    public event Action<NetworkAnimationData> OnRemotePlayerAnimated;       //플레이어 애니메이션
+
+    // 서버 연결 메소드
+    public void ConnectToServer(string userId)
     {
-        if (instance == null)
+        if (userId == null) { Debug.LogError("유저 아이디 에러"); return; }
+
+        this.userId = userId;
+
+        // 이미 연결 중이거나 연결된 상태가 아닐 때만 연결을 시도
+        if (!sioCom.Instance.IsConnected())
         {
-            instance = this;
-            DontDestroyOnLoad(gameObject);
+            // 이벤트 리스너 등록
+            sioCom.Instance.On("connect", OnSocketConnect);
+            sioCom.Instance.On("connect_error", OnSocketConnectError);
+            sioCom.Instance.On("disconnect", OnSocketDisconnect);
+
+            // 연결 시도
+            try
+            {
+                sioCom.Instance.Connect();
+            }
+            catch (UriFormatException e)
+            {
+                Debug.LogError($"주소 형식이 잘못되었습니다: {e.Message}");
+            }
         }
-        else
-        {
-            Destroy(gameObject);
-        }
+    }
+
+    // --- 콜백 메서드들 ---
+    private void OnSocketConnect(string data)
+    {
+        Debug.Log("서버 연결 성공!");
+        OnServerConnected?.Invoke(true);
+    }
+
+    private void OnSocketConnectError(string message)
+    {
+        Debug.LogError($"서버 연결 실패 (에러 내용): {message}");
+        OnServerConnected?.Invoke(false);
+    }
+
+    private void OnSocketDisconnect(string reason)
+    {
+        Debug.LogWarning($"서버와 연결이 끊어졌습니다. 사유: {reason}");
+        OnServerConnected?.Invoke(false);
     }
 
     void Start()
@@ -45,122 +79,47 @@ public class SocketManager : MonoBehaviour
         // ========== 서버로부터 오는 이벤트 리스너 설정 ==========
 
         // 서버에 성공적으로 연결되었을 때
-        sioCom.Instance.On("connect", (string payload) =>
-        {
-            if (!string.IsNullOrEmpty(userId))
-            {
-                sioCom.Instance.Emit("initialize", userId,true);
-            }
-
-        });
-
-        sioCom.Instance.On("initializeComplete", (payload) =>
-        {
-            myInitialData = JsonConvert.DeserializeObject<NetworkPlayerData>(payload);
-            if (PublicAPIManager.Instance != null && PublicAPIManager.Instance.PlayerData != null)
-            {
-                PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded += HandlePlayerDataLoadedForRespawn;
-                PublicAPIManager.Instance.PlayerData.OnPlayerDataLoadFailed += HandlePlayerDataLoadFailedForRespawn;
-
-                // 이제 데이터 로드를 요청
-                PublicAPIManager.Instance.RequestPlayerData();
-            }
-            else
-            {
-                // [예외 처리]
-                Debug.LogError("PublicAPIManager or PlayerDataAPI is missing. Cannot fetch updated stats. Loading scene anyway...");
-                LoadSceneFromInitialData();
-            }
-        });
 
         // 다른 플레이어들의 현재 목록을 받았을 때
-        sioCom.Instance.On("currentPlayers", (string payload) =>
+        sioCom.Instance.On("OnReceivedCurrentPlayers", (string payload) =>
         {
-            Debug.Log("Received current players: " + payload);
-
-            // 받은 JSON 문자열을 PlayerDictionary 클래스로 파싱
-            var playerList = JsonConvert.DeserializeObject<NetworkPlayerList>(payload);
-
-            foreach (var playerData in playerList.players)
-            {
-                if (playerData.id != this.userId && !networkPlayers.ContainsKey(playerData.id))
-                {
-                    SpawnPlayer(playerData, false);
-                }
-            }
+            List<NetworkPlayerData> data = JsonConvert.DeserializeObject<List<NetworkPlayerData>>(payload); 
+            OnCurrentPlayersReceived?.Invoke(data);
         });
 
         // 새로운 플레이어가 접속했을 때
-        sioCom.Instance.On("newPlayer", (string payload) =>
+        sioCom.Instance.On("OnRemotePlayerJoined", (string payload) =>
         {
-            NetworkPlayerData playerData = JsonConvert.DeserializeObject<NetworkPlayerData>(payload);
-
-            SpawnPlayer(playerData,false);
+            NetworkPlayerData data = JsonConvert.DeserializeObject<NetworkPlayerData>(payload);
+            OnRemotePlayerJoined?.Invoke(data);
         });
 
 
         //다른 플레이어의 움직임을 업데이트
         sioCom.Instance.On("updatePlayerMovement", (string payload) =>
         {
-
-            var data = JsonConvert.DeserializeObject<NetworkPlayerData>(payload);
-            if (networkPlayers.ContainsKey(data.id))
-            {
-                var playerObject = networkPlayers[data.id];
-                if (playerObject.TryGetComponent<NetworkPlayer>(out var networkPlayer))
-                {
-                    networkPlayer.UpdatePosition(new Vector3(data.position.x,data.position.y,data.position.z));
-                    networkPlayer.UpdateRotation(new Quaternion(data.rotation.x, data.rotation.y, data.rotation.z, data.rotation.w));
-                }
-            }
-
+            NetworkPosition data = JsonConvert.DeserializeObject<NetworkPosition>(payload);
+            OnRemotePlayerMoved?.Invoke(data);
         });
 
 
         //이동 애니메이션 동기화
         sioCom.Instance.On("updatePlayerAnimation", (string payload) =>
         {
-            var data = JsonConvert.DeserializeObject<NetworkAnimationData>(payload);
 
-            if (networkPlayers.ContainsKey(data.id))
-            {
-                var playerObject = networkPlayers[data.id];
-                if (playerObject.TryGetComponent<NetworkPlayer>(out var networkPlayer))
-                {
-                    networkPlayer.UpdateMoveAnimation(data.horizontal,data.vertical);
-                }
-            }
         });
 
         //공격 애니메이션 업데이트
         sioCom.Instance.On("updateAttack", (string payload) =>
         {
-            var data = JsonConvert.DeserializeObject<NetworkAttackData>(payload);
-            if (networkPlayers.ContainsKey(data.id))
-            {
-                Animator anim = networkPlayers[data.id].GetComponent<Animator>();
-                if (anim != null) anim.SetTrigger("attack");
-            }
+
         });
 
 
         // 죽었을 때 혹은 씬 이동시
         sioCom.Instance.On("respawn", (string payload) =>
         {
-            if (!string.IsNullOrEmpty(userId))
-            {
-                //씬 로드 완료 리스너를 제거 (새로 initialize할 것이므로)
-                SceneManager.sceneLoaded -= OnSceneLoaded;
 
-                // 기존 맵에 있던 플레이어 객체들 제거
-                foreach (var player in networkPlayers.Values)
-                {
-                    Destroy(player);
-                }
-                networkPlayers.Clear();
-
-                sioCom.Instance.Emit("initialize", userId, true);
-            }
         });
 
 
@@ -187,149 +146,34 @@ public class SocketManager : MonoBehaviour
         sioCom.Instance.On("playerDisconnected", (string payload) =>
         {
 
-            string id = payload.Replace("\"", "");
-            Debug.Log($"Another player has disconnected: {id}");
-
-            if (networkPlayers.ContainsKey(id))
-            {
-                Destroy(networkPlayers[id]);
-                networkPlayers.Remove(id);
-            }
         });
 
 
         // 플레이어가 연결을 끊었을 때
         sioCom.Instance.On("disconnect", (string payload) =>
         {
-            // 이 Asset은 payload에 따옴표가 포함될 수 있어 제거해줍니다.
-            string id = payload.Replace("\"", "");
-            Debug.Log($"Player disconnected: {id}");
 
-            if (networkPlayers.ContainsKey(id))
-            {
-                Destroy(networkPlayers[id]);
-                networkPlayers.Remove(id);
-            }
         });
     }
 
 
-
-    void SpawnPlayer(NetworkPlayerData data, bool isLocal)
-    {
-        GameObject player = Instantiate(playerPrefab, data.position.ToVector3(),data.rotation.ToQuaternion());
-
-        if (!player.TryGetComponent<Player>(out var playerComponent))
-        {
-            Debug.LogError("Player 프리팹에 Player.cs 컴포넌트가 없습니다! 스폰을 중단합니다.");
-            Destroy(player);
-            return;
-        }
-
-        if (isLocal)
-        {
-            isSceneChangeInProgress = false;
-
-            // ========== 로컬 플레이어 설정 ==========
-            playerComponent.IsLocalPlayer = true;
-            player.GetComponent<PlayerInput>().enabled = true;
-            playerComponent.InputHandler.enabled = true;
-            playerComponent.StateMachine.enabled = true;
-            playerComponent.PreviewCamera.enabled = true;
-
-            if (player.TryGetComponent<CharacterController>(out var controller))
-            {
-                controller.enabled = true;
-            }
-
-            if (DataManager.Instance != null)
-            {
-                DataManager.Instance.Register(playerComponent);
-            }
-            Name name = playerComponent.GetComponentInChildren<Name>();
-            name.gameObject.SetActive(false);
-
-        }
-        else
-        {
-            // ========== 더미 (원격) 플레이어 설정 ==========
-            playerComponent.IsLocalPlayer = false;
-
-            player.GetComponent<PlayerInput>().enabled = false;
-
-            playerComponent.InputHandler.enabled = false;
-            playerComponent.StateMachine.enabled = false;
-            playerComponent.Motor.enabled = false;            
-            playerComponent.Stats.enabled = false;            
-            playerComponent.Interaction.enabled = false;      
-            playerComponent.TargetingSystem.enabled = false;  
-            playerComponent.Combat.enabled = false;           
-            playerComponent.animatorManager.enabled = false;  
-            playerComponent.Inventory.enabled = false;        
-            playerComponent.Quest.enabled = false;            
-            playerComponent.Dialogue.enabled = false;         
-            playerComponent.Equipment.enabled = false;        
-            playerComponent.localAPI.enabled = false;
-            playerComponent.PreviewCamera.enabled = false;
-            playerComponent.PlayerUIManager.gameObject.SetActive(false);
-
-            // PlayerInteractUI도 비활성화
-            if (player.TryGetComponent<PlayerInteractUI>(out var interactUI))
-            {
-                interactUI.enabled = false;
-            }
-
-            if (player.TryGetComponent<CharacterController>(out var controller))
-            {
-                controller.enabled = false;
-            }
-
-            networkPlayers.Add(data.id, player);
-            Name nameTag = player.GetComponentInChildren<Name>();
-            if (nameTag != null)
-            {
-                nameTag.SetNickname(data.nickname);
-            }
-        }
-    }
-
-
-
-
     // ========== 서버로 데이터를 보내는 함수들 ==========
 
-    //플레이어가 씬이 바뀔때
-    public void EmitSceneChange(string sceneName, Vector3 position)
+    //씬 참여 요청
+    public void EmitJoinScene(PlayerData data, string SceneName)
     {
-        if (isSceneChangeInProgress) { return; }
-        isSceneChangeInProgress = true;
-
-        var localPlayer = DataManager.Instance.Player;
-        if (localPlayer != null)
-        {
-            if (localPlayer.TryGetComponent<PlayerInput>(out var playerInput))
-            {
-                playerInput.enabled = false;
-            }
-            if (localPlayer.TryGetComponent<PlayerMotor>(out var playerMotor))
-            {
-                playerMotor.enabled = false;
-            }
-        }
-
-        DataManager.Instance.SaveData();
-
-        // 서버로 보낼 데이터 구성 (씬 이름, 새 위치)
         var json = new
         {
-            scene = sceneName,
-            pos = new { x = position.x, y = position.y, z = position.z }
+            userId = data.id,
+            sceneName = SceneName,
+            position = new { x = data.posX, y = data.posY, z = data.posZ },
+            rotation = new { x = data.rotX, y = data.rotY, z = data.rotZ, w = data.rotW }
         };
-        var data = JsonConvert.SerializeObject(json);
 
-
-        sioCom.Instance.Emit("requestSceneChange", data, false);
+        string sendingData = JsonConvert.SerializeObject(json);
+        sioCom.Instance.Emit("RequestJoinScene", sendingData, false);
     }
+
 
     //플레이어가 움직일때 (좌표 동기화)
     public void EmitPlayerMovement(Vector3 position, Quaternion rotation)
@@ -368,122 +212,11 @@ public class SocketManager : MonoBehaviour
         sioCom.Instance.Emit("playerDied");
     }
 
-    //서버 연결 메소드
-    public void ConnectToServer(string userId)
-    {
-
-        if(userId == null) { Debug.LogError("유저 아이디 에러"); return; }
-
-        this.userId = userId;
-        // 이미 연결 중이거나 연결된 상태가 아닐 때만 연결을 시도
-        if (!sioCom.Instance.IsConnected())
-        {
-            Debug.Log("Connecting to server via button press...");
-            sioCom.Instance.Connect();
-        }
-    }
-
-    // initializeComplete 이후 PlayerData 로드가 성공했을 때
-    private void HandlePlayerDataLoadedForRespawn()
-    {
-        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoadedForRespawn;
-        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoadFailed -= HandlePlayerDataLoadFailedForRespawn;
-
-        Debug.Log("Respawn: Fetched latest player data (HP reset). Loading scene...");
-
-        SceneManager.sceneLoaded += OnSceneLoaded;
-        LoadSceneFromInitialData();
-    }
-
-    //PlayerData 로드 실패 시 예외 처리
-    private void HandlePlayerDataLoadFailedForRespawn(string error)
-    {
-        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoaded -= HandlePlayerDataLoadedForRespawn;
-        PublicAPIManager.Instance.PlayerData.OnPlayerDataLoadFailed -= HandlePlayerDataLoadFailedForRespawn;
-
-        Debug.LogError($"Respawn: Failed to fetch updated player data ({error}). Loading scene with potentially stale stats...");
-
-        SceneManager.sceneLoaded += OnSceneLoaded;
-        LoadSceneFromInitialData();
-    }
-
-    // 씬 로드 로직
-    private void LoadSceneFromInitialData()
-    {
-        string sceneToLoad = "Main";
-        if (myInitialData != null && !string.IsNullOrEmpty(myInitialData.currentSceneName))
-        {
-            sceneToLoad = myInitialData.currentSceneName;
-        }
-        LoadingScene.LoadScene(sceneToLoad);
-    }
-
-    private void SpawnAndNotifyServer()
-    {
-        SpawnPlayer(myInitialData, true);
-        sioCom.Instance.Emit("LoadSceneComplete");
-    }
-
-    // 씬 로딩 완료 시 호출될 함수
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        if (scene.name != "Loading")
-        {
-            SpawnAndNotifyServer();
-        }
-    }
-
     private void OnApplicationQuit()
     {
         if (sioCom != null && sioCom.Instance.IsConnected())
         {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
             sioCom.Instance.Close();
         }
     }
-}
-
-
-
-public class NetworkPlayerData
-{
-    public string id;
-    public NetworKPosition position;
-    public NetworkRotation rotation;
-    public string nickname;
-    public string currentSceneName;
-}
-
-public class NetworKPosition
-{
-    public float x, y, z;
-    public Vector3 ToVector3() => new Vector3(x, y, z);
-}
-
-public class NetworkRotation
-{
-    public float x, y, z, w;
-    public Quaternion ToQuaternion() => new Quaternion(x, y, z, w);
-}
-
-public class NetworkPlayerList
-{
-    public List<NetworkPlayerData> players;
-}
-
-public class NetworkAnimationData
-{
-    public string id;
-    public float vertical;
-    public float horizontal;
-    public bool isSprinting;
-}
-public class NetworkAttackData
-{
-    public string id;
-}
-
-public class GoldUpdateData
-{
-    public int gold;
 }
