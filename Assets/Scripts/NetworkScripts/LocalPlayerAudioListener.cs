@@ -9,7 +9,7 @@ public class LocalPlayerAudioListener : MonoBehaviour
     void Start()
     {
         _audioListener = GetComponent<AudioListener>();
-        player = PlayerCamera.Instance.player;
+        player = Legacy_PlayerCamera.Instance.player;
         if (_audioListener == null)
         {
             _audioListener = GetComponentInChildren<AudioListener>();

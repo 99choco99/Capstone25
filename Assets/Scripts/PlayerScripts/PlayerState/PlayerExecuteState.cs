@@ -22,13 +22,13 @@ public class PlayerExecuteState : State
             return;
         }
         player.Motor.StopMovement();
-        PlayerCamera.Instance.cameraZPosition = -4f;
+        Legacy_PlayerCamera.Instance.cameraZPosition = -4f;
         player.Combat.AttemptDeathblow(target.gameObject.GetComponent<Enemy>());
     }
 
     public override void Exit()
     {
-        PlayerCamera.Instance.ResetCameraZPostion();
+        Legacy_PlayerCamera.Instance.ResetCameraZPostion();
         player.Stats.isInvincible = false;
         player.Motor.canMove = true;
         player.Motor.canRotate = true;

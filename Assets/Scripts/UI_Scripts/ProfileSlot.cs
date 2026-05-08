@@ -6,6 +6,7 @@ public class ProfileSlot : Slot
 {
     Player player;
     [SerializeField] EquipmentType EquipmentSlotType;
+    [SerializeField] EquipmentManager Equipment;
 
 
     private void Awake()
@@ -19,7 +20,7 @@ public class ProfileSlot : Slot
         {
             if (newItem.data.type == SlotType.Equipment && newItem.data.equipmentType == EquipmentSlotType)
             {
-                player.Equipment.Equip(EquipmentSlotType, newItem.currentSlot.slotData.itemSpec);
+                Equipment.Equip(EquipmentSlotType, newItem.currentSlot.slotData.itemSpec);
                 base.OnDrop(eventData);
             }
         }

@@ -27,12 +27,12 @@ public class TargetingSystem : MonoBehaviour
     private IDamageable RightTarget;
     private Player player;
 
+    private Transform camTransform;
+
 
     private void Awake()
     {
-        player = GetComponent<Player>();
-
-        cameraHalfFov = player.MainCamera.fieldOfView;
+        camTransform = Camera.main.transform;
     }
 
 
@@ -117,12 +117,12 @@ public class TargetingSystem : MonoBehaviour
             {
                 if (target.dead) continue;
 
-                Vector3 directionToTarget = collider.transform.position - player.MainCamera.transform.position;
+                Vector3 directionToTarget = collider.transform.position - camTransform.position;
 
-                if (Vector3.Angle(player.MainCamera.transform.forward, directionToTarget) > cameraHalfFov) continue;
+                if (Vector3.Angle(camTransform.forward, directionToTarget) > cameraHalfFov) continue;
 
 
-                if (Physics.Linecast(player.MainCamera.transform.position, collider.bounds.center, ObstacleLayer)) continue;
+                if (Physics.Linecast(camTransform.position, collider.bounds.center, ObstacleLayer)) continue;
 
                 validTargets.Add(target);
             }
@@ -138,7 +138,7 @@ public class TargetingSystem : MonoBehaviour
         float closestRightAngle = 180f;
         float closestLeftAngle = -180f;
 
-        Vector3 cameraForward = player.MainCamera.transform.forward;
+        Vector3 cameraForward = camTransform.forward;
 
         foreach (var target in targets)
         {

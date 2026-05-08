@@ -80,7 +80,7 @@ public class EnemyStats : LivingEntity
             EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, effectRotation, transform);
             SoundManager.Instance.PlaySFX("GuardHit");
             enemy.Stats.isDeflecting = false;
-            TakePostureDamage(result.finalDamage * 0.5f);
+            TakePostureDamage(result.damage * 0.5f);
         }
         else if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
         {
@@ -88,7 +88,7 @@ public class EnemyStats : LivingEntity
             base.OnDamage(result);
             EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
             SoundManager.Instance.PlaySFX("Cutting flesh");
-            TakePostureDamage(result.finalDamage);
+            TakePostureDamage(result.damage);
         }
         else
         {
@@ -99,7 +99,7 @@ public class EnemyStats : LivingEntity
             }
             EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
             SoundManager.Instance.PlaySFX("Cutting flesh");
-            TakePostureDamage(result.finalDamage);
+            TakePostureDamage(result.damage);
         }
 
         enemy.Senses.DetectWithAttack(result.player);
@@ -112,27 +112,6 @@ public class EnemyStats : LivingEntity
 
         enemy.Combat.EnemyAttackEnd();
         base.Die();
-        if (lastAttacker == null)
-        {
-            Debug.Log("보상 없음.");
-            return;
-        }
-        else
-        {
-            lastAttacker.Stats.AddExp(enemyData.exp);
-            lastAttacker.Stats.AddGold(enemyData.gold);
-            lastAttacker.Quest.ReportEnemyKilled(enemyData.id);
-            int? droppedItemID = ItemManager.Instance.RandomItem();
-
-            if (droppedItemID != null)
-            {
-                lastAttacker.Inventory.AddItem(droppedItemID);
-            }
-            else
-            {
-                Debug.Log("아이템이 드랍되지 않았습니다.");
-            }
-        }
     }
 
 
@@ -143,7 +122,7 @@ public class EnemyStats : LivingEntity
         DamageInfo damage = new DamageInfo()
         {
             player = player,
-            finalDamage = 99999
+            damage = 99999
         };
         base.OnDamage(damage);
     }

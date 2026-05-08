@@ -12,7 +12,7 @@ public class PlayerGuardState : State
     public override void Enter()
     {
         guardTimer = 0f;
-        player.animatorManager.PlayTargetActionAnimation("Guard", false);
+        player.AnimatorManager.PlayTargetActionAnimation("Guard", false);
         player.Anim.SetBool("Guard", true);
         player.Motor.StopMovement();
         if (player.Motor.movementLockCoroutine == null)

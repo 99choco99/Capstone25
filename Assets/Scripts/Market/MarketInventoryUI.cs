@@ -7,7 +7,7 @@ public class MarketInventoryUI : MonoBehaviour
 {
     private Player player;
 
-
+    [SerializeField] private InventoryManager Inventory;
     [SerializeField] private GameObject slotPrefab;
     [SerializeField] private GameObject itemPrefab;
     [SerializeField] private Transform equipmentParent;
@@ -35,9 +35,9 @@ public class MarketInventoryUI : MonoBehaviour
         if (player != null)
         {
             // 이전 Player의 이벤트에서 구독을 해제
-            player.Inventory.OnInventoryDataInitialized -= InitUI;
-            player.Inventory.OnSlotDataChanged -= UpdateSlotUI;
-            player.Stats.OnChangedGold -= UpdateGoldUI;
+            Inventory.OnInventoryDataInitialized -= InitUI;
+            Inventory.OnSlotDataChanged -= UpdateSlotUI;
+            PlayerStats.OnLocalPlayerGoldChanged -= UpdateGoldUI;
         }
         // 이전 씬에서 만든 모든 슬롯 UI를 파괴
         foreach (var slotList in uiSlots.Values)
@@ -56,24 +56,24 @@ public class MarketInventoryUI : MonoBehaviour
 
         player = DataManager.Instance.Player;
 
-        if (player == null || player.Inventory == null || player.Stats == null)
+        if (player == null || Inventory == null || player.Stats == null)
         {
             Debug.LogError("MarketInventoryUI: Player 등록 이벤트가 발생했으나 참조가 여전히 null입니다.");
             return;
         }
 
-        player.Inventory.OnInventoryDataInitialized += InitUI;
-        player.Inventory.OnSlotDataChanged += UpdateSlotUI;
-        player.Stats.OnChangedGold += UpdateGoldUI;
+        Inventory.OnInventoryDataInitialized += InitUI;
+        Inventory.OnSlotDataChanged += UpdateSlotUI;
+        PlayerStats.OnLocalPlayerGoldChanged += UpdateGoldUI;
     }
 
     private void OnDestroy()
     {
         if (player != null)
         {
-            player.Inventory.OnInventoryDataInitialized -= InitUI;
-            player.Inventory.OnSlotDataChanged -= UpdateSlotUI;
-            player.Stats.OnChangedGold -= UpdateGoldUI;
+            Inventory.OnInventoryDataInitialized -= InitUI;
+            Inventory.OnSlotDataChanged -= UpdateSlotUI;
+            PlayerStats.OnLocalPlayerGoldChanged -= UpdateGoldUI;
         }
     }
 
@@ -89,7 +89,7 @@ public class MarketInventoryUI : MonoBehaviour
             GameObject slotObject = Instantiate(slotPrefab, parent);
             Slot slot = slotObject.GetComponent<Slot>();
 
-            slot.slotData = player.Inventory.Inventory[type][i];
+            slot.slotData = Inventory.Inventory[type][i];
 
             slot.OnDropRequest += OnDropHandler;
 
@@ -110,7 +110,7 @@ public class MarketInventoryUI : MonoBehaviour
     {
         if (!uiSlots.ContainsKey(type)) { return; }
         Slot uiSlot = uiSlots[type][index];
-        SlotData slotData = player.Inventory.Inventory[type][index];
+        SlotData slotData = Inventory.Inventory[type][index];
 
         if (slotData.hasItem)
         {

@@ -4,9 +4,9 @@ using static UnityEditor.SceneView;
 
 public enum CameraMode { Gameplay, Cinematic }
 
-public class PlayerCamera : MonoBehaviour
+public class Legacy_PlayerCamera : MonoBehaviour
 {
-    public static PlayerCamera Instance;
+    public static Legacy_PlayerCamera Instance;
     public Player player;
     public Camera realCamera;                   // 실제 카메라
     public Transform cameraPivotTransform;      //pivot Transform

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class Player : MonoBehaviour
@@ -5,56 +6,31 @@ public class Player : MonoBehaviour
     public bool IsLocalPlayer { get; set; } = false;
     public bool isLockOn;
 
+    public static event Action<Transform> OnLocalPlayerSpawned;
+
     // 모든 핵심 컴포넌트들에 대한 공용 참조 지점
-    public PlayerInputHandler InputHandler { get; private set; }   //플레이어의 입력
-    public PlayerStateMachine StateMachine { get; private set; }   //플레이어의 논리적인 상태전환 정의
-    public PlayerMotor Motor { get; private set; }                 //플레이어의 시각적 움직임 정의
-    public PlayerStats Stats { get; private set; }                 //플레이어의 기본적인 스탯 정의
-    public PlayerInteraction Interaction { get; private set; }     //플레이어의 상호작용 정의
-    public TargetingSystem TargetingSystem { get; private set; }   //플레이어의 타겟 선정을 정리
-    public PlayerCombat Combat { get; private set; }               //플레이어의 전투 관련 정의.
-    public PlayerAnimatorManager animatorManager {get;private set;}//플레이어의 애니메이션 정의.
-    public PlayerUIManager PlayerUIManager { get; private set; }   //플레이어의 UI를 정의.
-    public InventoryManager Inventory { get; private set; }        //플레이어의 인벤토리 매니저
-    public QuestManager Quest { get; private set; }
-    public DialogueManager Dialogue { get; private set; }
-    public EquipmentManager Equipment { get; private set; }
-    
-    public Animator Anim { get; private set; }
-    public Camera MainCamera { get; private set; }
-    public Camera PreviewCamera;
+    [field: Header("Core Systems")]
+    [field: SerializeField] public PlayerInputHandler InputHandler { get; private set; }
+    [field: SerializeField] public PlayerStateMachine StateMachine { get; private set; }
+    [field: SerializeField] public PlayerMotor Motor { get; private set; }
+    [field: SerializeField] public PlayerStats Stats { get; private set; }
 
-    void Awake()
+
+    [field: Header("Combat & Interaction")]
+    [field: SerializeField] public PlayerCombat Combat { get; private set; }
+    [field: SerializeField] public TargetingSystem TargetingSystem { get; private set; }
+    [field: SerializeField] public PlayerInteraction Interaction { get; private set; }
+    [field: SerializeField] public PlayerAnimatorManager AnimatorManager { get; private set; }
+    [field: SerializeField] public Animator Anim { get; private set; }
+
+    public void Init(bool isLocal)
     {
-        InputHandler = GetComponent<PlayerInputHandler>();
-        StateMachine = GetComponent<PlayerStateMachine>();
-        animatorManager = GetComponent<PlayerAnimatorManager>();
-        Motor = GetComponent<PlayerMotor>();
-        Stats = GetComponent<PlayerStats>();
-        Combat = GetComponent<PlayerCombat>();
-        TargetingSystem = GetComponent<TargetingSystem>();
-        Interaction = GetComponent<PlayerInteraction>();
-        PlayerUIManager = GetComponentInChildren<PlayerUIManager>();
-        Inventory = GetComponentInChildren<InventoryManager>();
-        Quest = GetComponentInChildren<QuestManager>();
-        Dialogue = GetComponentInChildren<DialogueManager>();
-        Equipment = GetComponentInChildren<EquipmentManager>();
-        Anim = GetComponentInChildren<Animator>();
-        MainCamera = Camera.main;
-
-        
-    }
-
-    private void Start()
-    {
+        IsLocalPlayer = isLocal;
         if (IsLocalPlayer)
         {
-            if (PlayerCamera.Instance != null && PlayerCamera.Instance.player == null)
-            {
-                PlayerCamera.Instance.player = this;
-                PreviewCamera.enabled = true;
-            }
 
+            OnLocalPlayerSpawned?.Invoke(this.transform);
+            MainUIManager.Instance.ShowInGameUI();
             if (SoundManager.Instance != null)
             {
                 SoundManager.Instance.PlayBGM("BGM_Main");
@@ -63,10 +39,4 @@ public class Player : MonoBehaviour
             Cursor.lockState = CursorLockMode.Locked;
         }
     }
-
-    private void OnDestroy()
-    {
-
-    }
-
 }

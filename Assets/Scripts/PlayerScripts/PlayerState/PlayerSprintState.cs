@@ -23,11 +23,11 @@ public class PlayerSprintState : State
         {
             player.InputHandler.UseAttackInput();
             stateMachine.TransitionTo(stateMachine.PlayerAttackState);
-            player.animatorManager.PlayTargetActionAnimation("SprintAttack", true);
+            player.AnimatorManager.PlayTargetActionAnimation("SprintAttack", true);
             return;
         }
 
-        if (player.InputHandler.GuardInput && !player.animatorManager.isPerformingAction)
+        if (player.InputHandler.GuardInput && !player.AnimatorManager.isPerformingAction)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGuardState);
             return;
