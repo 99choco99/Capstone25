@@ -5,6 +5,7 @@ using UnityEngine;
 public class ConversationState : State
 {
     public ConversationState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
+    [SerializeField] private DialogueManager Dialogue;
 
     public override void Enter()
     {
@@ -18,7 +19,7 @@ public class ConversationState : State
         if (player.InputHandler.InteractionInput)
         {
             player.InputHandler.UseInteractionInput();
-            player.Dialogue.ShowNextLine();
+            Dialogue.ShowNextLine();
         }
     }
     public override void Exit() {

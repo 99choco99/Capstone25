@@ -5,9 +5,6 @@ using UnityEngine;
 
 public class PlayerProfile : MonoBehaviour
 {
-    Player player;
-    PlayerStats playerStats;
-
     [Header("UI ÄÄÆ÷³ÍÆ®")]
     [SerializeField] private TextMeshProUGUI abilityText;
     [SerializeField] private TextMeshProUGUI healthText;
@@ -19,23 +16,17 @@ public class PlayerProfile : MonoBehaviour
 
     private void Start()
     {
-        player = GetComponentInParent<Player>();
-        playerStats = player.Stats;
-        player.Stats.OnStatsChanged += UpdateUI;
-        UpdateUI();
+        PlayerStats.OnLocalPlayerStatsChanged += UpdateUI;
         gameObject.SetActive(false);
     }
 
     private void OnDestroy()
     {
-        if (player != null && player.Stats != null)
-        {
-            playerStats.OnStatsChanged -= UpdateUI;
-        }
+        PlayerStats.OnLocalPlayerStatsChanged -= UpdateUI;
     }
 
 
-    public void UpdateUI()
+    public void UpdateUI(PlayerStats playerStats)
     {
         abilityText.text = $"Point : {playerStats.AbilityPoint}";
         string damageBonus = playerStats.bonusDamage > 0 ? $" (+ {playerStats.bonusDamage})" : "";

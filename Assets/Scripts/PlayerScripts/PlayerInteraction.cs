@@ -8,6 +8,8 @@ using UnityEngine;
 public class PlayerInteraction : MonoBehaviour
 {
     private Player player;
+    [SerializeField] DialogueManager Dialogue;
+
 
     [Header("¼³Á¤")]
     [SerializeField] private float interactRange = 3f;
@@ -32,17 +34,17 @@ public class PlayerInteraction : MonoBehaviour
     private void Start()
     {
         if (!player.IsLocalPlayer) { return; }
-        player.Dialogue.OnConversationStart += HandleConversationStart;
-        player.Dialogue.OnConversationEnd += HandleConversationEnd;
+        Dialogue.OnConversationStart += HandleConversationStart;
+        Dialogue.OnConversationEnd += HandleConversationEnd;
     }
 
     private void OnDestroy()
     {
-        if (player != null && player.Dialogue != null)
+        if (player != null && Dialogue != null)
         {
             if (!player.IsLocalPlayer) { return; }
-            player.Dialogue.OnConversationStart -= HandleConversationStart;
-            player.Dialogue.OnConversationEnd -= HandleConversationEnd;
+            Dialogue.OnConversationStart -= HandleConversationStart;
+            Dialogue.OnConversationEnd -= HandleConversationEnd;
         }
 
     }

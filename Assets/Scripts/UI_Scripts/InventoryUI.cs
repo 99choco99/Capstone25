@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class InventoryUI : MonoBehaviour
 {
-    private Player player;
+    [SerializeField] private InventoryManager Inventory;
     [SerializeField] private GameObject slotPrefab;
     [SerializeField] private GameObject itemPrefab;
     [SerializeField] private Transform equipmentParent;
@@ -19,20 +20,16 @@ public class InventoryUI : MonoBehaviour
 
     private void Awake()
     {
-        player = GetComponentInParent<Player>();
-        player.Inventory.OnInventoryDataInitialized += InitUI;
-        player.Inventory.OnSlotDataChanged += UpdateSlotUI;
-        player.Stats.OnChangedGold += UpdateGoldUI;
+        Inventory.OnInventoryDataInitialized += InitUI;
+        Inventory.OnSlotDataChanged += UpdateSlotUI;
+        PlayerStats.OnLocalPlayerGoldChanged += UpdateGoldUI;
     }
 
     private void OnDestroy()
     {
-        if(player != null)
-        {
-            player.Inventory.OnInventoryDataInitialized -= InitUI;
-            player.Inventory.OnSlotDataChanged -= UpdateSlotUI;
-            player.Stats.OnChangedGold -= UpdateGoldUI;
-        }
+        Inventory.OnInventoryDataInitialized -= InitUI;
+        Inventory.OnSlotDataChanged -= UpdateSlotUI;
+        PlayerStats.OnLocalPlayerGoldChanged -= UpdateGoldUI;
     }
 
     private void InitUI(SlotType type, int count)
@@ -51,7 +48,7 @@ public class InventoryUI : MonoBehaviour
                 if (i >= count) break;
 
                 Slot slot = existingSlots[i];
-                slot.slotData = player.Inventory.Inventory[type][i];
+                slot.slotData = Inventory.Inventory[type][i];
 
                 slot.OnDropRequest += OnDropHandler;
 
@@ -67,7 +64,7 @@ public class InventoryUI : MonoBehaviour
                 GameObject slotObject = Instantiate(slotPrefab, parent);
                 Slot slot = slotObject.GetComponent<Slot>();
 
-                slot.slotData = player.Inventory.Inventory[type][i];
+                slot.slotData = Inventory.Inventory[type][i];
 
                 slot.OnDropRequest += OnDropHandler;
 
@@ -87,20 +84,20 @@ public class InventoryUI : MonoBehaviour
         {
             if(draggedSlot.slotData.itemId == droppedSlot.slotData.itemId)
             {
-            player.Inventory.MergeItems(
+            Inventory.MergeItems(
                 draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
                 droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
             }
             else
             {
-                player.Inventory.SwapItems(
+                Inventory.SwapItems(
                     draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
                     droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
             }
         }
         else
         {
-            player.Inventory.MoveToEmptySlot(
+            Inventory.MoveToEmptySlot(
                 draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
                 droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
         }
@@ -116,14 +113,14 @@ public class InventoryUI : MonoBehaviour
     {
         if(!uiSlots.ContainsKey(type)) { return; }
         Slot uiSlot = uiSlots[type][index];
-        SlotData slotData = player.Inventory.Inventory[type][index];
+        SlotData slotData = Inventory.Inventory[type][index];
 
         if (slotData.hasItem)
         {
-            // 1. 슬롯의 자식 중에서 기존 아이템 UI를 찾습니다.
+            // 1. 슬롯의 자식 중에서 기존 아이템 UI를 찾기
             OwnedItem ownedItem = uiSlot.GetComponentInChildren<OwnedItem>();
 
-            // 2. 아이템 UI가 없다면 새로 생성합니다.
+            // 2. 아이템 UI가 없다면 새로 생성
             if (ownedItem == null)
             {
                 GameObject itemObject = Instantiate(itemPrefab, uiSlot.transform);

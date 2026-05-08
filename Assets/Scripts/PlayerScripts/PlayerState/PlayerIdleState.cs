@@ -36,7 +36,7 @@ public class PlayerIdleState : State
         }
 
 
-        if (player.InputHandler.GuardInput && !player.animatorManager.isPerformingAction)
+        if (player.InputHandler.GuardInput && !player.AnimatorManager.isPerformingAction)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGuardState);
             return;

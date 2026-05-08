@@ -35,10 +35,7 @@ public class EnemySense : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (GameManager.instance != null && enemy != null)
-        {
-            GameManager.instance.UnregisterEnemyInCombat(enemy);
-        }
+
     }
     private void Update() {
         if (enemy.Stats.dead) return;
@@ -149,10 +146,6 @@ public class EnemySense : MonoBehaviour
 
         if (detected)
         {
-            if(target == DataManager.Instance.Player.transform)
-            {
-                GameManager.instance.RegisterEnemyInCombat(enemy);
-            }
 
             if (playerAnimator == null && target != null)
             {
@@ -163,10 +156,6 @@ public class EnemySense : MonoBehaviour
         {
             // 타겟을 잃으면 참조도 초기화
             playerAnimator = null;
-            if (previousTarget == DataManager.Instance.Player)
-            {
-                GameManager.instance.UnregisterEnemyInCombat(enemy);
-            }
         }
     }
 

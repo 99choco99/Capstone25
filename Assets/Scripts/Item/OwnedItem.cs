@@ -13,7 +13,8 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
 
     public RectTransform rect;
     public Image image;
-         
+
+    [SerializeField] private EquipmentManager Equipment;
     [SerializeField] private TextMeshProUGUI countText; //현재 아이템 개수 표기
 
 
@@ -43,7 +44,7 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
 
         if (currentSlot is ProfileSlot profileSlot)
         {
-            player.Equipment.Unequip(profileSlot.GetEquipmentSlotType());
+            Equipment.Unequip(profileSlot.GetEquipmentSlotType());
         }
     }
 
@@ -60,7 +61,7 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
             rect.position = currentSlot.GetComponent<RectTransform>().position;
             if (currentSlot is ProfileSlot profileSlot)
             {
-                player.Equipment.Equip(profileSlot.GetEquipmentSlotType(), currentSlot.slotData.itemSpec);
+                Equipment.Equip(profileSlot.GetEquipmentSlotType(), currentSlot.slotData.itemSpec);
             }
         }
 

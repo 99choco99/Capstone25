@@ -15,8 +15,6 @@ public class LivingEntity : MonoBehaviour,IDamageable
     [SerializeField] protected float postureRecoveryTimer = 2f;
 
     public bool dead { get; set;}
-    protected Player lastAttacker;
-
 
     public event Action<float> OnHpChanged;  // hp 변경
     public event Action<float, float> OnPostureChanged; //가드 게이지 적용
@@ -48,13 +46,7 @@ public class LivingEntity : MonoBehaviour,IDamageable
     {
         if (dead) return;
 
-        if (damageInfo.player != null)
-        {
-            lastAttacker = damageInfo.player;
-        }
-
-
-        currentHp -= damageInfo.finalDamage;
+        currentHp -= damageInfo.damage;
         OnHpChanged?.Invoke(currentHp);
         // 체력이 0 이하가 되면 사망 처리
         if (currentHp <= 0)

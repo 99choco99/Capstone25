@@ -7,12 +7,13 @@ public class QuickSlot : Slot
 {
     Player player;
     [SerializeField] Slider slider;
+    [SerializeField] InventoryManager Inventory;
     bool isCoolingDown = false;
 
     private void Awake()
     {
         player = GetComponentInParent<Player>();
-        player.Inventory.OnQuickSlotUsed += StartCooldownVisual;
+        Inventory.OnQuickSlotUsed += StartCooldownVisual;
     }
 
     private void Start()
@@ -22,7 +23,7 @@ public class QuickSlot : Slot
 
     private void OnDestroy()
     {
-        player.Inventory.OnQuickSlotUsed -= StartCooldownVisual;
+        Inventory.OnQuickSlotUsed -= StartCooldownVisual;
     }
 
 
@@ -44,7 +45,7 @@ public class QuickSlot : Slot
         }
 
         // 실제 사용 로직은 InventoryManager에게
-        player.Inventory.RequestUseQuickSlotItem();
+        Inventory.RequestUseQuickSlotItem();
     }
 
     private void StartCooldownVisual(ItemSpec spec)

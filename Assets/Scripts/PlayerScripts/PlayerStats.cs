@@ -1,12 +1,13 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem.LowLevel;
 
 public class DamageInfo
 {
     public Enemy enemy;
     public Player player;
     public AttackType attackType;
-    public float finalDamage;
+    public float damage;
     public float knockbackForce;
     public float knockbackDuration;
     public Vector3 hitPoint;
@@ -33,31 +34,32 @@ public class PlayerStats : LivingEntity
     public float bonusDefense;
     public float bonusMaxHp;
 
-    //PlayerEvent
-    public event Action<int, int> OnExpChanged;     // 경험치 적용
-    public event Action OnStatsChanged;             // 스탯 변경사항 적용
+    //UI 변경 이벤트
+    public static event Action<float, float> OnLocalPlayerHpChanged;        //체력
+    public static event Action<float, float> OnLocalPlayerPostureChanged;   //가드게이지
+    public static event Action<int, int> OnLocalPlayerExpChanged;           //경험치 변경
+    public static event Action<PlayerStats> OnLocalPlayerStatsChanged;      //스탯 변경
+    public static event Action<int> OnLocalPlayerGoldChanged;               //소유 골드 변경
+
+    //로직 이벤트
+    public event Action OnStatsSaved;
     public event Action<DamageInfo> OnDamaged;
     public event Action OnLevelUp;                  //레벨업시
-    public event Action<int> OnChangedGold;         // 소유 골드가 변경됨.
 
 
+    //상태
     public bool isGuarding;
     public bool isGroggy;
     public bool isInvincible;
 
-    private Player player;
+    [SerializeField] private Player player;
 
-    private void Awake()
-    {
-        player = GetComponent<Player>();
-
-    }
 
     private void Start()
     {
         if (!player.IsLocalPlayer) { return; }
-        player.Inventory.OnQuickSlotUsed += Consume;
-        OnStatsChanged += DataManager.Instance.SaveData;
+
+        OnStatsSaved += DataManager.Instance.SaveData;
         OnLevelUp += DataManager.Instance.SaveData;
 
     }
@@ -69,8 +71,8 @@ public class PlayerStats : LivingEntity
         {
             DataManager.Instance.OnSave -= OnSavePlayerData;
         }
-        player.Inventory.OnQuickSlotUsed -= Consume;
-        OnStatsChanged -= DataManager.Instance.SaveData;
+
+        OnStatsSaved -= DataManager.Instance.SaveData;
         OnLevelUp -= DataManager.Instance.SaveData;
     }
 
@@ -91,8 +93,6 @@ public class PlayerStats : LivingEntity
 
         UpdateTotalStats();
 
-        OnExpChanged?.Invoke(Exp, Level);
-        OnChangedGold?.Invoke(Gold);
 
         if (DataManager.Instance != null)
         {
@@ -101,105 +101,29 @@ public class PlayerStats : LivingEntity
 
 
         Debug.Log("데이터 불러오기 성공");
-        //플레이어 위치 검증
-        GameObject boundaryObj = GameObject.FindGameObjectWithTag("MapBoundary");
-        BoxCollider mapBoundary = boundaryObj.GetComponent<BoxCollider>();
-        GameObject spawnObj = GameObject.FindGameObjectWithTag("Respawn");
-        if (!mapBoundary.bounds.Contains(transform.position))
-        {
-            if (spawnObj != null)
-            {
-                if (spawnObj == null) return;
-
-                if (player.Motor.controller != null)
-                {
-                    player.Motor.controller.enabled = false;
-                    transform.position = spawnObj.transform.position;
-                    player.Motor.controller.enabled = true;
-                }
-                else
-                {
-                    transform.position = spawnObj.transform.position;
-                }
-            }
-        }
     }
 
     //게임 데이터 저장하기
     public void OnSavePlayerData()
     {
         if (DataManager.Instance == null) return;
-
-        //PlayerData dataToSave = DataManager.Instance.playerData;
-        //dataToSave.maxHp = baseMaxHp;
-        //dataToSave.currentHp = currentHp;
-        //dataToSave.damage = baseDamage;
-        //dataToSave.defense = baseDefense;
-        //dataToSave.level = Level;
-        //dataToSave.exp = Exp;
-        //dataToSave.gold = Gold;
-        //dataToSave.AbilityPoint = AbilityPoint;
-
-        ////APIManager.Instance.PlayerData.RequestSavePlayerData(dataToSave);
     }
 
 
     //데미지를 입었을 때
-    public override void OnDamage(DamageInfo damageInfo)
+    public override void OnDamage(DamageInfo finalDamage)
     {
         if (dead || isInvincible) return;
 
-        // --- 가드 및 패링 판정 ---
-        isGuarding = player.StateMachine.CurrentState is PlayerGuardState;
-        bool isParrying = false;
-
-        if (isGuarding)
+        if(finalDamage.damage > 0)
         {
-            if (player.StateMachine.CurrentState is PlayerGuardState guardState && guardState.IsParryWindowActive())
-            {
-                isParrying = true;
-            }
+            base.OnDamage(finalDamage);
         }
-
-        // --- 데미지 계산 ---
-        float finalDamageToHp = damageInfo.finalDamage;
-
-        if(Vector3.Dot(transform.forward, damageInfo.hitDirection) > 0)
+        OnDamaged?.Invoke(finalDamage);
+        if (player.IsLocalPlayer)
         {
-            base.OnDamage(damageInfo);
-            TakePostureDamage(damageInfo.finalDamage);
+            OnLocalPlayerHpChanged?.Invoke(currentHp, maxHp);
         }
-        else if (isParrying)
-        {
-            finalDamageToHp = 0;
-            damageInfo.enemy.Stats.TakePostureDamage(damageInfo.finalDamage);
-        }
-        else if (isGuarding)
-        {
-            finalDamageToHp = 0;
-            damageInfo.enemy.Stats.TakePostureDamage(damageInfo.finalDamage * 0.5f);
-            TakePostureDamage(damageInfo.finalDamage * 0.5f);
-        }
-        else
-        {
-            base.OnDamage(damageInfo);
-            TakePostureDamage(damageInfo.finalDamage);
-        }
-
-
-        DamageInfo result = new DamageInfo()
-        {
-            finalDamage = finalDamageToHp,
-            attackType = damageInfo.attackType,
-            hitPoint = damageInfo.hitPoint,
-            hitDirection = damageInfo.hitDirection,
-            knockbackDuration = damageInfo.knockbackDuration,
-            knockbackForce = damageInfo.knockbackForce,
-            wasGuarded = isGuarding,
-            wasParried = isParrying,
-        };
-
-        OnDamaged?.Invoke(result);
     }
 
     //경험치 증가
@@ -216,21 +140,21 @@ public class PlayerStats : LivingEntity
             Level++;
             AbilityPoint += 3;
             OnLevelUp?.Invoke();
-            OnStatsChanged?.Invoke();
+            OnLocalPlayerStatsChanged?.Invoke(this);
             SoundManager.Instance.PlaySFX("LevelUp");
         }
-        OnExpChanged?.Invoke(Exp, Level);
+        if (player.IsLocalPlayer) { OnLocalPlayerExpChanged?.Invoke(Exp, Level); }
     }
 
     public void AddGold(int addGold)
     {
         Gold += addGold;
-        OnChangedGold?.Invoke(Gold);
+        OnLocalPlayerGoldChanged?.Invoke(Gold);
     }
     public void SetGold(int gold)
     {
         Gold = gold;
-        OnChangedGold?.Invoke(Gold);
+        OnLocalPlayerGoldChanged?.Invoke(Gold);
     }
 
 
@@ -291,7 +215,7 @@ public class PlayerStats : LivingEntity
             currentHp = maxHp;
         }
 
-        OnStatsChanged?.Invoke();
+        OnStatsSaved?.Invoke();
     }
 
     // 소비 아이템 사용

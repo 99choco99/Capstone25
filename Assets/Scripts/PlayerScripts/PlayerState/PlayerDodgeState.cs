@@ -18,7 +18,7 @@ public class PlayerDodgeState : State
 
     public override void Update()
     {
-        if (!player.animatorManager.isPerformingAction) 
+        if (!player.AnimatorManager.isPerformingAction) 
         {
             if(player.InputHandler.MoveInput != Vector3.zero)
             {

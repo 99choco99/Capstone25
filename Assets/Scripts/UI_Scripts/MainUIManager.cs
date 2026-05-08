@@ -16,48 +16,53 @@ public enum UIPanelType {
     Setting,
     Dialogue
 }
-public class PlayerUIManager : MonoBehaviour
+public class MainUIManager : MonoBehaviour
 {
-    Player player;
-    public PlayerStats playerStats;
+    public static MainUIManager Instance { get; private set; }
 
+    [SerializeField] private GameObject InGameUIGroup;
+
+    [Header("상태 UI")]
     public Slider PlayerHpUI;
     public Slider PostureGauge;
-    public Slider EnemyHpUI;
     public Slider ExpUI;
-
-    public TextMeshProUGUI EnemyName;
-    public TextMeshProUGUI NpcName;
-    public TextMeshProUGUI NpcText;
     public TextMeshProUGUI levelText;
     public TextMeshProUGUI ExpText;
 
 
-    private Dictionary<UIPanelType, GameObject> panelDictionary;
-    public List<UIPanelType> currentOpenUI = new List<UIPanelType>();
+    [Header("적 UI")]
+    public Slider EnemyHpUI;
+    public TextMeshProUGUI EnemyName;
 
-    [Header("UI_Panel")]
+    [Header("패널 UI")]
     [SerializeField] GameObject Market;
     public GameObject Inventory;
     public GameObject PlayerProfile;
     public GameObject Setting;
     public GameObject Quest;
     public GameObject dialogUI;
+    private Dictionary<UIPanelType, GameObject> panelDictionary;
+    public List<UIPanelType> currentOpenUI = new List<UIPanelType>();
 
     private void Awake()
     {
-        player = GetComponentInParent<Player>();
-        playerStats = GetComponentInParent<PlayerStats>();
-
-
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
     }
 
     private void Start()
     {
-        if (!player.IsLocalPlayer) { return; }
-        playerStats.OnHpChanged += UpdateHp;
-        playerStats.OnExpChanged += UpdateExp;
-        playerStats.OnPostureChanged += UpdatePostureGauge;
+        PlayerStats.OnLocalPlayerHpChanged += UpdateHp;
+        PlayerStats.OnLocalPlayerExpChanged += UpdateExp;
+        PlayerStats.OnLocalPlayerPostureChanged += UpdatePostureGauge;
         if (MarketManager.Instance != null)
         {
             Market = MarketManager.Instance.MarketUI;
@@ -74,21 +79,28 @@ public class PlayerUIManager : MonoBehaviour
             {UIPanelType.Dialogue, dialogUI }
         };
 
-        UpdateHp(playerStats.currentHp);
-        UpdatePostureGauge(playerStats.maxPosture, playerStats.currentPosture);
+        HideInGameUI();
     }
 
     private void OnDestroy()
     {
-        if (!player.IsLocalPlayer) { return; }
-        playerStats.OnHpChanged -= UpdateHp;
-        playerStats.OnExpChanged -= UpdateExp;
-        playerStats.OnPostureChanged -= UpdatePostureGauge;
+        PlayerStats.OnLocalPlayerHpChanged -= UpdateHp;
+        PlayerStats.OnLocalPlayerExpChanged -= UpdateExp;
+        PlayerStats.OnLocalPlayerPostureChanged -= UpdatePostureGauge;
     }
 
-    public void UpdateHp(float currenthp)
+
+    public void ShowInGameUI()
     {
-        PlayerHpUI.value = currenthp / playerStats.maxHp;
+        InGameUIGroup.SetActive(true);
+    }
+    void HideInGameUI()
+    {
+        InGameUIGroup.SetActive(false);
+    }
+    public void UpdateHp(float currenthp, float maxHp)
+    {
+        PlayerHpUI.value = currenthp / maxHp;
     }
 
     public void UpdateExp(int exp, int level)
@@ -137,7 +149,6 @@ public class PlayerUIManager : MonoBehaviour
     public void OpenUI(UIPanelType type)
     {
         if (currentOpenUI.Count > 0 && currentOpenUI.Last() == UIPanelType.Market) { return; } //마켓있을땐 UI못열게
-        GameManager.instance.ChangeState(GameState.UIMode);
         panelDictionary[type].SetActive(true);
         currentOpenUI.Add(type);
     }
@@ -146,12 +157,7 @@ public class PlayerUIManager : MonoBehaviour
     {
         panelDictionary[type].SetActive(false);
         TooltipManager.Instance.HideTooltip();
-        currentOpenUI.Remove(type);
-        if (currentOpenUI.Count == 0)
-        {
-            GameManager.instance.ChangeState(GameState.Gameplay);
-        }
-        
+        currentOpenUI.Remove(type);   
     }
 
     public void CloseLastUI()

@@ -6,6 +6,8 @@ using UnityEngine.UI;
 public class InventoryManager : MonoBehaviour
 {
     Player player;
+    [SerializeField] EquipmentManager Equipment;
+
     public bool isInit;
     public const int slotCount = 36;
     public Dictionary<SlotType, List<SlotData>> Inventory;
@@ -76,7 +78,7 @@ public class InventoryManager : MonoBehaviour
             if (data.slotType == SlotType.Profile)
             {
                 EquipmentType equipmentType = (EquipmentType)data.slotIndex;
-                player.Equipment.Equip(equipmentType, data.itemSpec);
+                Equipment.Equip(equipmentType, data.itemSpec);
             }
             OnSlotDataChanged?.Invoke(data.slotType, data.slotIndex);
         }

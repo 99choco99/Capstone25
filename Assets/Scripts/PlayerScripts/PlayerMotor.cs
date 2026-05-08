@@ -7,6 +7,7 @@ public class PlayerMotor : MonoBehaviour
 
     public CharacterController controller;
     private Player player;
+    private Transform camTransform;
 
 
     [SerializeField] private float rotationSpeed = 15f;
@@ -56,6 +57,7 @@ public class PlayerMotor : MonoBehaviour
 
     private void Start()
     {
+        camTransform = Camera.main.transform;
         if (!player.IsLocalPlayer) { return; }
         player.Stats.OnDamaged += StartKnockBack;
         player.Stats.OnPostureBroken += Groggy;
@@ -91,9 +93,9 @@ public class PlayerMotor : MonoBehaviour
         if (!player.IsLocalPlayer) { return; }
         if (!canMove || isKnockingBack) return;
 
-        Vector3 cameraForward = player.MainCamera.transform.forward;
+        Vector3 cameraForward = camTransform.forward;
         cameraForward.y = 0f;
-        Vector3 cameraRight = player.MainCamera.transform.right;
+        Vector3 cameraRight = camTransform.right;
         cameraRight.y = 0f;
 
         Vector3 moveDirection = (cameraForward * player.InputHandler.MoveInput.z + cameraRight * player.InputHandler.MoveInput.x).normalized;
@@ -133,20 +135,20 @@ public class PlayerMotor : MonoBehaviour
         //구르기 shift 
         if (player.InputHandler.MoveInput != Vector3.zero)
         {
-            Vector3 cameraForward = player.MainCamera.transform.forward;
+            Vector3 cameraForward = camTransform.forward;
             cameraForward.y = 0f;
-            Vector3 cameraRight = player.MainCamera.transform.right;
+            Vector3 cameraRight = camTransform.right;
             cameraRight.y = 0f;
 
             Vector3 rollDirection = (cameraForward.normalized * player.InputHandler.MoveInput.z + cameraRight.normalized * player.InputHandler.MoveInput.x).normalized;
 
             Quaternion targetRotation = Quaternion.LookRotation(rollDirection);
             transform.rotation = targetRotation;
-            player.animatorManager.PlayTargetActionAnimation("Roll", true);
+            player.AnimatorManager.PlayTargetActionAnimation("Roll", true);
         }
         else
         {
-            player.animatorManager.PlayTargetActionAnimation("BackStep", true);
+            player.AnimatorManager.PlayTargetActionAnimation("BackStep", true);
         }
 
     }
@@ -181,7 +183,7 @@ public class PlayerMotor : MonoBehaviour
 
     public void Groggy()
     {
-        player.animatorManager.PlayTargetActionAnimation("GuardBreak", true, true);
+        player.AnimatorManager.PlayTargetActionAnimation("GuardBreak", true, true);
     }
 
 
@@ -226,8 +228,8 @@ public class PlayerMotor : MonoBehaviour
         }
         else
         {
-            Vector3 cameraForward = player.MainCamera.transform.forward;
-            Vector3 cameraRight = player.MainCamera.transform.right;
+            Vector3 cameraForward = camTransform.forward;
+            Vector3 cameraRight = camTransform.right;
 
             Vector3 RotationDirection = (cameraForward.normalized * player.InputHandler.MoveInput.z + cameraRight.normalized * player.InputHandler.MoveInput.x);
 

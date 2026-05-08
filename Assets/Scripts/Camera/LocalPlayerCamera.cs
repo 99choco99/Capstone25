@@ -10,7 +10,7 @@ public class LocalPlayerCamera : MonoBehaviour
     {
         if (playerCamera == null || player == null)
         {
-            player = PlayerCamera.Instance.player;
+            player = Legacy_PlayerCamera.Instance.player;
             playerCamera = GetComponentInChildren<Camera>();
         }
         else

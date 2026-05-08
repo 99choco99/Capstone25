@@ -61,7 +61,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     //공격 시작
     public bool StartAttack()
     {
-        if(player.animatorManager.isPerformingAction || normalAttacks.Length <= 0) { return false; }
+        if(player.AnimatorManager.isPerformingAction || normalAttacks.Length <= 0) { return false; }
         player.Anim.SetTrigger("Attack");
 
         // 다음 공격을 위해 콤보 인덱스 증가
@@ -86,7 +86,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         DamageInfo result = new DamageInfo
         {
             player = player,
-            finalDamage = currentAttackData.damage,
+            damage = currentAttackData.damage,
             knockbackForce = currentAttackData.knockbackPower,
             knockbackDuration = currentAttackData.knockbackDuration,
             hitPoint = hitPoint,
@@ -107,24 +107,24 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         Quaternion effectRotation = Quaternion.LookRotation(result.hitDirection);
         if (result.attackType != AttackType.Heavy && result.wasParried)
         {
-            player.animatorManager.PlayTargetActionAnimation("Parry");
+            player.AnimatorManager.PlayTargetActionAnimation("Parry");
             EffectManager.Instance.PlayEffect("Parry", result.hitPoint, effectRotation, transform);
         }
         else if (result.attackType != AttackType.Heavy && result.wasGuarded)
         {
             EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, effectRotation, transform);
-            player.animatorManager.PlayTargetActionAnimation("GuardHit");
+            player.AnimatorManager.PlayTargetActionAnimation("GuardHit");
             SoundManager.Instance.PlaySFX("GuardHit");
         }
-        else if (result.finalDamage >= 0)
+        else if (result.damage >= 0)
         {
             if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
             {
-                player.animatorManager.PlayTargetActionAnimation("BackHit");
+                player.AnimatorManager.PlayTargetActionAnimation("BackHit");
             }
             else
             {
-                player.animatorManager.PlayTargetActionAnimation("Hit");
+                player.AnimatorManager.PlayTargetActionAnimation("Hit");
 
             }
             SoundManager.Instance.PlaySFX("Hit");
@@ -171,7 +171,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         var outputs = FrontdeathblowTimelineAsset.outputs;
         deathblowDirector.SetGenericBinding(outputs.ElementAt(1).sourceObject, enemy.gameObject);
         deathblowDirector.SetGenericBinding(outputs.ElementAt(2).sourceObject, player.gameObject);
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, PlayerCamera.Instance.cameraPivotTransform.gameObject);
+        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, Legacy_PlayerCamera.Instance.cameraPivotTransform.gameObject);
 
         enemy.Stats.isDeflecting = false;
         enemy.Stats.IsPlayingDeathBlow = true;
@@ -197,7 +197,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         var outputs = BehindDeathblowTimelineAsset.outputs;
         deathblowDirector.SetGenericBinding(outputs.ElementAt(1).sourceObject, player.gameObject);
         deathblowDirector.SetGenericBinding(outputs.ElementAt(2).sourceObject, enemy.gameObject);
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, PlayerCamera.Instance.cameraPivotTransform.gameObject);
+        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, Legacy_PlayerCamera.Instance.cameraPivotTransform.gameObject);
 
         OnExecuteEnd += enemy.Stats.DeathBlowProcess;
 
