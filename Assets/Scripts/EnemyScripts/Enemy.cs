@@ -4,6 +4,7 @@ using Unity.Behavior;
 
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Playables;
 
 public class Enemy: MonoBehaviour
 {
@@ -17,6 +18,15 @@ public class Enemy: MonoBehaviour
     public EnemyStateMachine StateMachine { get; private set; }
     public BehaviorGraphAgent BehaviourTree { get; private set; }
 
+    [Header("인살(Deathblow) 타임라인 데이터")]
+    public PlayableAsset frontDeathblowTimeline;
+    public PlayableAsset behindDeathblowTimeline;
+
+    // 플레이어가 타임라인을 요구할 때 내어주는 함수
+    public PlayableAsset GetExecutionTimeline(bool isFront)
+    {
+        return isFront ? frontDeathblowTimeline : behindDeathblowTimeline;
+    }
     private void Awake()
     {
         Stats = GetComponent<EnemyStats>();

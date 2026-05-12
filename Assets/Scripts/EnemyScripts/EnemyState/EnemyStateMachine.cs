@@ -7,10 +7,6 @@ public class EnemyStateMachine : MonoBehaviour
     private Enemy enemy;
     public EnemyState CurrentState { get; private set; }
 
-    [Header("Behavior Trees")]
-    [SerializeField] private BehaviorGraph nonCombatBT;
-    [SerializeField] private BehaviorGraph combatBT;
-
     private void Awake()
     {
         enemy = GetComponent<Enemy>();
@@ -30,16 +26,6 @@ public class EnemyStateMachine : MonoBehaviour
     {
         CurrentState?.OnExit();
         CurrentState = newState;
-
-        if (newState is EnemyCombatState)
-        {
-            enemy.BehaviourTree.Graph = combatBT;
-        }
-        else
-        {
-            enemy.BehaviourTree.Graph = nonCombatBT;
-        }
-
         CurrentState.OnEnter();
     }
 }

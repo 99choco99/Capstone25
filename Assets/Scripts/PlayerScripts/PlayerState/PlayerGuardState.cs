@@ -12,27 +12,17 @@ public class PlayerGuardState : State
     public override void Enter()
     {
         guardTimer = 0f;
-        player.AnimatorManager.PlayTargetActionAnimation("Guard", false);
-        player.Anim.SetBool("Guard", true);
+        player.AnimatorManager.PlayAction(AnimHash.Guard, false);
+
         player.Motor.StopMovement();
-        if (player.Motor.movementLockCoroutine == null)
-        {
-            SoundManager.Instance.PlaySFX("Guard");
-        }
-        player.Motor.LockMovementFor(0.45f);
     }
 
-
-    public override void Exit()
-    {
-        player.Anim.SetBool("Guard", false);
-    }
 
     public override void Update()
     {
         guardTimer += Time.deltaTime;
 
-        if (!player.InputHandler.GuardInput || player.Stats.isGroggy)
+        if (!player.InputHandler.GuardInput || player.Stats.isStunned)
         {
             if (player.InputHandler.MoveInput == Vector3.zero)
             {
@@ -56,7 +46,8 @@ public class PlayerGuardState : State
             stateMachine.TransitionTo(stateMachine.PlayerAttackState);
             return;
         }
-        player.Motor.Move();
+        player.Motor.SetTargetVelocity(player.Motor.GuardSpeed);
+        player.Motor.HandleRotation();
     }
 
 

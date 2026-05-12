@@ -67,7 +67,7 @@ public class PlayerInteractUI : MonoBehaviour
             promptPool[i].gameObject.SetActive(false);
         }
 
-        UpdateSelection(playerInteraction.currentSelection);
+        UpdateSelection(playerInteraction.CurrentSelection);
     }
 
     void UpdateSelection(IInteractable newSelection)

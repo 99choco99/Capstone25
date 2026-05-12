@@ -10,7 +10,7 @@ public class PlayerAnimationExitSMB : StateMachineBehaviour
         {
             player = animator.GetComponent<Player>();
         }
-        player.AnimatorManager.isPerformingAction = false;
+        player.AnimatorManager.IsActionLocked = false;
     }
 
     public override void OnStateMachineExit(Animator animator, int stateMachinePathHash)
@@ -19,6 +19,6 @@ public class PlayerAnimationExitSMB : StateMachineBehaviour
         {
             player = animator.GetComponent<Player>();
         }
-        player.AnimatorManager.isPerformingAction = false;
+        player.AnimatorManager.IsActionLocked = false;
     }
 }

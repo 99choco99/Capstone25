@@ -6,13 +6,13 @@ public class PlayerIdleState : State
     public override bool UseRootMotion => true;
     public override void Enter()
     {
-        player.Anim.SetBool("Jump", false);
         player.Combat.ResetCombo();
+        player.AnimatorManager.PlayAction(AnimHash.Locomotion, false);
     }
 
     public override void Update()
     {
-        if (player.Stats.isGroggy) { return; }
+        if (player.Stats.isStunned) { return; }
         if (player.InputHandler.AttackInput && player.TargetingSystem.IsCurrentTargetExecutable())
         {
             player.InputHandler.UseAttackInput();
@@ -36,7 +36,7 @@ public class PlayerIdleState : State
         }
 
 
-        if (player.InputHandler.GuardInput && !player.AnimatorManager.isPerformingAction)
+        if (player.InputHandler.GuardInput && !player.AnimatorManager.IsActionLocked)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGuardState);
             return;
@@ -56,7 +56,7 @@ public class PlayerIdleState : State
             stateMachine.TransitionTo(stateMachine.PlayerMoveState);
             return;
         }
-        player.Motor.Move();
+
     }
 
 }

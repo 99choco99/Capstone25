@@ -19,8 +19,9 @@ public class EnemyStats : LivingEntity
     public bool IsPlayingDeathBlow;
 
 
-    private void Awake()
+    private new void Awake()
     {
+        base.Awake();
         enemy = GetComponent<Enemy>();
         SetUp(enemyData);
     }
@@ -37,11 +38,11 @@ public class EnemyStats : LivingEntity
     }
 
 
-    public void SetUp(EnemyData enemyData)
+    public void SetUp(EnemyData data)
     {
-        maxHp = enemyData.hp;
-        currentHp = maxHp;
-        maxPosture = enemyData.defense;
+        MaxHp.AddBaseValue(data.hp - MaxHp.Value);
+        CurrentHp = MaxHp.Value;
+        MaxPosture.AddBaseValue(data.defense - MaxPosture.Value);
 
 
         OnDeath += Die;
@@ -64,7 +65,7 @@ public class EnemyStats : LivingEntity
             if(postureBrokenTimer <= 0f)
             {
                 IsPostureBroken = false;
-                currentPosture = 0;
+                CurrentPosture = 0;
             }
         }
     }
@@ -80,7 +81,7 @@ public class EnemyStats : LivingEntity
             EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, effectRotation, transform);
             SoundManager.Instance.PlaySFX("GuardHit");
             enemy.Stats.isDeflecting = false;
-            TakePostureDamage(result.damage * 0.5f);
+            TakePostureDamage(result.postureDamage);
         }
         else if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
         {
@@ -88,7 +89,7 @@ public class EnemyStats : LivingEntity
             base.OnDamage(result);
             EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
             SoundManager.Instance.PlaySFX("Cutting flesh");
-            TakePostureDamage(result.damage);
+            TakePostureDamage(result.postureDamage);
         }
         else
         {
@@ -99,10 +100,9 @@ public class EnemyStats : LivingEntity
             }
             EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
             SoundManager.Instance.PlaySFX("Cutting flesh");
-            TakePostureDamage(result.damage);
+            TakePostureDamage(result.postureDamage);
         }
 
-        enemy.Senses.DetectWithAttack(result.player);
         OnDamaged?.Invoke(result);
     }
 
@@ -115,14 +115,14 @@ public class EnemyStats : LivingEntity
     }
 
 
-    public void DeathBlowProcess(Player player)
+    public void DeathBlowProcess(GameObject executor)
     {
         enemy.Anim.enabled = false;
         enemy.Combat.EnemyAttackEnd();
         DamageInfo damage = new DamageInfo()
         {
-            player = player,
-            damage = 99999
+            attacker = executor,
+            amount = 99999
         };
         base.OnDamage(damage);
     }

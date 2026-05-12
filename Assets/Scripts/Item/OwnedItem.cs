@@ -78,7 +78,7 @@ public class OwnedItem: Item, IBeginDragHandler, IDragHandler, IEndDragHandler, 
         StringBuilder statsBuilder = new StringBuilder();
 
         // 0보다 큰 스탯만 툴팁에 추가
-        if (stats.damage >= 0) statsBuilder.AppendLine($"공격력: {stats.damage}");
+        if (stats.attackPower >= 0) statsBuilder.AppendLine($"공격력: {stats.attackPower}");
         if (stats.defense >= 0) statsBuilder.AppendLine($"방어력: {stats.defense}");
         if (stats.hp >= 0) statsBuilder.AppendLine($"체력: {stats.hp}");
         if (stats.duration > 0) statsBuilder.AppendLine($"지속시간: {stats.duration}초");

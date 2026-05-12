@@ -11,20 +11,19 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
 
     private Enemy enemy;
     [SerializeField] private List<Weapon> weapons = new List<Weapon>();
-
     [SerializeField] Attack[] attacks;
+
     public int currentAttackIndex = 0;
-
-
     [SerializeField] float guardChance;
-    public bool canAttack = true;
+
+
+    private float nextAttackTime = 0f;
+    public bool canAttack => Time.time >= nextAttackTime;
 
 
     private void Awake()
     {
         enemy = GetComponent<Enemy>();
-
-
     }
 
     // 플레이어를 공격했을 때
@@ -33,14 +32,15 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
         Attack currentAttackData = attacks[currentAttackIndex];
         Collider weaponCollider = weapon.GetComponent<Collider>();
         Vector3 hitPoint = targetCollider.ClosestPoint(weaponCollider.transform.position);
+
         Vector3 hitDirection = (targetCollider.transform.position - transform.position);
         hitDirection.y = 0;
         hitDirection.Normalize();
 
         DamageInfo damageInfo = new DamageInfo
         {
-            enemy = enemy,
-            damage = currentAttackData.damage,
+            attacker = enemy.gameObject,
+            amount = currentAttackData.damage,
             attackType = currentAttackData.type,
             knockbackForce = currentAttackData.knockbackPower,
             knockbackDuration = currentAttackData.knockbackDuration,
@@ -53,15 +53,43 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
         target.OnDamage(damageInfo);
     }
 
+    private Attack ChooseBestAttack()
+    {
+        float distance = enemy.Senses.DistanceToTarget;
+        List<Attack> validAttacks = new List<Attack>();
+        float totalWeight = 0f;
+
+        foreach (Attack attack in attacks)
+        {
+            if (attack.minDistance >= distance && attack.maxDistance <= distance)
+            {
+                validAttacks.Add(attack);
+                totalWeight += attack.minDistance;
+            }
+        }
+
+        if(validAttacks.Count == 0) { return null;}
+
+        float randomValue = Random.Range(0, totalWeight);
+        float weightSum = 0f;
+        foreach (Attack attack in validAttacks)
+        {
+            if(weightSum >= randomValue) { return attack; }
+            weightSum += attack.weight;
+        }
+
+        return validAttacks[0];
+    }
+
     //공격
     public void PerformAttack()
     {
         if (enemy.AnimationManager.IsPerformAction || !canAttack) { return; }
-        canAttack  = false;
 
+        Attack selectedAttack = ChooseBestAttack();
 
-        Attack selectedAttack = attacks[Random.Range(0, attacks.Length)];
-        if(selectedAttack.type == AttackType.Heavy)
+        if (selectedAttack != null) { return; }
+        if (selectedAttack.type == AttackType.Heavy)
         {
             SoundManager.Instance.PlaySFX("HeavyAttack");
             if (enemy.UI != null)
@@ -70,40 +98,24 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
             }
         }
         currentAttackIndex = System.Array.IndexOf(attacks, selectedAttack);
-        
         enemy.AnimationManager.PlayAnimation($"Attack{currentAttackIndex}", true);
-        ApplyAttackCooldown();  //공격 쿨타임
-    }
 
+
+        float randomCooldown = Random.Range(selectedAttack.minAttackCooldown, selectedAttack.maxAttackCooldown);
+        nextAttackTime = Time.time + randomCooldown;
+    }
     //방어
     public void DecideDefenseAction()
     {
-        if (enemy.Stats.dead || enemy.Stats.IsPlayingDeathBlow) { return; }
-        if (enemy.AnimationManager.IsPerformAction) return;
-        float value = Random.Range(0f, 1f);
-
-        if (value <= guardChance)
+        if (enemy.Stats.dead || enemy.Stats.IsPlayingDeathBlow || enemy.AnimationManager.IsPerformAction) { return; }
+        if (Random.value <= guardChance)
         {
             enemy.AnimationManager.PlayAnimation("Deflect", false);
             enemy.Stats.isDeflecting = true;
             enemy.Motor.Stop();
         }
     }
-
-    public void ApplyAttackCooldown()
-    {
-        Attack currentAttackData = attacks[currentAttackIndex];
-        float randomCooldown = Random.Range(currentAttackData.minAttackCooldown, currentAttackData.maxAttackCooldown);
-        StartCoroutine(AttackTimer(randomCooldown));
-    }
-
-    IEnumerator AttackTimer(float timer)
-    {
-        yield return new WaitForSeconds(timer);
-        canAttack = true;
-    }
-
-    public void AE_EnemyAttackStart()
+    public void OnEnemyAttackStart()
     {
         foreach (var weapon in weapons)
         {

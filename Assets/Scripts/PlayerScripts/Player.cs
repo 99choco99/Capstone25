@@ -3,8 +3,8 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    public bool IsLocalPlayer { get; set; } = false;
-    public bool isLockOn;
+    public bool IsLocalPlayer { get; private set; } = false;
+    public bool IsLockOn;
 
     public static event Action<Transform> OnLocalPlayerSpawned;
 
@@ -18,6 +18,7 @@ public class Player : MonoBehaviour
 
     [field: Header("Combat & Interaction")]
     [field: SerializeField] public PlayerCombat Combat { get; private set; }
+    [field: SerializeField] public PlayerExecution Execution { get; private set; } 
     [field: SerializeField] public TargetingSystem TargetingSystem { get; private set; }
     [field: SerializeField] public PlayerInteraction Interaction { get; private set; }
     [field: SerializeField] public PlayerAnimatorManager AnimatorManager { get; private set; }
@@ -28,14 +29,7 @@ public class Player : MonoBehaviour
         IsLocalPlayer = isLocal;
         if (IsLocalPlayer)
         {
-
             OnLocalPlayerSpawned?.Invoke(this.transform);
-            MainUIManager.Instance.ShowInGameUI();
-            if (SoundManager.Instance != null)
-            {
-                SoundManager.Instance.PlayBGM("BGM_Main");
-            }
-
             Cursor.lockState = CursorLockMode.Locked;
         }
     }

@@ -11,7 +11,7 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private PlayerSpawner playerSpawner;
     public PlayerSpawner PlayerSpawner { get { return playerSpawner; } }
-    private PlayerRepository playerRepository;
+
 
     private void Awake()
     {
@@ -19,7 +19,6 @@ public class GameManager : MonoBehaviour
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
-            playerRepository = new PlayerRepository();
         }
         else
         {
@@ -28,14 +27,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
-
     public void GameStart(PlayerData data)
     {
-        playerSpawner.Init(playerRepository);
-
-        NetworkManager.instance.socket.OnCurrentPlayersReceived += HandleCurrentPlayers;
-        NetworkManager.instance.socket.OnRemotePlayerJoined += playerSpawner.RemotePlayerSpawn;
-        NetworkManager.instance.socket.OnRemotePlayerLeft += playerSpawner.RemotePlayerDespawn;
+        playerSpawner.Init();
 
         string targetScene = string.IsNullOrEmpty(data.currentSceneName) ? SceneName.Main : data.currentSceneName;
 
@@ -47,24 +41,12 @@ public class GameManager : MonoBehaviour
     {
         await LoadingScene.LoadScene(targetScene);
 
-        playerRepository.ClearAllPlayers();
+        playerSpawner.ClearAllPlayers();
 
         data.currentSceneName = targetScene;
-        Debug.Log($"현재 활성화된 씬: {SceneManager.GetActiveScene().name}");
         playerSpawner.LocalPlayerSpawn(data);
 
         NetworkManager.instance.socket.EmitJoinScene(data, targetScene);
-    }
-
-    public void HandleCurrentPlayers(List<NetworkPlayerData> RemotePlayers)
-    {
-        foreach(NetworkPlayerData RemotePlayer in RemotePlayers)
-        {
-            if(RemotePlayer.id != DataManager.Instance.Server_PlayerData.id)
-            {
-                playerSpawner.RemotePlayerSpawn(RemotePlayer);
-            }
-        }
     }
 
 }

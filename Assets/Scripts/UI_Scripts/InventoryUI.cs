@@ -4,7 +4,7 @@ using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class InventoryUI : MonoBehaviour
+public class InventoryUI : UIBase
 {
     [SerializeField] private InventoryManager Inventory;
     [SerializeField] private GameObject slotPrefab;
@@ -22,14 +22,14 @@ public class InventoryUI : MonoBehaviour
     {
         Inventory.OnInventoryDataInitialized += InitUI;
         Inventory.OnSlotDataChanged += UpdateSlotUI;
-        PlayerStats.OnLocalPlayerGoldChanged += UpdateGoldUI;
+        //PlayerStats.OnLocalPlayerGoldChanged += UpdateGoldUI;
     }
 
     private void OnDestroy()
     {
         Inventory.OnInventoryDataInitialized -= InitUI;
         Inventory.OnSlotDataChanged -= UpdateSlotUI;
-        PlayerStats.OnLocalPlayerGoldChanged -= UpdateGoldUI;
+        //PlayerStats.OnLocalPlayerGoldChanged -= UpdateGoldUI;
     }
 
     private void InitUI(SlotType type, int count)

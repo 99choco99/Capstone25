@@ -11,14 +11,14 @@ public class PlayerDodgeState : State
     public override void Enter()
     {
         player.Motor.Dodge();
-        player.Motor.canRotate = false;
+        player.Motor.CanRotate = false;
         player.Stats.isInvincible = true;
     }
 
 
     public override void Update()
     {
-        if (!player.AnimatorManager.isPerformingAction) 
+        if (!player.AnimatorManager.IsActionLocked) 
         {
             if(player.InputHandler.MoveInput != Vector3.zero)
             {
@@ -33,8 +33,8 @@ public class PlayerDodgeState : State
 
     public override void Exit() 
     {
-        player.Motor.canMove = true;
-        player.Motor.canRotate = true;
+        player.Motor.CanMove = true;
+        player.Motor.CanRotate = true;
         player.Stats.isInvincible = false;
     }
 

@@ -77,7 +77,7 @@ public class Legacy_PlayerCamera : MonoBehaviour
         FollowPlayer();
 
         //카메라 회전
-        if (player.isLockOn)
+        if (player.IsLockOn)
         {
             UpdateLockOnRotation();
         }
@@ -115,13 +115,13 @@ public class Legacy_PlayerCamera : MonoBehaviour
     //락온 시 카메라 움직임
     public void UpdateLockOnRotation()
     {
-        Vector3 targetDirection = player.TargetingSystem.CurrentTarget.transform.position - transform.position;
+        Vector3 targetDirection = player.TargetingSystem.CurrentTarget.TargetTransform.position - transform.position;
         targetDirection.y = 0;
         targetDirection.Normalize();
         Quaternion targetRotation = Quaternion.LookRotation(targetDirection);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * smoothness);
 
-        targetDirection = player.TargetingSystem.CurrentTarget.transform.position - cameraPivotTransform.position;
+        targetDirection = player.TargetingSystem.CurrentTarget.TargetTransform.position - cameraPivotTransform.position;
 
         targetDirection.Normalize();
         targetRotation = Quaternion.LookRotation(targetDirection);

@@ -35,8 +35,8 @@ public class EnemyUI : MonoBehaviour
     {
         if (enemyStats != null)
         {
-            UpdateHp(enemyStats.currentHp);
-            UpdatePostureGauge(enemyStats.maxPosture, enemyStats.currentPosture);
+            //UpdateHp(enemyStats.CurrentHp, enemyStats.MaxHp);
+            //UpdatePostureGauge(enemyStats.MaxPosture, enemyStats.CurrentPosture);
         }
         if (heavyAttackIndicator != null)
         {
@@ -70,9 +70,9 @@ public class EnemyUI : MonoBehaviour
         PostureGauge.value = currentPosture;
     }
 
-    public void UpdateHp(float currenthp)
+    public void UpdateHp(float currenthp, float maxHp)
     {
-        EnemyHpUI.value = currenthp / enemyStats.maxHp;
+        EnemyHpUI.value = currenthp / maxHp;
     }
 
     public void ShowHeavyAttackIndicator()

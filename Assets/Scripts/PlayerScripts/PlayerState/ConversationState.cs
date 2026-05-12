@@ -10,8 +10,8 @@ public class ConversationState : State
     public override void Enter()
     {
         player.Motor.StopMovement();
-        player.Motor.canMove = false;
-        player.Motor.canRotate = false;
+        player.Motor.CanMove = false;
+        player.Motor.CanRotate = false;
     }
 
     public override void Update()
@@ -23,8 +23,8 @@ public class ConversationState : State
         }
     }
     public override void Exit() {
-        player.Motor.canMove = true;
-        player.Motor.canRotate = true;
+        player.Motor.CanMove = true;
+        player.Motor.CanRotate = true;
     }
 
 }

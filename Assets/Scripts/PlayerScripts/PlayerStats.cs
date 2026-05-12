@@ -1,59 +1,51 @@
 using System;
 using UnityEngine;
-using UnityEngine.InputSystem.LowLevel;
-
-public class DamageInfo
+public struct DamageInfo
 {
-    public Enemy enemy;
-    public Player player;
+    public GameObject attacker;
+    public GameObject target;
     public AttackType attackType;
-    public float damage;
+    public float amount;
+    public float postureDamage;
+
     public float knockbackForce;
     public float knockbackDuration;
     public Vector3 hitPoint;
     public Vector3 hitDirection;
+
     public bool wasGuarded;
     public bool wasParried;
 }
 
-public enum PlayerStatType { Damage, Health, Defense }
+public enum PlayerStatType { AttackPower, Health, Defense ,MaxPosture }
 
 public class PlayerStats : LivingEntity
 {
+    [Header("패링 시스템")]
+    public float parryWindow = 0.2f; // 가드 버튼을 누르고 0.2초 안에 맞으면 패링 성공!
+    private float guardStartTime;    // 가드를 올린 정확한 시간 기록
+
     public int Gold { get; private set; }
     public int Level { get; private set; }
     public int Exp { get; private set; }
-
     public int AbilityPoint { get; private set; }
 
-    public float baseDamage;
-    public float baseDefense;
-    public float baseMaxHp;
-
-    public float bonusDamage;
-    public float bonusDefense;
-    public float bonusMaxHp;
-
     //UI 변경 이벤트
-    public static event Action<float, float> OnLocalPlayerHpChanged;        //체력
-    public static event Action<float, float> OnLocalPlayerPostureChanged;   //가드게이지
-    public static event Action<int, int> OnLocalPlayerExpChanged;           //경험치 변경
-    public static event Action<PlayerStats> OnLocalPlayerStatsChanged;      //스탯 변경
-    public static event Action<int> OnLocalPlayerGoldChanged;               //소유 골드 변경
+    public event Action<int, int> OnExpChanged;
+    public event Action<PlayerStats> OnStatsChanged;
+    public event Action<int> OnGoldChanged;
 
     //로직 이벤트
     public event Action OnStatsSaved;
     public event Action<DamageInfo> OnDamaged;
     public event Action OnLevelUp;                  //레벨업시
 
-
     //상태
     public bool isGuarding;
-    public bool isGroggy;
+    public bool isStunned;
     public bool isInvincible;
 
     [SerializeField] private Player player;
-
 
     private void Start()
     {
@@ -81,10 +73,12 @@ public class PlayerStats : LivingEntity
     {
         gameObject.name = data.nickname;
 
-        baseMaxHp = data.maxHp;
-        baseDefense = data.defense;
-        baseDamage = data.damage;
-        currentHp = data.currentHp;
+        AttackPower = new Stat(data.damage);
+        Defense = new Stat(data.defense);
+        MaxHp = new Stat(data.maxHp);
+        MaxPosture = new Stat(100f);
+
+        CurrentHp = data.currentHp;
         AbilityPoint = data.AbilityPoint;
 
         Level = data.level;
@@ -110,20 +104,48 @@ public class PlayerStats : LivingEntity
     }
 
 
+    //가드를 올릴 때
+    public void SetGuardState(bool isGuarding)
+    {
+        this.isGuarding = isGuarding;
+        if (isGuarding)
+        {
+            guardStartTime = Time.time;
+        }
+    }
+
     //데미지를 입었을 때
     public override void OnDamage(DamageInfo finalDamage)
     {
         if (dead || isInvincible) return;
 
-        if(finalDamage.damage > 0)
+        bool isFrontHit = Vector3.Dot(transform.forward, finalDamage.hitDirection) < 0.2f;
+
+        if (isGuarding && isFrontHit)
         {
-            base.OnDamage(finalDamage);
+            //패링 성공시
+            if (Time.time - guardStartTime <= parryWindow)
+            {
+                finalDamage.wasParried = true;
+                finalDamage.amount = 0f;
+            }
+            else //일반 가드 시
+            {
+                finalDamage.wasGuarded = true;
+                finalDamage.amount = 0f;
+
+                TakePostureDamage(finalDamage.postureDamage);
+            }
+        } else
+        {
+            finalDamage.amount = Math.Max(1f, finalDamage.amount - Defense.GetValue());
+            if (finalDamage.amount > 0)
+            {
+                base.OnDamage(finalDamage);
+            }
+
         }
         OnDamaged?.Invoke(finalDamage);
-        if (player.IsLocalPlayer)
-        {
-            OnLocalPlayerHpChanged?.Invoke(currentHp, maxHp);
-        }
     }
 
     //경험치 증가
@@ -134,27 +156,27 @@ public class PlayerStats : LivingEntity
         int maxExp = DataManager.Instance.GetMaxExpForLevel(Level);
 
         // 레벨업 조건 체크
-        while(Exp >= maxExp)
+        while (Exp >= maxExp)
         {
             Exp -= maxExp;
             Level++;
             AbilityPoint += 3;
             OnLevelUp?.Invoke();
-            OnLocalPlayerStatsChanged?.Invoke(this);
+            OnStatsChanged?.Invoke(this);
             SoundManager.Instance.PlaySFX("LevelUp");
         }
-        if (player.IsLocalPlayer) { OnLocalPlayerExpChanged?.Invoke(Exp, Level); }
+        if (player.IsLocalPlayer) { OnExpChanged?.Invoke(Exp, Level); }
     }
 
     public void AddGold(int addGold)
     {
         Gold += addGold;
-        OnLocalPlayerGoldChanged?.Invoke(Gold);
+        OnGoldChanged?.Invoke(Gold);
     }
-    public void SetGold(int gold)
+    public void SetGold(int amount)
     {
-        Gold = gold;
-        OnLocalPlayerGoldChanged?.Invoke(Gold);
+        Gold = amount;
+        OnGoldChanged?.Invoke(Gold);
     }
 
 
@@ -165,65 +187,39 @@ public class PlayerStats : LivingEntity
         AbilityPoint--;
         switch (statToUpgrade)
         {
-            case PlayerStatType.Damage: baseDamage++; break;
-            case PlayerStatType.Defense: baseDefense += 3; break;
-            case PlayerStatType.Health: baseMaxHp += 10; break;
+            case PlayerStatType.AttackPower: AttackPower.AddBaseValue(1f); break;
+            case PlayerStatType.Defense: Defense.AddBaseValue(3f); break;
+            case PlayerStatType.Health: MaxHp.AddBaseValue(10f); break;
         }
 
         UpdateTotalStats();
     }
 
-    public void UpgradeDamage()
-    {
-        UpAbility(PlayerStatType.Damage);
-    }
+    public void UpgradeDamage() => UpAbility(PlayerStatType.AttackPower);
+    public void UpgradeDefense() => UpAbility(PlayerStatType.Defense);
+    public void UpgradeHealth() => UpAbility(PlayerStatType.Health);
 
-    public void UpgradeDefense()
-    {
-        UpAbility(PlayerStatType.Defense);
+    public void AddStatsModifier(ItemSpec spec) {
+        AttackPower.AddModifier(spec.attackPower);
+        Defense.AddModifier(spec.defense);
+        MaxHp.AddModifier(spec.hp);
+        UpdateTotalStats();
     }
-
-    public void UpgradeHealth()
+    public void RemoveStatsModifier(ItemSpec spec)
     {
-        UpAbility(PlayerStatType.Health);
-    }
-
-    public void ApplyStatChanges(ItemSpec spec, bool IsEquip = true) {
-        if(IsEquip)
-        {
-            bonusDamage += spec.damage;
-            bonusDefense += spec.defense;
-            bonusMaxHp += spec.hp;
-        }
-        else
-        {
-            bonusDamage -= spec.damage;
-            bonusDefense -= spec.defense;
-            bonusMaxHp -= spec.hp;
-        }
+        AttackPower.RemoveModifier(spec.attackPower);
+        Defense.RemoveModifier(spec.defense);
+        MaxHp.RemoveModifier(spec.hp);
         UpdateTotalStats();
     }
 
     private void UpdateTotalStats()
     {
-        damage = baseDamage + bonusDamage;
-        maxPosture = baseDefense + bonusDefense;
-        maxHp = baseMaxHp + bonusMaxHp;
-
-        if (currentHp > maxHp)
+        if (CurrentHp > base.MaxHp.GetValue())
         {
-            currentHp = maxHp;
+            CurrentHp = base.MaxHp.GetValue();
         }
 
         OnStatsSaved?.Invoke();
     }
-
-    // 소비 아이템 사용
-    public void Consume(ItemSpec spec)
-    {
-        bonusDamage += spec.damage;
-        bonusDefense += spec.defense;
-        RestoreHealth(spec.hp);
-    }
-
 }

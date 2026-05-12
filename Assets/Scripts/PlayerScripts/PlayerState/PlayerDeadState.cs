@@ -8,9 +8,9 @@ public class PlayerDeadState : State
 
     public override void Enter()
     {
-        player.Motor.canMove = false;
-        player.Motor.canRotate = false;
-        player.Combat.AE_playerAttackEnd();
+        player.Motor.CanMove = false;
+        player.Motor.CanRotate = false;
+        player.Combat.OnAnimationPlayerAttackEnd();
     }
 
 }

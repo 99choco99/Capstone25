@@ -13,7 +13,7 @@ public class PlayerHPUI : MonoBehaviour
 
     private void Start()
     {
-        HPslider.maxValue = player.maxHp;
-        HPslider.value = player.currentHp;
+        HPslider.maxValue = player.MaxHp.GetValue();
+        HPslider.value = player.CurrentHp;
     }
 }

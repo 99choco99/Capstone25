@@ -4,24 +4,19 @@ using UnityEngine;
 
 public class Weapon : MonoBehaviour
 {
-    [SerializeField] private LayerMask layerMask;
-
-    private IWeaponOwner owner;
-    private Collider weaponCollider;
-    private List<IDamageable> hitTargets = new List<IDamageable>();
+    [SerializeField] private LayerMask targetLayerMask;
     [SerializeField] private float hitCheckRadius = 0.5f; // 검사할 반경
     [SerializeField] private Transform hitCheckPoint;    // 검사 중심점
+
+    private IWeaponOwner owner;
+    private HashSet<IDamageable> hitTargets = new HashSet<IDamageable>();
 
     private bool isAttackActive = false;
 
     private void Awake()
     {
         owner = GetComponentInParent<IWeaponOwner>();
-        weaponCollider = GetComponent<Collider>();
-        if (hitCheckPoint == null)
-        {
-            hitCheckPoint = transform; // 중심점 없으면 무기 자체 위치 사용
-        }
+        if (hitCheckPoint == null) { hitCheckPoint = transform; } // 중심점 없으면 무기 자체 위치 사용
         if (owner == null)
         {
             Debug.LogError("이 무기의 주인(IWeaponOwner)을 찾을 수 없습니다", gameObject);
@@ -29,7 +24,7 @@ public class Weapon : MonoBehaviour
     }
     private void Update()
     {
-        if (owner == null || (owner as UnityEngine.Object) == null)
+        if (owner == null)
         {
             isAttackActive = false;
             this.enabled = false;
@@ -41,16 +36,14 @@ public class Weapon : MonoBehaviour
     {
         if (!isAttackActive) return;
 
-        Collider[] overlappedColliders = Physics.OverlapSphere(hitCheckPoint.position, hitCheckRadius, layerMask);
+        Collider[] overlappedColliders = Physics.OverlapSphere(hitCheckPoint.position, hitCheckRadius, targetLayerMask);
 
         foreach (Collider col in overlappedColliders)
         {
             if (col.TryGetComponent<IDamageable>(out var target))
             {
-                if (target as UnityEngine.Object == null) continue;
                 if (!hitTargets.Contains(target))
                 {
-                    hitTargets.Add(target);
                     owner.OnWeaponHit(target, col, this); // 데미지 처리
                 }
             }

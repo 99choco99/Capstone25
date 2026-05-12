@@ -12,35 +12,28 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     public float parryDuration = 0.2f;
     [SerializeField] private Attack[] normalAttacks; // 일반 공격 콤보 데이터
 
-    [SerializeField] private Weapon weapon;
-    [SerializeField] private Collider weaponCollider;
+    public Weapon CurrentWeapon { get; private set; }
 
-    public PlayableDirector deathblowDirector;
-    public bool IsPlayingDirector;
-    [SerializeField] private PlayableAsset FrontdeathblowTimelineAsset; // 앞에서 찌르기
-    [SerializeField] private PlayableAsset BehindDeathblowTimelineAsset; // 뒤에서 찌르기
-    public event Action<Player> OnExecuteEnd;
-
+    [Header("콤보 타이머")]
+    [SerializeField] private float comboResetTime = 1.5f;
+    private float lastAttackTime = 0f;
     private int comboIndex = 0;
+
+
     public event Action OnAttackEnd;
+    public event Action<Player> OnExecuteEnd;
 
     private void Awake()
     {
         player = GetComponent<Player>();
-        weapon = GetComponentInChildren<Weapon>();
-        weaponCollider = weapon.GetComponent<Collider>();
-        deathblowDirector = GetComponent<PlayableDirector>();
+        CurrentWeapon = GetComponentInChildren<Weapon>();
     }
     private void Start()
     {
         if (!player.IsLocalPlayer) { return; }
         player.Stats.OnDamaged += HandleDamageReaction;
-        player.Stats.OnDeath += AE_playerAttackEnd;
+        player.Stats.OnDeath += ForceResetAttackState;
 
-        if (deathblowDirector != null)
-        {
-            deathblowDirector.stopped += OnDeathblowTimelineFinished;
-        }
     }
     private void OnDestroy()
     {
@@ -49,11 +42,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         {
             if (!player.IsLocalPlayer) { return; }
             player.Stats.OnDamaged -= HandleDamageReaction;
-            player.Stats.OnDeath -= AE_playerAttackEnd;
-            if (deathblowDirector != null)
-            {
-                deathblowDirector.stopped -= OnDeathblowTimelineFinished;
-            }
+            player.Stats.OnDeath -= ForceResetAttackState;
         }
     }
 
@@ -61,36 +50,37 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     //공격 시작
     public bool StartAttack()
     {
-        if(player.AnimatorManager.isPerformingAction || normalAttacks.Length <= 0) { return false; }
-        player.Anim.SetTrigger("Attack");
+        if(player.AnimatorManager.IsActionLocked || normalAttacks.Length <= 0) { return false; }
 
-        // 다음 공격을 위해 콤보 인덱스 증가
+        if (Time.time - lastAttackTime > comboResetTime)
+        {
+            ResetCombo();
+        }
+
+        player.Anim.SetTrigger("Attack");
+        lastAttackTime = Time.time;
         comboIndex = (comboIndex + 1) % normalAttacks.Length;
         return true;
     }
 
     //콤보 리셋
-    public void ResetCombo()
-    {
-        comboIndex = 0;
-    }
+    public void ResetCombo() => comboIndex = 0;
 
 
     //플레이어가 적을 공격했을 때
     public void OnWeaponHit(IDamageable target, Collider targetCollider, Weapon weapon)
     {
         Attack currentAttackData = normalAttacks[comboIndex];
-        Vector3 hitPoint = targetCollider.ClosestPoint(weaponCollider.transform.position);
-        Vector3 hitDirection = transform.forward;
+        Vector3 hitPoint = targetCollider.ClosestPoint(weapon.transform.position);
 
         DamageInfo result = new DamageInfo
         {
-            player = player,
-            damage = currentAttackData.damage,
+            attacker = player.gameObject,
+            amount = currentAttackData.damage,
             knockbackForce = currentAttackData.knockbackPower,
             knockbackDuration = currentAttackData.knockbackDuration,
             hitPoint = hitPoint,
-            hitDirection = hitDirection,
+            hitDirection = transform.forward,
             wasGuarded = false,
             wasParried = false,
         };
@@ -103,130 +93,66 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     {
         if (player.Stats.dead) return;
 
+        ForceResetAttackState(); // 상태 초기화
 
-        Quaternion effectRotation = Quaternion.LookRotation(result.hitDirection);
-        if (result.attackType != AttackType.Heavy && result.wasParried)
+        //Heavy 공격 피격
+        if (result.attackType == AttackType.Heavy)
         {
-            player.AnimatorManager.PlayTargetActionAnimation("Parry");
-            EffectManager.Instance.PlayEffect("Parry", result.hitPoint, effectRotation, transform);
+            player.AnimatorManager.PlayAction(AnimHash.HeavyHit);
+            return;
         }
-        else if (result.attackType != AttackType.Heavy && result.wasGuarded)
+
+        //패링 성공
+        if (result.wasParried)
         {
-            EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, effectRotation, transform);
-            player.AnimatorManager.PlayTargetActionAnimation("GuardHit");
-            SoundManager.Instance.PlaySFX("GuardHit");
+            player.AnimatorManager.PlayAction(AnimHash.Parry);
+            return;
         }
-        else if (result.damage >= 0)
+
+        //가드 성공
+        if (result.wasGuarded)
         {
-            if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
-            {
-                player.AnimatorManager.PlayTargetActionAnimation("BackHit");
-            }
+            player.AnimatorManager.PlayAction(AnimHash.GuardHit);
+            return;
+        }
+
+        //일반 피격
+        if (result.amount > 0)
+        {
+            bool isHitFromBehind = Vector3.Dot(result.hitDirection, transform.forward) > 0;
+
+            if (isHitFromBehind)
+                player.AnimatorManager.PlayAction(AnimHash.BackHit);
             else
-            {
-                player.AnimatorManager.PlayTargetActionAnimation("Hit");
-
-            }
-            SoundManager.Instance.PlaySFX("Hit");
-            SoundManager.Instance.PlaySFX("Cutting flesh");
-            EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
+                player.AnimatorManager.PlayAction(AnimHash.Hit);
         }
 
-        weapon.DisableWeaponCollider();
+        CurrentWeapon.DisableWeaponCollider();
         OnAttackEnd?.Invoke();
     }
 
-    public void AttemptDeathblow(Enemy enemy)
+
+
+    public void ForceResetAttackState()
     {
-        if(Vector3.Dot(enemy.transform.forward,transform.forward) < 0)
-        {
-            PlayFrontDeathblowTimeline(enemy);
-        }
-        else
-        {
-            PlayBehindDeathblowTimeline(enemy);
-        }
-        weapon.DisableWeaponCollider();
-        player.TargetingSystem.DeselectTarget();
+        if (CurrentWeapon != null)
+            CurrentWeapon.DisableWeaponCollider();
+
+        ResetCombo();
+
+        player.Motor.CanRotate = true;
+
+        OnAttackEnd?.Invoke();
     }
-
-    // 실제 인살
-    private void PlayFrontDeathblowTimeline(Enemy enemy)
+    public void OnAnimationPlayerAttackStart()
     {
-        IsPlayingDirector = true;
-        deathblowDirector.playableAsset = FrontdeathblowTimelineAsset;
-
-
-        enemy.Motor.Stop();
-
-        Vector3 playerTargetPosition = enemy.transform.position + enemy.transform.forward * 0.9f;
-        transform.position = playerTargetPosition;
-
-        Vector3 directionToEnemy = (enemy.transform.position - transform.position).normalized;
-        transform.rotation = Quaternion.LookRotation(directionToEnemy);
-
-        Vector3 directionToPlayer = (transform.position - enemy.transform.position).normalized;
-        enemy.transform.rotation = Quaternion.LookRotation(directionToPlayer);
-
-        var outputs = FrontdeathblowTimelineAsset.outputs;
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(1).sourceObject, enemy.gameObject);
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(2).sourceObject, player.gameObject);
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, Legacy_PlayerCamera.Instance.cameraPivotTransform.gameObject);
-
-        enemy.Stats.isDeflecting = false;
-        enemy.Stats.IsPlayingDeathBlow = true;
-        OnExecuteEnd += enemy.Stats.DeathBlowProcess;
-
-        deathblowDirector.Play();
-        SoundManager.Instance.PlaySFX("ExecuteBGM");
-    }
-
-    private void PlayBehindDeathblowTimeline(Enemy enemy)
-    {
-        IsPlayingDirector = true;
-        deathblowDirector.playableAsset = BehindDeathblowTimelineAsset;
-
-        enemy.Motor.Stop();
-
-        Vector3 playerTargetPosition = enemy.transform.position - enemy.transform.forward * 0.9f;
-        transform.position = playerTargetPosition;
-
-        Vector3 directionToEnemy = (enemy.transform.position - transform.position).normalized;
-        transform.rotation = Quaternion.LookRotation(directionToEnemy);
-
-        var outputs = BehindDeathblowTimelineAsset.outputs;
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(1).sourceObject, player.gameObject);
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(2).sourceObject, enemy.gameObject);
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, Legacy_PlayerCamera.Instance.cameraPivotTransform.gameObject);
-
-        OnExecuteEnd += enemy.Stats.DeathBlowProcess;
-
-        deathblowDirector.Play();
-        SoundManager.Instance.PlaySFX("ExecuteBGM");
-    }
-
-    public void OnDeathblowTimelineFinished(PlayableDirector director)
-    {
-        OnExecuteEnd?.Invoke(player);
-        OnExecuteEnd = null; // 구독해제
-
-        player.StateMachine.TransitionTo(player.StateMachine.PlayerIdleState);
-        player.Combat.IsPlayingDirector = false;
-        player.Stats.isInvincible = false;
-        player.Motor.canMove = true;
-        player.Motor.canRotate = true;
-        player.InputHandler.enabled = true;
-    }
-
-    public void AE_playerAttackStart()
-    {
-        player.Motor.canRotate = false;
-        weapon.EnableWeaponCollider();
+        player.Motor.CanRotate = false;
+        CurrentWeapon.EnableWeaponCollider();
         SoundManager.Instance.PlaySFX("Attack");
     }
-    public void AE_playerAttackEnd()
+    public void OnAnimationPlayerAttackEnd()
     {
-        weapon.DisableWeaponCollider();
+        CurrentWeapon.DisableWeaponCollider();
         OnAttackEnd?.Invoke();
     }
 

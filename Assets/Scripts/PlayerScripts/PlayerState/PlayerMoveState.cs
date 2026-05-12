@@ -9,6 +9,7 @@ public class PlayerMoveState : State
     public override void Enter()
     {
         SoundManager.Instance.PlayLoopingSFX("Walking");
+        player.AnimatorManager.PlayAction(AnimHash.Locomotion, false);
     }
 
     public override void Exit()
@@ -19,7 +20,7 @@ public class PlayerMoveState : State
 
     public override void Update()
     {
-        if (player.Stats.isGroggy) { return; }
+        if (player.Stats.isStunned) { return; }
         if (player.InputHandler.AttackInput && player.TargetingSystem.IsCurrentTargetExecutable())
         {
             player.InputHandler.UseAttackInput();
@@ -34,7 +35,7 @@ public class PlayerMoveState : State
             return;
         }
 
-        if (player.InputHandler.GuardInput && !player.AnimatorManager.isPerformingAction)
+        if (player.InputHandler.GuardInput && !player.AnimatorManager.IsActionLocked)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGuardState);
             return;
@@ -68,7 +69,8 @@ public class PlayerMoveState : State
             return;
         }
 
-        player.Motor.Move();
+        player.Motor.SetTargetVelocity(player.Motor.MoveSpeed);
+        player.Motor.HandleRotation();
     }
 
 }

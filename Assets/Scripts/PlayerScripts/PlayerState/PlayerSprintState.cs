@@ -23,11 +23,11 @@ public class PlayerSprintState : State
         {
             player.InputHandler.UseAttackInput();
             stateMachine.TransitionTo(stateMachine.PlayerAttackState);
-            player.AnimatorManager.PlayTargetActionAnimation("SprintAttack", true);
+            player.AnimatorManager.PlayAction(AnimHash.SprintAttack, true);
             return;
         }
 
-        if (player.InputHandler.GuardInput && !player.AnimatorManager.isPerformingAction)
+        if (player.InputHandler.GuardInput && !player.AnimatorManager.IsActionLocked)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGuardState);
             return;
@@ -50,7 +50,8 @@ public class PlayerSprintState : State
             stateMachine.TransitionTo(stateMachine.PlayerIdleState);
             return;
         }
-        player.Motor.Move();
+        player.Motor.SetTargetVelocity(player.Motor.SprintSpeed);
+        player.Motor.HandleRotation();
     }
 
 

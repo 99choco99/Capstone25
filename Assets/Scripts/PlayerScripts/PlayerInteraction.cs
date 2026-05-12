@@ -8,10 +8,10 @@ using UnityEngine;
 public class PlayerInteraction : MonoBehaviour
 {
     private Player player;
-    [SerializeField] DialogueManager Dialogue;
+    [SerializeField] DialogueManager dialogueManager;
 
 
-    [Header("º≥¡§")]
+    [Header("ÏÉÅÌò∏ÏûëÏö© Î≤îÏúÑ")]
     [SerializeField] private float interactRange = 3f;
     [SerializeField] private LayerMask layerMask;
 
@@ -20,11 +20,13 @@ public class PlayerInteraction : MonoBehaviour
     public event Action<IInteractable> OnSelectionChanged;
 
 
-    public IInteractable currentSelection { get; private set; }
-
-
+    public IInteractable CurrentSelection { get; private set; }
     public int selectionIndex = 0;
+
+
     public List<IInteractable> interactablesInRange = new List<IInteractable>();
+    private Collider[] hitColliders = new Collider[15];
+    private List<IInteractable> currentHits = new List<IInteractable>(15);
 
     private void Awake()
     {
@@ -34,17 +36,17 @@ public class PlayerInteraction : MonoBehaviour
     private void Start()
     {
         if (!player.IsLocalPlayer) { return; }
-        Dialogue.OnConversationStart += HandleConversationStart;
-        Dialogue.OnConversationEnd += HandleConversationEnd;
+        dialogueManager.OnConversationStart += HandleConversationStart;
+        dialogueManager.OnConversationEnd += HandleConversationEnd;
     }
 
     private void OnDestroy()
     {
-        if (player != null && Dialogue != null)
+        if (player != null && dialogueManager != null)
         {
             if (!player.IsLocalPlayer) { return; }
-            Dialogue.OnConversationStart -= HandleConversationStart;
-            Dialogue.OnConversationEnd -= HandleConversationEnd;
+            dialogueManager.OnConversationStart -= HandleConversationStart;
+            dialogueManager.OnConversationEnd -= HandleConversationEnd;
         }
 
     }
@@ -65,23 +67,23 @@ public class PlayerInteraction : MonoBehaviour
 
     private void DetectInteractables()
     {
-        Collider[] colliders = Physics.OverlapSphere(transform.position, interactRange,layerMask);
+        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, interactRange,hitColliders,layerMask);
 
-        List<IInteractable> newInteractables = new List<IInteractable>();
-        foreach (Collider collider in colliders)
+        currentHits.Clear();
+        for(int i  = 0; i < hitCount; i++)
         {
-            if (collider.TryGetComponent<IInteractable>(out IInteractable interactable))
+            if (hitColliders[i].GetComponent<Collider>().TryGetComponent<IInteractable>(out IInteractable interactable))
             {
-                newInteractables.Add(interactable);
+                currentHits.Add(interactable);
             }
         }
 
-        bool IsListEqual = new HashSet<IInteractable>(interactablesInRange).SetEquals(newInteractables);
+        bool IsListEqual = new HashSet<IInteractable>(interactablesInRange).SetEquals(currentHits);
 
         if (!IsListEqual)
         {
-            interactablesInRange = newInteractables;
-            OnInteractableChanged?.Invoke(newInteractables);
+            interactablesInRange = currentHits;
+            OnInteractableChanged?.Invoke(currentHits);
 
             UpdateSelection();
         }
@@ -101,16 +103,16 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (selectionIndex < 0) selectionIndex = 0;
         if (selectionIndex >= interactablesInRange.Count) selectionIndex = interactablesInRange.Count - 1;
-        currentSelection = interactablesInRange.Count > 0 ? interactablesInRange[selectionIndex] : null;
-        OnSelectionChanged?.Invoke(currentSelection);
+        CurrentSelection = interactablesInRange.Count > 0 ? interactablesInRange[selectionIndex] : null;
+        OnSelectionChanged?.Invoke(CurrentSelection);
     }
 
     void CheckForInteraction()
     {
         if (player.InputHandler.InteractionInput)
         {
-            player.InputHandler.UseInteractionInput(); // ¿‘∑¬ º“∫Ò
-            currentSelection?.Interact(player);
+            player.InputHandler.UseInteractionInput();
+            CurrentSelection?.Interact(player);
         }
     }
 

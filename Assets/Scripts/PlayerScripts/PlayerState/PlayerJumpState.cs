@@ -7,12 +7,13 @@ public class PlayerJumpState : State
     public override void Enter()
     {
         if (!player.Motor.IsGrounded) { return; }
-        player.Anim.SetBool("Jump", true);
-        player.AnimatorManager.PlayTargetActionAnimation("Jump", true);
+
+        player.AnimatorManager.PlayAction(AnimHash.Jump, true);
+
         player.Motor.Jump(player.Motor.JumpPower);
         SoundManager.Instance.PlaySFX("Jump");
-        player.Motor.canMove = true;
-        player.Motor.canRotate = true;
+        player.Motor.CanMove = true;
+        player.Motor.CanRotate = true;
     }
 
     public override void Update()
@@ -30,12 +31,12 @@ public class PlayerJumpState : State
             }
             return;
         }
-        player.Motor.Move();
+
     }
 
     public override void Exit()
     {
-        player.Anim.SetBool("Jump", false);
+
     }
 
 }

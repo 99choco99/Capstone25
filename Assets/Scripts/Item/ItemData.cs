@@ -5,7 +5,7 @@ using UnityEngine.UI;
 [System.Serializable]
 public struct ItemSpec
 {
-    public float damage;
+    public float attackPower;
     public float defense;
     public float speed;
     public float hp;

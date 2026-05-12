@@ -16,32 +16,32 @@ public class PlayerProfile : MonoBehaviour
 
     private void Start()
     {
-        PlayerStats.OnLocalPlayerStatsChanged += UpdateUI;
+        //PlayerStats.OnLocalPlayerStatsChanged += UpdateUI;
         gameObject.SetActive(false);
     }
 
     private void OnDestroy()
     {
-        PlayerStats.OnLocalPlayerStatsChanged -= UpdateUI;
+        //PlayerStats.OnLocalPlayerStatsChanged -= UpdateUI;
     }
 
 
     public void UpdateUI(PlayerStats playerStats)
     {
-        abilityText.text = $"Point : {playerStats.AbilityPoint}";
-        string damageBonus = playerStats.bonusDamage > 0 ? $" (+ {playerStats.bonusDamage})" : "";
-        damageText.text = $"{playerStats.damage}{damageBonus}";
+        //abilityText.text = $"Point : {playerStats.AbilityPoint}";
+        //string AttackPowerPoint = playerStats.bonusAttackPower > 0 ? $" (+ {playerStats.bonusAttackPower})" : "";
+        //damageText.text = $"{playerStats.AttackPower}{AttackPowerPoint}";
 
-        string healthBonus = playerStats.bonusMaxHp > 0 ? $" (+ {playerStats.bonusMaxHp})" : "";
-        healthText.text = $"{playerStats.maxHp}{healthBonus}";
+        //string healthBonus = playerStats.bonusMaxHp > 0 ? $" (+ {playerStats.bonusMaxHp})" : "";
+        //healthText.text = $"{playerStats.MaxHp}{healthBonus}";
 
-        string defenseBonus = playerStats.bonusDefense > 0 ? $" (+ {playerStats.bonusDefense})" : "";
-        defenseText.text = $"{playerStats.maxPosture}{defenseBonus}";
+        //string defenseBonus = playerStats.bonusDefense > 0 ? $" (+ {playerStats.bonusDefense})" : "";
+        //defenseText.text = $"{playerStats.MaxPosture}{defenseBonus}";
 
-        bool canUpgrade = playerStats.AbilityPoint > 0;
-        damageUpButton.interactable = canUpgrade;
-        healthUpButton.interactable = canUpgrade;
-        defesnseUpbutton.interactable = canUpgrade;
+        //bool canUpgrade = playerStats.AbilityPoint > 0;
+        //damageUpButton.interactable = canUpgrade;
+        //healthUpButton.interactable = canUpgrade;
+        //defesnseUpbutton.interactable = canUpgrade;
     }
 
 }

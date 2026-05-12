@@ -6,26 +6,34 @@ using Unity.VisualScripting;
 
 public class LivingEntity : MonoBehaviour,IDamageable
 {
-    public float maxHp { get; protected set; }
-    public float currentHp { get; protected set; }
-    public float damage { get; protected set; }
-    public float maxPosture { get; protected set; }
-    public float currentPosture { get; protected set; }
+    public Stat AttackPower { get; protected set; }
+    public Stat Defense { get; protected set; }
+    public Stat MaxHp { get; protected set; }
+    public Stat MaxPosture { get; protected set; }
+    public float CurrentPosture { get; protected set; }
+    public float CurrentHp { get; protected set; }
+
     protected float postureRecoveryRate = 1f;
     [SerializeField] protected float postureRecoveryTimer = 2f;
 
-    public bool dead { get; set;}
+    public bool dead { get; set; }
 
-    public event Action<float> OnHpChanged;  // hp 변경
+    public event Action<float, float> OnHpChanged;  // hp 변경
     public event Action<float, float> OnPostureChanged; //가드 게이지 적용
     public event Action OnPostureBroken;
     public event Action OnDeath; // 죽었을 때 이벤트
 
 
-    protected virtual void OnEnable()
+    protected void Awake()
     {
-        dead = false;
+        //기본값
+        MaxHp = new Stat(100f);
+        AttackPower = new Stat(10f);
+        Defense = new Stat(0f);
+        MaxPosture = new Stat(100f);
     }
+
+    protected virtual void OnEnable(){dead = false;}
 
     protected virtual void Update()
     {
@@ -33,11 +41,11 @@ public class LivingEntity : MonoBehaviour,IDamageable
         {
             postureRecoveryTimer -= Time.deltaTime;
         }
-        else if (currentPosture > 0)
+        else if (CurrentPosture > 0)
         {
-            currentPosture -= postureRecoveryRate * Time.deltaTime;
-            currentPosture = Mathf.Max(currentPosture, 0); // 0 이하로 내려가지 않도록
-            OnPostureChanged?.Invoke(currentPosture, maxPosture);
+            CurrentPosture -= postureRecoveryRate * Time.deltaTime;
+            CurrentPosture = Mathf.Max(CurrentPosture, 0); // 0 이하로 내려가지 않도록
+            OnPostureChanged?.Invoke(CurrentPosture, MaxPosture.GetValue());
         }
     }
 
@@ -46,12 +54,12 @@ public class LivingEntity : MonoBehaviour,IDamageable
     {
         if (dead) return;
 
-        currentHp -= damageInfo.damage;
-        OnHpChanged?.Invoke(currentHp);
+        CurrentHp -= damageInfo.amount;
+        OnHpChanged?.Invoke(CurrentHp, MaxHp.GetValue());
         // 체력이 0 이하가 되면 사망 처리
-        if (currentHp <= 0)
+        if (CurrentHp <= 0)
         {
-            currentHp = 0;
+            CurrentHp = 0;
             Die();
         }
 
@@ -63,15 +71,15 @@ public class LivingEntity : MonoBehaviour,IDamageable
     {
         if (dead) return;
 
-        currentPosture += amount;
-        OnPostureChanged?.Invoke(currentPosture, maxPosture);
+        CurrentPosture += amount;
+        OnPostureChanged?.Invoke(CurrentPosture, MaxPosture.GetValue());
 
         // 체간 회복 시작 딜레이 초기화
         postureRecoveryTimer = 2f;
 
-        if (currentPosture >= maxPosture)
+        if (CurrentPosture >= MaxPosture.GetValue())
         {
-            currentPosture = maxPosture;
+            CurrentPosture = MaxPosture.GetValue();
             OnPostureBroken?.Invoke();
         }
     }
@@ -88,16 +96,10 @@ public class LivingEntity : MonoBehaviour,IDamageable
     // 피회복
     public virtual void RestoreHealth(float heal)
     {
-        if (currentHp + heal >= maxHp)
-        {
-            currentHp = maxHp;
-        }
-        else
-        {
-            currentHp += heal;
-        }
+        if (CurrentHp + heal >= MaxHp.GetValue()) CurrentHp = MaxHp.GetValue();
+        else CurrentHp += heal;
 
-        OnHpChanged?.Invoke(currentHp);
+        OnHpChanged?.Invoke(CurrentHp, MaxHp.GetValue());
     }
 
 }

@@ -37,7 +37,7 @@ public class MarketInventoryUI : MonoBehaviour
             // 이전 Player의 이벤트에서 구독을 해제
             Inventory.OnInventoryDataInitialized -= InitUI;
             Inventory.OnSlotDataChanged -= UpdateSlotUI;
-            PlayerStats.OnLocalPlayerGoldChanged -= UpdateGoldUI;
+            //PlayerStats.OnLocalPlayerGoldChanged -= UpdateGoldUI;
         }
         // 이전 씬에서 만든 모든 슬롯 UI를 파괴
         foreach (var slotList in uiSlots.Values)
@@ -64,7 +64,7 @@ public class MarketInventoryUI : MonoBehaviour
 
         Inventory.OnInventoryDataInitialized += InitUI;
         Inventory.OnSlotDataChanged += UpdateSlotUI;
-        PlayerStats.OnLocalPlayerGoldChanged += UpdateGoldUI;
+        //PlayerStats.OnLocalPlayerGoldChanged += UpdateGoldUI;
     }
 
     private void OnDestroy()
@@ -73,7 +73,7 @@ public class MarketInventoryUI : MonoBehaviour
         {
             Inventory.OnInventoryDataInitialized -= InitUI;
             Inventory.OnSlotDataChanged -= UpdateSlotUI;
-            PlayerStats.OnLocalPlayerGoldChanged -= UpdateGoldUI;
+            //PlayerStats.OnLocalPlayerGoldChanged -= UpdateGoldUI;
         }
     }
 

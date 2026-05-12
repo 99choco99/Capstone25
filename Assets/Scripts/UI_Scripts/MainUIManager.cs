@@ -21,6 +21,7 @@ public class MainUIManager : MonoBehaviour
     public static MainUIManager Instance { get; private set; }
 
     [SerializeField] private GameObject InGameUIGroup;
+    private PlayerStats playerStats;
 
     [Header("상태 UI")]
     public Slider PlayerHpUI;
@@ -36,12 +37,8 @@ public class MainUIManager : MonoBehaviour
 
     [Header("패널 UI")]
     [SerializeField] GameObject Market;
-    public GameObject Inventory;
-    public GameObject PlayerProfile;
-    public GameObject Setting;
-    public GameObject Quest;
-    public GameObject dialogUI;
-    private Dictionary<UIPanelType, GameObject> panelDictionary;
+    [SerializeField] private List<UIBase> uiPanels;
+    private Dictionary<UIPanelType, UIBase> panelDictionary;
     public List<UIPanelType> currentOpenUI = new List<UIPanelType>();
 
     private void Awake()
@@ -60,53 +57,73 @@ public class MainUIManager : MonoBehaviour
 
     private void Start()
     {
-        PlayerStats.OnLocalPlayerHpChanged += UpdateHp;
-        PlayerStats.OnLocalPlayerExpChanged += UpdateExp;
-        PlayerStats.OnLocalPlayerPostureChanged += UpdatePostureGauge;
+        Player.OnLocalPlayerSpawned += ConnectLocalPlayerUI;
+
         if (MarketManager.Instance != null)
         {
             Market = MarketManager.Instance.MarketUI;
         }
 
         // 딕셔너리에 UI 패널들을 등록
-        panelDictionary = new Dictionary<UIPanelType, GameObject>()
+        panelDictionary = new Dictionary<UIPanelType, UIBase>();
+        foreach(var panel in uiPanels)
         {
-            {UIPanelType.Market,Market},
-            { UIPanelType.Inventory, Inventory },
-            { UIPanelType.Profile, PlayerProfile },
-            { UIPanelType.Setting, Setting },
-            {UIPanelType.Quest, Quest },
-            {UIPanelType.Dialogue, dialogUI }
-        };
+            if (!panelDictionary.ContainsKey(panel.panelType)){
+                panelDictionary.Add(panel.panelType, panel);
+                panel.Init();
+                panel.gameObject.SetActive(false);
+            }
+        }
 
         HideInGameUI();
     }
 
     private void OnDestroy()
     {
-        PlayerStats.OnLocalPlayerHpChanged -= UpdateHp;
-        PlayerStats.OnLocalPlayerExpChanged -= UpdateExp;
-        PlayerStats.OnLocalPlayerPostureChanged -= UpdatePostureGauge;
+        Player.OnLocalPlayerSpawned -= ConnectLocalPlayerUI;
+        UnsubscribeFromStats();
+    }
+
+    private void ConnectLocalPlayerUI(Transform playerTransform)
+    {
+        UnsubscribeFromStats();
+
+        playerStats = playerTransform.GetComponent<PlayerStats>();
+        if (playerStats != null)
+        {
+            playerStats.OnHpChanged += UpdateHp;
+            playerStats.OnPostureChanged += UpdatePostureGauge;
+            playerStats.OnExpChanged += UpdateExp;
+
+            // 초기값 세팅
+            UpdateHp(playerStats.CurrentHp, playerStats.MaxHp.GetValue());
+            UpdatePostureGauge(playerStats.CurrentPosture, playerStats.MaxPosture.GetValue());
+            UpdateExp(playerStats.Exp, playerStats.Level);
+        }
+
+        ShowInGameUI();
     }
 
 
-    public void ShowInGameUI()
+    private void UnsubscribeFromStats()
     {
-        InGameUIGroup.SetActive(true);
+        if (playerStats != null)
+        {
+            playerStats.OnHpChanged -= UpdateHp;
+            playerStats.OnPostureChanged -= UpdatePostureGauge;
+            playerStats.OnExpChanged -= UpdateExp;
+        }
     }
-    void HideInGameUI()
-    {
-        InGameUIGroup.SetActive(false);
-    }
-    public void UpdateHp(float currenthp, float maxHp)
-    {
-        PlayerHpUI.value = currenthp / maxHp;
-    }
+
+    public void ShowInGameUI() => InGameUIGroup.SetActive(true);
+    public void HideInGameUI() => InGameUIGroup.SetActive(false);
+    public void UpdateHp(float currenthp, float maxHp) => PlayerHpUI.value = currenthp / maxHp;
+
 
     public void UpdateExp(int exp, int level)
     {
-        ExpUI.maxValue = DataManager.Instance.GetMaxExpForLevel(level);
-        ExpUI.value = exp;
+        float maxExp = DataManager.Instance.GetMaxExpForLevel(level);
+        ExpUI.value = exp / maxExp;
         levelText.text = $"Lv. {level}";
         ExpText.text = $"{(ExpUI.value / ExpUI.maxValue) * 100}%";
     }
@@ -130,34 +147,39 @@ public class MainUIManager : MonoBehaviour
         EnemyName.gameObject.SetActive(false);
     }
 
-
-
-
     public void ToggleUI(UIPanelType type)
     {
-        if (panelDictionary[type].activeSelf)
+        if (panelDictionary.TryGetValue(type, out UIBase panel))
         {
-            CloseUI(type);
-        }
-        else
-        {
-            OpenUI(type);
+            if (panel.IsOpen)
+            {
+                CloseUI(type);
+            }
+            else
+            {
+                OpenUI(type);
+            }
         }
     }
 
 
     public void OpenUI(UIPanelType type)
     {
-        if (currentOpenUI.Count > 0 && currentOpenUI.Last() == UIPanelType.Market) { return; } //마켓있을땐 UI못열게
-        panelDictionary[type].SetActive(true);
-        currentOpenUI.Add(type);
+        if(panelDictionary.TryGetValue(type, out UIBase panel)){
+            panel.Open();
+            currentOpenUI.Add(type);
+        }
+
     }
 
     public void CloseUI(UIPanelType type)
     {
-        panelDictionary[type].SetActive(false);
-        TooltipManager.Instance.HideTooltip();
-        currentOpenUI.Remove(type);   
+        if(panelDictionary.TryGetValue(type,out UIBase panel))
+        {
+            panel.Close();
+            TooltipManager.Instance.HideTooltip();
+            currentOpenUI.Remove(type);
+        }
     }
 
     public void CloseLastUI()
@@ -168,12 +190,6 @@ public class MainUIManager : MonoBehaviour
             CloseUI(lastPanel);
         }
     }
-
-    public bool IsPanelOpen(UIPanelType type)
-    {
-        return panelDictionary[type].activeSelf;
-    }
-
 
 }
 

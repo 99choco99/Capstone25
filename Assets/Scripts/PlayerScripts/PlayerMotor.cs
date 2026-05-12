@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -12,7 +13,7 @@ public class PlayerMotor : MonoBehaviour
 
     [SerializeField] private float rotationSpeed = 15f;
 
-    [Header("움직임")]
+    [Header("움직임 설정")]
     public float MoveSpeed;
     public float SprintSpeed;
     public float GuardSpeed;
@@ -24,7 +25,7 @@ public class PlayerMotor : MonoBehaviour
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private float groundCheckDistance = 0.2f; 
     [SerializeField] private LayerMask groundLayer;
-    public bool IsGrounded = true;
+
 
     [Header("넉백")]
     private bool isKnockingBack = false;
@@ -35,19 +36,13 @@ public class PlayerMotor : MonoBehaviour
     [Header("백스탭")]
     public Vector3 rollDirection;
 
+    public bool IsGrounded { get; private set; } = true;
+    public bool CanMove = true;
+    public bool CanRotate = true;
 
-    public bool canMove = true;
-    public bool canRotate = true;
-    public Coroutine movementLockCoroutine;
+    private Vector3 inputVelocity;
 
 
-    // 네트워크 전송 주기 관리를 위한 변수
-    private float lastSendTime = 0f;
-    private float sendInterval = 0.1f; // 0.1초 간격으로 전송 (초당 10번)
-
-    // 마지막으로 전송한 위치/회전 값을 저장할 변수
-    private Vector3 lastSentPosition;
-    private Quaternion lastSentRotation;
 
     private void Awake()
     {
@@ -73,25 +68,92 @@ public class PlayerMotor : MonoBehaviour
 
     private void Update()
     {
-        if (player.Combat.IsPlayingDirector) { 
-            canMove = false;
-            canRotate = false;
-            return; 
-        }
         HandleGroundCheck();
-        HandleGravity();
+        ApplyMovement();
+    }
 
-        HandleKnockBack();
-        HandleRotation();
+    //지면 체크
+    public void HandleGroundCheck()
+    {
+        Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y + 0.1f, transform.position.z);
+        IsGrounded = Physics.CheckSphere(spherePosition, groundCheckDistance, groundLayer, QueryTriggerInteraction.Ignore);
     }
 
 
+    public void ApplyMovement()
+    {
+        Vector3 finalMovement = Vector3.zero;
+
+        finalMovement += CalculateInputMovement();
+        finalMovement += CalculateKnockBack();
+        finalMovement += CalculateGravity();
+
+        controller.Move(finalMovement * Time.deltaTime);
+    }
+
+    private Vector3 CalculateInputMovement()
+    {
+        return inputVelocity;
+    }
+    private Vector3 CalculateGravity()
+    {
+        verticalVelocity.y = gravity * Time.deltaTime;
+
+        if (IsGrounded && verticalVelocity.y < 0)
+        {
+            verticalVelocity.y = -2f;
+        }
+
+        return verticalVelocity;
+    }
+    private Vector3 CalculateKnockBack()
+    {
+        if (!isKnockingBack) { return Vector3.zero; }
+
+        knockBackTimer += Time.deltaTime;
+        float deceleration = 1f - (knockBackTimer / Time.deltaTime);
+        deceleration = Mathf.Clamp01(deceleration);
+
+        if (knockBackTimer >= knockBackDuration) isKnockingBack = false;
+
+        return knockbackMovement * deceleration;
+    }
+
+
+    //회전처리
+    public void HandleRotation()
+    {
+        if (!CanRotate || isKnockingBack) { return; }
+
+        if (player.IsLockOn)
+        {
+            if (player.TargetingSystem.CurrentTarget == null) { return; }
+            Vector3 targetDirection = player.TargetingSystem.CurrentTarget.TargetTransform.position - transform.position;
+            RotateTowardsDirection(targetDirection);
+        }
+        else
+        {
+            Vector3 RotationDirection = (camTransform.forward.normalized * player.InputHandler.MoveInput.z + camTransform.right.normalized * player.InputHandler.MoveInput.x);
+            RotateTowardsDirection(RotationDirection);
+        }
+    }
+
+    public void RotateTowardsDirection(Vector3 direction)
+    {
+        direction.y = 0;
+        direction.Normalize();
+        if (direction == Vector3.zero) { direction = transform.forward; }
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+    }
+
+    //===================특수 움직임  ================//
 
     //기본적인 이동
-    public void Move()
+    public void SetTargetVelocity(float targetSpeed)
     {
         if (!player.IsLocalPlayer) { return; }
-        if (!canMove || isKnockingBack) return;
+        if (!CanMove || isKnockingBack) return;
 
         Vector3 cameraForward = camTransform.forward;
         cameraForward.y = 0f;
@@ -100,33 +162,7 @@ public class PlayerMotor : MonoBehaviour
 
         Vector3 moveDirection = (cameraForward * player.InputHandler.MoveInput.z + cameraRight * player.InputHandler.MoveInput.x).normalized;
 
-        if (player.StateMachine.CurrentState == player.StateMachine.PlayerSprintState)
-        {
-            controller.Move(SprintSpeed * Time.deltaTime * moveDirection);
-        }
-        else if(player.StateMachine.CurrentState == player.StateMachine.PlayerGuardState)
-        {
-            controller.Move(GuardSpeed * Time.deltaTime * moveDirection);
-        }
-        else
-        {
-            controller.Move(MoveSpeed * Time.deltaTime * moveDirection);
-        }
-
-        if (Time.time - lastSendTime > sendInterval)
-        {
-
-            if (Vector3.Distance(transform.position, lastSentPosition) > 0.01f ||
-                Quaternion.Angle(transform.rotation, lastSentRotation) > 0.1f)
-            {
-
-                NetworkManager.instance.socket.EmitPlayerMovement(transform.position, transform.rotation);
-
-                lastSendTime = Time.time;
-                lastSentPosition = transform.position;
-                lastSentRotation = transform.rotation;
-            }
-        }
+        inputVelocity = moveDirection * targetSpeed;
     }
 
     //백스텝 및 구르기
@@ -144,37 +180,14 @@ public class PlayerMotor : MonoBehaviour
 
             Quaternion targetRotation = Quaternion.LookRotation(rollDirection);
             transform.rotation = targetRotation;
-            player.AnimatorManager.PlayTargetActionAnimation("Roll", true);
+            player.AnimatorManager.PlayAction(AnimHash.Roll, true);
         }
         else
         {
-            player.AnimatorManager.PlayTargetActionAnimation("BackStep", true);
+            player.AnimatorManager.PlayAction(AnimHash.BackStep, true);
         }
 
     }
-
-
-
-
-    public void LockMovementFor(float duration)
-    {
-        if(movementLockCoroutine != null)
-        {
-            StopCoroutine(movementLockCoroutine);
-        }
-        movementLockCoroutine = StartCoroutine(MovementLockCoroutine(duration));
-    }
-
-    private IEnumerator MovementLockCoroutine(float duration)
-    {
-        canMove = false;
-        canRotate = false;
-        yield return new WaitForSeconds(duration);
-        canMove = true;
-        canRotate = true;
-        movementLockCoroutine = null;
-    }
-
 
     public void StopMovement()
     {
@@ -183,68 +196,19 @@ public class PlayerMotor : MonoBehaviour
 
     public void Groggy()
     {
-        player.AnimatorManager.PlayTargetActionAnimation("GuardBreak", true, true);
+        player.AnimatorManager.PlayAction(AnimHash.GuardBreak, true, true);
     }
 
 
     //점프
     public void Jump(float jumpForce)
     {
-        if (!IsGrounded || !canMove || isKnockingBack) return;
+        if (!IsGrounded || !CanMove || isKnockingBack) return;
 
         // y축 속도에 점프 힘을 직접 더해줌
         verticalVelocity.y = Mathf.Sqrt(jumpForce * -2f * gravity);
     }
 
-    //지면 체크
-    public void HandleGroundCheck()
-    {
-        Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y + 0.1f, transform.position.z);
-        IsGrounded = Physics.CheckSphere(spherePosition, groundCheckDistance, groundLayer, QueryTriggerInteraction.Ignore);
-
-    }
-
-
-    // 중력 처리 함수
-    private void HandleGravity()
-    {
-        verticalVelocity.y += 2f * gravity * Time.deltaTime;
-        controller.Move(verticalVelocity * Time.deltaTime);
-    }
-
-    private void HandleRotation()
-    {
-        if (player.StateMachine.CurrentState == player.StateMachine.PlayerRollingState)
-        {
-            return;
-        }
-        if (!canRotate || isKnockingBack) { return; }
-
-        if (player.isLockOn)
-        {
-            if (player.TargetingSystem.CurrentTarget == null) { return; }
-            Vector3 targetDirection = player.TargetingSystem.CurrentTarget.transform.position - transform.position;
-            RotateTowardsDirection(targetDirection);
-        }
-        else
-        {
-            Vector3 cameraForward = camTransform.forward;
-            Vector3 cameraRight = camTransform.right;
-
-            Vector3 RotationDirection = (cameraForward.normalized * player.InputHandler.MoveInput.z + cameraRight.normalized * player.InputHandler.MoveInput.x);
-
-            RotateTowardsDirection(RotationDirection);
-        }
-    }
-
-    public void RotateTowardsDirection(Vector3 direction)
-    {
-        direction.y = 0;
-        direction.Normalize();
-        if (direction == Vector3.zero) { direction = transform.forward; }
-        Quaternion targetRotation = Quaternion.LookRotation(direction);
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
-    }
 
 
     //넉백 시작
@@ -256,50 +220,5 @@ public class PlayerMotor : MonoBehaviour
         knockbackMovement = damageInfo.hitDirection * damageInfo.knockbackForce; // 초당 넉백될 이동량 계산
 
      }
-
-    //넉백
-    public void HandleKnockBack()
-    {
-        if (!isKnockingBack) return;
-
-        knockBackTimer += Time.fixedDeltaTime;
-        float deceleration = 1f - (knockBackTimer / knockBackDuration);
-        deceleration = Mathf.Clamp01(deceleration);
-        controller.Move(deceleration * Time.deltaTime * knockbackMovement);
-
-        if (knockBackTimer >= knockBackDuration)
-        {
-            isKnockingBack = false;
-        }
-    }
-
-    //특정 물체 바라보기
-    public void RotateToward(Transform target)
-    {
-        StartCoroutine(RotateCoroutine(target));
-    }
-
-    IEnumerator RotateCoroutine(Transform target)
-    {
-        float timer = 0f;
-        float duration = 0.5f;
-        Vector3 dir = target.position - transform.position;
-        Quaternion targetRot = Quaternion.LookRotation(dir);
-
-        while (timer < duration)
-        {
-            timer += Time.deltaTime;
-            float progress = timer/ duration;
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, progress);
-            yield return null;
-        }
-        transform.rotation = targetRot;
-    }
-
-    public void AE_playerMoveDisable()
-    {
-        canMove = false;
-        canRotate = true;
-    }
 
 }

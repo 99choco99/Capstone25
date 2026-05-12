@@ -28,6 +28,13 @@ public class EnemyAnimationManager : MonoBehaviour
         this.IsPerformAction = IsLockAction;
         enemy.Anim.CrossFade(animationName, 0.1f);
     }
+
+    public void UpdateLocomotion(float forward, float right, float speed)
+    {
+        enemy.Anim.SetFloat("Vertical", forward, 0.1f, Time.deltaTime);
+        enemy.Anim.SetFloat("Horizontal", right, 0.1f, Time.deltaTime);
+        enemy.Anim.SetFloat("Speed", speed, 0.1f, Time.deltaTime);
+    }
     
     public void DeathProcess()
     {

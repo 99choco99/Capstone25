@@ -9,9 +9,12 @@ public class PlayerSpawner : MonoBehaviour
     private List<Transform> SpawnPoints = new List<Transform>();
     private PlayerRepository repository;
 
-    public void Init(PlayerRepository repository)
+    public void Init()
     {
-        this.repository = repository;
+        repository = new PlayerRepository();
+        NetworkManager.instance.socket.OnCurrentPlayersReceived += SpawnCurrentPlayers;
+        NetworkManager.instance.socket.OnRemotePlayerJoined += RemotePlayerSpawn;
+        NetworkManager.instance.socket.OnRemotePlayerLeft += RemotePlayerDespawn;
     }
 
     public void RegisterSpawnPoint(Transform point)
@@ -75,5 +78,27 @@ public class PlayerSpawner : MonoBehaviour
     public void RemotePlayerDespawn(string id)
     {
         repository.RemovePlayer(id);
+    }
+
+    public void ClearAllPlayers()
+    {
+        repository.ClearAllPlayers();
+    }
+
+    public GameObject GetPlayer(string id)
+    {
+        return repository.GetPlayer(id);
+    }
+
+    //현재 들어와있는 Player 스폰
+    public void SpawnCurrentPlayers(List<NetworkPlayerData> RemotePlayers)
+    {
+        foreach (NetworkPlayerData RemotePlayer in RemotePlayers)
+        {
+            if (RemotePlayer.id != DataManager.Instance.Server_PlayerData.id)
+            {
+                RemotePlayerSpawn(RemotePlayer);
+            }
+        }
     }
 }
