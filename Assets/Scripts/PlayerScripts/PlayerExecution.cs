@@ -47,7 +47,7 @@ public class PlayerExecution : MonoBehaviour
         if (targetTimeline == null)
         {
             Debug.LogWarning($"{enemy.gameObject.name}에게 인살 타임라인이 없습니다!");
-            player.StateMachine.TransitionTo(player.StateMachine.PlayerIdleState);
+            player.StateMachine.TransitionTo(player.StateMachine.PlayerGroundedState);
             return;
         }
 
@@ -94,12 +94,10 @@ public class PlayerExecution : MonoBehaviour
         OnExecuteEnd?.Invoke(player);
         OnExecuteEnd = null; // 구독해제
 
-        player.StateMachine.TransitionTo(player.StateMachine.PlayerIdleState);
+        player.StateMachine.TransitionTo(player.StateMachine.PlayerGroundedState);
         IsPlayingDirector = false;
 
-        player.Stats.isInvincible = false;
-        player.Motor.CanMove = true;
-        player.Motor.CanRotate = true;
+        player.Stats.IsInvincible = false;
         player.InputHandler.enabled = true;
     }
 }

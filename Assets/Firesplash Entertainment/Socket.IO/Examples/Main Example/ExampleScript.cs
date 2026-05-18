@@ -32,7 +32,7 @@ public class ExampleScript : MonoBehaviour
     void Start()
     {
         //sioCom is assigned via inspector so no need to initialize it.
-        //We just fetch the actual Socket.IO instance using its integrated Instance handle and subscribe to the connect event
+        //We just fetch the actual Socket.IO Instance using its integrated Instance handle and subscribe to the connect event
         sioCom.Instance.On("connect", (string data) => {
             Debug.Log("LOCAL: Hey, we are connected!");
             uiStatus.text = "Socket.IO Connected. Doing work...";

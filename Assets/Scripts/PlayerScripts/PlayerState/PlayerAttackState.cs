@@ -1,29 +1,43 @@
 using UnityEngine;
 
+
+public enum AttackPhase { WindUp,Active, Recovery}
+
 public class PlayerAttackState : State
 {
-    private bool isComboInputQueued;
-
+    private AttackType pendingAttackType;
+    private AttackPhase currentPhase;
     public override bool UseRootMotion => true;
 
     public PlayerAttackState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
     public override void Enter()
     {
-        isComboInputQueued = false;
         player.Motor.StopMovement();
-        bool attackStarted = player.Combat.StartAttack();
-        player.Combat.OnAttackEnd += HandleAttackEnd;
+        player.AnimatorController.UpdateLocomotion(0, 0);
 
-        if (!attackStarted)
-        {
-            HandleAttackEnd();
-            return;
-        }
+        pendingAttackType = stateMachine.RequestedAttack;
+
+        stateMachine.RequestedAttack = AttackType.None;
+
+        ExecutePendingAttack();
     }
 
     public override void Update()
     {
+        if (currentPhase == AttackPhase.WindUp)
+        {
+            player.Motor.HandleRotation();
+        }
+        else if(currentPhase == AttackPhase.Recovery)
+        {
+            if(player.InputHandler.MoveInput != Vector3.zero)
+            {
+                stateMachine.TransitionTo(player.StateMachine.PlayerGroundedState);
+                return;
+            }
+        }
+
         if (player.InputHandler.AttackInput && player.TargetingSystem.IsCurrentTargetExecutable())
         {
             player.InputHandler.UseAttackInput();
@@ -33,46 +47,69 @@ public class PlayerAttackState : State
         if (player.InputHandler.AttackInput)
         {
             player.InputHandler.UseAttackInput(); // 입력 소비
-            isComboInputQueued = true;
+            pendingAttackType = AttackType.Normal;
             return;
         }
     }
 
     public override void Exit()
     {
-        player.Combat.OnAttackEnd -= HandleAttackEnd;
-        isComboInputQueued = false;
+        pendingAttackType = AttackType.None;
+        player.Combat.ResetCombo();
     }
 
-    private void HandleAttackEnd()
+    public void OnAttackActiveStart()
     {
-        if (isComboInputQueued)
-        {
-            isComboInputQueued = false;
-            bool comboAttackStarted = player.Combat.StartAttack();
+        if (currentPhase != AttackPhase.WindUp) { return; }
+        currentPhase = AttackPhase.Active;
+    }
 
-            if (!comboAttackStarted)
-            {
-                if (player.InputHandler.MoveInput == Vector3.zero)
-                {
-                    stateMachine.TransitionTo(stateMachine.PlayerIdleState);
-                }
-                else
-                {
-                    stateMachine.TransitionTo(stateMachine.PlayerMoveState);
-                }
-            }
+    public void OnCheckNextAttack()
+    {
+        if(currentPhase != AttackPhase.Active) { return; }
+
+        if (pendingAttackType != AttackType.None)
+        {
+            ExecutePendingAttack();
         }
         else
         {
-            if (player.InputHandler.MoveInput == Vector3.zero)
-            {
-                stateMachine.TransitionTo(stateMachine.PlayerIdleState);
-            }
-            else
-            {
-                stateMachine.TransitionTo(stateMachine.PlayerMoveState);
-            }
+            currentPhase = AttackPhase.Recovery;
         }
+
+    }
+
+    public override void OnAnimationEnd()
+    {
+        if (currentPhase != AttackPhase.Recovery) { return; }
+        ReturnToLocomotion();
+    }
+
+    private void ExecutePendingAttack()
+    {
+        bool attackStarted = false;
+
+        switch (pendingAttackType)
+        {
+            case AttackType.Normal: attackStarted = player.Combat.StartNormalAttack(); break;
+            case AttackType.Heavy: attackStarted = player.Combat.StartHeavyAttack(); break;
+            case AttackType.SprintAttack: attackStarted = player.Combat.StartSprintAttack(); break;
+        }
+
+        if (attackStarted)
+        {
+            currentPhase = AttackPhase.WindUp;
+        }
+        else
+        {
+            ReturnToLocomotion();
+        }
+
+        pendingAttackType = AttackType.None;
+    }
+
+    private void ReturnToLocomotion()
+    {
+        stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
     }
 }

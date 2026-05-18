@@ -8,7 +8,7 @@ public class Legacy_PlayerCamera : MonoBehaviour
 {
     public static Legacy_PlayerCamera Instance;
     public Player player;
-    public Camera realCamera;                   // 실제 카메라
+    public UnityEngine.Camera realCamera;                   // 실제 카메라
     public Transform cameraPivotTransform;      //pivot Transform
 
 

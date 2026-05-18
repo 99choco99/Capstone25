@@ -11,7 +11,7 @@ public class TargetingSystem : MonoBehaviour
 
     [Header("유효 타겟 레이어 설정")]
     [SerializeField] private LayerMask targetLayer;
-    [SerializeField] private LayerMask ObstacleLayer;
+    [SerializeField] private LayerMask obstacleLayer;
 
     [Header("타겟 범위")]
     [SerializeField] private float cameraHalfFov;
@@ -19,6 +19,7 @@ public class TargetingSystem : MonoBehaviour
 
     [Header("타겟 전환 설정")]
     [SerializeField] private float targetSwitchCooldown = 0.25f; // 2초 쿨다운
+    [SerializeField] private float searchAngle = 5f;
     private float lastSwitchTime = 0f;                           // 마지막으로 타겟을 바꾼 시간
 
     [Header("타겟 우선순위 가중치 설정")]
@@ -32,7 +33,7 @@ public class TargetingSystem : MonoBehaviour
 
     private void Awake()
     {
-        camTransform = Camera.main.transform;
+        camTransform = UnityEngine.Camera.main.transform;
     }
 
 
@@ -112,8 +113,8 @@ public class TargetingSystem : MonoBehaviour
             float distance = directionToTarget.magnitude;
             float angle = Vector3.SignedAngle(camForward, directionToTarget, Vector3.up);
 
-            if (searchDirection > 0 && angle < 5f) continue;
-            else if (searchDirection < 0 && angle > 5f) continue;
+            if (searchDirection > 0 && angle < searchAngle) continue;
+            else if (searchDirection < 0 && angle > searchAngle) continue;
 
             float score = distance * distanceWeight + Mathf.Abs(angle) * angleWeight;
 
@@ -142,7 +143,7 @@ public class TargetingSystem : MonoBehaviour
                 Vector3 directionToTarget = target.TargetTransform.position - camTransform.position;
 
                 if (Vector3.Angle(camTransform.forward, directionToTarget) > cameraHalfFov) continue;
-                if (Physics.Linecast(camTransform.position, target.TargetTransform.position, ObstacleLayer)) continue;
+                if (Physics.Linecast(camTransform.position, target.TargetTransform.position, obstacleLayer)) continue;
 
                 validTargets.Add(target);
             }

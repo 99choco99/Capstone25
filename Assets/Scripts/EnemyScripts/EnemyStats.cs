@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class EnemyStats : LivingEntity
 {
+    public override Faction TargetFaction => Faction.EnemyTeam;
     Enemy enemy;
 
     [SerializeField] EnemyData enemyData;
@@ -71,9 +72,9 @@ public class EnemyStats : LivingEntity
     }
 
 
-    public override void OnDamage(DamageInfo result)
+    public override void TakeDamage(DamageInfo result)
     {
-        if (dead) return;
+        if (IsDead) return;
 
         if (isDeflecting)
         {
@@ -86,14 +87,14 @@ public class EnemyStats : LivingEntity
         else if (Vector3.Dot(result.hitDirection, transform.forward) > 0)
         {
             enemy.AnimationManager.PlayAnimation("BackHit", false);
-            base.OnDamage(result);
+            base.TakeDamage(result);
             EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
             SoundManager.Instance.PlaySFX("Cutting flesh");
             TakePostureDamage(result.postureDamage);
         }
         else
         {
-            base.OnDamage(result);
+            base.TakeDamage(result);
             if (!enemy.AnimationManager.IsPerformAction || !enemy.Combat.canAttack)
             {
                 enemy.AnimationManager.PlayAnimation("Hit", false);
@@ -108,7 +109,7 @@ public class EnemyStats : LivingEntity
 
     public override void Die()
     {
-        if(dead) return;//한번만 실행되도록
+        if(IsDead) return;//한번만 실행되도록
 
         enemy.Combat.EnemyAttackEnd();
         base.Die();
@@ -124,6 +125,11 @@ public class EnemyStats : LivingEntity
             attacker = executor,
             amount = 99999
         };
-        base.OnDamage(damage);
+        base.TakeDamage(damage);
+    }
+
+    protected override void ProcessPostureBroken()
+    {
+        throw new NotImplementedException();
     }
 }

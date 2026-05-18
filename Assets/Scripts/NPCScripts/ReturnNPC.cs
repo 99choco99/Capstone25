@@ -11,9 +11,9 @@ public class ReturnNPC : NPC
 
     public override void Interact(Player player)
     {
-        if (NetworkManager.instance.socket != null)
+        if (NetworkManager.Instance.socket != null)
         {
-            //NetworkManager.instance.socket.EmitJoinScene(targetSceneName);
+            //NetworkManager.Instance.socket.EmitJoinScene(targetSceneName);
         }
         else
         {

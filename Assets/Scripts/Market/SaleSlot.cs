@@ -8,11 +8,11 @@ public class SaleSlot : Slot
 
     public override void OnDrop(PointerEventData eventData)
     {
-        OwnedItem draggedItem = eventData.pointerDrag?.GetComponent<OwnedItem>();
+        InventoryItemUI draggedItem = eventData.pointerDrag?.GetComponent<InventoryItemUI>();
 
         if (draggedItem == null) { return; }
 
-        SlotData originalSlot = draggedItem.currentSlot.slotData;
+        SlotData originalSlot = draggedItem.ParentSlot.slotData;
 
         slotData.itemData = originalSlot.itemData;
         slotData.itemSpec = originalSlot.itemSpec;
@@ -23,6 +23,6 @@ public class SaleSlot : Slot
         slotData.slotType = originalSlot.slotType;
         slotData.slotIndex = originalSlot.slotIndex;
 
-        itemImage.sprite = draggedItem.data.icon;
+        //itemImage.sprite = draggedItem.
     }
 }

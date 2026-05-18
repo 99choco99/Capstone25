@@ -20,26 +20,13 @@ public class MainUIManager : MonoBehaviour
 {
     public static MainUIManager Instance { get; private set; }
 
-    [SerializeField] private GameObject InGameUIGroup;
-    private PlayerStats playerStats;
+    [Header("UI 계층 레이어")]
+    [SerializeField] private PlayerHUD hud;
+    [SerializeField] private WorldUI worldUI;
+    [SerializeField] private PanelUI panels;
 
-    [Header("상태 UI")]
-    public Slider PlayerHpUI;
-    public Slider PostureGauge;
-    public Slider ExpUI;
-    public TextMeshProUGUI levelText;
-    public TextMeshProUGUI ExpText;
+    private PlayerInputHandler currentInput;
 
-
-    [Header("적 UI")]
-    public Slider EnemyHpUI;
-    public TextMeshProUGUI EnemyName;
-
-    [Header("패널 UI")]
-    [SerializeField] GameObject Market;
-    [SerializeField] private List<UIBase> uiPanels;
-    private Dictionary<UIPanelType, UIBase> panelDictionary;
-    public List<UIPanelType> currentOpenUI = new List<UIPanelType>();
 
     private void Awake()
     {
@@ -58,137 +45,74 @@ public class MainUIManager : MonoBehaviour
     private void Start()
     {
         Player.OnLocalPlayerSpawned += ConnectLocalPlayerUI;
+        
+    }
 
-        if (MarketManager.Instance != null)
-        {
-            Market = MarketManager.Instance.MarketUI;
-        }
+    private void ConnectLocalPlayerUI(Transform playerTransform)
+    {
+        Player localPlayer = playerTransform.GetComponent<Player>();
+        if (localPlayer == null) return;
 
-        // 딕셔너리에 UI 패널들을 등록
-        panelDictionary = new Dictionary<UIPanelType, UIBase>();
-        foreach(var panel in uiPanels)
-        {
-            if (!panelDictionary.ContainsKey(panel.panelType)){
-                panelDictionary.Add(panel.panelType, panel);
-                panel.Init();
-                panel.gameObject.SetActive(false);
+        // 의존성 주입
+        if (hud != null) hud.Init(localPlayer.Stats);
+        if (worldUI != null) worldUI.Init(localPlayer);
+        if (panels != null) { 
+            panels.Init(); 
+            
+            IPlayerUI[] allPlayerUIs = panels.gameObject.GetComponentsInChildren<IPlayerUI>(true);
+            foreach (var ui in allPlayerUIs)
+            {
+                ui.SetUp(localPlayer);
             }
         }
 
-        HideInGameUI();
+        if (currentInput != null) UnsubscribeInputEvents();
+
+        currentInput = localPlayer.InputHandler;
+
+        currentInput.OnInventoryPressed += () => ToggleUI(UIPanelType.Inventory);
+        currentInput.OnProfilePressed += () => ToggleUI(UIPanelType.Profile);
+        currentInput.OnSettingPressed += () => ToggleUI(UIPanelType.Setting);
+        currentInput.OnQuestPressed += () => ToggleUI(UIPanelType.Quest);
+
+        currentInput.OnEscapePressed += CloseLastUI;
+
+        currentInput.SetCursorState(false);
+    }
+
+
+
+    // UI를 열고 닫을 때 사용하는 통로
+    public void ToggleUI(UIPanelType type){panels?.ToggleUI(type);UpdateCursorState();}
+    public void OpenUI(UIPanelType type) { panels?.OpenUI(type); UpdateCursorState(); }
+    public void CloseUI(UIPanelType type) { panels?.CloseUI(type); UpdateCursorState(); }
+    public void CloseLastUI() { panels?.CloseLastUI(); UpdateCursorState(); }
+
+    private void UpdateCursorState()
+    {
+        if (currentInput != null && panels != null)
+        {
+            bool isUIOpen = panels.IsAnyPanelOpen();
+            currentInput.SetCursorState(isUIOpen);
+        }
+    }
+
+
+    private void UnsubscribeInputEvents()
+    {
+        if (currentInput == null) return;
+
+        currentInput.OnInventoryPressed -= () => ToggleUI(UIPanelType.Inventory);
+        currentInput.OnProfilePressed -= () => ToggleUI(UIPanelType.Profile);
+        currentInput.OnSettingPressed -= () => ToggleUI(UIPanelType.Setting);
+        currentInput.OnQuestPressed -= () => ToggleUI(UIPanelType.Quest);
+        currentInput.OnEscapePressed -= CloseLastUI;
     }
 
     private void OnDestroy()
     {
         Player.OnLocalPlayerSpawned -= ConnectLocalPlayerUI;
-        UnsubscribeFromStats();
-    }
-
-    private void ConnectLocalPlayerUI(Transform playerTransform)
-    {
-        UnsubscribeFromStats();
-
-        playerStats = playerTransform.GetComponent<PlayerStats>();
-        if (playerStats != null)
-        {
-            playerStats.OnHpChanged += UpdateHp;
-            playerStats.OnPostureChanged += UpdatePostureGauge;
-            playerStats.OnExpChanged += UpdateExp;
-
-            // 초기값 세팅
-            UpdateHp(playerStats.CurrentHp, playerStats.MaxHp.GetValue());
-            UpdatePostureGauge(playerStats.CurrentPosture, playerStats.MaxPosture.GetValue());
-            UpdateExp(playerStats.Exp, playerStats.Level);
-        }
-
-        ShowInGameUI();
-    }
-
-
-    private void UnsubscribeFromStats()
-    {
-        if (playerStats != null)
-        {
-            playerStats.OnHpChanged -= UpdateHp;
-            playerStats.OnPostureChanged -= UpdatePostureGauge;
-            playerStats.OnExpChanged -= UpdateExp;
-        }
-    }
-
-    public void ShowInGameUI() => InGameUIGroup.SetActive(true);
-    public void HideInGameUI() => InGameUIGroup.SetActive(false);
-    public void UpdateHp(float currenthp, float maxHp) => PlayerHpUI.value = currenthp / maxHp;
-
-
-    public void UpdateExp(int exp, int level)
-    {
-        float maxExp = DataManager.Instance.GetMaxExpForLevel(level);
-        ExpUI.value = exp / maxExp;
-        levelText.text = $"Lv. {level}";
-        ExpText.text = $"{(ExpUI.value / ExpUI.maxValue) * 100}%";
-    }
-
-    public void UpdatePostureGauge(float currentPosture, float maxPosture)
-    {
-        PostureGauge.maxValue = maxPosture;
-        PostureGauge.value = currentPosture;
-    }
-
-    public void ShowEnemyInfoUI()
-    {
-        EnemyHpUI.gameObject.SetActive(true);
-        EnemyName.gameObject.SetActive(true);
-        StartCoroutine(HideEnemyInfoUI());
-    }
-    IEnumerator HideEnemyInfoUI()
-    {
-        yield return new WaitForSeconds(4f);
-        EnemyHpUI.gameObject.SetActive(false);
-        EnemyName.gameObject.SetActive(false);
-    }
-
-    public void ToggleUI(UIPanelType type)
-    {
-        if (panelDictionary.TryGetValue(type, out UIBase panel))
-        {
-            if (panel.IsOpen)
-            {
-                CloseUI(type);
-            }
-            else
-            {
-                OpenUI(type);
-            }
-        }
-    }
-
-
-    public void OpenUI(UIPanelType type)
-    {
-        if(panelDictionary.TryGetValue(type, out UIBase panel)){
-            panel.Open();
-            currentOpenUI.Add(type);
-        }
-
-    }
-
-    public void CloseUI(UIPanelType type)
-    {
-        if(panelDictionary.TryGetValue(type,out UIBase panel))
-        {
-            panel.Close();
-            TooltipManager.Instance.HideTooltip();
-            currentOpenUI.Remove(type);
-        }
-    }
-
-    public void CloseLastUI()
-    {
-        if (currentOpenUI.Count > 0)
-        {
-            UIPanelType lastPanel = currentOpenUI.Last();
-            CloseUI(lastPanel);
-        }
+        UnsubscribeInputEvents();
     }
 
 }

@@ -112,7 +112,7 @@ public class MarketSellUI : MonoBehaviour
             Debug.LogWarning("판매할 아이템이 없습니다.");
             return;
         }
-        //DataManager.Instance.Inventory.RegisterItemToMarket(saleSlotData, response.ItemCount);
+        //DataManager.Instance.SlotDict.RegisterItemToMarket(saleSlotData, response.ItemCount);
         //ShowNotice(response.message);
         ClearSaleSlot();
     }

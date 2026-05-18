@@ -1,20 +1,19 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-[RequireComponent(typeof(TargetingSystem))]
 public class TargetingUI : MonoBehaviour
 {
     [SerializeField] private Image targetMarker; // 타겟 위에 표시될 마커 이미지
     [SerializeField] private Image executeMarker; // 암살 가능 시 표시될 마커 이미지
 
-    [SerializeField] private TargetingSystem targetingSystem;
+    private TargetingSystem targetingSystem;
+    private UnityEngine.Camera mainCamera;
 
-    private Camera mainCamera;
 
-
-    private void Awake()
+    public void Init(TargetingSystem system)
     {
-        mainCamera = Camera.main;
+        targetingSystem = system;
+        mainCamera = UnityEngine.Camera.main;
 
         targetingSystem.OnChangedTarget += HandleTargetSelected;
         targetingSystem.OnTargetDeselected += HandleTargetDeselected;
@@ -40,14 +39,12 @@ public class TargetingUI : MonoBehaviour
             targetTopPosition += new Vector3(0, 0.1f, 0);
             Vector3 screenPos = mainCamera.WorldToScreenPoint(targetTopPosition);
 
-            if(screenPos.z > 0)
+            targetMarker.enabled = (screenPos.z > 0);
+
+            bool shouldBeActive = (screenPos.z > 0);
+            if (targetMarker.gameObject.activeSelf != shouldBeActive)
             {
-                targetMarker.rectTransform.position = screenPos;
-                targetMarker.gameObject.SetActive(true);
-            }
-            else
-            {
-                targetMarker.gameObject.SetActive(false);
+                targetMarker.gameObject.SetActive(shouldBeActive);
             }
 
             bool canExecute = targetingSystem.IsCurrentTargetExecutable();

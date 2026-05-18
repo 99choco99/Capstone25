@@ -20,11 +20,21 @@ public class PlayerMotor : MonoBehaviour
     public float JumpPower;
 
     [Header("점프 및 중력처리")]
-    //중력 및 점프 처리를 위한 변수
-    public Vector3 verticalVelocity;
-    [SerializeField] private float gravity = -9.81f;
-    [SerializeField] private float groundCheckDistance = 0.2f; 
-    [SerializeField] private LayerMask groundLayer;
+    [SerializeField] float groundCheckDistance;
+    [SerializeField] LayerMask groundLayer;
+    [Tooltip("캐릭터가 뛸 최고 높이 (미터 단위)")]
+    [SerializeField] float jumpHeight = 2.0f; // 소울라이크 국룰: 1.5 ~ 2.0
+    [Tooltip("점프 후 정점까지 도달하는 시간 (초)")]
+    [SerializeField] float timeToJumpApex = 0.4f; // 소울라이크 국룰: 0.3 ~ 0.45
+    [Tooltip("떨어질 때 묵직함을 주는 배수")]
+    [SerializeField] float fallMultiplier = 2.5f; // 액션 게임 국룰: 2.0 ~ 3.0
+    [Tooltip("경사로에서 허공에 안 뜨게 잡아주는 힘")]
+    [SerializeField] float groundedGravity = -5.0f; // 국룰: -2.0 ~ -5.0
+
+    // 내부 계산용 변수
+    private float gravity;
+    private float initialJumpVelocity;
+    private Vector3 verticalVelocity;
 
 
     [Header("넉백")]
@@ -37,8 +47,6 @@ public class PlayerMotor : MonoBehaviour
     public Vector3 rollDirection;
 
     public bool IsGrounded { get; private set; } = true;
-    public bool CanMove = true;
-    public bool CanRotate = true;
 
     private Vector3 inputVelocity;
 
@@ -52,7 +60,10 @@ public class PlayerMotor : MonoBehaviour
 
     private void Start()
     {
-        camTransform = Camera.main.transform;
+        gravity = -(2 * jumpHeight) / Mathf.Pow(timeToJumpApex, 2);
+        initialJumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;
+
+        camTransform = UnityEngine.Camera.main.transform;
         if (!player.IsLocalPlayer) { return; }
         player.Stats.OnDamaged += StartKnockBack;
         player.Stats.OnPostureBroken += Groggy;
@@ -83,12 +94,15 @@ public class PlayerMotor : MonoBehaviour
     public void ApplyMovement()
     {
         Vector3 finalMovement = Vector3.zero;
+        
 
         finalMovement += CalculateInputMovement();
         finalMovement += CalculateKnockBack();
         finalMovement += CalculateGravity();
 
         controller.Move(finalMovement * Time.deltaTime);
+
+        inputVelocity = Vector3.zero;
     }
 
     private Vector3 CalculateInputMovement()
@@ -97,11 +111,19 @@ public class PlayerMotor : MonoBehaviour
     }
     private Vector3 CalculateGravity()
     {
-        verticalVelocity.y = gravity * Time.deltaTime;
-
-        if (IsGrounded && verticalVelocity.y < 0)
+        if (verticalVelocity.y < 0)
         {
-            verticalVelocity.y = -2f;
+            verticalVelocity.y += gravity * fallMultiplier * Time.deltaTime;
+        }
+        else
+        {
+            verticalVelocity.y += gravity * Time.deltaTime;
+        }
+
+        // 땅에 닿으면 경사로 고정용 적용
+        if (controller.isGrounded && verticalVelocity.y < 0)
+        {
+            verticalVelocity.y = groundedGravity;
         }
 
         return verticalVelocity;
@@ -123,7 +145,7 @@ public class PlayerMotor : MonoBehaviour
     //회전처리
     public void HandleRotation()
     {
-        if (!CanRotate || isKnockingBack) { return; }
+        if (isKnockingBack) { return; }
 
         if (player.IsLockOn)
         {
@@ -153,7 +175,7 @@ public class PlayerMotor : MonoBehaviour
     public void SetTargetVelocity(float targetSpeed)
     {
         if (!player.IsLocalPlayer) { return; }
-        if (!CanMove || isKnockingBack) return;
+        if (isKnockingBack) return;
 
         Vector3 cameraForward = camTransform.forward;
         cameraForward.y = 0f;
@@ -180,11 +202,11 @@ public class PlayerMotor : MonoBehaviour
 
             Quaternion targetRotation = Quaternion.LookRotation(rollDirection);
             transform.rotation = targetRotation;
-            player.AnimatorManager.PlayAction(AnimHash.Roll, true);
+            player.AnimatorController.PlayAction(AnimHash.Roll);
         }
         else
         {
-            player.AnimatorManager.PlayAction(AnimHash.BackStep, true);
+            player.AnimatorController.PlayAction(AnimHash.BackStep);
         }
 
     }
@@ -196,17 +218,14 @@ public class PlayerMotor : MonoBehaviour
 
     public void Groggy()
     {
-        player.AnimatorManager.PlayAction(AnimHash.GuardBreak, true, true);
+        player.AnimatorController.PlayAction(AnimHash.GuardBreak);
     }
 
 
     //점프
-    public void Jump(float jumpForce)
+    public void Jump()
     {
-        if (!IsGrounded || !CanMove || isKnockingBack) return;
-
-        // y축 속도에 점프 힘을 직접 더해줌
-        verticalVelocity.y = Mathf.Sqrt(jumpForce * -2f * gravity);
+        verticalVelocity.y = initialJumpVelocity;
     }
 
 

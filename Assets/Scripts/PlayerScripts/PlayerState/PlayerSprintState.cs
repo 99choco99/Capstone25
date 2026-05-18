@@ -22,12 +22,12 @@ public class PlayerSprintState : State
         if (player.InputHandler.AttackInput)
         {
             player.InputHandler.UseAttackInput();
+            stateMachine.RequestedAttack = AttackType.SprintAttack;
             stateMachine.TransitionTo(stateMachine.PlayerAttackState);
-            player.AnimatorManager.PlayAction(AnimHash.SprintAttack, true);
             return;
         }
 
-        if (player.InputHandler.GuardInput && !player.AnimatorManager.IsActionLocked)
+        if (player.InputHandler.GuardInput)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGuardState);
             return;
@@ -41,13 +41,13 @@ public class PlayerSprintState : State
         }
         if (!player.InputHandler.SprintInput || player.TargetingSystem.CurrentTarget != null)
         {
-            stateMachine.TransitionTo(stateMachine.PlayerMoveState);
+            stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
             return;
         }
 
         if (player.InputHandler.MoveInput == Vector3.zero)
         {
-            stateMachine.TransitionTo(stateMachine.PlayerIdleState);
+            stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
             return;
         }
         player.Motor.SetTargetVelocity(player.Motor.SprintSpeed);

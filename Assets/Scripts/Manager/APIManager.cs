@@ -2,7 +2,7 @@ using UnityEngine;
 
 
 //API들을 관리하는 클래스.
-public class APIManager : MonoBehaviour
+public class APIManager
 {
     public string userId { get; private set; }
 
@@ -13,8 +13,7 @@ public class APIManager : MonoBehaviour
     public QuestAPI Quest{ get; private set; }
     public InventoryAPI Inventory{  get; private set; }
 
-
-    private void Awake()
+    public APIManager()
     {
         Login = new LoginAPI();
     }
@@ -22,7 +21,6 @@ public class APIManager : MonoBehaviour
 
     public void SetUserId(string userId)
     {
-
         this.userId = userId;
 
         Dialogue = new DialogueAPI();

@@ -4,8 +4,9 @@ using Newtonsoft.Json;
 using System.Collections;
 using Unity.VisualScripting;
 
-public class LivingEntity : MonoBehaviour,IDamageable
+public abstract class LivingEntity : MonoBehaviour,IDamageable
 {
+    public abstract Faction TargetFaction { get; }
     public Stat AttackPower { get; protected set; }
     public Stat Defense { get; protected set; }
     public Stat MaxHp { get; protected set; }
@@ -16,9 +17,9 @@ public class LivingEntity : MonoBehaviour,IDamageable
     protected float postureRecoveryRate = 1f;
     [SerializeField] protected float postureRecoveryTimer = 2f;
 
-    public bool dead { get; set; }
+    public bool IsDead { get; set; }
 
-    public event Action<float, float> OnHpChanged;  // hp 변경
+    public event Action<float, float> OnHpChanged;  // maxHp 변경
     public event Action<float, float> OnPostureChanged; //가드 게이지 적용
     public event Action OnPostureBroken;
     public event Action OnDeath; // 죽었을 때 이벤트
@@ -33,7 +34,7 @@ public class LivingEntity : MonoBehaviour,IDamageable
         MaxPosture = new Stat(100f);
     }
 
-    protected virtual void OnEnable(){dead = false;}
+    protected virtual void OnEnable(){IsDead = false;}
 
     protected virtual void Update()
     {
@@ -50,9 +51,9 @@ public class LivingEntity : MonoBehaviour,IDamageable
     }
 
     //데미지 입었을 때
-    public virtual void OnDamage(DamageInfo damageInfo)
+    public virtual void TakeDamage(DamageInfo damageInfo)
     {
-        if (dead) return;
+        if (IsDead) return;
 
         CurrentHp -= damageInfo.amount;
         OnHpChanged?.Invoke(CurrentHp, MaxHp.GetValue());
@@ -69,7 +70,7 @@ public class LivingEntity : MonoBehaviour,IDamageable
     //체간 데미지 받기
     public virtual void TakePostureDamage(float amount)
     {
-        if (dead) return;
+        if (IsDead) return;
 
         CurrentPosture += amount;
         OnPostureChanged?.Invoke(CurrentPosture, MaxPosture.GetValue());
@@ -80,15 +81,20 @@ public class LivingEntity : MonoBehaviour,IDamageable
         if (CurrentPosture >= MaxPosture.GetValue())
         {
             CurrentPosture = MaxPosture.GetValue();
+            ProcessPostureBroken();
             OnPostureBroken?.Invoke();
         }
     }
 
+    //체간 붕괴
+    protected abstract void ProcessPostureBroken();
+
+
     //죽었을 때
     public virtual void Die()
     {
-        if (dead) return;
-        dead = true;
+        if (IsDead) return;
+        IsDead = true;
         OnDeath?.Invoke();
     }
 

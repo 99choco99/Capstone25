@@ -2,11 +2,11 @@ using Unity.Cinemachine;
 using UnityEngine;
 
 [RequireComponent (typeof(CinemachineCamera))]
-public class Camear : MonoBehaviour
+public class CameraTargetBinder : MonoBehaviour
 {
     private CinemachineCamera cam;
 
-    void Start()
+    void Awake()
     {
         cam = GetComponent<CinemachineCamera>();
     }

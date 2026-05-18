@@ -1,4 +1,3 @@
-using UnityEditor;
 using UnityEngine;
 
 public class PlayerDeadState : State
@@ -8,9 +7,8 @@ public class PlayerDeadState : State
 
     public override void Enter()
     {
-        player.Motor.CanMove = false;
-        player.Motor.CanRotate = false;
-        player.Combat.OnAnimationPlayerAttackEnd();
+        player.Motor.StopMovement();
+        player.Combat.ForceResetAttackState();
     }
 
 }

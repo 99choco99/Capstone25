@@ -9,27 +9,28 @@ public class PlayerExecuteState : State
 
     public override void Enter()
     {
-        player.Stats.isInvincible = true;
-        player.Motor.CanMove = false;
-        player.Motor.CanRotate = false;
+        player.Stats.IsInvincible = true;
         player.InputHandler.enabled = false;
 
         target = player.TargetingSystem.CurrentTarget;
 
         if(target == null)
         {
-            stateMachine.TransitionTo(stateMachine.PlayerIdleState);
+            stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
             return;
         }
         player.Motor.StopMovement();
-        //player.Execution.AttemptDeathblow(target.gameObject.GetComponent<Enemy>());
+
+
+        if (target is Enemy enemy)
+        {
+            player.Execution.AttemptDeathblow(enemy);
+        }
     }
 
     public override void Exit()
     {
-        player.Stats.isInvincible = false;
-        player.Motor.CanMove = true;
-        player.Motor.CanRotate = true;
+        player.Stats.IsInvincible = false;
         player.InputHandler.enabled = true;
     }
 }

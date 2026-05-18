@@ -4,101 +4,87 @@ using UnityEngine.UI;
 
 public class EnemyUI : MonoBehaviour
 {
-    EnemyStats enemyStats;
-    Collider col;
-    Camera mainCamera;
+    private EnemyStats enemyStats;
+    private Transform mainCameraTransform;
 
-
+    [Header("적 상태 UI")]
     [SerializeField] Slider PostureGauge;
     [SerializeField] Slider EnemyHpUI;
 
     [Header("강공격 알림")]
     [SerializeField] private CanvasGroup heavyAttackIndicator;
-    [SerializeField] private float heavyIndicatorDuration = 1.0f;
-    private Coroutine indicatorCoroutine;
 
-    private void Awake()
+
+    public void Init(EnemyStats stats)
     {
-        enemyStats = GetComponentInParent<EnemyStats>();
-        col = GetComponentInParent<Collider>();
+        if(stats != null)
+        {
+            enemyStats.OnHpChanged -= UpdateHp;
+            enemyStats.OnPostureChanged -= UpdatePostureGauge;
+        }
+        enemyStats = stats;
 
-        enemyStats.OnHpChanged += UpdateHp;
-        enemyStats.OnPostureChanged += UpdatePostureGauge;
-    }
-
-    void OnEnable()
-    {
-        transform.position = col.bounds.center + new Vector3(0, col.bounds.extents.y, 0);
-    }
-
-    private void Start()
-    {
         if (enemyStats != null)
         {
-            //UpdateHp(enemyStats.CurrentHp, enemyStats.MaxHp);
-            //UpdatePostureGauge(enemyStats.MaxPosture, enemyStats.CurrentPosture);
+            enemyStats.OnHpChanged += UpdateHp;
+            enemyStats.OnPostureChanged += UpdatePostureGauge;
+
+            UpdateHp(enemyStats.CurrentHp, enemyStats.MaxHp.GetValue());
+            UpdatePostureGauge(enemyStats.CurrentPosture, enemyStats.MaxPosture.GetValue());
         }
-        if (heavyAttackIndicator != null)
-        {
-            heavyAttackIndicator.alpha = 0f;
-        }
+
+        HideHeavyAttackIndicator();
+
+        if (UnityEngine.Camera.main != null) mainCameraTransform = UnityEngine.Camera.main.transform;
     }
+    
 
     private void OnDestroy()
     {
-        enemyStats.OnHpChanged -= UpdateHp;
-        enemyStats.OnPostureChanged -= UpdatePostureGauge;
+        if(enemyStats != null)
+        {
+            enemyStats.OnHpChanged -= UpdateHp;
+            enemyStats.OnPostureChanged -= UpdatePostureGauge;
+        }
     }
-
     void LateUpdate()
     {
-        if (mainCamera == null)
-        {
-            mainCamera = Camera.main;
-        }
-        else
-        {
-            transform.LookAt(mainCamera.transform);
-            transform.rotation = mainCamera.transform.rotation;
-        }
-
+        if (mainCameraTransform != null) transform.forward = mainCameraTransform.forward;
     }
 
     public void UpdatePostureGauge(float currentPosture, float maxPosture)
     {
+
+        if(PostureGauge == null) { return; }
+
+        if (currentPosture <= 0f)
+        {
+            PostureGauge.value = 0f;
+            return;
+        }
+
         PostureGauge.maxValue = maxPosture;
         PostureGauge.value = currentPosture;
     }
 
     public void UpdateHp(float currenthp, float maxHp)
     {
+        if (EnemyHpUI == null) return;
+
+        if (maxHp <= 0f)
+        {
+            EnemyHpUI.value = 0f;
+            return;
+        }
         EnemyHpUI.value = currenthp / maxHp;
     }
 
     public void ShowHeavyAttackIndicator()
     {
-        if (heavyAttackIndicator == null)
-        {
-            Debug.LogWarning("강공격 표시기가 EnemyUI에 할당되지 않음");
-            return;
-        }
-
-        if (indicatorCoroutine != null)
-        {
-            StopCoroutine(indicatorCoroutine);
-        }
-
-        indicatorCoroutine = StartCoroutine(ShowIndicatorCoroutine());
+        if (heavyAttackIndicator != null) heavyAttackIndicator.alpha = 1f;
     }
-
-
-    private IEnumerator ShowIndicatorCoroutine()
+    public void HideHeavyAttackIndicator()
     {
-        heavyAttackIndicator.alpha = 1f;
-
-        yield return new WaitForSeconds(heavyIndicatorDuration);
-
-        heavyAttackIndicator.alpha = 0f;
-        indicatorCoroutine = null;
+        if (heavyAttackIndicator != null) heavyAttackIndicator.alpha = 0f;
     }
 }

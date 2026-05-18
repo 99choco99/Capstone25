@@ -21,8 +21,8 @@ public class QuestUIItem : MonoBehaviour
 
     public void Initialize(QuestTemplate data, QuestProgress status, System.Action<int> OnSelectCallback)
     {
-        this.QuestId = data.questID;
-        OnItemSelected += OnSelectCallback;
+        this.QuestId = data.id;
+        OnItemSelected = OnSelectCallback;
         questNameText.text = data.questName;
         UpdateUI(status);
     }
@@ -39,16 +39,16 @@ public class QuestUIItem : MonoBehaviour
                 questStatusText.text = "[진행중]";
                 questStatusText.color = Color.green;
                 break;
-            case QuestState.Complete:
-                questStatusText.text = "[완료]";
+            case QuestState.CanComplete:
+                questStatusText.text = "[보고 대기]";
                 questStatusText.color = Color.gray;
                 break;
             case QuestState.TurnedIn:
-                questStatusText.text = "[종료]";
+                questStatusText.text = "[완료됨]";
                 questStatusText.color = Color.gray;
                 break;
             default:
-
+                questStatusText.text = "";
                 break;
         }
     }

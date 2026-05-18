@@ -2,9 +2,11 @@ using UnityEngine;
 
 public interface IDamageable
 {
-    bool dead { get; }
+    Faction TargetFaction { get; }
+
+    bool IsDead { get; }
     GameObject gameObject { get; }
     Transform transform { get; }
-    public void OnDamage(DamageInfo Info);
+    public void TakeDamage(DamageInfo Info);
     public void Die();
 }

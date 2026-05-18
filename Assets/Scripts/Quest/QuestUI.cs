@@ -5,37 +5,54 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class QuestUI : MonoBehaviour
+public class QuestUI : UIBase,IPlayerUI
 {
-    QuestManager QuestManager;
+    private QuestManager QuestManager;
 
     [SerializeField] GameObject questPrefab;                    //퀘스트 양식
     [SerializeField] Transform content;                         //퀘스트 목록
     [SerializeField] TextMeshProUGUI questNameText;             //선택된 퀘스트 이름
-    [SerializeField] TextMeshProUGUI questMainScriptText;       //선택된 퀘스트의 메인 설명
-    [SerializeField] TextMeshProUGUI queststepDescriptionText;  //선택된 퀘스트 단계별 설명
-    [SerializeField] private Button acceptButton;               //퀘스트 선택 버튼
+    [SerializeField] TextMeshProUGUI questDescriptionText;       //선택된 퀘스트의 메인 설명
+    [SerializeField] TextMeshProUGUI questObjectiveText;        //선택된 퀘스트 단계별 설명
+    [SerializeField] private Button abandonButton;               //퀘스트 포기 버튼
 
     private Dictionary<int, QuestUIItem> questUIItems = new Dictionary<int, QuestUIItem>();
     private int? selectedQuestId = null;
 
-    private void Awake()
+    public override void Init()
     {
-        QuestManager = GetComponentInParent<QuestManager>();
-        // 퀘스트 이벤트 구독
+        ClearQuestDetails();
+    }
+
+    public void SetUp(Player localPlayer)
+    {
+        if(QuestManager != null)
+        {
+            QuestManager.OnQuestStatusChanged -= HandleQuestStatusChanged;
+        }
+
+        QuestManager = localPlayer.Quest;
         QuestManager.OnQuestStatusChanged += HandleQuestStatusChanged;
 
-    }
+        abandonButton.onClick.RemoveAllListeners();
+        abandonButton.onClick.AddListener(() =>
+        {
+            if (selectedQuestId.HasValue)
+            {
+                QuestManager.AbandonQuest(selectedQuestId.Value);
+            }
+        });
 
-    private void Start()
-    {
         InitializedList();
     }
+
     private void OnDestroy()
     {
         // 구독 해제
-        QuestManager.OnQuestStatusChanged -= HandleQuestStatusChanged;
-        selectedQuestId = null;
+        if( QuestManager != null)
+        {
+            QuestManager.OnQuestStatusChanged -= HandleQuestStatusChanged;
+        }
     }
 
     private void InitializedList()
@@ -51,7 +68,6 @@ public class QuestUI : MonoBehaviour
         {
             if(status.state != QuestState.Locked)
             {
-                Debug.Log(status);
                 var data = QuestManager.GetQuestData(status.questId);
                 UpdateQuest(data, status);
             }
@@ -67,16 +83,16 @@ public class QuestUI : MonoBehaviour
         {
             UpdateQuest(data, status);
         }
-        if (selectedQuestId.HasValue && selectedQuestId.Value == data.questID)
+        if (selectedQuestId.HasValue && selectedQuestId.Value == data.id)
         {
-            ShowQuestInfo(data.questID);
+            ShowQuestInfo(data.id);
         }
     }
 
     //퀘스트 상태 업데이트
     public void UpdateQuest(QuestTemplate data, QuestProgress status)
     {
-        if (questUIItems.TryGetValue(data.questID, out var uiItem))
+        if (questUIItems.TryGetValue(data.id, out var uiItem))
         {
             uiItem.UpdateUI(status);
         }
@@ -86,7 +102,7 @@ public class QuestUI : MonoBehaviour
             QuestUIItem newUiItem = newQuestUI.GetComponent<QuestUIItem>();
 
             newUiItem.Initialize(data,status, OnQuestItemSelected);
-            questUIItems.Add(data.questID, newUiItem);
+            questUIItems.Add(data.id, newUiItem);
         }
     }
 
@@ -106,44 +122,35 @@ public class QuestUI : MonoBehaviour
 
         if(data == null || status == null) { return; }
 
+        //제목 및 메인 설명
         questNameText.text = data.questName;
+        questDescriptionText.text = data.description;
 
-        questMainScriptText.text = data.script; // 전체 퀘스트 설명
+        //목표 진행도
+        string objectiveStr = "";
 
-        if(status.currentStepIndex < data.steps.Count)
+        if(data.objectives != null && status.state >= QuestState.InProgress)
         {
-            var currentStep = data.steps[status.currentStepIndex];
-            var stepScript = currentStep.stepDescription + "\n";
+            for(int i = 0; i < data.objectives.Count; i++)
+            {
+                var obj = data.objectives[i];
+                int currentAmount = status.objectiveProgresses[i];
 
-            for (int i = 0; i < currentStep.objectives.Count; i++) {
-                var mission = currentStep.objectives[i];
-                var missionKey = status.currentStepIndex * 100 + i; 
-                //if(mission.type == MissionType.TalkTo) { continue; }
-                //int currentAmount = status.MissionProgress.ContainsKey(missionKey) ? status.MissionProgress[missionKey] : 0;
-                //stepScript += $"- {mission.missionScript} ({currentAmount} / {mission.requiredAmount})\n";
+                objectiveStr = $"- {obj.objectiveDescription} ({currentAmount} / {obj.requiredAmount})\n";
             }
-            queststepDescriptionText.text = stepScript;
+        }else if (status.state == QuestState.Ready)
+        {
+            objectiveStr = "- 해당 NPC를 찾아가 퀘스트를 수락하세요.";
         }
 
+        questObjectiveText.text = objectiveStr;
+        abandonButton.interactable = (status.state == QuestState.InProgress || status.state == QuestState.CanComplete);
     }
 
-    public void OnSelectButton()
+    public void ClearQuestDetails()
     {
-        if(selectedQuestId != null)
-        {
-            //QuestManager.SetCurrentQuest(selectedQuestId.Value);
-        }
-    }
-
-    public void RemoveQuestUI(int questId)
-    {
-        if (questUIItems.ContainsKey(questId))
-        {
-            questUIItems.Remove(questId);
-            questMainScriptText.text = "";
-            queststepDescriptionText.text = "";
-            questNameText.text = "";
-            Destroy(questUIItems[questId]);
-        }
+        questDescriptionText.text = "";
+        questObjectiveText.text = "";
+        questNameText.text = "";
     }
 }

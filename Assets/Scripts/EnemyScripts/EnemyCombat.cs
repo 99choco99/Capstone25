@@ -8,10 +8,10 @@ using Random = UnityEngine.Random;
 
 public class EnemyCombat : MonoBehaviour,IWeaponOwner
 {
-
+    public Faction OwnerFaction => Faction.EnemyTeam;
     private Enemy enemy;
     [SerializeField] private List<Weapon> weapons = new List<Weapon>();
-    [SerializeField] Attack[] attacks;
+    [SerializeField] EnemyAttackData[] attacks;
 
     public int currentAttackIndex = 0;
     [SerializeField] float guardChance;
@@ -29,7 +29,7 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     // 플레이어를 공격했을 때
     public void OnWeaponHit(IDamageable target, Collider targetCollider, Weapon weapon)
     {
-        Attack currentAttackData = attacks[currentAttackIndex];
+        AttackData currentAttackData = attacks[currentAttackIndex];
         Collider weaponCollider = weapon.GetComponent<Collider>();
         Vector3 hitPoint = targetCollider.ClosestPoint(weaponCollider.transform.position);
 
@@ -50,16 +50,16 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
             wasParried = false,
         };
 
-        target.OnDamage(damageInfo);
+        target.TakeDamage(damageInfo);
     }
 
-    private Attack ChooseBestAttack()
+    private EnemyAttackData ChooseBestAttack()
     {
         float distance = enemy.Senses.DistanceToTarget;
-        List<Attack> validAttacks = new List<Attack>();
+        List<EnemyAttackData> validAttacks = new List<EnemyAttackData>();
         float totalWeight = 0f;
 
-        foreach (Attack attack in attacks)
+        foreach (EnemyAttackData attack in attacks)
         {
             if (attack.minDistance >= distance && attack.maxDistance <= distance)
             {
@@ -72,7 +72,7 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
 
         float randomValue = Random.Range(0, totalWeight);
         float weightSum = 0f;
-        foreach (Attack attack in validAttacks)
+        foreach (EnemyAttackData attack in validAttacks)
         {
             if(weightSum >= randomValue) { return attack; }
             weightSum += attack.weight;
@@ -86,9 +86,9 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     {
         if (enemy.AnimationManager.IsPerformAction || !canAttack) { return; }
 
-        Attack selectedAttack = ChooseBestAttack();
+        EnemyAttackData selectedAttack = ChooseBestAttack();
 
-        if (selectedAttack != null) { return; }
+        if (selectedAttack == null) { return; }
         if (selectedAttack.type == AttackType.Heavy)
         {
             SoundManager.Instance.PlaySFX("HeavyAttack");
@@ -98,7 +98,7 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
             }
         }
         currentAttackIndex = System.Array.IndexOf(attacks, selectedAttack);
-        enemy.AnimationManager.PlayAnimation($"Attack{currentAttackIndex}", true);
+        enemy.AnimationManager.PlayAnimation($"AttackData{currentAttackIndex}", true);
 
 
         float randomCooldown = Random.Range(selectedAttack.minAttackCooldown, selectedAttack.maxAttackCooldown);
@@ -107,7 +107,7 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
     //방어
     public void DecideDefenseAction()
     {
-        if (enemy.Stats.dead || enemy.Stats.IsPlayingDeathBlow || enemy.AnimationManager.IsPerformAction) { return; }
+        if (enemy.Stats.IsDead || enemy.Stats.IsPlayingDeathBlow || enemy.AnimationManager.IsPerformAction) { return; }
         if (Random.value <= guardChance)
         {
             enemy.AnimationManager.PlayAnimation("Deflect", false);
@@ -121,7 +121,7 @@ public class EnemyCombat : MonoBehaviour,IWeaponOwner
         {
             weapon.EnableWeaponCollider();
         }
-        SoundManager.Instance.PlaySFX("Attack");
+        SoundManager.Instance.PlaySFX("AttackData");
 
     }
 

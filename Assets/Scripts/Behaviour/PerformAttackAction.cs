@@ -5,7 +5,7 @@ using UnityEngine;
 using Action = Unity.Behavior.Action;
 
 [Serializable, GeneratePropertyBag]
-[NodeDescription(name: "Perform Attack", story: "[Agent]가 지능적으로 공격한다", category: "Action/Enemy", id: "perform_attack")]
+[NodeDescription(name: "Perform AttackData", story: "[Agent]가 지능적으로 공격한다", category: "Action/Enemy", id: "perform_attack")]
 public partial class PerformAttackAction : Action
 {
     [SerializeReference] public BlackboardVariable<GameObject> Agent;

@@ -11,31 +11,25 @@ public class PlayerDodgeState : State
     public override void Enter()
     {
         player.Motor.Dodge();
-        player.Motor.CanRotate = false;
-        player.Stats.isInvincible = true;
+        player.Stats.IsInvincible = true;
     }
 
 
     public override void Update()
     {
-        if (!player.AnimatorManager.IsActionLocked) 
+        if (player.InputHandler.MoveInput != Vector3.zero)
         {
-            if(player.InputHandler.MoveInput != Vector3.zero)
-            {
-                stateMachine.TransitionTo(stateMachine.PlayerMoveState);
-            }
-            else
-            {
-                stateMachine.TransitionTo(stateMachine.PlayerIdleState);
-            }
+            stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
+        }
+        else
+        {
+            stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
         }
     }
 
     public override void Exit() 
     {
-        player.Motor.CanMove = true;
-        player.Motor.CanRotate = true;
-        player.Stats.isInvincible = false;
+        player.Stats.IsInvincible = false;
     }
 
 }

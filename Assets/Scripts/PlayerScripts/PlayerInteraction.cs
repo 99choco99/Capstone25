@@ -8,8 +8,6 @@ using UnityEngine;
 public class PlayerInteraction : MonoBehaviour
 {
     private Player player;
-    [SerializeField] DialogueManager dialogueManager;
-
 
     [Header("상호작용 범위")]
     [SerializeField] private float interactRange = 3f;
@@ -17,7 +15,7 @@ public class PlayerInteraction : MonoBehaviour
 
     //Event
     public event Action<List<IInteractable>> OnInteractableChanged;
-    public event Action<IInteractable> OnSelectionChanged;
+    public event Action<IInteractable, int> OnSelectionChanged;
 
 
     public IInteractable CurrentSelection { get; private set; }
@@ -33,38 +31,29 @@ public class PlayerInteraction : MonoBehaviour
         player = GetComponent<Player>();
     }
 
-    private void Start()
-    {
-        if (!player.IsLocalPlayer) { return; }
-        dialogueManager.OnConversationStart += HandleConversationStart;
-        dialogueManager.OnConversationEnd += HandleConversationEnd;
-    }
-
-    private void OnDestroy()
-    {
-        if (player != null && dialogueManager != null)
-        {
-            if (!player.IsLocalPlayer) { return; }
-            dialogueManager.OnConversationStart -= HandleConversationStart;
-            dialogueManager.OnConversationEnd -= HandleConversationEnd;
-        }
-
-    }
-
     void Update()
     {
-        if(player.StateMachine.CurrentState != player.StateMachine.ConversationState)
+        DetectInteractables();
+        if (interactablesInRange.Count > 0)
         {
-            DetectInteractables();
-            if (interactablesInRange.Count > 0)
-            {
-                HandleSelection();
-                CheckForInteraction();
-            }
+            HandleSelection();
+            CheckForInteraction();
         }
-
     }
 
+
+    private void OnDisable()
+    {
+        interactablesInRange.Clear();
+        currentHits.Clear();
+        CurrentSelection = null;
+        selectionIndex = 0;
+
+        OnInteractableChanged?.Invoke(interactablesInRange);
+        OnSelectionChanged?.Invoke(CurrentSelection, selectionIndex);
+    }
+
+    //가능한 상호작용 요소들 탐색
     private void DetectInteractables()
     {
         int hitCount = Physics.OverlapSphereNonAlloc(transform.position, interactRange,hitColliders,layerMask);
@@ -72,23 +61,35 @@ public class PlayerInteraction : MonoBehaviour
         currentHits.Clear();
         for(int i  = 0; i < hitCount; i++)
         {
-            if (hitColliders[i].GetComponent<Collider>().TryGetComponent<IInteractable>(out IInteractable interactable))
+            if (hitColliders[i].TryGetComponent<IInteractable>(out IInteractable interactable))
             {
                 currentHits.Add(interactable);
             }
         }
 
-        bool IsListEqual = new HashSet<IInteractable>(interactablesInRange).SetEquals(currentHits);
+        bool isListEqual = CheckListEquals(interactablesInRange, currentHits);
 
-        if (!IsListEqual)
+        if (!isListEqual)
         {
-            interactablesInRange = currentHits;
-            OnInteractableChanged?.Invoke(currentHits);
+            interactablesInRange.Clear();
+            interactablesInRange.AddRange(currentHits);
 
+            OnInteractableChanged?.Invoke(currentHits);
             UpdateSelection();
         }
     }
 
+    //선택 요소 변경?
+    void UpdateSelection()
+    {
+        if (selectionIndex < 0) selectionIndex = 0;
+        if (selectionIndex >= interactablesInRange.Count) selectionIndex = interactablesInRange.Count - 1;
+        CurrentSelection = interactablesInRange.Count > 0 ? interactablesInRange[selectionIndex] : null;
+        OnSelectionChanged?.Invoke(CurrentSelection, selectionIndex);
+    }
+
+
+    //스크롤 조절
     private void HandleSelection()
     {
         float scroll = player.InputHandler.Scroll;
@@ -99,14 +100,8 @@ public class PlayerInteraction : MonoBehaviour
         }
     }
 
-    void UpdateSelection()
-    {
-        if (selectionIndex < 0) selectionIndex = 0;
-        if (selectionIndex >= interactablesInRange.Count) selectionIndex = interactablesInRange.Count - 1;
-        CurrentSelection = interactablesInRange.Count > 0 ? interactablesInRange[selectionIndex] : null;
-        OnSelectionChanged?.Invoke(CurrentSelection);
-    }
 
+    //최종 선택
     void CheckForInteraction()
     {
         if (player.InputHandler.InteractionInput)
@@ -116,16 +111,16 @@ public class PlayerInteraction : MonoBehaviour
         }
     }
 
-    private void HandleConversationStart()
+
+    //상호작용 리스트에 변화가 있었는지 체크
+    private bool CheckListEquals(List<IInteractable> a, List<IInteractable> b)
     {
-        player.StateMachine.TransitionTo(player.StateMachine.ConversationState);
+        if (a.Count != b.Count) return false;
+        for (int i = 0; i < a.Count; i++)
+        {
+            if (!b.Contains(a[i])) return false;
+        }
+        return true;
     }
 
-    private void HandleConversationEnd()
-    {
-        if (player.StateMachine.CurrentState is ConversationState)
-        {
-            player.StateMachine.TransitionTo(player.StateMachine.PlayerIdleState);
-        }
-    }
 }

@@ -11,18 +11,16 @@ public class SlotData
     public SlotType slotType;
     public int slotIndex;
 
-    public string itemUID;
-
     public int? itemId;
     public int itemCount;
 
-    public ItemSpec itemSpec;
+    public ItemSpec itemSpec;       //가변 데이터
 
 
     //아이템 기본 데이터
     [NonSerialized]
     [JsonIgnore]
-    public ItemBase itemData;
+    public ItemBase itemData;       //원본 데이터
 
 
 
@@ -31,7 +29,6 @@ public class SlotData
     public void Clear()
     {
         itemId = null;
-        itemUID = null;
         itemCount = 0;
         itemData = null;
         itemSpec = default(ItemSpec);

@@ -4,165 +4,123 @@ using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class InventoryUI : UIBase
+public class InventoryUI : UIBase, IPlayerUI
 {
-    [SerializeField] private InventoryManager Inventory;
+    private InventoryManager inventory;
+
+    [Header("프리팹 설정")]
     [SerializeField] private GameObject slotPrefab;
-    [SerializeField] private GameObject itemPrefab;
-    [SerializeField] private Transform equipmentParent;
-    [SerializeField] private Transform consumptionParent;
-    [SerializeField] private Transform otherParent;
-    [SerializeField] private Transform ProfileParent;
-    [SerializeField] private Transform QuickParent;
+
+    [System.Serializable]
+    public struct SlotLayoutGroup
+    {
+        public SlotType type;
+        public Transform parentTransform;
+    }
+
+    [Header("슬롯 레이아웃 그룹 설정")]
+    [SerializeField] private List<SlotLayoutGroup> layoutGroups;
+
+    [Header("기타 UI 컴포넌트")]
     [SerializeField] private TextMeshProUGUI goldText;
 
     private Dictionary<SlotType, List<Slot>> uiSlots = new();
+    private bool isInitialized = false;
+    private Dictionary<SlotType, Transform> parentFolderDict = new();
 
-    private void Awake()
+    public override void Init()
     {
-        Inventory.OnInventoryDataInitialized += InitUI;
-        Inventory.OnSlotDataChanged += UpdateSlotUI;
-        //PlayerStats.OnLocalPlayerGoldChanged += UpdateGoldUI;
+        parentFolderDict.Clear();
+        foreach (var group in layoutGroups)
+        {
+            parentFolderDict[group.type] = group.parentTransform;
+        }
+    }
+
+    public void SetUp(Player localPlayer)
+    {
+        if (inventory != null)
+        {
+            inventory.OnSlotDataChanged -= UpdateSlotUI;
+        }
+
+        inventory = localPlayer.Inventory;
+        inventory.OnSlotDataChanged += UpdateSlotUI;
+
+        InitializeAllSlots();
     }
 
     private void OnDestroy()
     {
-        Inventory.OnInventoryDataInitialized -= InitUI;
-        Inventory.OnSlotDataChanged -= UpdateSlotUI;
-        //PlayerStats.OnLocalPlayerGoldChanged -= UpdateGoldUI;
+        if (inventory != null)
+        {
+            inventory.OnSlotDataChanged -= UpdateSlotUI;
+        }
     }
 
-    private void InitUI(SlotType type, int count)
+    private void InitializeAllSlots()
     {
-        Transform parent = GetParentForType(type);
-        if (parent == null) { return; }
-
-        uiSlots[type] = new List<Slot>();
-
-        if (type == SlotType.Profile || type == SlotType.Quick)
+        if (isInitialized) return;
+        foreach(var pair in inventory.SlotDict)
         {
-            Slot[] existingSlots = parent.GetComponentsInChildren<Slot>(true);
+            SlotType type = pair.Key;
+            int count = pair.Value.Count;
 
-            for (int i = 0; i < existingSlots.Length; i++)
-            {
-                if (i >= count) break;
+            if (!parentFolderDict.TryGetValue(type, out Transform parentFolder)) { continue; }
 
-                Slot slot = existingSlots[i];
-                slot.slotData = Inventory.Inventory[type][i];
+            uiSlots[type] = new List<Slot>();
 
-                slot.OnDropRequest += OnDropHandler;
-
-                uiSlots[type].Add(slot);
-
-
-            }
-        }
-        else
-        {
             for (int i = 0; i < count; i++)
             {
-                GameObject slotObject = Instantiate(slotPrefab, parent);
+                GameObject slotObject = Instantiate(slotPrefab, parentFolder);
                 Slot slot = slotObject.GetComponent<Slot>();
-
-                slot.slotData = Inventory.Inventory[type][i];
+                slot.slotData = inventory.SlotDict[type][i];
 
                 slot.OnDropRequest += OnDropHandler;
 
                 uiSlots[type].Add(slot);
+
+                UpdateSlotUI(type, i);
             }
         }
-    }
 
-    private void OnDropHandler(Slot droppedSlot, PointerEventData eventData)
-    {
-        OwnedItem draggedItemUI = eventData.pointerDrag?.GetComponent<OwnedItem>();
-        if (draggedItemUI == null) { return; }
-        Slot draggedSlot = draggedItemUI?.currentSlot;
-        if (droppedSlot == draggedSlot) { return; }
-
-        if (droppedSlot.slotData.hasItem)
-        {
-            if(draggedSlot.slotData.itemId == droppedSlot.slotData.itemId)
-            {
-            Inventory.MergeItems(
-                draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
-                droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
-            }
-            else
-            {
-                Inventory.SwapItems(
-                    draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
-                    droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
-            }
-        }
-        else
-        {
-            Inventory.MoveToEmptySlot(
-                draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
-                droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex);
-        }
-
-        if (draggedItemUI != null)
-        {
-            Destroy(draggedItemUI.gameObject);
-        }
-
+        isInitialized = true;
     }
 
     private void UpdateSlotUI(SlotType type, int index)
     {
-        if(!uiSlots.ContainsKey(type)) { return; }
+        if (!uiSlots.ContainsKey(type)) { return; }
         Slot uiSlot = uiSlots[type][index];
-        SlotData slotData = Inventory.Inventory[type][index];
+        SlotData slotData = inventory.SlotDict[type][index];
 
         if (slotData.hasItem)
         {
-            // 1. 슬롯의 자식 중에서 기존 아이템 UI를 찾기
-            OwnedItem ownedItem = uiSlot.GetComponentInChildren<OwnedItem>();
+            uiSlot.itemUI.gameObject.SetActive(true);
 
-            // 2. 아이템 UI가 없다면 새로 생성
-            if (ownedItem == null)
-            {
-                GameObject itemObject = Instantiate(itemPrefab, uiSlot.transform);
-                ownedItem = itemObject.GetComponent<OwnedItem>();
-            }
-            if (ownedItem != null)
-            {
-
-                ownedItem.data = slotData.itemData;
-                ownedItem.image.sprite = slotData.itemData.icon;
-                ownedItem.currentSlot = uiSlot;
-                ownedItem.currentSlot.slotData = slotData;
-                ownedItem.UpdateCountUI(slotData.itemCount);
-            }
+            uiSlot.itemUI.image.sprite = slotData.itemData.icon;
+            uiSlot.itemUI.UpdateCountUI(slotData.itemCount);
         }
         else
         {
-            foreach (Transform child in uiSlot.transform)
-            {
-                Destroy(child.gameObject);
-            }
+            uiSlot.itemUI.image.sprite = null;
+            uiSlot.itemUI.gameObject.SetActive(false);
         }
+    }
+
+
+    private void OnDropHandler(Slot draggedSlot, Slot droppedSlot)
+    {
+        if (draggedSlot == droppedSlot) { return; }
+
+        inventory.RequestMoveItem(
+            draggedSlot.slotData.slotType, draggedSlot.slotData.slotIndex,
+            droppedSlot.slotData.slotType, droppedSlot.slotData.slotIndex
+        );
     }
 
     private void UpdateGoldUI(int gold)
     {
         goldText.text = $"{gold} Gold";
-    }
-
-    private Transform GetParentForType(SlotType type)
-    {
-        Transform uiParent = type switch
-        {
-            SlotType.Equipment => equipmentParent,
-            SlotType.Consumption => consumptionParent,
-            SlotType.Other => otherParent,
-            SlotType.Profile => ProfileParent,
-            SlotType.Quick => QuickParent,
-            _ => null
-        };
-
-        return uiParent;
     }
 
 }

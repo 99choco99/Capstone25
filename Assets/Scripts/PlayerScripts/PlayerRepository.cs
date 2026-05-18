@@ -21,8 +21,7 @@ public class PlayerRepository
 
     public GameObject GetPlayer(string id)
     {
-        players.TryGetValue(id, out GameObject player);
-        return player;
+        return players.GetValueOrDefault(id);
     }
 
     public bool HasPlayer(string id)

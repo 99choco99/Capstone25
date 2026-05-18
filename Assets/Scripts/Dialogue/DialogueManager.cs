@@ -15,9 +15,21 @@ public class DialogueManager : MonoBehaviour
 
     private void Awake()
     {
-        player = GetComponentInParent<Player>();
+        Player.OnLocalPlayerSpawned += Init;
     }
 
+    private void OnDestroy()
+    {
+        Player.OnLocalPlayerSpawned -= Init;
+    }
+    public void Init(Transform playerTransform)
+    {
+        Player localPlayer = playerTransform.GetComponent<Player>();
+        if (localPlayer != null)
+        {
+            player = localPlayer;
+        }
+    }
 
     public void StartConversation(string dialogueKey)
     {
@@ -34,5 +46,18 @@ public class DialogueManager : MonoBehaviour
 
         player.InputHandler.UseInteractionInput();
         OnConversationEnd?.Invoke();
+    }
+
+    private void HandleConversationStart()
+    {
+        player.StateMachine.TransitionTo(player.StateMachine.ConversationState);
+    }
+
+    private void HandleConversationEnd()
+    {
+        if (player.StateMachine.CurrentState is ConversationState)
+        {
+            player.StateMachine.TransitionTo(player.StateMachine.PlayerGroundedState);
+        }
     }
 }

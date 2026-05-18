@@ -24,7 +24,7 @@ public class QuestAPI
         using (UnityWebRequest webRequest = UnityWebRequest.Get(url))
         {
             await webRequest.SendWebRequest();
-            Debug.Log("퀘스트 가져오기 시도");
+
             if (webRequest.result == UnityWebRequest.Result.Success)
             {
                 try

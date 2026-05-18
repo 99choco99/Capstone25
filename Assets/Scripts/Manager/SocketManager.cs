@@ -134,7 +134,6 @@ public class SocketManager : MonoBehaviour
 
                 Debug.Log($"¹°Ç° ÆÇ¸ÅµÊ. ¼­¹ö °ñµå: {newGoldAmount}");
 
-                DataManager.Instance.Player.Stats.SetGold(newGoldAmount);
             }
             catch (Exception e)
             {

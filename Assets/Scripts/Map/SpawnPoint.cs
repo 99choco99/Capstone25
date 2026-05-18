@@ -5,11 +5,11 @@ public class SpawnPoint : MonoBehaviour
 
     private void OnEnable()
     {
-        GameManager.instance.PlayerSpawner.RegisterSpawnPoint(transform);
+        PlayerSpawner.Instance.RegisterSpawnPoint(transform);
     }
     private void OnDisable()
     {
-        GameManager.instance.PlayerSpawner.UnregisterSpawnPoint(transform);
+        PlayerSpawner.Instance.UnregisterSpawnPoint(transform);
     }
 
     private void OnDrawGizmos()

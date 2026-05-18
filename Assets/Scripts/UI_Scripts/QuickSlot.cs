@@ -12,25 +12,25 @@ public class QuickSlot : Slot
 
     private void Awake()
     {
-        player = GetComponentInParent<Player>();
-        Inventory.OnQuickSlotUsed += StartCooldownVisual;
+
+
     }
 
     private void Start()
     {
-        slider = GetComponentInChildren<Slider>();
+
     }
 
     private void OnDestroy()
     {
-        Inventory.OnQuickSlotUsed -= StartCooldownVisual;
+
     }
 
 
     public override void OnDrop(PointerEventData eventData)
     {
         if (isCoolingDown) { return; }
-        if (eventData.pointerDrag.TryGetComponent<OwnedItem>(out OwnedItem newItem) && newItem.data.type == SlotType.Consumption)
+        if (eventData.pointerDrag.TryGetComponent<InventoryItemUI>(out InventoryItemUI newItem))
         {
             base.OnDrop(eventData);
         }
@@ -54,7 +54,7 @@ public class QuickSlot : Slot
         {
             return;
         }
-        StartCoroutine(CooldownCoroutine(spec.coolTime));
+        //StartCoroutine(CooldownCoroutine(spec.coolTime));
     }
 
     IEnumerator CooldownCoroutine(float time)

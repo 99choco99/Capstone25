@@ -30,7 +30,7 @@ public class EnemySense : MonoBehaviour
     }
 
     private void Update() {
-        if (enemy.Stats.dead) return;
+        if (enemy.Stats.IsDead) return;
         DetectTarget();
         if (IsTargetDetected)
         {

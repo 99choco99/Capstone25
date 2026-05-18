@@ -42,11 +42,11 @@ public class PlayerInputHandler : MonoBehaviour
 
 
     //단발성 인풋 소모
-    public void UseJumpInput() => lastJumpTime = -10f;
-    public void UseAttackInput() => lastAttackTime = -10f;
-    public void UseDodgeInput() => lastDodgeTime = -10f;
-    public void UseInteractionInput() => lastInteractionTime = -10f;
-    public void UseTargetInput() => lastTargetTime = -10f;
+    public void UseJumpInput() => lastJumpTime = float.MinValue;
+    public void UseAttackInput() => lastAttackTime = float.MinValue;
+    public void UseDodgeInput() => lastDodgeTime = float.MinValue;
+    public void UseInteractionInput() => lastInteractionTime = float.MinValue;
+    public void UseTargetInput() => lastTargetTime = float.MinValue;
 
     //UI Event
     public event Action OnEscapePressed;
@@ -55,6 +55,7 @@ public class PlayerInputHandler : MonoBehaviour
     public event Action OnSettingPressed;
     public event Action OnQuestPressed;
 
+    public event Action<bool> OnCursorStateChanged;
 
     private void Awake()
     {
@@ -66,16 +67,45 @@ public class PlayerInputHandler : MonoBehaviour
         PlayerInput.enabled = player.IsLocalPlayer;
     }
 
+
+    public void SetCursorState(bool isUnlocked)
+    {
+        IsShowMouse = isUnlocked;
+        Cursor.visible = isUnlocked;
+        Cursor.lockState = isUnlocked? CursorLockMode.Confined : CursorLockMode.Locked;
+
+        if (isUnlocked)
+        {
+            MoveInput = Vector3.zero;
+            MoveAmount = 0f;
+            LookInput = Vector2.zero;
+
+            SprintInput = false;
+            IsAttackPress = false;
+            GuardInput = false;
+            CrouchInput = false;
+
+            UseJumpInput();
+            UseAttackInput();
+            UseDodgeInput();
+            UseInteractionInput();
+        }
+
+        OnCursorStateChanged?.Invoke(isUnlocked);
+    }
+
+
     /*=============== Input System Callbacks ===================*/
     public void OnMove(InputAction.CallbackContext context)
     {
+        if (IsShowMouse) {return; }
         MoveInput = context.ReadValue<Vector3>();
         MoveAmount = Mathf.Clamp01(Mathf.Abs(MoveInput.x) + Mathf.Abs(MoveInput.z));
     }
 
     public void OnLook(InputAction.CallbackContext context)
     {
-        if (IsShowMouse) { LookInput = default; return; }
+        if (IsShowMouse) {return; }
         LookInput = context.ReadValue<Vector2>();
     }
 
@@ -88,8 +118,7 @@ public class PlayerInputHandler : MonoBehaviour
 
     public void OnAttack(InputAction.CallbackContext context)
     {
-        if (IsShowMouse) return;
-
+        if (IsShowMouse) { return; }
         if (context.started)
         {
             lastAttackTime = Time.time;
@@ -103,30 +132,33 @@ public class PlayerInputHandler : MonoBehaviour
 
     public void OnGuard(InputAction.CallbackContext context)
     {
-        if (IsShowMouse) return;
+        if (IsShowMouse) { return; }
         GuardInput = context.ReadValueAsButton();
     }
 
-    public void OnDodge(InputAction.CallbackContext context) { if (context.performed) lastDodgeTime = Time.time; }
-    public void OnJump(InputAction.CallbackContext context) { if (context.started) lastJumpTime = Time.time; }
-    public void OnInteraction(InputAction.CallbackContext context) { if (context.started) lastInteractionTime = Time.time; }
-    public void OnChangeTarget(InputAction.CallbackContext context) { if (context.started) lastTargetTime = Time.time; }
+    public void OnDodge(InputAction.CallbackContext context) { if (IsShowMouse) { return; } if (context.performed) lastDodgeTime = Time.time; }
+    public void OnJump(InputAction.CallbackContext context) { if (IsShowMouse) { return; } if (context.started) lastJumpTime = Time.time; }
+    public void OnInteraction(InputAction.CallbackContext context) { if (IsShowMouse) { return; } if (context.started) lastInteractionTime = Time.time; }
+    public void OnChangeTarget(InputAction.CallbackContext context) { if (IsShowMouse) { return; } if (context.started) lastTargetTime = Time.time; }
 
 
     public void OnSprint(InputAction.CallbackContext context)
     {
+        if (IsShowMouse) { return; }
         if (context.performed) { SprintInput = true; }
         else if (context.canceled) { SprintInput = false; }
     }
 
     public void OnShowMouse(InputAction.CallbackContext context)
     {
+        if (IsShowMouse) { return; }
         if (context.started) { IsShowMouse = true; }
         else if (context.canceled) { IsShowMouse = false; }
     }
 
     public void OnCrouch(InputAction.CallbackContext context)
     {
+        if (IsShowMouse) { return; }
         if (context.started) CrouchInput = !CrouchInput;
     }
 

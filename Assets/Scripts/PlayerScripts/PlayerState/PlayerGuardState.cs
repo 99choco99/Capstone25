@@ -4,7 +4,9 @@ using UnityEngine;
 public class PlayerGuardState : State
 {
 
+    [Header("패링 시스템")]
     private float guardTimer;
+    private float parryWindowDuration = 0.2f;
 
     public PlayerGuardState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
@@ -12,9 +14,11 @@ public class PlayerGuardState : State
     public override void Enter()
     {
         guardTimer = 0f;
-        player.AnimatorManager.PlayAction(AnimHash.Guard, false);
-
+        player.AnimatorController.PlayAction(AnimHash.Guard);
         player.Motor.StopMovement();
+
+        player.Combat.IsGuarding = true;
+        player.Combat.SetParryWindow(true);
     }
 
 
@@ -22,19 +26,24 @@ public class PlayerGuardState : State
     {
         guardTimer += Time.deltaTime;
 
-        if (!player.InputHandler.GuardInput || player.Stats.isStunned)
+        if (guardTimer > parryWindowDuration && player.Combat.IsParryWindowOpen)
+        {
+            player.Combat.SetParryWindow(false);
+        }
+
+        if (!player.InputHandler.GuardInput || player.Stats.IsStunned)
         {
             if (player.InputHandler.MoveInput == Vector3.zero)
             {
-                stateMachine.TransitionTo(stateMachine.PlayerIdleState);
+                stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
             }
             else
             {
-                stateMachine.TransitionTo(stateMachine.PlayerMoveState);
+                stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
             }
             return;
         }
-        if (player.InputHandler.JumpInput)
+        if (player.InputHandler.JumpInput && player.Motor.IsGrounded)
         {
             player.InputHandler.UseJumpInput();
             stateMachine.TransitionTo(stateMachine.PlayerJumpState);
@@ -43,6 +52,7 @@ public class PlayerGuardState : State
         if (player.InputHandler.AttackInput)
         {
             player.InputHandler.UseAttackInput(); // 입력 소비
+            stateMachine.RequestedAttack = AttackType.Normal;
             stateMachine.TransitionTo(stateMachine.PlayerAttackState);
             return;
         }
@@ -52,10 +62,10 @@ public class PlayerGuardState : State
 
 
 
-
-    public bool IsParryWindowActive()
+    public override void Exit()
     {
-        return guardTimer <= player.Combat.parryDuration;
+        player.Combat.IsGuarding = false;
+        player.Combat.SetParryWindow(false);
     }
 
 }

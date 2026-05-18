@@ -19,7 +19,7 @@ public class PlayerDamagedState : State
 
         if (exitTimer <= 0f)
         {
-            stateMachine.TransitionTo(stateMachine.PlayerIdleState);
+            stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
         }
     }
 }
