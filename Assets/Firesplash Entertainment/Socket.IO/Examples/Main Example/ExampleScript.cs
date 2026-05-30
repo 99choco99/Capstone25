@@ -64,7 +64,7 @@ public class ExampleScript : MonoBehaviour
 
 
         //The server will now receive our event and parse the data we sent. Then it will answer with two events.
-        //EXAMPLE 4: Listening for an event with plain text payload
+        //EXAMPLE 4: Listening for an event with plain choiceText payload
         sioCom.Instance.On("Welcome", (string payload) =>
         {
             Debug.Log("SERVER: " + payload);
@@ -76,7 +76,7 @@ public class ExampleScript : MonoBehaviour
         sioCom.Instance.On("TechData", (string payload) =>
         {
             ServerTechData srv = JsonUtility.FromJson<ServerTechData>(payload);
-            Debug.Log("Received the POD name from the server. Upadting UI. Oh! It's " + srv.timestamp + " by the way.");
+            Debug.Log("Received the POD NPCname from the server. Upadting UI. Oh! It's " + srv.timestamp + " by the way.");
             uiPodName.text = "I talked to " + srv.podName;
 
             //Let's ask for random numbers (example 6 below)
