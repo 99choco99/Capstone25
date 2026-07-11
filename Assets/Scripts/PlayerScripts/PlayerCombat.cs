@@ -10,15 +10,15 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
 {
     private Player player;
     public float parryDuration = 0.2f;
-    [SerializeField] private Attack[] normalAttacks; // ÀÏ¹Ý °ø°Ý ÄÞº¸ µ¥ÀÌÅÍ
+    [SerializeField] private Attack[] normalAttacks; // ï¿½Ï¹ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Þºï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
     [SerializeField] private Weapon weapon;
     [SerializeField] private Collider weaponCollider;
 
     public PlayableDirector deathblowDirector;
     public bool IsPlayingDirector;
-    [SerializeField] private PlayableAsset FrontdeathblowTimelineAsset; // ¾Õ¿¡¼­ Âî¸£±â
-    [SerializeField] private PlayableAsset BehindDeathblowTimelineAsset; // µÚ¿¡¼­ Âî¸£±â
+    [SerializeField] private PlayableAsset FrontdeathblowTimelineAsset; // ï¿½Õ¿ï¿½ï¿½ï¿½ ï¿½î¸£ï¿½ï¿½
+    [SerializeField] private PlayableAsset BehindDeathblowTimelineAsset; // ï¿½Ú¿ï¿½ï¿½ï¿½ ï¿½î¸£ï¿½ï¿½
     public event Action<Player> OnExecuteEnd;
 
     private int comboIndex = 0;
@@ -58,25 +58,25 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     }
 
 
-    //°ø°Ý ½ÃÀÛ
+    //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     public bool StartAttack()
     {
         if(player.AnimatorManager.isPerformingAction || normalAttacks.Length <= 0) { return false; }
         player.Anim.SetTrigger("Attack");
 
-        // ´ÙÀ½ °ø°ÝÀ» À§ÇØ ÄÞº¸ ÀÎµ¦½º Áõ°¡
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Þºï¿½ ï¿½Îµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         comboIndex = (comboIndex + 1) % normalAttacks.Length;
         return true;
     }
 
-    //ÄÞº¸ ¸®¼Â
+    //ï¿½Þºï¿½ ï¿½ï¿½ï¿½ï¿½
     public void ResetCombo()
     {
         comboIndex = 0;
     }
 
 
-    //ÇÃ·¹ÀÌ¾î°¡ ÀûÀ» °ø°ÝÇßÀ» ¶§
+    //ï¿½Ã·ï¿½ï¿½Ì¾î°¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
     public void OnWeaponHit(IDamageable target, Collider targetCollider, Weapon weapon)
     {
         Attack currentAttackData = normalAttacks[comboIndex];
@@ -98,7 +98,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         target.OnDamage(result);
     }
 
-    //µ¥¹ÌÁö ¹Þ¾ÒÀ»¶§ ¹ÝÀÀ
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¾ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     private void HandleDamageReaction(DamageInfo result)
     {
         if (player.Stats.dead) return;
@@ -150,7 +150,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         player.TargetingSystem.DeselectTarget();
     }
 
-    // ½ÇÁ¦ ÀÎ»ì
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½Î»ï¿½
     private void PlayFrontDeathblowTimeline(Enemy enemy)
     {
         IsPlayingDirector = true;
@@ -171,7 +171,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         var outputs = FrontdeathblowTimelineAsset.outputs;
         deathblowDirector.SetGenericBinding(outputs.ElementAt(1).sourceObject, enemy.gameObject);
         deathblowDirector.SetGenericBinding(outputs.ElementAt(2).sourceObject, player.gameObject);
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, Legacy_PlayerCamera.Instance.cameraPivotTransform.gameObject);
+        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, Camear.Instance.gameObject);
 
         enemy.Stats.isDeflecting = false;
         enemy.Stats.IsPlayingDeathBlow = true;
@@ -197,7 +197,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
         var outputs = BehindDeathblowTimelineAsset.outputs;
         deathblowDirector.SetGenericBinding(outputs.ElementAt(1).sourceObject, player.gameObject);
         deathblowDirector.SetGenericBinding(outputs.ElementAt(2).sourceObject, enemy.gameObject);
-        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, Legacy_PlayerCamera.Instance.cameraPivotTransform.gameObject);
+        deathblowDirector.SetGenericBinding(outputs.ElementAt(3).sourceObject, Camear.Instance.gameObject);
 
         OnExecuteEnd += enemy.Stats.DeathBlowProcess;
 
@@ -208,7 +208,7 @@ public class PlayerCombat : MonoBehaviour,IWeaponOwner
     public void OnDeathblowTimelineFinished(PlayableDirector director)
     {
         OnExecuteEnd?.Invoke(player);
-        OnExecuteEnd = null; // ±¸µ¶ÇØÁ¦
+        OnExecuteEnd = null; // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
         player.StateMachine.TransitionTo(player.StateMachine.PlayerIdleState);
         player.Combat.IsPlayingDirector = false;

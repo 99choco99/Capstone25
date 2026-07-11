@@ -4,10 +4,13 @@ using UnityEngine;
 [RequireComponent (typeof(CinemachineCamera))]
 public class Camear : MonoBehaviour
 {
+    public static Camear Instance;
+
     private CinemachineCamera cam;
 
-    void Start()
+    private void Awake()
     {
+        Instance = this;
         cam = GetComponent<CinemachineCamera>();
     }
     private void OnEnable()
