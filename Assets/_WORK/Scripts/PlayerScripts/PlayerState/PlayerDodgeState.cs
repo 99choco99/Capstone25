@@ -6,8 +6,8 @@ public class PlayerDodgeState : PlayerState
 
     public override bool UseRootMotion => true;
 
-    private const float iframeDuration = 0.2f;
-    private float animTime = 0f;
+    private const float iframeDuration = 0.4f;
+    private const float dodgeDuration = 1f;
     private float stateTimer = 0f;
 
 
@@ -27,7 +27,6 @@ public class PlayerDodgeState : PlayerState
 
         stateTimer = 0f;
         player.AnimatorController.PlayAction(AnimHash.Roll);
-        animTime = player.AnimatorController.GetAnimationLength(AnimHash.Roll);
         player.SetInvincible(true);
     }
 
@@ -40,7 +39,7 @@ public class PlayerDodgeState : PlayerState
             player.SetInvincible(false);
         }
 
-        if (stateTimer >= animTime)
+        if (stateTimer >= dodgeDuration)
         {
             if (player.InputHandler.MoveInput != Vector3.zero && player.InputHandler.SprintInput)
             {

@@ -1,19 +1,26 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class EnemyUI : MonoBehaviour
 {
-    private EnemyStats enemyStats;
+    [SerializeField] EnemyStats enemyStats;
     private Transform mainCameraTransform;
 
     [Header("적 상태 UI")]
     [SerializeField] Slider PostureGauge;
     [SerializeField] Slider EnemyHpUI;
 
-    [Header("강공격 알림")]
-    [SerializeField] private CanvasGroup heavyAttackIndicator;
+    private void Start()
+    {
+        EnemyStats stats = GetComponentInParent<EnemyStats>();
 
+        if (stats != null)
+        {
+            Init(stats);
+        }
+    }
 
     public void Init(EnemyStats stats)
     {
@@ -32,9 +39,6 @@ public class EnemyUI : MonoBehaviour
             UpdateHp(enemyStats.CurrentHp, enemyStats.MaxHp.GetValue());
             UpdatePostureGauge(enemyStats.CurrentPosture, enemyStats.MaxPosture.GetValue());
         }
-
-        HideHeavyAttackIndicator();
-
         if (UnityEngine.Camera.main != null) mainCameraTransform = UnityEngine.Camera.main.transform;
     }
     
@@ -77,14 +81,5 @@ public class EnemyUI : MonoBehaviour
             return;
         }
         EnemyHpUI.value = currenthp / maxHp;
-    }
-
-    public void ShowHeavyAttackIndicator()
-    {
-        if (heavyAttackIndicator != null) heavyAttackIndicator.alpha = 1f;
-    }
-    public void HideHeavyAttackIndicator()
-    {
-        if (heavyAttackIndicator != null) heavyAttackIndicator.alpha = 0f;
     }
 }

@@ -15,6 +15,13 @@ public abstract class EnemyState : State
 
     public virtual void HandleDamage(DamageEvent damageEvent)
     {
+        if (enemy.Stats.CurrentHp <= 0 || enemy.Stats.CurrentPosture >= enemy.Stats.MaxPosture.Value)
+        {
+            stateMachine.TransitionTo(stateMachine.EnemyExecuteState);
+            return;
+        }
+
+
         if (!CanBeInterruptedByHit) return;
 
         // 적 전용 피격 상태로 전환
@@ -22,9 +29,4 @@ public abstract class EnemyState : State
         stateMachine.TransitionTo(stateMachine.EnemyHitState);
     }
 
-    public virtual void OnPostureBroken()
-    {
-        // 적 전용 스턴/인살(Execution) 가능 상태로 전환
-        stateMachine.TransitionTo(stateMachine.EnemyExecuteState);
-    }
 }
