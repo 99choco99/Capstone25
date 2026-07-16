@@ -64,38 +64,38 @@ public class PlayerStats : LivingEntity
     //데미지를 입었을 때
     public override void TakeDamage(ref DamageEvent damageEvent)
     {
+
         if (IsDead || IsInvincible) return;
 
         playerCombat.EvaluateDefense(ref damageEvent);
 
         if (damageEvent.isCancelled) return;
 
-        //패링 성공시
-        if (damageEvent.wasParried) {
-            damageEvent.currentDamage = 0f;
-            damageEvent.currentKnockbackForce = 0f;
-            if (damageEvent.attacker != null && damageEvent.attacker.TryGetComponent<LivingEntity>(out var attacker))
-            {
-                attacker.TakePostureDamage(damageEvent.currentPostureDamage);
-            }
+        switch (damageEvent.defenseResult) {
+            case DefenseType.PerfectParry:
+                damageEvent.currentDamage = 0f;
+                damageEvent.currentPostureDamage *= 0.3f;
 
-        }
-        else if (damageEvent.wasGuarded)
-        {
-            //일반 가드
-            damageEvent.currentDamage = 0f;
-            TakePostureDamage(damageEvent.currentPostureDamage);
-        }
-        else
-        {
-            //방어 실패
-            TakePostureDamage(damageEvent.currentPostureDamage);
-            if (damageEvent.currentDamage > 0)
-            {
+                if (damageEvent.attacker != null && damageEvent.attacker.TryGetComponent<LivingEntity>(out var attacker))
+                {
+                    DamageEvent counterDamage = new DamageEvent() { currentPostureDamage = damageEvent.currentPostureDamage };
+                    attacker.TakeDamage(ref counterDamage);
+                }
+                break;
+            case DefenseType.NormalGuard:
+                damageEvent.currentDamage = 0f;
+                break;
+
+            case DefenseType.FailedGuard:
+                damageEvent.currentDamage *= 0.4f;
+                break;
+
+            case DefenseType.None:
                 damageEvent.currentDamage = Math.Max(1f, damageEvent.currentDamage - Defense.GetValue());
-                base.TakeDamage(ref damageEvent);
-            }
+                break;
         }
+        
+        base.TakeDamage(ref damageEvent);
         OnDamaged?.Invoke(damageEvent);
     }
 

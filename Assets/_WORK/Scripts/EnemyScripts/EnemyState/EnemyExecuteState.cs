@@ -6,12 +6,10 @@ public class EnemyExecuteState : EnemyState
     private float stateTimer = 0f;
     public EnemyExecuteState(Enemy enemy, EnemyStateMachine stateMachine) : base(enemy, stateMachine) { }
 
-
+    public override bool CanBeInterruptedByHit => false;
     public override void Enter()
     {
         stateTimer = 0f;
-
-        //움직임 멈춤
         enemy.Motor.Stop();
         enemy.AnimationController.PlayAction(AnimHash.GuardBreak);
     }
@@ -22,6 +20,7 @@ public class EnemyExecuteState : EnemyState
         if (stateTimer > groggyDuration)
         {
             //체간회복
+            enemy.Stats.ResetPosture(true);
             //부활 애니메이션 실행.
             stateMachine.TransitionTo(stateMachine.EnemyGroundedState);
         }

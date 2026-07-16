@@ -17,7 +17,15 @@ public class PlayerJumpState : PlayerState
         Vector3 calculatedInputMove = moveDir * player.Motor.MoveSpeed;
         player.Motor.SetMovement(calculatedInputMove);
 
-        if (moveDir != Vector3.zero) player.Motor.RotateToDirection(moveDir);
+        if (player.IsLockOn && player.TargetingSystem.CurrentTarget != null)
+        {
+            Vector3 directionToTarget = player.TargetingSystem.CurrentTarget.TargetTransform.position - player.transform.position;
+            player.Motor.RotateToDirection(directionToTarget);
+        }
+        else if (moveDir != Vector3.zero)
+        {
+            player.Motor.RotateToDirection(moveDir);
+        }
 
         if (player.Motor.IsGrounded && player.Motor.CurrentVerticalVelocity < 0f)
         {
