@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dce461282737aeb4a92a7178936ca41c, type: 3}
+  m_Name: EffectDB
+  m_EditorClassIdentifier: Assembly-CSharp::EffectDB
+  effectList:
+  - Name: Blood
+    Prefab: {fileID: 4932157595147607544, guid: 5c61af34ec761824ebc3c207297344c8,
+      type: 3}
+  - Name: GuardHit
+    Prefab: {fileID: 8460667080445658512, guid: 073e075c4a0aee8488be5ca633888096,
+      type: 3}
+  - Name: Parry
+    Prefab: {fileID: 8460667080445658512, guid: 073e075c4a0aee8488be5ca633888096,
+      type: 3}
