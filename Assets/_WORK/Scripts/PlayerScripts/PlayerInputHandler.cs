@@ -78,6 +78,7 @@ public class PlayerInputHandler : MonoBehaviour
         if (context.started)
         {
             GuardInput = true;
+            inputBuffer.AddCommand(ActionCommand.Guard);
         }
         else if (context.canceled)
         {

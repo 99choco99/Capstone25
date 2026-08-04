@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using static Unity.Burst.Intrinsics.X86.Avx;
 
-public enum ActionCommand { None, Attack, Dodge, Jump, Interact }
+public enum ActionCommand { None, Attack,Guard ,Dodge, Jump, Interact }
 
 public struct InputTicket
 {

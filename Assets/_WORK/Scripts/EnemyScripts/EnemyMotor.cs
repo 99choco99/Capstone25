@@ -76,9 +76,16 @@ public class EnemyMotor : MonoBehaviour
         Vector3 rightOffset = Vector3.Cross(Vector3.up, dirToTarget) * strafeDirection;
         Vector3 destination = targetPos - (dirToTarget * (desiredDistance * 0.8f)) + (rightOffset * 2.5f);
 
-        navAgent.speed = strafeSpeed;
-        navAgent.SetDestination(destination);
-
+        if(NavMesh.SamplePosition(destination,out NavMeshHit hit, 2.0f, NavMesh.AllAreas))
+        {
+            navAgent.speed = strafeSpeed;
+            navAgent.SetDestination(destination);
+        }
+        else
+        {
+            strafeDirection *= -1;
+            strafeTimer = 0.5f;
+        }
         dirToTarget.y = 0;
         if (dirToTarget != Vector3.zero)
         {
@@ -94,20 +101,18 @@ public class EnemyMotor : MonoBehaviour
         navAgent.ResetPath();
         navAgent.velocity = Vector3.zero;
     }
-
-    public void DisableMotor() => navAgent.enabled = false;
-
     // ================== 애니메이션 동기화 =================
 
     public Vector2 GetNormalizedVelocity()
     {
+        float safeSpeed = navAgent.speed > 0f ? navAgent.speed : 1f;
         Vector3 worldVelocity = navAgent.velocity;
         Vector3 localVelocity = transform.InverseTransformDirection(worldVelocity);
 
-        float forward = localVelocity.z / navAgent.speed;
-        float right = localVelocity.x / navAgent.speed;
+        float forward = localVelocity.z / safeSpeed;
+        float right = localVelocity.x / safeSpeed;
 
-        return new Vector2(forward, right);
+        return new Vector2(right, forward);
     }
 
 

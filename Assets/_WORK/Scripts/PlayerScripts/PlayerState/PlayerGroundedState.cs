@@ -29,12 +29,6 @@ public class PlayerGroundedState : PlayerState
     }
     private void HandleMovement()
     {
-        if (player.InputHandler.GuardInput)
-        {
-            stateMachine.TransitionTo(stateMachine.PlayerGuardState);
-        }
-
-
         Vector3 moveDir = player.GetDesiredMoveDirection();
         float speed = player.InputHandler.SprintInput && !player.IsLockOn ? player.Motor.SprintSpeed : player.Motor.MoveSpeed;
 
@@ -62,7 +56,10 @@ public class PlayerGroundedState : PlayerState
         else
         {
             if (player.IsLockOn)
-                player.AnimatorController.UpdateLocomotion(player.InputHandler.MoveInput.x, player.InputHandler.MoveInput.z);
+            {
+                Vector3 localMove = player.transform.InverseTransformDirection(moveDir);
+                player.AnimatorController.UpdateLocomotion(localMove.x, localMove.z);
+            }
             else
                 player.AnimatorController.UpdateLocomotion(0, player.InputHandler.MoveAmount);
         }
@@ -92,4 +89,8 @@ public class PlayerGroundedState : PlayerState
         }
     }
 
+    protected override void OnGuardCommand()
+    {
+        stateMachine.TransitionTo(stateMachine.PlayerGuardState);
+    }
 }

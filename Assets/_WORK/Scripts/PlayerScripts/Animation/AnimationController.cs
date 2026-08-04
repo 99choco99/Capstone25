@@ -33,40 +33,9 @@ public class AnimationController : MonoBehaviour
 {
     [field: SerializeField] private Animator Anim;
 
-
-    private Dictionary<int, float> AnimLength = new();
-
-
-    private void Awake()
-    {
-        CacheAnimLength();
-    }
-    private void CacheAnimLength()
-    {
-        AnimationClip[] clips = Anim.runtimeAnimatorController.animationClips;
-
-        foreach (var clip in clips)
-        {
-            int hash = Animator.StringToHash(clip.name);
-            AnimLength[hash] = clip.length;
-        }
-    }
-
-    public float GetAnimationLength(int animHash)
-    {
-        if (AnimLength.TryGetValue(animHash, out float length))
-        {
-            return length;
-        }
-        Debug.LogError($"[{gameObject.name}의 AnimationController]: 애니메이션 길이 정보 없음.{animHash}");
-        return 0.5f;
-    }
-
     public void UpdateLocomotion(float horizontalInput, float verticalInput, bool isSprinting = false)
     {
-
-        horizontalInput = Mathf.Round(horizontalInput);
-        verticalInput = isSprinting ? 2f : Mathf.Round(verticalInput);
+        verticalInput = isSprinting ? 2f : verticalInput;
 
         Anim.SetFloat("Horizontal", horizontalInput, 0.1f, Time.deltaTime);
         Anim.SetFloat("Vertical", verticalInput, 0.1f, Time.deltaTime);
@@ -81,9 +50,9 @@ public class AnimationController : MonoBehaviour
 
 
     // 구르기 등 특정 액션을 재생
-    public void PlayAction(int targetAnimHash)
+    public void PlayAction(int targetAnimHash, float transitionDuration = 0.2f)
     {
-        Anim.CrossFade(targetAnimHash, 0.2f,0,0f);
+        Anim.CrossFade(targetAnimHash, transitionDuration, 0, 0f);
     }
 
     public void OnPlaySFX(string name) => SoundManager.Instance.PlaySFX(name);

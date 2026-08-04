@@ -35,6 +35,8 @@ public class Enemy: MonoBehaviour, ITargetable
     {
         StateMachine = new EnemyStateMachine(this);
         AIController.Init(this);
+
+        Stats.OnDamaged += StateMachine.CurrentState.HandleDamage;
     }
 
     private void Update()

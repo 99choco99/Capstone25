@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class EnemyHitState : EnemyState
 {
-
+    private const float hitTime = 0.5f;
     private const float knockBackDuration = 0.2f;
 
     private DamageEvent currentHitData;
@@ -10,7 +10,7 @@ public class EnemyHitState : EnemyState
     private float knockbackForce;
 
     private float stateTimer = 0f;
-    private float hitAnimationLength = 0f;
+
 
 
     public EnemyHitState(Enemy enemy, EnemyStateMachine stateMachine) : base(enemy, stateMachine)
@@ -19,6 +19,7 @@ public class EnemyHitState : EnemyState
 
     public void SetHitData(DamageEvent damageEvent)
     {
+        currentHitData = damageEvent;
         knockbackDir = damageEvent.hitDirection;
         knockbackForce = damageEvent.currentKnockbackForce;
     }
@@ -28,12 +29,9 @@ public class EnemyHitState : EnemyState
         stateTimer = 0f;
         enemy.Motor.Stop();
 
-        //애니메이션 불러오기
-
         int animHash = enemy.Combat.EvaluateHitReaction(ref currentHitData);
         if(animHash != 0)
         {
-            hitAnimationLength = enemy.AnimationController.GetAnimationLength(animHash);
             enemy.AnimationController.PlayAction(animHash);
         }
     }
@@ -52,13 +50,13 @@ public class EnemyHitState : EnemyState
             Vector3 velocity = knockbackDir * (knockbackForce * deceleration);
             enemy.Motor.ApplyForce(velocity);
         }
-        if (stateTimer >= hitAnimationLength)
+        if (stateTimer >= hitTime)
         {
             stateMachine.TransitionTo(stateMachine.EnemyGroundedState);
         }
     }
 
     public override void Exit() {
-        
+        stateTimer = 0f;
     }
 }
