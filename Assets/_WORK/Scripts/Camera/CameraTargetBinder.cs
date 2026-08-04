@@ -20,7 +20,7 @@ public class CameraTargetBinder : MonoBehaviour
     }
     private void BindCameraToPlayer(Player player)
     {
-        cam.Follow = player.transform;
-        cam.LookAt = player.transform;
+        if (cam.Follow == null) { cam.Follow = player.transform; }
+        if (cam.LookAt == null) { cam.LookAt = player.transform; }
     }
 }

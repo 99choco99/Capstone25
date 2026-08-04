@@ -10,7 +10,6 @@ public class Weapon : MonoBehaviour
     [SerializeField] private Transform[] hitPoints;    // 검사 중심점
 
     private IWeaponOwner owner;
-    private HashSet<IDamageable> hitTargets = new HashSet<IDamageable>();
     private bool isAttackActive = false;
 
     private Vector3[] previousPoints;
@@ -40,7 +39,6 @@ public class Weapon : MonoBehaviour
     }
     public void EnableWeaponCollider()
     {
-        hitTargets.Clear();
         isAttackActive = true;
 
         for (int i = 0; i < hitPoints.Length; i++)
@@ -51,7 +49,6 @@ public class Weapon : MonoBehaviour
 
     public void DisableWeaponCollider()
     {
-        hitTargets.Clear();
         isAttackActive = false;
     }
     public void PerformHitCheck()
@@ -89,10 +86,7 @@ public class Weapon : MonoBehaviour
         {
             if(owner.OwnerFaction != target.TargetFaction)
             {
-                if (hitTargets.Add(target))
-                {
-                    owner.OnWeaponHit(target, hitCollider, this);
-                }
+                owner.OnWeaponHit(target, hitCollider, this);
             }
         }
     }

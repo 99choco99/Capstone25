@@ -25,20 +25,26 @@ public class EnemySense : MonoBehaviour
 
 
     private void Update() {
-        DetectTarget();
-        if (IsTargetDetected)
+        if (DetectTarget())
         {
+            IsTargetDetected = true;
             DistanceToTarget = Vector3.Distance(CurrentTarget.position, transform.position);
+        }
+        else if (CurrentTarget != null)
+        {
             loseTargetTimer -= Time.deltaTime;
+            DistanceToTarget = Vector3.Distance(CurrentTarget.position, transform.position);
+
             if (loseTargetTimer <= 0)
             {
+                IsTargetDetected = false;
                 SetDetectState(null);
             }
         }
     }
 
 
-    private void DetectTarget()
+    private bool DetectTarget()
     {
         int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, overlapResults, playerLayer);
 
@@ -53,21 +59,16 @@ public class EnemySense : MonoBehaviour
                 {
                     SetDetectState(potentialTarget.transform);
                     loseTargetTimer = loseTargetTime;
-                    return;
+                    return true;
                 }
             }
         }
+        return false;
 
     }
 
     public void SetDetectState(Transform target)
     {
         CurrentTarget = target;
-
-        if (target != null)
-        {
-            loseTargetTimer = loseTargetTime;
-            DistanceToTarget = Vector3.Distance(target.position, transform.position);
-        }
     }
 }

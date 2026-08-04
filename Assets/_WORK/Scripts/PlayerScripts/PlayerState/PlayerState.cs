@@ -10,18 +10,16 @@ public abstract class PlayerState : State
         this.player = player;
         this.stateMachine = stateMachine;
     }
-    public virtual bool CanBeInterruptedByHit => true;
-
     public virtual void HandleDamage(DamageEvent damageEvent)
     {
-        if (!CanBeInterruptedByHit) return;
+        if(player.Stats.CurrentPosture >= player.Stats.MaxPosture.Value)
+        {
+            stateMachine.TransitionTo(stateMachine.PlayerStunState);
+            return;
+        }
+
         stateMachine.PlayerHitState.SetHitData(damageEvent);
         stateMachine.TransitionTo(stateMachine.PlayerHitState);
-    }
-    public virtual void OnPostureBroken()
-    {
-        stateMachine.PlayerStunState.SetStunData(AnimHash.Stun);
-        stateMachine.TransitionTo(stateMachine.PlayerStunState);
     }
 
     public virtual void HandleInput()
@@ -31,18 +29,14 @@ public abstract class PlayerState : State
         player.InputBuffer.ConsumeCurrentCommand();
         switch (cmd)
         {
-            case ActionCommand.Attack:
-                OnAttackCommand();
-                break;
-            case ActionCommand.Dodge:
-                OnDodgeCommand();
-                break;
-            case ActionCommand.Jump:
-                OnJumpCommand(); 
-                break;
+            case ActionCommand.Attack: OnAttackCommand(); break;
+            case ActionCommand.Dodge: OnDodgeCommand(); break;
+            case ActionCommand.Jump: OnJumpCommand(); break;
+            case ActionCommand.Guard: OnGuardCommand(); break;
         }
     }
     protected virtual void OnAttackCommand() { }
     protected virtual void OnDodgeCommand() { }
     protected virtual void OnJumpCommand() { }
+    protected virtual void OnGuardCommand() { }
 }

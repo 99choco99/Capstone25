@@ -29,9 +29,10 @@ public class EnemyAttackState : EnemyState
         {
             Vector3 dir = (enemy.Sense.CurrentTarget.position - enemy.transform.position).normalized;
             enemy.Motor.RotationToDirect(dir);
-        } 
+        }
 
-        float nTime = stateTimer / currentAttackData.DurationInSeconds;
+        float duration = currentAttackData.DurationInSeconds > 0f ? currentAttackData.DurationInSeconds : 1f;
+        float nTime = stateTimer / duration;
 
         if (currentPhase == AttackPhase.WindUp && nTime >= currentAttackData.ActiveStartTime)
         {

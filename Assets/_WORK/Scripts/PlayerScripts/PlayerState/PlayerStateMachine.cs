@@ -56,6 +56,7 @@ public class PlayerStateMachine
         CurrentState?.Exit();
         CurrentState = nextState;
         nextState.Enter();
+        Debug.Log($"Player : {CurrentState}");
     }
 
     public void Update() => CurrentState?.Update();

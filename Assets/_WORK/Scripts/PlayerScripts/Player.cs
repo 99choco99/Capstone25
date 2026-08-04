@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    public Transform cameraRoot;
     public bool IsLocalPlayer { get; private set; } = false;
     public static event Action<Player> OnLocalPlayerSpawned;
 
@@ -35,12 +36,6 @@ public class Player : MonoBehaviour
 
     public bool IsLockOn => TargetingSystem.CurrentTarget != null;
 
-
-    public void SetGuardState(bool isGuarding)
-    {
-        Combat.IsGuarding = isGuarding;
-        Combat.SetParryWindow(isGuarding);
-    }
     public void SetInvincible(bool isInvincible) { Stats.IsInvincible = isInvincible; }
 
     public void Init(bool isLocal)
@@ -93,7 +88,6 @@ public class Player : MonoBehaviour
 
         Stats.OnLevelUp += Quest.SyncPlayerLevel;
         Stats.OnDamaged += HandleDamageRecieved;
-        Stats.OnPostureBroken += HandlePostureBroken;
         Stats.OnDeath += HandleDeath;
 
         Inventory.OnEquipmentChanged += Stats.RecalculateEquipmentStats;
@@ -111,12 +105,6 @@ public class Player : MonoBehaviour
     {
         if (Stats.IsDead || Stats.IsInvincible) return;
         StateMachine.CurrentState.HandleDamage(damageEvent);
-    }
-
-    private void HandlePostureBroken()
-    {
-        if (Stats.IsDead || Stats.IsInvincible) return;
-        StateMachine.CurrentState.OnPostureBroken();
     }
 
     private void HandleDeath() => StateMachine.TransitionTo(StateMachine.PlayerDeadState);
@@ -188,7 +176,6 @@ public class Player : MonoBehaviour
             Stats.OnDeath -= Combat.ForceResetAttackState;
             Stats.OnLevelUp -= Quest.SyncPlayerLevel;
             Stats.OnDamaged -= HandleDamageRecieved;
-            Stats.OnPostureBroken -= HandlePostureBroken;
         }
         if (Inventory != null)
             Inventory.OnEquipmentChanged -= Stats.RecalculateEquipmentStats;

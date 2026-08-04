@@ -7,7 +7,7 @@ public class EnemyGroundedState : EnemyState
 
     public override void Enter()
     {
-
+        enemy.AnimationController.PlayAction(AnimHash.Locomotion);
     }
 
     public override void Update()
@@ -15,6 +15,7 @@ public class EnemyGroundedState : EnemyState
         enemy.AIController.Tick();
 
         Vector2 currentVelocity = enemy.Motor.GetNormalizedVelocity();
+
         enemy.AnimationController.UpdateLocomotion(currentVelocity.x, currentVelocity.y, false);
     }
 

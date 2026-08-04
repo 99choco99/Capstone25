@@ -22,7 +22,6 @@ public class PlayerSFX : MonoBehaviour
 
     private void PlayDamageFeedback(DamageEvent result)
     {
-        if (result.currentDamage <= 0 && !result.wasParried && !result.wasGuarded) return;
 
         Quaternion effectRotation = Quaternion.LookRotation(result.hitDirection);
 
@@ -31,12 +30,12 @@ public class PlayerSFX : MonoBehaviour
             SoundManager.Instance.PlaySFX("HeavyHit");
             EffectManager.Instance.PlayEffect("Blood", result.hitPoint, Quaternion.identity, transform);
         }
-        else if (result.wasParried)
+        else if (result.defenseResult == DefenseType.PerfectParry)
         {
             SoundManager.Instance.PlaySFX("Parry");
             EffectManager.Instance.PlayEffect("Parry", result.hitPoint, effectRotation, transform);
         }
-        else if (result.wasGuarded)
+        else if (result.defenseResult == DefenseType.NormalGuard)
         {
             SoundManager.Instance.PlaySFX("GuardHit");
             EffectManager.Instance.PlayEffect("GuardHit", result.hitPoint, effectRotation, transform);

@@ -72,8 +72,27 @@ public abstract class LivingEntity : MonoBehaviour,IDamageable
         if (IsDead) return;
 
         CurrentHp -= damageInfo.currentDamage;
+        CurrentHp = Mathf.Max(0, CurrentHp);
         OnHpChanged?.Invoke(CurrentHp, MaxHp.GetValue());
-        // 체력이 0 이하가 되면 사망 처리
+
+
+        if(damageInfo.currentPostureDamage > 0)
+        {
+            CurrentPosture += damageInfo.currentPostureDamage;
+            currentRecoveryTimer = postureRecoveryDelay;
+
+            if (damageInfo.defenseResult == DefenseType.PerfectParry)
+            {
+                CurrentPosture = MaxPosture.GetValue() - 1f; // 붕괴 직전에서 멈춤
+            }
+            else
+            {
+                CurrentPosture = MaxPosture.GetValue();
+                OnPostureBroken?.Invoke(); // 패링이 아닐 때만 붕괴
+            }
+            OnPostureChanged?.Invoke(CurrentPosture, MaxPosture.GetValue());
+        }
+
         if (CurrentHp <= 0)
         {
             CurrentHp = 0;
@@ -82,26 +101,6 @@ public abstract class LivingEntity : MonoBehaviour,IDamageable
 
     }
 
-
-    //체간 데미지 받기
-    public virtual void TakePostureDamage(float amount)
-    {
-        if (IsDead) return;
-
-        // 체간 회복 시작 딜레이 초기화
-        CurrentPosture += amount;
-        currentRecoveryTimer = postureRecoveryDelay;
-
-        if (CurrentPosture >= MaxPosture.GetValue())
-        {
-            CurrentPosture = MaxPosture.GetValue();
-            OnPostureBroken?.Invoke();
-        }
-        else
-        {
-            OnPostureChanged?.Invoke(CurrentPosture, MaxPosture.GetValue());
-        }
-    }
 
 
     //죽었을 때

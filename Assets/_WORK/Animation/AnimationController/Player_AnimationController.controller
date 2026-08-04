@@ -1052,13 +1052,13 @@ AnimatorStateMachine:
     m_Position: {x: 590, y: 90, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -7406799428461158360}
-    m_Position: {x: 580, y: 250, z: 0}
+    m_Position: {x: 600, y: 220, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -8538306102314080794}
     m_Position: {x: 590, y: 40, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 1196454413247725555}
-    m_Position: {x: 580, y: 310, z: 0}
+    m_Position: {x: 600, y: 270, z: 0}
   - serializedVersion: 1
     m_State: {fileID: -981586033454730918}
     m_Position: {x: 160, y: 290, z: 0}
@@ -1263,7 +1263,10 @@ AnimatorStateMachine:
     m_Position: {x: -20, y: 310, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 6820338661571639549}
-    m_Position: {x: -10, y: 220, z: 0}
+    m_Position: {x: -50, y: 160, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: 8834679910553635950}
+    m_Position: {x: 250, y: 170, z: 0}
   m_ChildStateMachines: []
   m_AnyStateTransitions: []
   m_EntryTransitions: []
@@ -1712,6 +1715,32 @@ BlendTree:
   m_UseAutomaticThresholds: 1
   m_NormalizedBlendValues: 0
   m_BlendType: 0
+--- !u!1102 &8834679910553635950
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Stun
+  m_Speed: 0.5
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 7400000, guid: d351c09ccf4ff254eb7e3d2147b10190, type: 2}
+  m_Tag: Vulnerable
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
 --- !u!1102 &9026958012431296659
 AnimatorState:
   serializedVersion: 6
