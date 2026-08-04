@@ -51,10 +51,10 @@ namespace TravisGameAssets
 			floorVisible = true;
 			slowMotion = false;
 			lighting = true;
-			
-			initFov = Camera.main.fieldOfView;
-			initCamPosition = Camera.main.transform.position;
-			initCamRotation = Camera.main.transform.rotation;
+
+            initFov = UnityEngine.Camera.main.fieldOfView;
+            initCamPosition = UnityEngine.Camera.main.transform.position;
+            initCamRotation = UnityEngine.Camera.main.transform.rotation;
 			
 			hitEffects = new GameObject[particlesPool.childCount];
 			
@@ -82,9 +82,9 @@ namespace TravisGameAssets
 				if(!EventSystem.current.IsPointerOverGameObject())
 				{
 					RaycastHit hit = new RaycastHit();
-					if(floorCollider.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 1000f))
+					if(floorCollider.Raycast(UnityEngine.Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 1000f))
 					{
-						GameObject newHits = SpawnHit();
+                        GameObject newHits = SpawnHit();
 						newHits.transform.position = hit.point + newHits.transform.position;
 					}
 				}
@@ -110,16 +110,16 @@ namespace TravisGameAssets
 				ToggleLighting();
 			}
 			
-			float fov = Camera.main.fieldOfView;
+			float fov = UnityEngine.Camera.main.fieldOfView;
 			fov -= Input.GetAxis("Mouse ScrollWheel") * sensitivity;
 			fov = Mathf.Clamp(fov, minFov, maxFov);
-			Camera.main.fieldOfView = fov;
+            UnityEngine.Camera.main.fieldOfView = fov;
 			
 			if(Input.GetMouseButtonDown(1))
 			{
-				
-				Camera.main.transform.position = initCamPosition;
-				Camera.main.transform.rotation = initCamRotation;
+
+                UnityEngine.Camera.main.transform.position = initCamPosition;
+                UnityEngine.Camera.main.transform.rotation = initCamRotation;
 				
 				if(cameraRotating)
 				{
@@ -129,7 +129,7 @@ namespace TravisGameAssets
 			
 			if(Input.GetMouseButtonDown(2))
 			{
-				Camera.main.fieldOfView = initFov;
+                UnityEngine.Camera.main.fieldOfView = initFov;
 			}
 			
 			if(cameraRotating)
@@ -215,7 +215,7 @@ namespace TravisGameAssets
 		private GameObject SpawnHit()
 		{
 			GameObject spawnedHit = Instantiate(hitEffects[hitIndex]);
-			spawnedHit.transform.LookAt(Camera.main.transform);
+			spawnedHit.transform.LookAt(UnityEngine.Camera.main.transform);
 			return spawnedHit;
 		}
 
