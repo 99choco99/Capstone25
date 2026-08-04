@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="285" viewBox="0 0 1500 285" role="img" aria-labelledby="title desc">
+  <title id="title">적 AI 파이프라인</title>
+  <desc id="desc">EnemySense의 인지 결과가 EnemyAIController의 판단을 거쳐 EnemyIntent가 되고 GroundedState가 Motor와 StateMachine을 실행하는 구조</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#475569"/>
+    </marker>
+    <style>
+      .box { fill:#f8fafc; stroke:#475569; stroke-width:2; }
+      .sense { fill:#eff6ff; stroke:#2563eb; stroke-width:2.5; }
+      .brain { fill:#fff7ed; stroke:#ea580c; stroke-width:2.5; }
+      .intent { fill:#f5f3ff; stroke:#7c3aed; stroke-width:2.5; }
+      .execute { fill:#ecfdf5; stroke:#047857; stroke-width:2.5; }
+      .label { font-family:'Malgun Gothic','Segoe UI',sans-serif; font-size:20px; font-weight:600; fill:#0f172a; text-anchor:middle; }
+      .sub { font-family:'Malgun Gothic','Segoe UI',sans-serif; font-size:16px; fill:#475569; text-anchor:middle; }
+      .line { stroke:#475569; stroke-width:3; marker-end:url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1500" height="285" fill="#ffffff"/>
+  <text x="40" y="40" font-family="'Malgun Gothic','Segoe UI',sans-serif" font-size="27" font-weight="700" fill="#0f172a">적 AI 파이프라인 - 인지와 판단과 실행의 분리</text>
+
+  <line class="line" x1="230" y1="145" x2="255" y2="145"/>
+  <line class="line" x1="460" y1="145" x2="485" y2="145"/>
+  <line class="line" x1="690" y1="145" x2="715" y2="145"/>
+  <line class="line" x1="920" y1="145" x2="945" y2="145"/>
+  <line class="line" x1="1150" y1="145" x2="1175" y2="145"/>
+
+  <g transform="translate(30 90)">
+    <rect class="sense" width="200" height="110" rx="14"/>
+    <text class="label" x="100" y="43">EnemySense</text>
+    <text class="sub" x="100" y="74">감지·기억</text>
+  </g>
+  <g transform="translate(260 90)">
+    <rect class="sense" width="200" height="110" rx="14"/>
+    <text class="label" x="100" y="42">EnemyPerception</text>
+    <text class="sub" x="100" y="73">세계 정보 스냅샷</text>
+  </g>
+  <g transform="translate(490 90)">
+    <rect class="brain" width="200" height="110" rx="14"/>
+    <text class="label" x="100" y="42">EnemyAIController</text>
+    <text class="sub" x="100" y="73">판단만 수행</text>
+  </g>
+  <g transform="translate(720 90)">
+    <rect class="intent" width="200" height="110" rx="14"/>
+    <text class="label" x="100" y="42">EnemyIntent</text>
+    <text class="sub" x="100" y="73">이번 행동의 의도</text>
+  </g>
+  <g transform="translate(950 90)">
+    <rect class="execute" width="200" height="110" rx="14"/>
+    <text class="label" x="100" y="40">GroundedState</text>
+    <text class="sub" x="100" y="70">실제 명령으로 실행</text>
+  </g>
+  <g transform="translate(1180 90)">
+    <rect class="box" width="290" height="110" rx="14"/>
+    <text class="label" x="145" y="40">Motor · StateMachine</text>
+    <text class="sub" x="145" y="70">이동·회전·행동 상태 전환</text>
+  </g>
+
+  <text x="30" y="245" font-family="'Malgun Gothic','Segoe UI',sans-serif" font-size="17" fill="#475569">EnemyAIController는 Motor나 StateMachine을 직접 호출하지 않고 EnemyIntent만 반환한다.</text>
+</svg>

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="260" viewBox="0 0 1500 260" role="img" aria-labelledby="title desc">
+  <title id="title">피해 처리 파이프라인</title>
+  <desc id="desc">무기 공격 판정이 DamageRequest, 방어 판정, 피해 계산, LivingEntity 적용, DamageResult를 거쳐 상태와 연출로 전달되는 구조</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#475569"/>
+    </marker>
+    <style>
+      .box { fill:#f8fafc; stroke:#475569; stroke-width:2; }
+      .accent { fill:#eef2ff; stroke:#4f46e5; stroke-width:2.5; }
+      .result { fill:#ecfdf5; stroke:#047857; stroke-width:2.5; }
+      .label { font-family:'Malgun Gothic','Segoe UI',sans-serif; font-size:21px; font-weight:600; fill:#0f172a; text-anchor:middle; }
+      .sub { font-family:'Malgun Gothic','Segoe UI',sans-serif; font-size:16px; fill:#475569; text-anchor:middle; }
+      .line { stroke:#475569; stroke-width:3; marker-end:url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1500" height="260" fill="#ffffff"/>
+  <text x="40" y="40" font-family="'Malgun Gothic','Segoe UI',sans-serif" font-size="27" font-weight="700" fill="#0f172a">피해 처리 파이프라인</text>
+
+  <line class="line" x1="210" y1="145" x2="235" y2="145"/>
+  <line class="line" x1="420" y1="145" x2="445" y2="145"/>
+  <line class="line" x1="630" y1="145" x2="655" y2="145"/>
+  <line class="line" x1="840" y1="145" x2="865" y2="145"/>
+  <line class="line" x1="1050" y1="145" x2="1075" y2="145"/>
+  <line class="line" x1="1260" y1="145" x2="1285" y2="145"/>
+
+  <g transform="translate(30 90)">
+    <rect class="box" width="180" height="110" rx="14"/>
+    <text class="label" x="90" y="45">Weapon</text>
+    <text class="sub" x="90" y="76">공격 판정</text>
+  </g>
+  <g transform="translate(240 90)">
+    <rect class="accent" width="180" height="110" rx="14"/>
+    <text class="label" x="90" y="45">DamageRequest</text>
+    <text class="sub" x="90" y="76">변경 불가능한 입력</text>
+  </g>
+  <g transform="translate(450 90)">
+    <rect class="box" width="180" height="110" rx="14"/>
+    <text class="label" x="90" y="42">IDefenseResolver</text>
+    <text class="sub" x="90" y="73">방어·패링 판정</text>
+  </g>
+  <g transform="translate(660 90)">
+    <rect class="box" width="180" height="110" rx="14"/>
+    <text class="label" x="90" y="42">DamageCalculator</text>
+    <text class="sub" x="90" y="73">최종 수치 계산</text>
+  </g>
+  <g transform="translate(870 90)">
+    <rect class="box" width="180" height="110" rx="14"/>
+    <text class="label" x="90" y="42">LivingEntity</text>
+    <text class="sub" x="90" y="73">HP·체간 반영</text>
+  </g>
+  <g transform="translate(1080 90)">
+    <rect class="result" width="180" height="110" rx="14"/>
+    <text class="label" x="90" y="42">DamageResult</text>
+    <text class="sub" x="90" y="73">확정된 결과</text>
+  </g>
+  <g transform="translate(1290 90)">
+    <rect class="box" width="180" height="110" rx="14"/>
+    <text class="label" x="90" y="40">State · UI · SFX</text>
+    <text class="sub" x="90" y="70">상태와 피드백</text>
+  </g>
+</svg>

@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1650" height="290" viewBox="0 0 1650 290" role="img" aria-labelledby="title desc">
+  <title id="title">인살 파이프라인</title>
+  <desc id="desc">TargetingSystem이 인살 기회를 질의하고 UI와 입력이 같은 결과를 사용하며 PlayerExecution이 점유, 정렬, Timeline, 생명 표식 소비를 처리하는 구조</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#475569"/>
+    </marker>
+    <style>
+      .box { fill:#f8fafc; stroke:#475569; stroke-width:2; }
+      .query { fill:#eff6ff; stroke:#2563eb; stroke-width:2.5; }
+      .opportunity { fill:#f5f3ff; stroke:#7c3aed; stroke-width:2.5; }
+      .execute { fill:#fff7ed; stroke:#ea580c; stroke-width:2.5; }
+      .result { fill:#ecfdf5; stroke:#047857; stroke-width:2.5; }
+      .label { font-family:'Malgun Gothic','Segoe UI',sans-serif; font-size:18px; font-weight:600; fill:#0f172a; text-anchor:middle; }
+      .sub { font-family:'Malgun Gothic','Segoe UI',sans-serif; font-size:15px; fill:#475569; text-anchor:middle; }
+      .line { stroke:#475569; stroke-width:3; marker-end:url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1650" height="290" fill="#ffffff"/>
+  <text x="40" y="40" font-family="'Malgun Gothic','Segoe UI',sans-serif" font-size="27" font-weight="700" fill="#0f172a">인살 파이프라인 - 표시 조건과 실제 실행 조건의 통일</text>
+
+  <line class="line" x1="205" y1="145" x2="220" y2="145"/>
+  <line class="line" x1="405" y1="145" x2="420" y2="145"/>
+  <line class="line" x1="605" y1="145" x2="620" y2="145"/>
+  <line class="line" x1="805" y1="145" x2="820" y2="145"/>
+  <line class="line" x1="1005" y1="145" x2="1020" y2="145"/>
+  <line class="line" x1="1205" y1="145" x2="1220" y2="145"/>
+  <line class="line" x1="1405" y1="145" x2="1420" y2="145"/>
+
+  <g transform="translate(20 90)">
+    <rect class="query" width="185" height="110" rx="14"/>
+    <text class="label" x="92.5" y="42">TargetingSystem</text>
+    <text class="sub" x="92.5" y="73">후보 검색</text>
+  </g>
+  <g transform="translate(220 90)">
+    <rect class="query" width="185" height="110" rx="14"/>
+    <text class="label" x="92.5" y="35">TryGetDeathblow</text>
+    <text class="label" x="92.5" y="58">Opportunity</text>
+    <text class="sub" x="92.5" y="84">공용 유효성 질의</text>
+  </g>
+  <g transform="translate(420 90)">
+    <rect class="opportunity" width="185" height="110" rx="14"/>
+    <text class="label" x="92.5" y="36">Deathblow</text>
+    <text class="label" x="92.5" y="59">Opportunity</text>
+    <text class="sub" x="92.5" y="84">실행에 필요한 값</text>
+  </g>
+  <g transform="translate(620 90)">
+    <rect class="box" width="185" height="110" rx="14"/>
+    <text class="label" x="92.5" y="40">UI · Input</text>
+    <text class="sub" x="92.5" y="70">같은 결과 사용</text>
+  </g>
+  <g transform="translate(820 90)">
+    <rect class="execute" width="185" height="110" rx="14"/>
+    <text class="label" x="92.5" y="40">원자적 점유</text>
+    <text class="sub" x="92.5" y="70">중복 실행 방지</text>
+  </g>
+  <g transform="translate(1020 90)">
+    <rect class="execute" width="185" height="110" rx="14"/>
+    <text class="label" x="92.5" y="40">위치 정렬</text>
+    <text class="sub" x="92.5" y="70">공격자·피해자</text>
+  </g>
+  <g transform="translate(1220 90)">
+    <rect class="execute" width="185" height="110" rx="14"/>
+    <text class="label" x="92.5" y="40">Timeline</text>
+    <text class="sub" x="92.5" y="70">이름 기반 바인딩</text>
+  </g>
+  <g transform="translate(1420 90)">
+    <rect class="result" width="185" height="110" rx="14"/>
+    <text class="label" x="92.5" y="40">생명 표식 소비</text>
+    <text class="sub" x="92.5" y="70">ResolveDeathblow</text>
+  </g>
+
+  <text x="20" y="245" font-family="'Malgun Gothic','Segoe UI',sans-serif" font-size="17" fill="#475569">표식이 보였다면 같은 프레임 규칙으로 실행 가능하며, 시작 직전 한 번 더 재검증한다.</text>
+</svg>
