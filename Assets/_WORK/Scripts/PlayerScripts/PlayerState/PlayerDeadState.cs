@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PlayerDeadState : PlayerState
 {
@@ -7,6 +7,7 @@ public class PlayerDeadState : PlayerState
     public override void Enter()
     {
         player.Motor.SetMovement(Vector3.zero);
+        player.Motor.StopKnockback();
         player.Combat.ForceResetAttackState();
         player.AnimatorController.PlayAction(AnimHash.Death);
     }

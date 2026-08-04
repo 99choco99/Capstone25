@@ -1,5 +1,4 @@
-using NUnit.Framework;
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -42,7 +41,7 @@ public class PlayerSpawner
         }
     }
 
-    //ÇÃ·¹ÀÌ¾î ½ºÆù
+    //í”Œë ˆì´ì–´ ìŠ¤í°
     public void LocalPlayerSpawn(PlayerData data)
     {
         if (repository.HasPlayer(data.id)) { return; }
@@ -68,7 +67,7 @@ public class PlayerSpawner
         repository.AddPlayer(data.id, PlayerObj);
     }
 
-    //´Ù¸¥ ÇÃ·¹ÀÌ¾î ½ºÆù
+    //ë‹¤ë¥¸ í”Œë ˆì´ì–´ ìŠ¤í°
     public void RemotePlayerSpawn(NetworkPlayerData data)
     {
         if (repository.HasPlayer(data.id)) { return; }
@@ -83,7 +82,7 @@ public class PlayerSpawner
         repository.AddPlayer(data.id, newPlayer);
     }
 
-    //´Ù¸¥ ÇÃ·¹ÀÌ¾î µğ½ºÆù
+    //ë‹¤ë¥¸ í”Œë ˆì´ì–´ ë””ìŠ¤í°
     public void RemotePlayerDespawn(string id)
     {
         repository.RemovePlayer(id);
@@ -99,7 +98,7 @@ public class PlayerSpawner
         return repository.GetPlayer(id);
     }
 
-    //ÇöÀç µé¾î¿ÍÀÖ´Â PlayerObj ½ºÆù
+    //í˜„ì¬ ë“¤ì–´ì™€ìˆëŠ” PlayerObj ìŠ¤í°
     public void SpawnCurrentPlayers(List<NetworkPlayerData> RemotePlayers)
     {
         foreach (NetworkPlayerData RemotePlayer in RemotePlayers)

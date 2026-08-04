@@ -1,32 +1,38 @@
-using UnityEngine;
 
 public class EnemyBeingExecuteState : EnemyState
 {
-    public EnemyBeingExecuteState(Enemy enemy, EnemyStateMachine stateMachine) : base(enemy, stateMachine)
-    {
-    }
+    private bool isExecuted;
 
-    // ÀÎ»ì µµÁß¿¡´Â ÀÏ¹İ µ¥¹ÌÁö¸¦ ¹«½ÃÇØ¾ß ÇÔ
-    public override bool CanBeInterruptedByHit => false;
+    public EnemyBeingExecuteState(Enemy enemy, EnemyStateMachine stateMachine) : base(enemy, stateMachine) { }
+
+    public override bool CanInterrupted => false;
 
     public override void Enter()
     {
+        isExecuted = false;
         enemy.Motor.Stop();
-        enemy.Combat.ForceResetAttackState();
+        enemy.Motor.StopKnockback();
+        enemy.Combat.CancelAttack();
+        enemy.Combat.ClearDefense();
+        enemy.Stats.IsInvincible = true;
     }
 
-    public void OnExecutionFinished()
+    public override void Exit()
     {
-        //¸ñ¼û ±ğ±â
-        enemy.Stats.LoseLife();
+        enemy.Stats.IsInvincible = false;
+    }
 
-        if (enemy.Stats.CurrentLives > 0)
-        {
+    /// <summary>
+    /// ì¸ì‚´ ì¢…ë£Œ ì‹œ PlayerExecutionì´ í˜¸ì¶œ
+    /// </summary>
+    public void ExecutionFinished()
+    {
+        if (isExecuted) return;
+        isExecuted = true;
+
+        bool isLive = enemy.Stats.ProcessDeathblow();
+
+        if (!isLive && stateMachine.CurrentState == this)
             stateMachine.TransitionTo(stateMachine.EnemyGroundedState);
-        }
-        else
-        {
-            stateMachine.TransitionTo(stateMachine.EnemyDeadState);
-        }
     }
 }

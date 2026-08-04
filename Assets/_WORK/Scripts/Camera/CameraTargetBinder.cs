@@ -1,7 +1,8 @@
-using Unity.Cinemachine;
+﻿using Unity.Cinemachine;
 using UnityEngine;
 
 [RequireComponent (typeof(CinemachineCamera))]
+[RequireComponent(typeof(CinemachineCamera))]
 public class CameraTargetBinder : MonoBehaviour
 {
     private CinemachineCamera cam;

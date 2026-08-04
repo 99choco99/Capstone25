@@ -1,85 +1,71 @@
-using System.Collections;
-using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class EnemyUI : MonoBehaviour
 {
-    [SerializeField] EnemyStats enemyStats;
-    private Transform mainCameraTransform;
+    [SerializeField] private EnemyStats enemyStats;
 
-    [Header("¿˚ ªÛ≈¬ UI")]
-    [SerializeField] Slider PostureGauge;
-    [SerializeField] Slider EnemyHpUI;
+    [Header("Ï†Å ÏÉÅÌÉú UI")]
+    [SerializeField] private Slider postureGauge;
+    [SerializeField] private Slider healthGauge;
+
+    private Transform mainCameraTransform;
 
     private void Start()
     {
         EnemyStats stats = GetComponentInParent<EnemyStats>();
+        Bind(stats);
 
-        if (stats != null)
-        {
-            Init(stats);
-        }
+        UnityEngine.Camera mainCamera = UnityEngine.Camera.main;
+        mainCameraTransform = mainCamera != null ? mainCamera.transform : null;
     }
 
-    public void Init(EnemyStats stats)
+    public void Bind(EnemyStats stats)
     {
-        if(stats != null)
-        {
-            enemyStats.OnHpChanged -= UpdateHp;
-            enemyStats.OnPostureChanged -= UpdatePostureGauge;
-        }
+        Unsubscribe();
         enemyStats = stats;
 
-        if (enemyStats != null)
-        {
-            enemyStats.OnHpChanged += UpdateHp;
-            enemyStats.OnPostureChanged += UpdatePostureGauge;
+        if (enemyStats == null) return;
 
-            UpdateHp(enemyStats.CurrentHp, enemyStats.MaxHp.GetValue());
-            UpdatePostureGauge(enemyStats.CurrentPosture, enemyStats.MaxPosture.GetValue());
-        }
-        if (UnityEngine.Camera.main != null) mainCameraTransform = UnityEngine.Camera.main.transform;
+        enemyStats.OnHpChanged += UpdateHealth;
+        enemyStats.OnPostureChanged += UpdatePosture;
+
+        UpdateHealth(enemyStats.CurrentHp, enemyStats.MaxHp.GetValue());
+        UpdatePosture(enemyStats.CurrentPosture, enemyStats.MaxPosture.GetValue());
     }
-    
 
     private void OnDestroy()
     {
-        if(enemyStats != null)
-        {
-            enemyStats.OnHpChanged -= UpdateHp;
-            enemyStats.OnPostureChanged -= UpdatePostureGauge;
-        }
-    }
-    void LateUpdate()
-    {
-        if (mainCameraTransform != null) transform.forward = mainCameraTransform.forward;
+        Unsubscribe();
     }
 
-    public void UpdatePostureGauge(float currentPosture, float maxPosture)
+    private void LateUpdate()
     {
-
-        if(PostureGauge == null) { return; }
-
-        if (currentPosture <= 0f)
-        {
-            PostureGauge.value = 0f;
-            return;
-        }
-
-        PostureGauge.maxValue = maxPosture;
-        PostureGauge.value = currentPosture;
+        if (mainCameraTransform != null)
+            transform.forward = mainCameraTransform.forward;
     }
 
-    public void UpdateHp(float currenthp, float maxHp)
+    private void UpdatePosture(float currentPosture, float maxPosture)
     {
-        if (EnemyHpUI == null) return;
+        if (postureGauge == null) return;
 
-        if (maxHp <= 0f)
-        {
-            EnemyHpUI.value = 0f;
-            return;
-        }
-        EnemyHpUI.value = currenthp / maxHp;
+        postureGauge.maxValue = Mathf.Max(1f, maxPosture);
+        postureGauge.value = Mathf.Max(0f, currentPosture);
+    }
+
+    private void UpdateHealth(float currentHealth, float maxHealth)
+    {
+        if (healthGauge == null) return;
+
+        healthGauge.value = maxHealth > 0f? Mathf.Clamp01(currentHealth / maxHealth): 0f;
+    }
+
+    private void Unsubscribe()
+    {
+        if (enemyStats == null) return;
+
+        enemyStats.OnHpChanged -= UpdateHealth;
+        enemyStats.OnPostureChanged -= UpdatePosture;
     }
 }

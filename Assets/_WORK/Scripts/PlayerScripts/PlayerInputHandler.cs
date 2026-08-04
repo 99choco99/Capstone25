@@ -1,15 +1,14 @@
-using System;
+Ôªøusing System;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.EnhancedTouch;
 
+[RequireComponent(typeof(PlayerInput))]
 public class PlayerInputHandler : MonoBehaviour
 {
     [SerializeField] PlayerInput PlayerInput;
-    [SerializeField] private PlayerInputBuffer inputBuffer = new PlayerInputBuffer();
-    public PlayerInputBuffer Buffer => inputBuffer;
+    public PlayerInputBuffer Buffer { get; } = new PlayerInputBuffer();
 
-    [Header("«√∑π¿ÃæÓ ¿Œ«≤∞™")]
+    [Header("ÌîåÎ†àÏù¥Ïñ¥ Ïù∏ÌíãÍ∞í")]
     public Vector3 MoveInput { get; private set; }
     public float MoveAmount;
     public Vector2 LookInput { get; private set; }
@@ -30,6 +29,11 @@ public class PlayerInputHandler : MonoBehaviour
     public event Action OnQuestPressed;
     public event Action OnDialogueNextPressed;
 
+    private void Awake()
+    {
+        PlayerInput = GetComponent<PlayerInput>();
+    }
+
     public void SwitchToGameplayMode()
     {
         PlayerInput.SwitchCurrentActionMap("Player");
@@ -44,7 +48,9 @@ public class PlayerInputHandler : MonoBehaviour
         ClearAllInputs();
     }
 
-    //  ¿‘∑¬∞™ √ ±‚»≠ ∑Œ¡˜
+    /// <summary>
+    ///  ÏûÖÎ†•Í∞í Ï¥àÍ∏∞Ìôî Î°úÏßÅ
+    /// </summary>
     private void ClearAllInputs()
     {
         MoveInput = Vector3.zero;
@@ -78,7 +84,7 @@ public class PlayerInputHandler : MonoBehaviour
         if (context.started)
         {
             GuardInput = true;
-            inputBuffer.AddCommand(ActionCommand.Guard);
+            Buffer.AddCommand(ActionCommand.Guard);
         }
         else if (context.canceled)
         {
@@ -89,11 +95,11 @@ public class PlayerInputHandler : MonoBehaviour
 
     public void OnAttack(InputAction.CallbackContext context)
     {
-        if (context.started) inputBuffer.AddCommand(ActionCommand.Attack);
+        if (context.started) Buffer.AddCommand(ActionCommand.Attack);
     }
     public void OnJump(InputAction.CallbackContext context)
     {
-        if (context.started) inputBuffer.AddCommand(ActionCommand.Jump);
+        if (context.started) Buffer.AddCommand(ActionCommand.Jump);
     }
     public void OnInteraction(InputAction.CallbackContext context) { 
         if (context.started)
@@ -110,10 +116,15 @@ public class PlayerInputHandler : MonoBehaviour
     }
 
 
+    public void OnDodge(InputAction.CallbackContext context)
+    {
+        if (context.performed) Buffer.AddCommand(ActionCommand.Dodge);
+    }
+
     public void OnSprint(InputAction.CallbackContext context)
     {
-        if (context.started) { inputBuffer.AddCommand(ActionCommand.Dodge); SprintInput = true; }
-        else if (context.canceled) { SprintInput = false; }
+        if (context.performed) SprintInput = true;
+        else if (context.canceled) SprintInput = false;
     }
 
 

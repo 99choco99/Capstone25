@@ -1,37 +1,40 @@
-using UnityEngine;
-using static UnityEditor.SceneView;
+ï»¿using UnityEngine;
 
 
 public enum CameraMode { Gameplay, Cinematic }
 
+/// <summary>
+/// ì´ì „ ì¹´ë©”ë¼ í”„ë¦¬íŒ¹ í˜¸í™˜ìš© êµ¬í˜„ì…ë‹ˆë‹¤.
+/// í˜„ì¬ CameraSystemì˜ FreeCam/LockOnì€ SekiroCameraê°€ ë‹´ë‹¹í•©ë‹ˆë‹¤.
+/// </summary>
 public class Legacy_PlayerCamera : MonoBehaviour
 {
     public static Legacy_PlayerCamera Instance;
     public Player player;
-    public UnityEngine.Camera realCamera;                   // ½ÇÁ¦ Ä«¸Ş¶ó
+    public UnityEngine.Camera realCamera;                   // ì‹¤ì œ ì¹´ë©”ë¼
     public Transform cameraPivotTransform;      //pivot Transform
 
 
     [Header("Camera Setting")]
     private Vector3 cameraVelocity;
-    public float followSpeed = 10f;             // Ä«¸Ş¶ó ÀÌµ¿¼Óµµ
-    public float baseSensitivity = 50f;         // Ä«¸Ş¶ó °¨µµ
-    public float minimumclampAngle = -30f;      // ÃÖ¼Ò °¢µµ Á¦ÇÑ
-    public float maximumclampAngle = 60f;       // ÃÖ´ë °¢µµ Á¦ÇÑ
+    public float followSpeed = 10f;             // ì¹´ë©”ë¼ ì´ë™ì†ë„
+    public float baseSensitivity = 50f;         // ì¹´ë©”ë¼ ê°ë„
+    public float minimumclampAngle = -30f;      // ìµœì†Œ ê°ë„ ì œí•œ
+    public float maximumclampAngle = 60f;       // ìµœëŒ€ ê°ë„ ì œí•œ
     public float MaximumLockAnlge = 20f;
     public float MinimumLockAngle = -20f;
     [SerializeField] LayerMask collideLayer;
 
 
-    private float rotX;                         // Ä«¸Ş¶ó XÃà È¸Àü
-    public float rotY;                          // Ä«¸Ş¶ó YÃà È¸Àü
+    private float rotX;                         // ì¹´ë©”ë¼ Xì¶• íšŒì „
+    public float rotY;                          // ì¹´ë©”ë¼ Yì¶• íšŒì „
 
     [SerializeField] private float defaultCameraZPosition;
     public float cameraZPosition;
     private float targetCameraZPosition;
     private float cameraCollisionOffset = 0.2f;
 
-    public float smoothness;                    //Ä«¸Ş¶ó ÀÌµ¿¼Óµµ
+    public float smoothness;                    //ì¹´ë©”ë¼ ì´ë™ì†ë„
 
     public CameraMode currentMode = CameraMode.Gameplay;
     private Transform cinematicTarget;
@@ -66,17 +69,17 @@ public class Legacy_PlayerCamera : MonoBehaviour
         {
             if (cinematicTarget != null)
             {
-                // Å¸°Ù À§Ä¡¿Í È¸Àü°ªÀ¸·Î ºÎµå·´°Ô ÀÌµ¿
+                // íƒ€ê²Ÿ ìœ„ì¹˜ì™€ íšŒì „ê°’ìœ¼ë¡œ ë¶€ë“œëŸ½ê²Œ ì´ë™
                 transform.position = Vector3.SmoothDamp(transform.position, cinematicTarget.position, ref cameraVelocity, Time.deltaTime * smoothness);
                 transform.rotation = Quaternion.Slerp(transform.rotation, cinematicTarget.rotation, Time.deltaTime * smoothness);
             }
             return;
         }
 
-        //ÇÃ·¹ÀÌ¾î ÃßÀû
+        //í”Œë ˆì´ì–´ ì¶”ì 
         FollowPlayer();
 
-        //Ä«¸Ş¶ó È¸Àü
+        //ì¹´ë©”ë¼ íšŒì „
         if (player.IsLockOn)
         {
             UpdateLockOnRotation();
@@ -86,18 +89,18 @@ public class Legacy_PlayerCamera : MonoBehaviour
             UpdateFreeRotation();
         }
 
-        //Ãæµ¹ Ã³¸®
+        //ì¶©ëŒ ì²˜ë¦¬
         HandleCameraCollisions();
     }
 
-    //ÇÃ·¹ÀÌ¾î ÃßÀû
+    //í”Œë ˆì´ì–´ ì¶”ì 
     public void FollowPlayer()
     {
         Vector3 targetPosition = Vector3.SmoothDamp(transform.position, player.transform.position, ref cameraVelocity, Time.deltaTime * smoothness);
         transform.position = targetPosition;
     }
 
-    //ÀÚÀ¯½ÃÁ¡ ½Ã Ä«¸Ş¶ó ¿òÁ÷ÀÓ
+    //ììœ ì‹œì  ì‹œ ì¹´ë©”ë¼ ì›€ì§ì„
     public void UpdateFreeRotation()
     {
         float currentSensitivityMultiplier = SettingManager.Instance.MouseSensitivity;
@@ -105,14 +108,14 @@ public class Legacy_PlayerCamera : MonoBehaviour
         rotX -= player.InputHandler.LookInput.y * baseSensitivity * currentSensitivityMultiplier * Time.deltaTime;
         rotY += player.InputHandler.LookInput.x * baseSensitivity * currentSensitivityMultiplier * Time.deltaTime;
 
-        //»óÇÏ È¸Àü
+        //ìƒí•˜ íšŒì „
         rotX = Mathf.Clamp(rotX, minimumclampAngle, maximumclampAngle);
 
         transform.rotation = Quaternion.Euler(0f, rotY, 0f);
         cameraPivotTransform.localRotation = Quaternion.Euler(rotX, 0f, 0f);
     }
 
-    //¶ô¿Â ½Ã Ä«¸Ş¶ó ¿òÁ÷ÀÓ
+    //ë½ì˜¨ ì‹œ ì¹´ë©”ë¼ ì›€ì§ì„
     public void UpdateLockOnRotation()
     {
         Vector3 targetDirection = player.TargetingSystem.CurrentTarget.TargetTransform.position - transform.position;
@@ -145,7 +148,7 @@ public class Legacy_PlayerCamera : MonoBehaviour
     }
 
 
-    //Ä«¸Ş¶ó Ãæµ¹ Ã³¸®
+    //ì¹´ë©”ë¼ ì¶©ëŒ ì²˜ë¦¬
     private void HandleCameraCollisions()
     {
 
@@ -165,24 +168,24 @@ public class Legacy_PlayerCamera : MonoBehaviour
         }
 
         Vector3 newCameraLocalPosition = realCamera.transform.localPosition;
-        newCameraLocalPosition.z = Mathf.Lerp(realCamera.transform.localPosition.z, targetCameraZPosition, 0.2f); // LerpÀÇ ¼¼ ¹øÂ° ÀÎÀÚ´Â ½Ã°£º¸´Ù º¸°£ °è¼ö·Î »ç¿ëÇÏ´Â °ÍÀÌ ´õ Á÷°üÀûÀÏ ¼ö ÀÖ½À´Ï´Ù.
+        newCameraLocalPosition.z = Mathf.Lerp(realCamera.transform.localPosition.z, targetCameraZPosition, 0.2f); // Lerpì˜ ì„¸ ë²ˆì§¸ ì¸ìëŠ” ì‹œê°„ë³´ë‹¤ ë³´ê°„ ê³„ìˆ˜ë¡œ ì‚¬ìš©í•˜ëŠ” ê²ƒì´ ë” ì§ê´€ì ì¼ ìˆ˜ ìˆìŠµë‹ˆë‹¤.
         realCamera.transform.localPosition = newCameraLocalPosition;
 
     }
 
-    // ¿¬Ãâ ½ÃÀÛ(Æ¯Á¤ ´ë»óÀ» ¹Ù¶óº½)
+    // ì—°ì¶œ ì‹œì‘(íŠ¹ì • ëŒ€ìƒì„ ë°”ë¼ë´„)
     public void StartCinematicFocus(Transform target)
     {
         currentMode = CameraMode.Cinematic;
         cinematicTarget = target;
     }
 
-    // ¿¬Ãâ ³¡ (´Ù½Ã ÇÃ·¹ÀÌ¾î¿¡°Ô µ¹¾Æ¿È)
+    // ì—°ì¶œ ë (ë‹¤ì‹œ í”Œë ˆì´ì–´ì—ê²Œ ëŒì•„ì˜´)
     public void EndCinematicFocus()
     {
         currentMode = CameraMode.Gameplay;
         cinematicTarget = null;
-        cameraVelocity = Vector3.zero; // ÇÃ·¹ÀÌ¾î¿¡°Ô µ¹¾Æ°¥ ¶§ ºÎµå·´°Ô º¹±Í
+        cameraVelocity = Vector3.zero; // í”Œë ˆì´ì–´ì—ê²Œ ëŒì•„ê°ˆ ë•Œ ë¶€ë“œëŸ½ê²Œ ë³µê·€
     }
 
     public void ResetCameraZPostion()

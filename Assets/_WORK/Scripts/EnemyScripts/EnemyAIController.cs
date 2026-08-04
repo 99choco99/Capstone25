@@ -1,184 +1,375 @@
-using NUnit.Framework;
 using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEditor;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-public enum AIBrainState { Idle, Chasing, CombatReady, Attacking }
-
-public class EnemyAIController : MonoBehaviour
+/// <summary>
+/// AIì˜ ì „íˆ¬ ëª¨ë“œ
+/// </summary>
+public enum EnemyTacticalMode
 {
-    private Enemy enemy;
-    public AIBrainState currentBrainState = AIBrainState.Idle;
+    Idle,
+    Chase,
+    Engage
+}
 
-    [Header("°Å¸® ÆÇ´Ü ±âÁØ")]
-    public float combatRange = 5.5f; // ÀÌ °Å¸® ¾È¿¡ µé¾î¿À¸é °ø°İ °¡´É
-    public float chaseRange = 15.0f; // ÀÌ °Å¸® ¾È¿¡ ÇÃ·¹ÀÌ¾î°¡ ÀÖÀ¸¸é ÀÎ½ÄÇÏ°í ÂÑ¾Æ°¨
+/// <summary>AIì˜ ì˜ë„ ì¢…ë¥˜</summary>
+public enum EnemyIntentType
+{
+    HoldPosition,
+    Chase,
+    Strafe,
+    Attack,
+    Guard
+}
 
-    [Header("Çàµ¿ Å¸ÀÌ¸Ó (´«Ä¡º¸´Â ½Ã°£)")]
-    public float minActionDelay = 0.5f;
-    public float maxActionDelay = 2.0f;
-    private float actionTimer = 0f;
+/// <summary>
+/// AIì˜ ì˜ë„ ì •ë³´
+/// </summary>
+public readonly struct EnemyIntent
+{
+    public EnemyIntentType Type { get; }
+    public Vector3 TargetPosition { get; }
+    public EnemyAttackData AttackData { get; }
+    public DefenseType Defense { get; }
 
-    [Header("°ø°İ ÆĞÅÏ")]
-    public List<EnemyAttackData> pattern = new();
-    private List<EnemyAttackData> validAttacks = new();
-    private Dictionary<EnemyAttackData, float> coolDown = new();
-    public void Init(Enemy owner)
+    private EnemyIntent(EnemyIntentType type, Vector3 targetPosition = default, EnemyAttackData attack = null, DefenseType defense = DefenseType.None)
     {
-        this.enemy = owner;
+        Type = type;
+        TargetPosition = targetPosition;
+        AttackData = attack;
+        Defense = defense;
     }
 
-    public void Tick()
-    {
+    public static EnemyIntent Hold() => new(EnemyIntentType.HoldPosition);
+    public static EnemyIntent Chase(Vector3 position) => new(EnemyIntentType.Chase, position);
+    public static EnemyIntent Strafe(Vector3 position) => new(EnemyIntentType.Strafe, position);
+    public static EnemyIntent Attack(EnemyAttackData attack) => new(EnemyIntentType.Attack, default, attack);
+    public static EnemyIntent Guard(DefenseType defense) => new(EnemyIntentType.Guard, default, null, defense);
+}
 
-        if (enemy.Stats.IsDead || enemy.Sense.CurrentTarget == null)
+/// <summary>
+/// ë‹¤ìŒ í–‰ë™ì„ ê²°ì •í•˜ëŠ” AI ë‘ë‡Œ
+/// </summary>
+[RequireComponent(typeof(EnemyAttackObserver))]
+public class EnemyAIController : MonoBehaviour
+{
+    [SerializeField] private EnemyAttackObserver attackObserver;
+
+    [Header("ê±°ë¦¬ íŒë‹¨")]
+    [Tooltip("êµì „ ê±°ë¦¬")]
+    [SerializeField, Min(0.1f)] private float combatRange = 3f;
+    [Tooltip("ì´ ë°°ìˆ˜ë§Œí¼ ë©€ì–´ì§€ë©´ ì¶”ì ìœ¼ë¡œ ì „í™˜. ì „íˆ¬ ê²½ê³„ì„ ì—ì„œ ë–¨ë¦¼ ë°©ì§€")]
+    [SerializeField, Min(1f)] private float combatExitRangeMultiplier = 1.2f;
+    [Tooltip("strafe ê±°ë¦¬")]
+    [SerializeField, Min(0.1f)] private float strafeDistance = 2f;
+
+    [Header("í–‰ë™ ëŒ€ê¸°")]
+    [SerializeField, Min(0f)] private float minActionDelay = 0.5f;
+    [SerializeField, Min(0f)] private float maxActionDelay = 1.2f;
+
+    [Header("ê³µê²© íŒ¨í„´")]
+    [SerializeField] private List<EnemyAttackData> pattern = new();
+
+    [Header("ë°©ì–´")]
+    [Tooltip("ì²« íŒ¨ë§ í™•ë¥ ")]
+    [SerializeField, Range(0f, 1f)] private float parryChance = 0.1f;
+    [Tooltip("ì¼ë°˜ ê°€ë“œ í™•ë¥ ")]
+    [SerializeField, Range(0f, 1f)] private float blockChance = 0.75f;
+    [Tooltip("ì˜ˆìƒ íƒ€ê²© ë³´ë‹¤ ë¹ ë¥´ê²Œ ê°€ë“œë¥¼ ì˜¬ë¦¬ëŠ” ì‹œê°„")]
+    [SerializeField, Min(0f)] private float guardLeadTime = 0.11f;
+
+    [Header("ë°˜ê²©")]
+    [Tooltip("íŒ¨ë§ í›„ ë°˜ê²© í™•ë¥ ")]
+    [SerializeField, Range(0f, 1f)] private float counterChance = 0.45f;
+    [Tooltip("íŒ¨ë§ ì ‘ì´‰ í›„ ë°˜ê²© ì „ ìµœì†Œ ë°˜ì‘ ì‹œê°„")]
+    [SerializeField, Min(0f)] private float counterDelay = 0.2f;
+
+    public EnemyTacticalMode TacticalMode { get; private set; } = EnemyTacticalMode.Idle;
+    public float StrafeDistance => strafeDistance;
+    public float GuardLeadTime => guardLeadTime;
+
+    /// <summary>
+    /// í˜„ì¬ ê°€ëŠ¥í•œ ê³µê²©ë“¤
+    /// </summary>
+    private readonly List<EnemyAttackData> validAttacks = new();
+    private readonly Dictionary<EnemyAttackData, float> coolTimes = new();
+
+    private float attackTimer;
+    private bool IsAttackReady => Time.time >= attackTimer;
+
+    // ê°™ì€ ê³µê²©ì„ ì¤‘ë³µ íŒë‹¨í•˜ì§€ ì•Šê¸° ìœ„í•œ ì‹ë³„ì
+    private int lastAttackVersion = -1;
+    private DefenseType pendingDefense;
+    private float pendingDefenseTime;
+    private bool hasPendingDefense;
+
+    public bool canCounter;
+    private float counterDelayTime;
+
+    private void Awake()
+    {
+        attackObserver = GetComponent<EnemyAttackObserver>();
+    }
+
+    //========================= ì˜ë„ ë³€í™˜ ë° ì„ íƒ ====================
+
+
+    /// <summary>
+    /// í˜„ì¬ ê°ì§€ ê°’ì„ ì½ê³  ì´ë²ˆ í”„ë ˆì„ì˜ í–‰ë™ ì˜ë„ë¥¼ ë°˜í™˜
+    /// </summary>
+    public EnemyIntent SelectIntent(in EnemyTargetInfo perception)
+    {
+        if (!perception.HasTarget)
         {
-            currentBrainState = AIBrainState.Idle;
+            hasPendingDefense = false;
+            canCounter = false;
+            SetTacticalMode(EnemyTacticalMode.Idle);
+            return EnemyIntent.Hold();
+        }
+
+        if (!perception.CanSeeTarget)
+        {
+            hasPendingDefense = false;
+            canCounter = false;
+            SetTacticalMode(EnemyTacticalMode.Chase);
+            return EnemyIntent.Chase(perception.TargetPosition);
+        }
+
+        UpdateTacticalModeByDistance(perception.Distance);
+
+
+        //ë°˜ê²©
+        if (canCounter && Time.time >= counterDelayTime && ChooseAttack(perception.Distance, out EnemyAttackData counter, ignoreCooldown: true))
+        {
+            canCounter = false;
+            return EnemyIntent.Attack(counter);
+        }
+
+
+        // ë°©ì–´íŒë‹¨ ìš°ì„ 
+        if (GetDefenseIntent(out EnemyIntent defenseIntent))
+            return defenseIntent;
+
+
+
+        //ì¶”ê²©
+        if (TacticalMode == EnemyTacticalMode.Chase)
+        {
+            // ì¶”ì  ì¤‘ì—ë„ ì‚¬ê±°ë¦¬ê°€ ê¸´ ê³µê²©ì´ ë“±ë¡ë˜ì–´ ìˆìœ¼ë©´ ì‚¬ìš© ê°€ëŠ¥
+            if (IsAttackReady && ChooseAttack(perception.Distance, out EnemyAttackData chaseAttack))
+                return EnemyIntent.Attack(chaseAttack);
+
+            return EnemyIntent.Chase(perception.TargetPosition);
+        }
+
+        //ê³µê²©
+        if (IsAttackReady)
+        {
+            if (ChooseAttack(perception.Distance, out EnemyAttackData attack))
+                return EnemyIntent.Attack(attack);
+
+            ResetActionTimer();
+        }
+
+        return EnemyIntent.Strafe(perception.TargetPosition);
+    }
+
+
+    /// <summary>
+    /// ê±°ë¦¬ì— ë”°ë¼ ì „íˆ¬ ëª¨ë“œ ì „í™˜
+    /// </summary>
+    private void UpdateTacticalModeByDistance(float distance)
+    {
+        if (TacticalMode == EnemyTacticalMode.Idle)
+        {
+            SetTacticalMode(distance <= combatRange ? EnemyTacticalMode.Engage : EnemyTacticalMode.Chase);
             return;
         }
 
-        float distanceToPlayer = enemy.Sense.DistanceToTarget;
-
-        switch (currentBrainState)
+        if (TacticalMode == EnemyTacticalMode.Chase && distance <= combatRange)
         {
-            case AIBrainState.Idle:
-                if (distanceToPlayer <= chaseRange)
-                {
-                    currentBrainState = AIBrainState.Chasing;
-                }
-                break;
+            SetTacticalMode(EnemyTacticalMode.Engage);
+            return;
+        }
 
-            case AIBrainState.Chasing:
-                actionTimer -= Time.deltaTime;
-                if(actionTimer < 0f)
-                {
-                    if (TryAttack(distanceToPlayer)) return;
-                    actionTimer = 0.2f;
-                }
-
-                if (distanceToPlayer <= combatRange)
-                {
-                    currentBrainState = AIBrainState.CombatReady;
-                    ResetActionTimer(); // µ¹ÀÔÇÏ¸é Å¸ÀÌ¸Ó ½ÃÀÛ
-                    enemy.Motor.Stop();
-                }
-                else
-                {
-                    enemy.Motor.Chase(enemy.Sense.CurrentTarget.position);
-                }
-                break;
-
-            case AIBrainState.CombatReady:
-                if (distanceToPlayer > combatRange * 1.2f)
-                {
-                    currentBrainState = AIBrainState.Chasing;
-                    break;
-                }
-                enemy.Motor.CombatStrafe(enemy.Sense.CurrentTarget.position, combatRange);
-
-                actionTimer -= Time.deltaTime;
-                if (actionTimer <= 0f)
-                {
-                    enemy.Motor.Stop();
-                    if (!TryAttack(distanceToPlayer))
-                    {
-                        currentBrainState = AIBrainState.CombatReady;
-                        ResetActionTimer();
-                    }
-                }
-                break;
-
-            case AIBrainState.Attacking:
-                break;
+        if (TacticalMode == EnemyTacticalMode.Engage
+            && distance > combatRange * combatExitRangeMultiplier)
+        {
+            SetTacticalMode(EnemyTacticalMode.Chase);
         }
     }
 
-    private bool TryAttack(float distance)
+
+
+    /// <summary>
+    /// ì „íˆ¬ ëª¨ë“œ ì„¤ì •
+    /// </summary>
+    private void SetTacticalMode(EnemyTacticalMode nextMode)
     {
-        float totalWeight = 0f;
-        validAttacks.Clear();
+        if (TacticalMode == nextMode) return;
 
-        foreach (var atk in pattern)
-        {
-            if (coolDown.ContainsKey(atk) && coolDown[atk] > Time.time) { continue; }
-
-            if(atk.minDistance > distance || atk.maxDistance < distance) { continue; }
-            totalWeight += atk.weight;
-            validAttacks.Add(atk);
-        }
-
-        EnemyAttackData chosenAttack = null;
-
-        if (validAttacks.Count > 0)
-        {
-            float randomVal = Random.Range(0, totalWeight);
-            foreach (var attack in validAttacks)
-            {
-                randomVal -= attack.weight;
-                if (randomVal <= 0)
-                {
-                    chosenAttack = attack;
-                    break;
-                }
-            }
-        }
-
-        if (chosenAttack != null)
-        {
-            currentBrainState = AIBrainState.Attacking;
-            coolDown[chosenAttack] = Time.time + Random.Range(chosenAttack.minAttackCooldown,chosenAttack.maxAttackCooldown);
-            enemy.StateMachine.RequestedAttackData = chosenAttack;
-            enemy.StateMachine.TransitionTo(enemy.StateMachine.EnemyAttackState);
-            return true;
-        }
-        return false;
-    }
-
-
-    // °ø°İ³¡³²
-    public void OnAttackFinished()
-    {
-        currentBrainState = AIBrainState.CombatReady;
+        TacticalMode = nextMode;
         ResetActionTimer();
     }
 
+    //================= ìˆ˜ë¹„ ì˜ë„ í•¨ìˆ˜ë“¤ ============================
+
+
+    /// <summary>
+    /// ë°©ì–´ì˜ë„ë¥¼ ê°€ì ¸ì˜¤ê¸°
+    /// </summary>
+    private bool GetDefenseIntent(out EnemyIntent intent)
+    {
+        intent = default;
+
+        if (!attackObserver.IsPlayerAttacking)
+        {
+            hasPendingDefense = false;
+            return false;
+        }
+
+        if (!attackObserver.IsAttackInRange()) return false;
+
+        int version = attackObserver.curAttackVersion;
+        if (version != lastAttackVersion)
+        {
+            pendingDefense = GetDefenseDecision(version);
+            pendingDefenseTime = Mathf.Max(Time.time, attackObserver.ExpectedActiveTime - guardLeadTime);
+            hasPendingDefense = pendingDefense != DefenseType.None;
+        }
+
+        if (!hasPendingDefense) return false;
+
+        if (Time.time < pendingDefenseTime)
+        {
+            intent = EnemyIntent.Hold();
+            return true;
+        }
+
+        hasPendingDefense = false;
+        intent = EnemyIntent.Guard(pendingDefense);
+        return true;
+    }
+
+    /// <summary>
+    /// ê°™ì€ AttackVersionì—ëŠ” í•­ìƒ ê°™ì€ ê²°ì •
+    /// </summary>
+    public DefenseType GetDefenseDecision(int attackVersion)
+    {
+        if (attackVersion == lastAttackVersion)
+            return pendingDefense;
+
+        lastAttackVersion = attackVersion;
+        pendingDefense = RollDefenseType();
+        return pendingDefense;
+    }
+
+    /// <summary>
+    /// ê³µê²© í•˜ë‚˜ì— ëŒ€í•œ ë°©ì–´ ê²°ê³¼ë¥¼ í™•ë¥ ì ìœ¼ë¡œ íŒì •
+    /// </summary>
+    private DefenseType RollDefenseType()
+    {
+        float roll = Random.value;
+
+        if (roll < parryChance)
+            return DefenseType.Parry;
+
+        if (roll < parryChance + blockChance)
+            return DefenseType.NormalGuard;
+
+        return DefenseType.None;
+    }
+
+    //============================ê³µê²© ì˜ë„ í•¨ìˆ˜ë“¤ ================================
+
+    /// <summary>GuardStateê°€ íŒ¨ë§ì— ì„±ê³µí–ˆì„ ë•Œ í˜¸ì¶œ. ë°˜ê²© ì—¬ë¶€ ê²°ì •</summary>
+    public void DecideCounterAttack()
+    {
+        canCounter = Random.value <= counterChance;
+        if (canCounter)
+            counterDelayTime = Time.time + counterDelay;
+    }
+
+
+
+    /// <summary>
+    /// ê³µê²©í•˜ê¸°ë¡œ ì„ íƒ
+    /// </summary>
+    private bool ChooseAttack(float distance, out EnemyAttackData chosenAttack, bool ignoreCooldown = false)
+    {
+        chosenAttack = null;
+        validAttacks.Clear();
+
+        float totalWeight = 0f;
+        foreach (EnemyAttackData attack in pattern)
+        {
+            if (attack == null) continue;
+            if (attack.SelectionWeight <= 0f) continue;
+            if (!attack.IsInRange(distance)) continue;
+
+            // ë°˜ê²©ì€ ì¿¨ë‹¤ìš´ ë¬´ì‹œ
+            if (!ignoreCooldown && coolTimes.TryGetValue(attack, out float cool) && cool > Time.time)
+                continue;
+
+            validAttacks.Add(attack);
+            totalWeight += attack.SelectionWeight;
+        }
+
+        if (validAttacks.Count == 0 || totalWeight <= 0f) return false;
+
+
+        ///ì‚¬ìš© ê°€ëŠ¥í•œ ê³µê²©ë“¤ì˜ ê°€ì¤‘ì¹˜ë¥¼ ë½‘ì•„ì„œ í•©í•œ í›„ ëœë¤í•œ ê°’ì„ ì„¤ì •.
+        ///ëœë¤í•œ ê°’ì´ í¬í•¨ë˜ì–´ ìˆëŠ” ë²”ìœ„ë¥¼ ê³µê²©ìœ¼ë¡œ ì„¤ì •
+        float randomValue = Random.Range(0f, totalWeight);
+        foreach (EnemyAttackData attack in validAttacks)
+        {
+            randomValue -= attack.SelectionWeight;
+            if (randomValue > 0f) continue;
+
+            chosenAttack = attack;
+            break;
+        }
+
+        // ë¶€ë™ì†Œìˆ˜ì  ê²½ê³„ë•Œë¬¸ì— ì„ íƒë˜ì§€ ì•Šì€ ê²½ìš°
+        if (chosenAttack == null)
+        {
+            chosenAttack = validAttacks[validAttacks.Count - 1];
+        }
+        coolTimes[chosenAttack] = Time.time + chosenAttack.GetRandomCooldown();
+        return true;
+    }
+
+
+
+
+
+    //============ í–‰ë™ ì¿¨íƒ€ì„ ====================
+
+
+    /// <summary>
+    /// í–‰ë™ í•œë²ˆí•œë²ˆì˜ ì¿¨íƒ€ì„
+    /// </summary>
     private void ResetActionTimer()
     {
-        actionTimer = Random.Range(minActionDelay, maxActionDelay);
+        float min = Mathf.Min(minActionDelay, maxActionDelay);
+        float max = Mathf.Max(minActionDelay, maxActionDelay);
+        attackTimer = Time.time + Random.Range(min, max);
     }
 
 
-
-
-
-
-    private void OnDrawGizmosSelected()
+    /// <summary>
+    /// í–‰ë™ í›„ í˜¸ì¶œ. ë‹¤ìŒ ì˜ì‚¬ê²°ì •ì˜ ì¿¨íƒ€ì„ ì£¼ì…
+    /// </summary>
+    public void NotifyActtackCompleted()
     {
-        // 1. ÃßÀû °Å¸® (³ë¶õ»ö) & ±âº» ±³Àü °Å¸® (»¡°£»ö)
-        Handles.color = new Color(1f, 1f, 0f, 0.1f); // ¹İÅõ¸í ³ë¶õ»ö
-        Handles.DrawSolidDisc(transform.position, Vector3.up, chaseRange);
+        ResetActionTimer();
 
-        Handles.color = new Color(1f, 0f, 0f, 0.2f); // ¹İÅõ¸í »¡°£»ö
-        Handles.DrawSolidDisc(transform.position, Vector3.up, combatRange); // attackRange¿¡¼­ ÀÌ¸§ ¹Ù²Ù¼Ì´Ù¸é combatRange·Î!
-
-        // 2. µµ³Ó ¸ğ¾çÀ¸·Î ÆĞÅÏ »ç°Å¸® ±×¸®±â!
-        if (pattern != null)
+    }
+    private void OnValidate()
+    {
+        if(parryChance + blockChance >= 1f)
         {
-            foreach (var atk in pattern)
-            {
-                if (atk == null) continue;
-
-                // °ø°İ ÆĞÅÏÀÇ ÃÖ´ë »ç°Å¸®¸¦ ÆÄ¶õ»ö ¼±À¸·Î ±×¸²
-                Handles.color = Color.cyan;
-                Handles.DrawWireDisc(transform.position, Vector3.up, atk.maxDistance);
-
-                // ÅØ½ºÆ®·Î ¹«½¼ °ø°İÀÎÁö °øÁß¿¡ ¶ç¿öÁÜ (´ë¹Ú ²ÜÆÁ!)
-                GUIStyle style = new GUIStyle();
-                style.normal.textColor = Color.cyan;
-                Handles.Label(transform.position + transform.forward * atk.maxDistance, atk.name, style);
-            }
+            blockChance = 1f - parryChance;
         }
     }
-
 }

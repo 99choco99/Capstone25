@@ -1,8 +1,9 @@
-using Unity.Cinemachine;
+﻿using Unity.Cinemachine;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem.XInput;
 
+[RequireComponent(typeof(CinemachineInputAxisController))]
 public class CameraInputController : MonoBehaviour
 {
     private CinemachineInputAxisController inputController;
@@ -26,10 +27,7 @@ public class CameraInputController : MonoBehaviour
 
     private void HandleCursorState(bool isUIOpen)
     {
-        if (inputController != null) {
-
-            inputController.enabled = !isUIOpen;
-        }
+        inputController.enabled = !isUIOpen;
     }
 
     private void OnDestroy()

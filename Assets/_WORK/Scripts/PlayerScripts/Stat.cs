@@ -1,5 +1,4 @@
-using NUnit.Framework;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 
@@ -70,7 +69,13 @@ public class Stat
         }
     }
 
-    public void ClearModifiers() => modifiers.Clear();
+    public void ClearModifiers()
+    {
+        if (modifiers.Count == 0) return;
+
+        modifiers.Clear();
+        isDirty = true;
+    }
 
 
     private float CalcFinalValue()

@@ -1,16 +1,21 @@
-using UnityEngine;
+锘縰sing UnityEngine;
 
+/// <summary>
+/// 觳搓皠 攵曣创 靸來儨
+/// </summary>
 public class PlayerStunState : PlayerState
 {
     public PlayerStunState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
     private float stateTimer = 0f;
-    private float stunTime = 1.2f;
+    private const float StunTime = 1f;
 
     public override void Enter()
     {
         stateTimer = 0f;
         player.Motor.SetMovement(Vector3.zero);
+
+        player.Motor.StopKnockback();
         player.Combat.ForceResetAttackState();
         player.AnimatorController.PlayAction(AnimHash.Stun);
         
@@ -19,9 +24,8 @@ public class PlayerStunState : PlayerState
     public override void Update()
     {
         stateTimer += Time.deltaTime;
-        if(stateTimer >= stunTime)
+        if(stateTimer >= StunTime)
         {
-            //老绢唱绰 局聪皋捞记 犁积
             stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
         }
     }

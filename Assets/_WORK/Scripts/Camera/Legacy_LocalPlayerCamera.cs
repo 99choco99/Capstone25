@@ -1,9 +1,9 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using Unity.Netcode;
 
 public class Legacy_LocalPlayerCamera : MonoBehaviour
 {
-    public UnityEngine.Camera playerCamera; // Inspector Ã¢¿¡¼­ Ä«¸Ş¶ó ÄÄÆ÷³ÍÆ®¸¦ µå·¡±× ¾Ø µå·ÓÇÒ º¯¼ö
+    public UnityEngine.Camera playerCamera; // Inspector ì°½ì—ì„œ ì¹´ë©”ë¼ ì»´í¬ë„ŒíŠ¸ë¥¼ ë“œë˜ê·¸ ì•¤ ë“œë¡­í•  ë³€ìˆ˜
     Player player;
 
     void Start()

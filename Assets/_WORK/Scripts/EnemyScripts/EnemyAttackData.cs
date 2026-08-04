@@ -1,18 +1,50 @@
 using UnityEngine;
 
+
 public class EnemyAttackData : AttackData
 {
-    public override bool CanGuard => base.CanGuard;
+    [Header("AI ì„ íƒ ì¡°ê±´")]
+    [Tooltip("ìµœì†Œ ê±°ë¦¬")]
+    [SerializeField, Min(0f)] private float minDistance;
 
-    [Header("À¯Æ¿¸®Æ¼")]
-    [Tooltip("¹ßµ¿µÇ±â À§ÇÑ ÃÖ¼Ò °Å¸®")]
-    public float minDistance = 0f;
-    [Tooltip("¹ßµ¿µÇ±â À§ÇÑ ÃÖ´ë °Å¸®")]
-    public float maxDistance = 3f;
-    [Range(0f, 100f), Tooltip("¹ßµ¿ È®·ü °¡ÁßÄ¡ (³ôÀ»¼ö·Ï ¿ì¼±¼øÀ§ »ó½Â)")]
-    public float weight = 50f;
+    [Tooltip("ìµœëŒ€ ê±°ë¦¬")]
+    [SerializeField, Min(0f)] private float maxDistance = 3f;
 
-    [Header("AttackData Cooldown")]
-    public float minAttackCooldown = 1.0f; // °ø°İ ÈÄ ÃÖ¼Ò ´ë±â ½Ã°£
-    public float maxAttackCooldown = 2.0f; // °ø°İ ÈÄ ÃÖ´ë ´ë±â ½Ã°£
+    [Tooltip("ì„ íƒ ê°€ì¤‘ì¹˜")]
+    [SerializeField, Range(0f, 100f)] private float weight = 50f;
+
+    [Header("ê³µê²©ë³„ ì¿¨ë‹¤ìš´")]
+    [SerializeField, Min(0f)] private float minAttackCooldown = 1f;
+    [SerializeField, Min(0f)] private float maxAttackCooldown = 2f;
+
+    public float MinimumRange => minDistance;
+    public float MaximumRange => maxDistance;
+    public float SelectionWeight => weight;
+
+    /// <summary>
+    /// ê±°ë¦¬ì•ˆì— ìˆëŠ”ì§€
+    /// </summary>
+    public bool IsInRange(float distance)
+    {
+        return distance >= MinimumRange && distance <= MaximumRange;
+    }
+
+    /// <summary>
+    /// ëœë¤ ì¿¨íƒ€ì„ ì ìš©
+    /// </summary>
+    public float GetRandomCooldown()
+    {
+        float min = Mathf.Min(minAttackCooldown, maxAttackCooldown);
+        float max = Mathf.Max(minAttackCooldown, maxAttackCooldown);
+        return Random.Range(min, max);
+    }
+
+    private void OnValidate()
+    {
+        minDistance = Mathf.Max(0f, minDistance);
+        maxDistance = Mathf.Max(minDistance, maxDistance);
+        minAttackCooldown = Mathf.Max(0f, minAttackCooldown);
+        maxAttackCooldown = Mathf.Max(minAttackCooldown, maxAttackCooldown);
+
+    }
 }
