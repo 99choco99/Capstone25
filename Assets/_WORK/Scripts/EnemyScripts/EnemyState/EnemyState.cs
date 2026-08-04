@@ -2,8 +2,8 @@ using UnityEngine;
 
 public abstract class EnemyState : State
 {
-    protected Enemy enemy;
-    protected EnemyStateMachine stateMachine;
+    protected readonly Enemy enemy;
+    protected readonly EnemyStateMachine stateMachine;
 
     public EnemyState(Enemy enemy, EnemyStateMachine stateMachine)
     {
@@ -11,22 +11,27 @@ public abstract class EnemyState : State
         this.stateMachine = stateMachine;
     }
 
-    public virtual bool CanBeInterruptedByHit => true;
 
-    public virtual void HandleDamage(DamageEvent damageEvent)
+    /// <summary>
+    /// Hit ìœ¼ë¡œ ëŠê¸¸ ìˆ˜ ìˆëŠ” ìƒíƒœì¸ê°€
+    /// </summary>
+    public virtual bool CanInterrupted => true;
+
+
+    /// <summary>
+    /// í”¼ê²©ì‹œ ìƒíƒœ ì²˜ë¦¬
+    /// </summary>
+    public virtual void OnHit(in DamageResult result)
     {
-        if (enemy.Stats.CurrentHp <= 0 || enemy.Stats.CurrentPosture >= enemy.Stats.MaxPosture.Value)
+        if (!CanInterrupted) return;
+
+        if (stateMachine.CurrentState == stateMachine.EnemyHitState)
         {
-            stateMachine.TransitionTo(stateMachine.EnemyExecuteState);
+            stateMachine.EnemyHitState.RestartHit(result);
             return;
         }
 
-
-        if (!CanBeInterruptedByHit) return;
-
-        // Àû Àü¿ë ÇÇ°İ »óÅÂ·Î ÀüÈ¯
-        stateMachine.EnemyHitState.SetHitData(damageEvent);
+        stateMachine.EnemyHitState.SetHitData(result);
         stateMachine.TransitionTo(stateMachine.EnemyHitState);
     }
-
 }

@@ -1,46 +1,47 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System;
 
 
 public class PlayerStateMachine
 {
-    //==============»óÅÂµé==============
-    public PlayerGroundedState PlayerGroundedState { get; private set; }  // ¿òÁ÷ÀÓ »óÅÂ
-    public PlayerSprintState PlayerSprintState { get; private set; }   // ´Ş¸®´Â »óÅÂ
-    public PlayerJumpState PlayerJumpState { get; private set; } //Á¡ÇÁ »óÅÂ
-    public PlayerLandState PlayerLandState { get; private set; }
-    public PlayerDodgeState PlayerDodgeState { get; private set; } // ±¸¸£°í ÀÖ´Â »óÅÂ
+    //==============ìƒíƒœë“¤==============
+    public PlayerGroundedState PlayerGroundedState { get; private set; }  // ì›€ì§ì„ ìƒíƒœ
+    public PlayerJumpState PlayerJumpState { get; private set; } //ì í”„ ìƒíƒœ
+    public PlayerDodgeState PlayerDodgeState { get; private set; } // Shift í›„ë°© ë„ì•½ ìƒíƒœ
 
 
 
-    public PlayerAttackState PlayerAttackState { get; private set; }   // °ø°İ ÁßÀÎ »óÅÂ
-    public PlayerGuardState PlayerGuardState { get; private set; }  // °¡µå »óÅÂ
+    public PlayerAttackState PlayerAttackState { get; private set; }   // ê³µê²© ì¤‘ì¸ ìƒíƒœ
+    public PlayerGuardState PlayerGuardState { get; private set; }  // ê°€ë“œ ìƒíƒœ
     public PlayerExecuteState PlayerExecuteState { get; private set; }
     public PlayerHitState PlayerHitState { get; private set; }
 
 
     public PlayerStunState PlayerStunState { get; private set; }
     public PlayerDeadState PlayerDeadState { get; private set; }
-    public ConversationState ConversationState { get; private set; }  // ´ëÈ­ »óÅÂ
+    public ConversationState ConversationState { get; private set; }  // ëŒ€í™” ìƒíƒœ
 
 
-    //==============º¯¼öµé==============
+    //==============ë³€ìˆ˜ë“¤==============
     public AttackData RequestedAttackData { get; set; }
-    public int RequestedHitAnimHash { get; set; }
-    public PlayerState CurrentState { get; private set; }  // ÇöÀç »óÅÂ
+
+    /// <summary>
+    /// íŒì •ëœ ì¸ì‚´ ì •ë³´ë¥¼ ExecuteStateì— ì „ë‹¬
+    /// </summary>
+    public DeathblowPlan? RequestedDeathblowPlan { get; set; }
+
+    public PlayerState CurrentState { get; private set; }  // í˜„ì¬ ìƒíƒœ
 
 
 
-    //ÇÃ·¹ÀÌ¾î »óÅÂµé
+    //í”Œë ˆì´ì–´ ìƒíƒœë“¤
     public PlayerStateMachine(Player player)
     {
         PlayerGroundedState = new PlayerGroundedState(player, this);
         PlayerJumpState = new PlayerJumpState(player, this);
-        PlayerLandState = new PlayerLandState(player, this);
         PlayerAttackState = new PlayerAttackState(player, this);
         PlayerGuardState = new PlayerGuardState(player, this);
         PlayerDodgeState = new PlayerDodgeState(player, this);
-        PlayerSprintState = new PlayerSprintState(player, this);
         PlayerExecuteState = new PlayerExecuteState(player, this);
         PlayerDeadState = new PlayerDeadState(player, this);
         PlayerHitState = new PlayerHitState(player, this);
@@ -50,13 +51,14 @@ public class PlayerStateMachine
         TransitionTo(PlayerGroundedState);
     }
 
-    // »óÅÂ ÀüÀÌ
+    /// <summary>
+    /// ìƒíƒœ ì „ì´
+    /// </summary>
     public void TransitionTo(PlayerState nextState)
     {
         CurrentState?.Exit();
         CurrentState = nextState;
         nextState.Enter();
-        Debug.Log($"Player : {CurrentState}");
     }
 
     public void Update() => CurrentState?.Update();

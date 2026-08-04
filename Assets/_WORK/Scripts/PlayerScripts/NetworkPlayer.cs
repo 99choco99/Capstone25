@@ -1,5 +1,6 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
+[RequireComponent(typeof(Player))]
 public class NetworkPlayer : MonoBehaviour
 {
 
@@ -21,18 +22,18 @@ public class NetworkPlayer : MonoBehaviour
         if (player.IsLocalPlayer) return;
 
         transform.SetPositionAndRotation(Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * 10f), Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * 15f));
-        //player.Anim.SetFloat("Horizontal", horizontal);
-        //player.Anim.SetFloat("Vertical", vertical);
+        //entitiy.Anim.SetFloat("Horizontal", horizontal);
+        //entitiy.Anim.SetFloat("Vertical", vertical);
     }
 
-    // SocketManager°¡ È£ÃâÇØÁÙ ÇÔ¼ö
+    // SocketManagerê°€ í˜¸ì¶œí•´ì¤„ í•¨ìˆ˜
     public void UpdatePosition(Vector3 newPosition)
     {
         if (player.IsLocalPlayer) return;
         targetPosition = newPosition;
     }
 
-    //È¸Àü
+    //íšŒì „
     public void UpdateRotation(Quaternion newRotation)
     {
         if (player.IsLocalPlayer) return;

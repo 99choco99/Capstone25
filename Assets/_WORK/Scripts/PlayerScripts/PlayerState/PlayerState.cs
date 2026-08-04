@@ -10,15 +10,15 @@ public abstract class PlayerState : State
         this.player = player;
         this.stateMachine = stateMachine;
     }
-    public virtual void HandleDamage(DamageEvent damageEvent)
+    public virtual void HandleDamage(DamageResult result)
     {
-        if(player.Stats.CurrentPosture >= player.Stats.MaxPosture.Value)
+        if (stateMachine.CurrentState == stateMachine.PlayerHitState)
         {
-            stateMachine.TransitionTo(stateMachine.PlayerStunState);
+            stateMachine.PlayerHitState.RestartHit(result);
             return;
         }
 
-        stateMachine.PlayerHitState.SetHitData(damageEvent);
+        stateMachine.PlayerHitState.SetHitData(result);
         stateMachine.TransitionTo(stateMachine.PlayerHitState);
     }
 
@@ -39,4 +39,18 @@ public abstract class PlayerState : State
     protected virtual void OnDodgeCommand() { }
     protected virtual void OnJumpCommand() { }
     protected virtual void OnGuardCommand() { }
+
+    /// <summary>
+    /// 인살이 가능한 상태일 때 인살로 전환할 수 있도록
+    /// </summary>
+    protected bool RequestDeathblow()
+    {
+        if (player.TargetingSystem == null) return false;
+        if (!player.TargetingSystem.GetDeathblowPlan(out DeathblowPlan plan))
+            return false;
+
+        stateMachine.RequestedDeathblowPlan = plan;
+        stateMachine.TransitionTo(stateMachine.PlayerExecuteState);
+        return true;
+    }
 }

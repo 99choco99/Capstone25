@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PlayerJumpState : PlayerState
 {
@@ -8,6 +8,7 @@ public class PlayerJumpState : PlayerState
     public override void Enter()
     {
         player.AnimatorController.PlayAction(AnimHash.Jump);
+        SoundManager.Instance.PlaySFX(SfxKeys.Jump);
         player.Motor.Jump();
     }
 
@@ -22,14 +23,14 @@ public class PlayerJumpState : PlayerState
             Vector3 directionToTarget = player.TargetingSystem.CurrentTarget.TargetTransform.position - player.transform.position;
             player.Motor.RotateToDirection(directionToTarget);
         }
-        else if (moveDir != Vector3.zero)
+        else if (moveDir.sqrMagnitude > 0.0001f)
         {
             player.Motor.RotateToDirection(moveDir);
         }
 
         if (player.Motor.IsGrounded && player.Motor.CurrentVerticalVelocity < 0f)
         {
-            stateMachine.TransitionTo(stateMachine.PlayerLandState);
+            stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
         }
     }
 

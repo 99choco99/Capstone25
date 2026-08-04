@@ -1,15 +1,25 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+[RequireComponent(typeof(PlayerInputHandler), typeof(PlayerMotor), typeof(PlayerStats))]
+[RequireComponent(typeof(PlayerCombat), typeof(PlayerExecution), typeof(TargetingSystem))]
+[RequireComponent(typeof(PlayerInteraction))]
 public class Player : MonoBehaviour
 {
+    /// <summary>
+    /// ì¹´ë©”ë¼ ìœ„ì¹˜ê°€ íšŒì „í•˜ëŠ” ê¶¤ë„ ì¤‘ì‹¬
+    /// </summary>
     public Transform cameraRoot;
     public bool IsLocalPlayer { get; private set; } = false;
+
+    public static Player LocalPlayer { get; private set; }
+
     public static event Action<Player> OnLocalPlayerSpawned;
 
 
-    // ¸ğµç ÇÙ½É ÄÄÆ÷³ÍÆ®µé¿¡ ´ëÇÑ °ø¿ë ÂüÁ¶ ÁöÁ¡
+
     [field: Header("Core Systems")]
     [field: SerializeField] public PlayerInputHandler InputHandler { get; private set; }
     public PlayerInputBuffer InputBuffer => InputHandler.Buffer;
@@ -34,9 +44,20 @@ public class Player : MonoBehaviour
 
 
 
-    public bool IsLockOn => TargetingSystem.CurrentTarget != null;
+    public bool IsLockOn => TargetingSystem.HasTarget;
 
     public void SetInvincible(bool isInvincible) { Stats.IsInvincible = isInvincible; }
+
+    private void Awake()
+    {
+        InputHandler = GetComponent<PlayerInputHandler>();
+        Motor = GetComponent<PlayerMotor>();
+        Stats = GetComponent<PlayerStats>();
+        Combat = GetComponent<PlayerCombat>();
+        Execution = GetComponent<PlayerExecution>();
+        TargetingSystem = GetComponent<TargetingSystem>();
+        Interaction = GetComponent<PlayerInteraction>();
+    }
 
     public void Init(bool isLocal)
     {
@@ -50,6 +71,8 @@ public class Player : MonoBehaviour
 
         if (IsLocalPlayer)
         {
+            LocalPlayer = this;
+
             CreateSystem();
             InjectBasicStats();
             WireSystem();
@@ -87,10 +110,11 @@ public class Player : MonoBehaviour
         InputHandler.OnInteractionPressed += Interaction.ExecuteInteraction;
 
         Stats.OnLevelUp += Quest.SyncPlayerLevel;
-        Stats.OnDamaged += HandleDamageRecieved;
+        Stats.OnDamage += HandleDamageReceived;
+        Stats.OnPostureBroken += HandlePostureBroken;
         Stats.OnDeath += HandleDeath;
 
-        Inventory.OnEquipmentChanged += Stats.RecalculateEquipmentStats;
+        Inventory.OnEquipmentChanged += Stats.UpdateEquipmentStats;
 
         DialogueManager.Instance.OnConversationStart += HandleConversationStart;
         DialogueManager.Instance.OnConversationEnd += HandleConversationEnd;
@@ -101,10 +125,32 @@ public class Player : MonoBehaviour
         Quest.OnRewardFailed_InventoryFull += HandleInventoryFullWarning;
     }
 
-    private void HandleDamageRecieved(DamageEvent damageEvent)
+
+    /// <summary>
+    /// ì‹¤ì œë¡œ ë°ë¯¸ì§€ë¥¼ ì…ì—ˆì„ ë•Œ
+    /// </summary>
+    /// <param name="result"></param>
+    private void HandleDamageReceived(DamageResult result)
     {
         if (Stats.IsDead || Stats.IsInvincible) return;
-        StateMachine.CurrentState.HandleDamage(damageEvent);
+        if (!result.IsAccepted) return;
+        if (Stats.IsHealthDepleted || Stats.IsPostureBroken) return;
+
+        StateMachine.CurrentState.HandleDamage(result);
+    }
+
+    /// <summary>
+    /// ì²´ê°„ ë¶•ê´´ì‹œ ë°œìƒ
+    /// </summary>
+    private void HandlePostureBroken()
+    {
+        if (Stats.IsDead || StateMachine == null)
+            return;
+
+        if (StateMachine.CurrentState == StateMachine.PlayerStunState)
+            return;
+
+        StateMachine.TransitionTo(StateMachine.PlayerStunState);
     }
 
     private void HandleDeath() => StateMachine.TransitionTo(StateMachine.PlayerDeadState);
@@ -113,13 +159,13 @@ public class Player : MonoBehaviour
 
     private void HandleStatReward(int exp, int gold)
     {
-        Stats.AddExp(exp);         // PlayerStats¿¡ °æÇèÄ¡ Ãß°¡ ·ÎÁ÷
-        //Inventory.AddGold(gold); // ÀçÈ­¸¦ ÀÎº¥Åä¸®(¶Ç´Â Áö°©)¿¡ Ãß°¡
+        Stats.AddExp(exp);         // PlayerStatsì— ê²½í—˜ì¹˜ ì¶”ê°€ ë¡œì§
+        //Inventory.AddGold(gold); // ì¬í™”ë¥¼ ì¸ë²¤í† ë¦¬(ë˜ëŠ” ì§€ê°‘)ì— ì¶”ê°€
     }
 
     private void HandleItemReward(int itemId, int count)
     {
-        Inventory.AddItem(itemId, count); // ÀÌ¹Ì °ËÁõµÈ ¾ÆÀÌÅÛÀÌ¹Ç·Î ¾ÈÀüÇÏ°Ô µé¾î°¨!
+        Inventory.AddItem(itemId, count); // ì´ë¯¸ ê²€ì¦ëœ ì•„ì´í…œì´ë¯€ë¡œ ì•ˆì „í•˜ê²Œ ë“¤ì–´ê°!
     }
     private bool HandleCheckInventorySpace(int itemId)
     {
@@ -130,18 +176,22 @@ public class Player : MonoBehaviour
 
     private void HandleInventoryFullWarning()
     {
-        Debug.LogWarning("ÀÎº¥Åä¸®°¡ ²Ë Â÷¼­ Äù½ºÆ®¸¦ ¿Ï·áÇÒ ¼ö ¾ø½À´Ï´Ù!");
-        // TODO: MainUIManager.Instance.ShowSystemMessage("ÀÎº¥Åä¸® °ø°£ÀÌ ºÎÁ·ÇÕ´Ï´Ù.");
+        Debug.LogWarning("ì¸ë²¤í† ë¦¬ê°€ ê½‰ ì°¨ì„œ í€˜ìŠ¤íŠ¸ë¥¼ ì™„ë£Œí•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤!");
+        // TODO: MainUIManager.Instance.ShowSystemMessage("ì¸ë²¤í† ë¦¬ ê³µê°„ì´ ë¶€ì¡±í•©ë‹ˆë‹¤.");
     }
 
 
+    /// <summary>
+    /// ì¹´ë©”ë¼ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ì´ë™ë°©í–¥ ê°€ì ¸ì˜¤ê¸°
+    /// </summary>
+    /// <returns></returns>
     public Vector3 GetDesiredMoveDirection()
     {
         Transform camTransform = Camera.main.transform;
         Vector3 camForward = camTransform.forward; camForward.y = 0f;
         Vector3 camRight = camTransform.right; camRight.y = 0f;
 
-        // Ä«¸Ş¶ó ±âÁØ Å°º¸µå ÀÔ·Â ¹æÇâ °è»ê
+        // ì¹´ë©”ë¼ ê¸°ì¤€ í‚¤ë³´ë“œ ì…ë ¥ ë°©í–¥ ê³„ì‚°
         return (camForward.normalized * InputHandler.MoveInput.z + camRight.normalized * InputHandler.MoveInput.x).normalized;
     }
 
@@ -149,11 +199,11 @@ public class Player : MonoBehaviour
 
     private void Update()
     {
-        if (!IsLocalPlayer) return; // ·ÎÄÃ ÇÃ·¹ÀÌ¾î¸¸ Á¶ÀÛ °¡´É
+        if (!IsLocalPlayer) return; // ë¡œì»¬ í”Œë ˆì´ì–´ë§Œ ì¡°ì‘ ê°€ëŠ¥
 
         if (IsLockOn)
         {
-            TargetingSystem.SwitchTargetUpdates(InputHandler.LookInput.x);
+            TargetingSystem.UpdateTargetSwitch(InputHandler.LookInput.x);
         }
 
         StateMachine?.Update();
@@ -161,6 +211,9 @@ public class Player : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (LocalPlayer == this)
+            LocalPlayer = null;
+
         UnwireSystem();
     }
     private void UnwireSystem()
@@ -171,14 +224,18 @@ public class Player : MonoBehaviour
             InputHandler.OnTargetPressed -= TargetingSystem.ToggleTarget;
             InputHandler.OnInteractionPressed -= Interaction.ExecuteInteraction;
         }
-        if (Stats != null && Combat != null && Quest != null)
+        if (Stats != null)
         {
-            Stats.OnDeath -= Combat.ForceResetAttackState;
-            Stats.OnLevelUp -= Quest.SyncPlayerLevel;
-            Stats.OnDamaged -= HandleDamageRecieved;
+            Stats.OnDeath -= HandleDeath;
+            Stats.OnDamage -= HandleDamageReceived;
+            Stats.OnPostureBroken -= HandlePostureBroken;
+
+            if (Quest != null)
+                Stats.OnLevelUp -= Quest.SyncPlayerLevel;
         }
+
         if (Inventory != null)
-            Inventory.OnEquipmentChanged -= Stats.RecalculateEquipmentStats;
+            Inventory.OnEquipmentChanged -= Stats.UpdateEquipmentStats;
 
         if (DialogueManager.Instance != null)
         {

@@ -3,87 +3,126 @@ using UnityEngine;
 
 public class PlayerGuardState : PlayerState
 {
+    private const float ParryTime = 0.2f;       // ì²« ì…ë ¥ì˜ íŒ¨ë§ íŒì • ì°½: ì•½ 12í”„ë ˆì„
+    private const float SecondParryTime = 0.1f; // ë¹ ë¥¸ ì¬ì…ë ¥: ì•½ 6í”„ë ˆì„
+    private const float MinParryTime = 0.067f;  // ì„¸ ë²ˆì§¸ ì¬ì…ë ¥: ì•½ 4í”„ë ˆì„
+    private const float SpamResetTime = 0.5f;   // ì´ ì‹œê°„ ë™ì•ˆ ì¬ì…ë ¥ì´ ì—†ìœ¼ë©´ ì²« ì°½ìœ¼ë¡œ ë³µêµ¬
+    private const float GuardLockTime = 0.12f;  // ì´ ë™ì•ˆ ì œìë¦¬ì— ë©ˆì¶˜ë‹¤
 
-    [Header("ÆĞ¸µ ½Ã½ºÅÛ")]
     private float guardTimer;
-    private float parryWindowDuration = 0.25f;   // 0.2ÃÊ ¾È¿¡´Â ÆĞ¸µ
-    private float normalGuardDuration = 0.6f;   // 0.6ÃÊ ¾È¿¡´Â ÀÏ¹İ °¡µå
+    private float currentParryTime;   // ì—°íƒ€ í˜ë„í‹°ê°€ ë°˜ì˜ëœ ì‹¤ì œ íŒ¨ë§ ì°½
+    private float lastGuardPressTime = -10f;
+    private int spamCount = 0;             // ì—°íƒ€ íšŸìˆ˜
 
-    private float currentParryWindow;           // ±ğ¿©³ª°¥ ½ÇÁ¦ ÆĞ¸µ ½Ã°£
-    private float lastGuardEnterTime;         // °¡µå¸¦ Ç¬ ½Ã°£ ±â·Ï
-    private int spamCount = 0;                  // ¿¬Å¸ È½¼ö
+
+    private float HitReactionTimer;
 
 
     public PlayerGuardState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
     public override bool UseRootMotion => false;
+    public override PostureRecoveryMode PostureRecoveryMode => PostureRecoveryMode.GuardBoosted;
+
+    public override void HandleDamage(DamageResult result)
+    {
+        switch (result.DefenseType)
+        {
+            case DefenseType.Parry:
+                player.AnimatorController.PlayReaction(AnimHash.Parry, 0.03f);
+                player.Motor.StopKnockback();
+                HitReactionTimer = 0f;
+                spamCount = 0;
+                lastGuardPressTime = -10f;
+                guardTimer = currentParryTime + 0.001f;
+                return;
+            case DefenseType.NormalGuard:
+                player.AnimatorController.PlayReaction(AnimHash.GuardHit, 0.03f);
+                GuardKnockBack(result);
+                return;
+            default:
+                base.HandleDamage(result);
+                return;
+        }
+    }
 
 
     public override void Enter()
     {
         guardTimer = 0f;
+        HitReactionTimer = 0f;
+        player.Motor.StopKnockback();
 
-        if (Time.time - lastGuardEnterTime < 0.4f) spamCount++;
-        else spamCount = 0;
-        lastGuardEnterTime = Time.time;
-        currentParryWindow = Mathf.Max(0.04f, parryWindowDuration - (spamCount * 0.05f));
+        if (Time.unscaledTime - lastGuardPressTime > SpamResetTime) spamCount = 0;
+        else spamCount++;
+        lastGuardPressTime = Time.unscaledTime;
 
-
+        currentParryTime = spamCount switch
+        {
+            0 => ParryTime,
+            1 => SecondParryTime,
+            2 => MinParryTime,
+            _ => 0f
+        };
 
         player.Motor.SetMovement(Vector3.zero);
         player.AnimatorController.ForceStopLocomotion();
+        player.AnimatorController.PlayReaction(AnimHash.Guard, 0.03f);
 
-        player.AnimatorController.PlayAction(AnimHash.Guard);
-        player.Combat.CurrentDefenseType = DefenseType.PerfectParry;
+        player.Combat.CurrentDefenseType = currentParryTime > 0f ? DefenseType.Parry : DefenseType.NormalGuard;
     }
 
 
     public override void Update()
     {
-        base.HandleInput();
-        if (stateMachine.CurrentState != this) return;
-
         guardTimer += Time.unscaledDeltaTime;
-        if (guardTimer > normalGuardDuration) { player.Combat.CurrentDefenseType = DefenseType.FailedGuard; }
-        else if (guardTimer > currentParryWindow) { player.Combat.CurrentDefenseType = DefenseType.NormalGuard; }
 
-
-        //=========°¡µå Å° °¨Áö ===============
-
-
-        if (guardTimer < parryWindowDuration)
+        if (player.Combat.CurrentDefenseType == DefenseType.Parry && guardTimer > currentParryTime)
         {
-            HandleGuardMovement(true); // ¹ßÀ» ¶¥¿¡ °íÁ¤
-            return; // ¿©±â¼­ return µÇ¹Ç·Î °¡µå¸¦ ¶¿ ¼ö ¾øÀ½
+            player.Combat.CurrentDefenseType = DefenseType.NormalGuard;
         }
 
-        if (!player.InputHandler.GuardInput && guardTimer >= parryWindowDuration)
+        if (HitReactionTimer > 0f)
+        {
+            HitReactionTimer -= Time.deltaTime;
+            HandleGuardMovement(Vector3.zero);
+            return;
+        }
+
+        base.HandleInput();
+
+        if (stateMachine.CurrentState != this) return;
+
+        if (guardTimer < GuardLockTime)
+        {
+            HandleGuardMovement(Vector3.zero);
+            return;
+        }
+
+        if (!player.InputHandler.GuardInput)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
             return;
         }
 
-        HandleGuardMovement(false);
+        HandleGuardMovement(player.GetDesiredMoveDirection());
     }
 
-    private void HandleGuardMovement(bool stop)
+    /// <summary>
+    /// ê°€ë“œ ì¤‘ í”¼ê²©ì‹œ ë„‰ë°±
+    /// </summary>
+    private void GuardKnockBack(in DamageResult result)
     {
-        if (stop)
-        {
-            player.Motor.SetMovement(Vector3.zero);
-            if (player.IsLockOn && player.TargetingSystem.CurrentTarget != null)
-            {
-                Vector3 directionToTarget = player.TargetingSystem.CurrentTarget.TargetTransform.position - player.transform.position;
-                directionToTarget.y = 0;
-                player.Motor.RotateToDirection(directionToTarget);
-            }
+        KnockbackSpec knockback = KnockBackPolicy.DefenderKnockBack(result);
 
-            UpdateLocomotionAnimation(Vector3.zero);
-            return; 
-        }
+        HitReactionTimer = knockback.Duration;
+        player.Motor.StartKnockback(result.HitDirection, knockback);
+    }
 
-
-        Vector3 moveDir = player.GetDesiredMoveDirection();
+    /// <summary>
+    /// ê°€ë“œ ì¤‘ ì´ë™ ë° íšŒì „ í†µí•© ì²˜ë¦¬
+    /// </summary>
+    private void HandleGuardMovement(Vector3 moveDir)
+    {
         player.Motor.SetMovement(moveDir * player.Motor.GuardSpeed);
 
         if (player.IsLockOn && player.TargetingSystem.CurrentTarget != null)
@@ -96,9 +135,13 @@ public class PlayerGuardState : PlayerState
         {
             player.Motor.RotateToDirection(moveDir);
         }
+
         UpdateLocomotionAnimation(moveDir);
     }
 
+    /// <summary>
+    /// ì›€ì§ì„ ì• ë‹ˆë©”ì´ì…˜ ë™ê¸°í™”
+    /// </summary>
     private void UpdateLocomotionAnimation(Vector3 moveDir)
     {
         if (moveDir == Vector3.zero)
@@ -119,15 +162,10 @@ public class PlayerGuardState : PlayerState
 
     protected override void OnAttackCommand()
     {
-        if (player.TargetingSystem.IsCurrentTargetExecutable())
-        {
-            stateMachine.TransitionTo(stateMachine.PlayerExecuteState);
-        }
-        else
-        {
-            stateMachine.RequestedAttackData = player.Combat.FirstAttackData;
-            stateMachine.TransitionTo(stateMachine.PlayerAttackState);
-        }
+        if (RequestDeathblow()) return;
+
+        stateMachine.RequestedAttackData = player.Combat.FirstAttackData;
+        stateMachine.TransitionTo(stateMachine.PlayerAttackState);
     }
 
     protected override void OnDodgeCommand()
@@ -145,7 +183,7 @@ public class PlayerGuardState : PlayerState
 
     protected override void OnGuardCommand()
     {
-        if (guardTimer >= parryWindowDuration)
+        if (guardTimer >= GuardLockTime)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGuardState);
         }
@@ -153,6 +191,8 @@ public class PlayerGuardState : PlayerState
 
     public override void Exit()
     {
+        HitReactionTimer = 0f;
+        player.Motor.StopKnockback();
         player.Combat.CurrentDefenseType = DefenseType.None;
     }
 

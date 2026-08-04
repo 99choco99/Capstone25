@@ -1,55 +1,58 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PlayerHitState : PlayerState
 {
-    private const float knockBackDuration = 0.2f;
-    private const float hitTime = 0.5f;
+    private const float HitRecoveryDuration = 0.5f;
 
     public override bool UseRootMotion => false;
     public PlayerHitState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
-    private DamageEvent currentHitData;
-    private Vector3 knockbackDir;
+    private DamageResult currentHitData;
 
     private float stateTimer = 0f;
 
 
-    public void SetHitData(DamageEvent data)
+    public void SetHitData(DamageResult data)
     {
         currentHitData = data;
         stateTimer = 0f;
-        knockbackDir = data.hitDirection * data.currentKnockbackForce;
+    }
+
+    public void RestartHit(DamageResult data)
+    {
+        SetHitData(data);
+        BeginHitReaction();
     }
 
     public override void Enter()
     {
+        BeginHitReaction();
+    }
+
+    private void BeginHitReaction()
+    {
         player.Motor.SetMovement(Vector3.zero);
         player.Combat.ForceResetAttackState();
 
-        int targetAnim = player.Combat.EvaluateHitReaction(ref currentHitData);
+        // 공격 등급과 방어 결과를 한 번 해석해 최종 거리·시간을 Motor에 전달합니다.
+        KnockbackSpec knockback = KnockBackPolicy.DefenderKnockBack(currentHitData);
+
+        player.Motor.StartKnockback(
+            currentHitData.HitDirection,
+            knockback);
+
+        int targetAnim = player.Combat.DecideHitReaction(currentHitData);
         if (targetAnim != 0)
         {
-            player.AnimatorController.PlayAction(targetAnim);
+            player.AnimatorController.PlayReaction(targetAnim, 0.05f);
         }
     }
 
     public override void Update()
     {
         stateTimer += Time.deltaTime;
-        if (stateTimer <= knockBackDuration)
-        {
-            // �ð��� ���� ���� (Easing Out)
-            float progress = (stateTimer / knockBackDuration);
-            progress = Mathf.Clamp01(progress);
-            float deceleration = (1f - progress) * (1f - progress);
-            player.Motor.SetKnockbackVelocity(knockbackDir * deceleration);
-        }
-        else
-        {
-            player.Motor.SetKnockbackVelocity(Vector3.zero);
-        }
 
-        if (stateTimer > hitTime)
+        if (stateTimer > HitRecoveryDuration)
         {
             if (player.InputHandler.GuardInput)
             {
@@ -66,6 +69,6 @@ public class PlayerHitState : PlayerState
     {
         currentHitData = default;
         stateTimer = 0f;
-        player.Motor.SetKnockbackVelocity(Vector3.zero);
+        player.Motor.StopKnockback();
     }
 }

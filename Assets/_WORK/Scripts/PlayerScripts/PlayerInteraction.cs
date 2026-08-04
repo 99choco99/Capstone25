@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerInteraction : MonoBehaviour
@@ -18,13 +17,25 @@ public class PlayerInteraction : MonoBehaviour
     public event Action<IInteractable, int> OnSelectionChanged;
 
 
-    public IInteractable CurrentSelection { get; private set; }
+    private IInteractable currentSelection;
+    public IInteractable CurrentSelection 
+    { 
+        get => IsNull(currentSelection) ? null : currentSelection;
+        private set => currentSelection = value;
+    }
+
     public int selectionIndex = 0;
+    private float detectTimer = 0f;
+    private const float DetectInterval = 0.1f;
+
+    public List<IInteractable> interactablesInRange = new();
+    private readonly Collider[] hitColliders = new Collider[15];
+    private readonly List<IInteractable> currentHits = new();
 
 
-    public List<IInteractable> interactablesInRange = new List<IInteractable>();
-    private Collider[] hitColliders = new Collider[15];
-
+    /// <summary>
+    /// 상호작용 가능한 목록들 초기화
+    /// </summary>
     public void ClearInteraction()
     {
         interactablesInRange.Clear();
@@ -34,29 +45,41 @@ public class PlayerInteraction : MonoBehaviour
         OnSelectionChanged?.Invoke(null, -1);
     }
 
+    /// <summary>
+    /// 상호작용
+    /// </summary>
     public void ExecuteInteraction() => CurrentSelection?.Interact(gameObject);
-    private void OnDestroy() => CancelInvoke(nameof(DetectInteractables));
 
-    void Start()
+
+    /// <summary>
+    /// 매 프레임마다가 아니라 0.1초에 한번씩 검사하도록
+    /// </summary>
+    void Update()
     {
-        InvokeRepeating(nameof(DetectInteractables), 0f, 0.1f);
+        detectTimer += Time.deltaTime;
+
+        if(detectTimer >= DetectInterval)
+        {
+            DetectInteractables();
+            detectTimer -= DetectInterval;
+        }
+
     }
 
-
-
-
-    //가능한 상호작용 요소들 탐색
+    /// <summary>
+    /// 가능한 상호작용 요소들 탐색
+    /// </summary>
     private void DetectInteractables()
     {
         if (IsDetectionPaused) return;
         int hitCount = Physics.OverlapSphereNonAlloc(transform.position, interactRange,hitColliders,layerMask);
 
         bool isChanged = false;
-        List<IInteractable> currentHits = new List<IInteractable>();
+        currentHits.Clear();
 
         for (int i  = 0; i < hitCount; i++)
         {
-            if (hitColliders[i].TryGetComponent<IInteractable>(out IInteractable interactable))
+            if (hitColliders[i].TryGetComponent(out IInteractable interactable))
             {
                 currentHits.Add(interactable);
                 if (!interactablesInRange.Contains(interactable)) isChanged = true;
@@ -74,7 +97,9 @@ public class PlayerInteraction : MonoBehaviour
         }
     }
 
-    //선택 요소 변경?
+    /// <summary>
+    /// 선택한 요소 변경
+    /// </summary>
     void UpdateSelection()
     {
         if (interactablesInRange.Count == 0)
@@ -90,4 +115,8 @@ public class PlayerInteraction : MonoBehaviour
         OnSelectionChanged?.Invoke(CurrentSelection, selectionIndex);
     }
 
+    /// <summary>
+    /// null인지 아닌지
+    /// </summary>
+    private static bool IsNull(IInteractable interactable) => (interactable as UnityEngine.Object) == null;
 }

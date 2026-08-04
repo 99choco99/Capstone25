@@ -1,6 +1,4 @@
-using System.Collections.Generic;
-using UnityEngine;
-using static Unity.Burst.Intrinsics.X86.Avx;
+﻿using UnityEngine;
 
 public enum ActionCommand { None, Attack,Guard ,Dodge, Jump, Interact }
 
@@ -14,7 +12,7 @@ public struct InputTicket
 public class PlayerInputBuffer
 {
     private InputTicket currentTicket;
-    [SerializeField] private float bufferTime = 0.25f;
+    private const float bufferTime = 0.25f;
 
     public void AddCommand(ActionCommand cmd)
     {

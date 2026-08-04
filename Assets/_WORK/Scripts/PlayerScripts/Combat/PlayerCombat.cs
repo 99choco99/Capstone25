@@ -1,91 +1,105 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
-using UnityEngine.Playables;
+using Random = UnityEngine.Random;
 
-
-
-public class PlayerCombat : MonoBehaviour, IWeaponOwner
+[RequireComponent(typeof(Player))]
+public class PlayerCombat : MonoBehaviour, IWeaponOwner, IDefenser
 {
-    [SerializeField] Player player;
+    [SerializeField] private Player player;
 
     public Faction OwnerFaction => Faction.PlayerTeam;
-    private HashSet<IDamageable> hitTargets = new HashSet<IDamageable>();
-
     public Weapon CurrentWeapon { get; private set; }
 
+    [Header("ê³µê²© ë°ì´í„°")]
     public AttackData FirstAttackData;
-    public AttackData CurrentAttack{ get; private set; } //ÇöÀç °ø°İ µ¥ÀÌÅÍ
-    public DefenseType CurrentDefenseType { get; set; } = DefenseType.None; //ÇöÀç °¡µå »óÅÂ
+    public AttackData SprintAttackData;
+    public AttackData CurrentAttack { get; private set; }
 
-    [Header("¹æ¾î ¼³Á¤")]
+    public DefenseType CurrentDefenseType { get; set; } = DefenseType.None;
+
+    [Header("ë°©ì–´ ì„¤ì •")]
     [SerializeField, Range(0f, 180f)]
     private float guardAngle = 120f;
 
+    private readonly HashSet<IDamageable> hitTargets = new();
+    private bool isAttackCommitted;
+
+    //ì´ë²¤íŠ¸
+    public event Action<float> AttackStarted;
+    public event Action AttackEnded;
+
+
     private void Awake()
     {
+        player = GetComponent<Player>();
         CurrentWeapon = GetComponentInChildren<Weapon>();
     }
 
-    //=============== °ø°İ ÇÔ¼ö ========================
 
-    //°ø°İ ½ÃÀÛ
-    public void SetCurrentAttackData(AttackData attackData)
-    {
-        CurrentAttack = attackData;
-    }
-
-    //=============== Å¸°İ ¹× ÇÇ°İ ÇÔ¼ö ========================
-
-
-    //ÇÃ·¹ÀÌ¾î°¡ ÀûÀ» °ø°İÇßÀ» ¶§
-    public void OnWeaponHit(IDamageable target, Collider targetCollider, Weapon weapon)
+    /// <summary>
+    /// ë¬´ê¸°ì— ë‹¿ì•˜ì„ ë•Œ í˜¸ì¶œ, ë°ë¯¸ì§€ íŒŒì´í”„ë¼ì¸ì˜ ì²«ë²ˆì§¸ ì§€ì 
+    /// </summary>
+    public void OnWeaponHit(IDamageable target, Collider targetCollider, Weapon weapon, Vector3 hitPoint)
     {
         if (CurrentAttack == null) return;
-        if (!hitTargets.Add(target)) { return; }
-        Vector3 hitPoint = targetCollider.ClosestPoint(weapon.transform.position);
+        if (!hitTargets.Add(target)) return;
+
         Vector3 hitDirection = targetCollider.transform.position - transform.position;
-        DamageEvent result = new(gameObject, CurrentAttack, hitPoint, hitDirection);
-        result.currentDamage += player.Stats.AttackPower.Value;
-        target.TakeDamage(ref result);
-    }
 
-    //µ¥¹ÌÁö ¹Ş¾ÒÀ»¶§ ¹İÀÀ
-    public int EvaluateHitReaction(ref DamageEvent result)
-    {
-        ForceResetAttackState(); // »óÅÂ ÃÊ±âÈ­
+        DamageRequest request = DamageRequest.AttackDamage(gameObject, weapon, CurrentAttack, player.Stats.AttackPower.GetValue(), hitPoint, hitDirection);
 
-        if (result.attackData == null) return AnimHash.HitFront;
-        if (result.attackData.CanGuard && result.defenseResult == DefenseType.PerfectParry) { return AnimHash.Parry; }
-        else if (result.attackData.CanGuard && (result.defenseResult == DefenseType.NormalGuard 
-            || result.defenseResult == DefenseType.FailedGuard)){ return AnimHash.GuardHit; }
-        else if (result.currentDamage > 0 || result.defenseResult == DefenseType.None )
+        DamageResult result = target.ReceiveDamage(request);
+
+        if (result.IsAccepted)
         {
-            float hitAngle = Vector3.SignedAngle(transform.forward, result.hitDirection, Vector3.up);
-            if (Mathf.Abs(hitAngle) <= 45f)
-            {
-                return UnityEngine.Random.Range(0, 2) == 0 ? AnimHash.BackHit1 : AnimHash.BackHit2;
-            }
-            else if (hitAngle > 45f && hitAngle <= 135f)
-            {
-                return AnimHash.HitLeft;
-            }
-            else if (hitAngle >= -135f && hitAngle < -45f)
-            {
-                return AnimHash.HitRight;
-            }
-            else
-            {
-                return AnimHash.HitFront; 
-            }
+            if (HitStopManager.Instance != null)
+                HitStopManager.Instance.TriggerHitStop(result);
+
+            player.StateMachine?.CurrentState?.HandleAttackAccepted(result);
         }
-        return 0;
     }
 
-    //°ø°İ ¹æÇâ ÆÇÁ¤
+
+    /// <summary>
+    /// í”¼ê²© ì‹œ ì• ë‹ˆë©”ì´ì…˜ ê²°ì •
+    /// </summary>
+    public int DecideHitReaction(in DamageResult result)
+    {
+        ForceResetAttackState();
+
+        if (result.DefenseType == DefenseType.Parry) return AnimHash.Parry;
+        if (result.DefenseType == DefenseType.NormalGuard) return AnimHash.GuardHit;
+
+        float hitAngle = Vector3.SignedAngle(transform.forward,result.HitDirection, Vector3.up);
+
+        if (Mathf.Abs(hitAngle) <= 45f)
+            return Random.Range(0, 2) == 0 ? AnimHash.BackHit1 : AnimHash.BackHit2;
+
+        if (hitAngle > 45f && hitAngle <= 135f)
+            return AnimHash.HitLeft;
+
+        if (hitAngle >= -135f && hitAngle < -45f)
+            return AnimHash.HitRight;
+
+        return AnimHash.HitFront;
+    }
+
+    /// <summary>
+    /// ë°©ì–´ ìœ í˜• ìµœì¢… ê²°ì •
+    /// </summary>
+    public DefenseType DecideDefense(in DamageRequest request)
+    {
+        if (!request.CanGuard) return DefenseType.None;
+        if (CurrentDefenseType == DefenseType.None) return DefenseType.None;
+        if (!IsAttackFromFront(request.HitDirection)) return DefenseType.None;
+
+        return CurrentDefenseType;
+    }
+
+    /// <summary>
+    /// ì•ì—ì„œ ë•Œë¦¬ëŠ”ê±´ì§€ ì•„ë‹Œì§€ ê²€ì‚¬
+    /// </summary>
     private bool IsAttackFromFront(Vector3 hitDirection)
     {
         float dot = Vector3.Dot(transform.forward, hitDirection);
@@ -93,19 +107,6 @@ public class PlayerCombat : MonoBehaviour, IWeaponOwner
         float threshold = Mathf.Cos(halfAngle * Mathf.Deg2Rad);
         return dot <= -threshold;
     }
-
-    public void EvaluateDefense(ref DamageEvent info)
-    {
-        if (!IsAttackFromFront(info.hitDirection)) return;
-        if (info.attackData.CanGuard && CurrentDefenseType != DefenseType.None)
-        {
-            info.defenseResult = CurrentDefenseType;
-        }
-    }
-
-
-    public void ResetCombo() => CurrentAttack = null;
-
 
     public void ForceResetAttackState()
     {
@@ -115,17 +116,71 @@ public class PlayerCombat : MonoBehaviour, IWeaponOwner
         ResetCombo();
     }
 
+    public void ResetCombo() => EndCurrentAttack();
 
-    //====================¹«±â on/off=====================
-    public void OnAnimationPlayerAttackStart()
+    //============ ê³µê²© í•¨ìˆ˜ ìˆœì„œëŒ€ë¡œ ===========
+
+    /// <summary>
+    /// í˜„ì¬ ê³µê²©í•  ë°ì´í„° ì„¸íŒ…
+    /// </summary>
+    public void SetCurrentAttackData(AttackData attackData)
+    {
+        EndCurrentAttack();
+        if (attackData == null) return;
+
+        CurrentAttack = attackData;
+    }
+
+    /// <summary>
+    /// ê³µê²©ì´ í™•ì •ëì„ ë•Œ ì´ë²¤íŠ¸ ë°œì†¡
+    /// </summary>
+    public void CommitCurrentAttack(float expectedActiveAt)
+    {
+        if (CurrentAttack == null || isAttackCommitted) return;
+
+        isAttackCommitted = true;
+        AttackStarted?.Invoke(expectedActiveAt);
+    }
+
+
+    /// <summary>
+    /// í”Œë ˆì´ì–´ì˜ ê³µê²© íŒì • ì‹œì‘
+    /// </summary>
+    public void PlayerAttackStart()
     {
         hitTargets.Clear();
         CurrentWeapon.EnableWeaponCollider();
     }
-    public void OnAnimationPlayerAttackEnd()
+
+    /// <summary>
+    /// í”Œë ˆì´ì–´ ê³µê²© íŒì • ë
+    /// </summary>
+    public void PlayerAttackEnd()
     {
-        CurrentWeapon.DisableWeaponCollider();
+        if (CurrentWeapon != null)
+            CurrentWeapon.DisableWeaponCollider();
+        EndCurrentAttack();
     }
 
 
+    /// <summary>
+    /// ê³µê²© ë, ë§ˆë¬´ë¦¬ ì‘ì—…
+    /// </summary>
+    private void EndCurrentAttack()
+    {
+        if (CurrentAttack == null)
+        {
+            isAttackCommitted = false;
+            return;
+        }
+
+        CurrentAttack = null;
+
+        if (isAttackCommitted)
+        {
+            isAttackCommitted = false;
+            AttackEnded?.Invoke();
+        }
+
+    }
 }

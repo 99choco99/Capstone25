@@ -1,19 +1,17 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using NUnit.Framework;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using System.Linq;
 
 
 public class PlayerInteractUI : MonoBehaviour
 {
-    private PlayerInteraction playerInteraction; // ÇÃ·¹ÀÌ¾îÀÇ interact ÂüÁ¶
+    private PlayerInteraction playerInteraction; // í”Œë ˆì´ì–´ì˜ interact ì°¸ì¡°
 
-    [SerializeField] private GameObject uiContainer; //ÀüÃ¼ UI
-    [SerializeField] private PromptUIItem promptPrefab;  // °¢ »óÈ£ÀÛ¿ë ´ë»óµéÀÇ prompt
-    [SerializeField] private Transform promptParent;  // prompt ºÎ¸ğ
+    [SerializeField] private GameObject uiContainer; //ì „ì²´ UI
+    [SerializeField] private PromptUIItem promptPrefab;  // ê° ìƒí˜¸ì‘ìš© ëŒ€ìƒë“¤ì˜ prompt
+    [SerializeField] private Transform promptParent;  // prompt ë¶€ëª¨
 
     private List<PromptUIItem> promptPool = new List<PromptUIItem>();
 

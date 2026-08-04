@@ -1,62 +1,71 @@
 using UnityEngine;
 
+/// <summary>
+/// 피격시 연출과 넉백 담당.
+/// </summary>
 public class EnemyHitState : EnemyState
 {
-    private const float hitTime = 0.5f;
-    private const float knockBackDuration = 0.2f;
+    private const float HitRecoveryDuration = 0.5f;
 
-    private DamageEvent currentHitData;
-    private Vector3 knockbackDir;
-    private float knockbackForce;
+    private DamageResult currentHitData;
 
-    private float stateTimer = 0f;
+    private float stateTimer;
+
+    public EnemyHitState(Enemy enemy, EnemyStateMachine stateMachine) : base(enemy, stateMachine) { }
+
+    public override bool UseRootMotion => false;
 
 
-
-    public EnemyHitState(Enemy enemy, EnemyStateMachine stateMachine) : base(enemy, stateMachine)
+    /// <summary>피격 정보를 HitState에 전달</summary>
+    public void SetHitData(in DamageResult result)
     {
+        currentHitData = result;
     }
 
-    public void SetHitData(DamageEvent damageEvent)
-    {
-        currentHitData = damageEvent;
-        knockbackDir = damageEvent.hitDirection;
-        knockbackForce = damageEvent.currentKnockbackForce;
-    }
-
-    public override void Enter()
+    /// <summary>
+    /// Hit 애니메이션 및 넉백 시작
+    /// </summary>
+    private void BeginHitReaction()
     {
         stateTimer = 0f;
         enemy.Motor.Stop();
 
-        int animHash = enemy.Combat.EvaluateHitReaction(ref currentHitData);
-        if(animHash != 0)
-        {
-            enemy.AnimationController.PlayAction(animHash);
-        }
+        KnockbackSpec knockback = KnockBackPolicy.DefenderKnockBack(currentHitData);
+
+        enemy.Motor.StartKnockback(currentHitData.HitDirection, knockback);
+
+        int animHash = enemy.Combat.DecideHitReaction(currentHitData);
+        if (animHash != 0)
+            enemy.AnimationController.PlayReaction(animHash);
+    }
+
+
+    /// <summary>
+    /// Hit중에 또 Hit당하면
+    /// </summary>
+    /// <param name="result"></param>
+    public void RestartHit(in DamageResult result)
+    {
+        SetHitData(result);
+        BeginHitReaction();
+    }
+
+    public override void Enter()
+    {
+        BeginHitReaction();
     }
 
     public override void Update()
     {
-        //�˹�
         stateTimer += Time.deltaTime;
 
-
-        if(stateTimer <= knockBackDuration)
-        {
-            float progress = stateTimer / knockBackDuration;
-            progress = Mathf.Clamp01(progress);
-            float deceleration = (1f - progress) * (1f - progress);
-            Vector3 velocity = knockbackDir * (knockbackForce * deceleration);
-            enemy.Motor.ApplyForce(velocity);
-        }
-        if (stateTimer >= hitTime)
-        {
+        if (stateTimer >= HitRecoveryDuration)
             stateMachine.TransitionTo(stateMachine.EnemyGroundedState);
-        }
     }
 
-    public override void Exit() {
+    public override void Exit()
+    {
         stateTimer = 0f;
+        enemy.Motor.StopKnockback();
     }
 }
