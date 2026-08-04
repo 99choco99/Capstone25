@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26ac3f40908c25543b4f9433cd95f468, type: 3}
+  m_Name: NormalAttack2
+  m_EditorClassIdentifier: 
+  damage: 10
+  postureDamage: 11
+  impactLevel: 1
+  type: 0
+  deflectResponse: 0
+  NextComboAttack: {fileID: 11400000, guid: b54017dad16ed4c459d2a9da9fb35b89, type: 2}
+  animationStateName: Attack1
+  animationSpeed: 1
+  totalFrames: 60
+  commitFrame: 9
+  activeStartFrame: 14
+  recoveryStartFrame: 22
+  comboStartFrame: 30
+  hasHitWindow: 1

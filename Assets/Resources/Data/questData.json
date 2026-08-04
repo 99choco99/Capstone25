@@ -1,0 +1,65 @@
+[
+  {
+    "id": 1001,
+    "questName": "사라진 동생 (1) - 단서 찾기",
+    "description": "마을 소녀 카야가 사라졌다. 아리사에게 행방을 묻자.",
+    "requiredLevel": 1,
+    "prerequisiteQuestIds": [],
+    "startNPCId": 102,
+    "turnInNpcId": 101,
+    "objectives": [
+      {
+        "type": 2, 
+        "objectiveDescription": "아리사에게 카야의 행방 묻기",
+        "targetId": 103,
+        "requiredAmount": 1
+      }
+    ],
+    "rewardId": 0,
+    "dialogueKey_Start": "GIRL_KAYA_START",
+    "dialogueKey_InProgress": "GIRL_KAYA_INPROGRESS",
+    "dialogueKey_Complete": "CHIEF_KAYA_STEP0_COMPLETE"
+  },
+  {
+    "id": 1002,
+    "questName": "사라진 동생 (2) - 구출 준비",
+    "description": "이장님에게 윈드마을의 흉흉한 소식을 들었다. 아리사에게 전하자.",
+    "requiredLevel": 1,
+    "prerequisiteQuestIds": [1001], 
+    "startNPCId": 101,
+    "turnInNpcId": 103,
+    "objectives": [
+      {
+        "type": 2,
+        "objectiveDescription": "아리사에게 정보 전달하기",
+        "targetId": 103,
+        "requiredAmount": 1
+      }
+    ],
+    "rewardId": 0,
+    "dialogueKey_Start": "CHIEF_KAYA_STEP0_COMPLETE",
+    "dialogueKey_InProgress": "CHIEF_KAYA_STEP1_INPROGRESS",
+    "dialogueKey_Complete": "ARISA_KAYA_STEP1_COMPLETE"
+  },
+  {
+    "id": 1003,
+    "questName": "사라진 동생 (3) - 도적왕 토벌",
+    "description": "아리사와 함께 도적왕을 처치하고 카야를 구출하자.",
+    "requiredLevel": 1,
+    "prerequisiteQuestIds": [1002],
+    "startNPCId": 103,
+    "turnInNpcId": 105,
+    "objectives": [
+      {
+        "type": 0,
+        "objectiveDescription": "도적왕 처치",
+        "targetId": 100,
+        "requiredAmount": 1
+      }
+    ],
+    "rewardId": 1, 
+    "dialogueKey_Start": "ARISA_COMBAT_REENTRY",
+    "dialogueKey_InProgress": "KAYA_KAYA_INPROGRESS",
+    "dialogueKey_Complete": "KAYA_KAYA_COMPLETE"
+  }
+]
