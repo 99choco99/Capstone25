@@ -27,7 +27,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
         [SerializeField] private AudioClip m_JumpSound;           // the sound played when character leaves the ground.
         [SerializeField] private AudioClip m_LandSound;           // the sound played when character touches back on ground.
 
-        private Camera m_Camera;
+        private UnityEngine.Camera m_Camera;
         private bool m_Jump;
         private float m_YRotation;
         private CameraRefocus m_CameraRefocus;
@@ -46,7 +46,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
         private void Start()
         {
             m_CharacterController = GetComponent<CharacterController>();
-            m_Camera = Camera.main;
+            m_Camera = UnityEngine.Camera.main;
             m_OriginalCameraPosition = m_Camera.transform.localPosition;
             m_CameraRefocus = new CameraRefocus(m_Camera, transform, m_Camera.transform.localPosition);
             m_FovKick.Setup(m_Camera);

@@ -53,7 +53,7 @@ public class MultiSceneExampleScript : MonoBehaviour
 
     void Start()
     {
-        //Make the gameObject carrying this script survive a scene change. This is important!
+        //Make the gameObject carrying this description survive a scene change. This is important!
         DontDestroyOnLoad(gameObject);
 
 
