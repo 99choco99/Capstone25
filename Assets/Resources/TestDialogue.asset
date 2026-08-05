@@ -12,8 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ca347d3ba80a0b44b795bb276b934cd, type: 3}
   m_Name: TestDialogue
   m_EditorClassIdentifier: Assembly-CSharp::DialogueContainer
-  NodeLinks: []
+  NodeLinks:
+  - BaseNodeGuid: 72aab47c-62f0-4818-a2b2-1609e816bdef
+    PortName: Next
+    TargetNodeGuid: b469d42a-61cc-4bf9-a416-54900cfc4962
   DialogueNodeData:
-  - Guid: 2bb48703-78da-4caa-bb98-95292a1f311a
+  - Guid: b469d42a-61cc-4bf9-a416-54900cfc4962
     DialogueText: DialogueText
-    Position: {x: 214, y: 157}
+    Position: {x: 580, y: 178}
+  - Guid: 72aab47c-62f0-4818-a2b2-1609e816bdef
+    DialogueText: DialogueText
+    Position: {x: 329, y: 278}
