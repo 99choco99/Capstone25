@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using UniversalGraph;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -102,7 +103,7 @@ public class MainUIManager : MonoBehaviour
     {
         if (DialogueManager.Instance != null)
         {
-            DialogueManager.Instance.ShowNextLine();
+            DialogueManager.Instance.ContinueNextLine();
         }
     }
 
@@ -162,4 +163,6 @@ public class MainUIManager : MonoBehaviour
 
 
 }
+
+
 

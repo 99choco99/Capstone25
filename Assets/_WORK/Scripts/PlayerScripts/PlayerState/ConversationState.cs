@@ -1,4 +1,5 @@
-﻿
+﻿using UniversalGraph;
+
 using System;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ public class ConversationState : PlayerState
 
     public void OnNextLinePressed()
     {
-        DialogueManager.Instance.ShowNextLine();
+        DialogueManager.Instance.ContinueNextLine();
     }
 
 
@@ -33,3 +34,5 @@ public class ConversationState : PlayerState
     }
 
 }
+
+

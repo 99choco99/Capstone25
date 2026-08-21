@@ -1,3 +1,4 @@
+﻿using UniversalGraph;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using UnityEngine;
 
 public class PlayerInteraction : MonoBehaviour
 {
-    [Header("상호작용 범위")]
+    [Header("?곹샇?묒슜 踰붿쐞")]
     [SerializeField] private float interactRange = 3f;
     [SerializeField] private LayerMask layerMask;
 
@@ -34,7 +35,7 @@ public class PlayerInteraction : MonoBehaviour
 
 
     /// <summary>
-    /// 상호작용 가능한 목록들 초기화
+    /// ?곹샇?묒슜 媛?ν븳 紐⑸줉??珥덇린??
     /// </summary>
     public void ClearInteraction()
     {
@@ -46,13 +47,13 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// 상호작용
+    /// ?곹샇?묒슜
     /// </summary>
     public void ExecuteInteraction() => CurrentSelection?.Interact(gameObject);
 
 
     /// <summary>
-    /// 매 프레임마다가 아니라 0.1초에 한번씩 검사하도록
+    /// 留??꾨젅?꾨쭏?ㅺ? ?꾨땲??0.1珥덉뿉 ?쒕쾲??寃?ы븯?꾨줉
     /// </summary>
     void Update()
     {
@@ -67,7 +68,7 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// 가능한 상호작용 요소들 탐색
+    /// 媛?ν븳 ?곹샇?묒슜 ?붿냼???먯깋
     /// </summary>
     private void DetectInteractables()
     {
@@ -98,7 +99,7 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// 선택한 요소 변경
+    /// ?좏깮???붿냼 蹂寃?
     /// </summary>
     void UpdateSelection()
     {
@@ -116,7 +117,8 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// null인지 아닌지
+    /// null?몄? ?꾨땶吏
     /// </summary>
     private static bool IsNull(IInteractable interactable) => (interactable as UnityEngine.Object) == null;
 }
+
