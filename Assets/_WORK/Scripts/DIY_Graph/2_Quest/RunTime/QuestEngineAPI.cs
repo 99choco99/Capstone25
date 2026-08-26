@@ -1,76 +1,115 @@
+using System;
 using System.Linq;
 using System.Text;
 using UnityEngine;
-using UniversalGraph;
 
-public static class QuestEngineAPI
+namespace UniversalGraph
 {
-	public static QuestProgress[] GetActiveQuests(IQuestController controller)
+	/// <summary>Quest 그래프를 직접 탐색하면 안 되는 UI와 게임 코드에 읽기 기능을 제공하는 API입니다.</summary>
+	public static class QuestEngineAPI
 	{
-		return controller.QuestProgress.Values.Where((QuestProgress p) => p.state == QuestState.InProgress || p.state == QuestState.CanComplete).ToArray();
-	}
+    /// <summary>진행 중이거나 완료 보고가 가능한 Quest를 반환합니다.</summary>
+    public static QuestProgress[] GetActiveQuests(IQuestController controller)
+    {
+        if (controller == null)
+        {
+            throw new ArgumentNullException(nameof(controller), "Quest 제목을 조회할 Controller가 필요합니다.");
+        }
 
-	public static string GetQuestName(int questId)
-	{
-		QuestContainer questTemplate = QuestManager.Instance.GetQuestTemplate(questId);
-		return ((object)questTemplate != (object)null) ? questTemplate.questName : "Unknown Quest";
-	}
+        return controller.QuestProgress.Values
+            .Where(progress => progress != null
+                               && (progress.state == QuestState.InProgress
+                                   || progress.state == QuestState.CanComplete))
+            .ToArray();
+    }
 
-	public static string GetQuestDescription(int questId)
-	{
-		QuestContainer questTemplate = QuestManager.Instance.GetQuestTemplate(questId);
-		return ((object)questTemplate != (object)null) ? questTemplate.description : "";
-	}
+    /// <summary>등록된 Quest의 표시 이름을 반환하며, 없으면 고정 대체 문구를 반환합니다.</summary>
+    public static string GetQuestName(int questId)
+    {
+        QuestContainer template = QuestManager.Instance?.GetQuestTemplate(questId);
+        return template != null ? template.questName : "알 수 없는 Quest";
+    }
 
-	public static string GetCurrentObjectiveText(IQuestController controller, int questId)
-	{
-		QuestProgress questStatus = controller.GetQuestStatus(questId);
-		if (questStatus == null || questStatus.activeNodeGuids.Count == 0)
-		{
-			return "紐⑺몴 ?놁쓬";
-		}
-		QuestContainer questTemplate = QuestManager.Instance.GetQuestTemplate(questId);
-		if ((object)questTemplate == (object)null)
-		{
-			return "紐⑺몴 ?놁쓬";
-		}
-		StringBuilder stringBuilder = new StringBuilder();
-		foreach (string guid in questStatus.activeNodeGuids)
-		{
-			NodeBaseData nodeBaseData = questTemplate.Nodes.FirstOrDefault((NodeBaseData n) => n.Guid == guid);
-			if (nodeBaseData is QuestObjectiveNodeData questObjectiveNodeData)
-			{
-				int num = (questStatus.nodeProgressCounts.ContainsKey(guid) ? questStatus.nodeProgressCounts[guid] : 0);
-				if (!string.IsNullOrEmpty(questObjectiveNodeData.ObjectiveDescription))
-				{
-					stringBuilder.AppendLine($"- {questObjectiveNodeData.ObjectiveDescription} ({num}/{questObjectiveNodeData.RequiredAmount})");
-				}
-				else
-				{
-					stringBuilder.AppendLine($"- {questObjectiveNodeData.ObjectiveType} ({num}/{questObjectiveNodeData.RequiredAmount})");
-				}
-			}
-			else if (nodeBaseData is QuestRewardNodeData)
-			{
-				stringBuilder.AppendLine("- 蹂댁긽 ?섎졊 媛\u0080??");
-			}
-		}
-		return (stringBuilder.Length > 0) ? stringBuilder.ToString().TrimEnd() : "吏꾪뻾 以?..";
-	}
+    /// <summary>등록된 Quest의 설명을 반환하며, 없으면 빈 문자열을 반환합니다.</summary>
+    public static string GetQuestDescription(int questId)
+    {
+        QuestContainer template = QuestManager.Instance?.GetQuestTemplate(questId);
+        return template != null ? template.description : string.Empty;
+    }
 
-	public static void ResumeLoadedQuests(IQuestController controller)
-	{
-		int num = 0;
-		foreach (QuestProgress item in controller.QuestProgress.Values.Where((QuestProgress p) => p.state == QuestState.InProgress))
-		{
-			if (item.activeNodeGuids.Count > 0)
-			{
-				controller.InvokeStatusChanged(QuestManager.Instance.GetQuestTemplate(item.questId), item);
-				num++;
-			}
-		}
-		Debug.Log((object)$"[QuestEngineAPI] {num}媛쒖쓽 ?섏뒪??吏꾪뻾 ?곹깭瑜?蹂듦뎄 諛??ш??숉뻽?듬땲??");
+    /// <summary>현재 활성화된 모든 목표 노드를 간단한 표시 문자열로 만듭니다.</summary>
+    public static string GetCurrentObjectiveText(IQuestController controller, int questId)
+    {
+        if (controller == null)
+        {
+            throw new ArgumentNullException(nameof(controller), "Quest 목표를 조회할 Controller가 필요합니다.");
+        }
+
+        QuestProgress progress = controller.GetQuestStatus(questId);
+        QuestManager manager = QuestManager.Instance;
+        if (progress == null
+            || manager == null
+            || !manager.TryBuildQuestIndex(questId, out _, out QuestGraphIndex index))
+        {
+            return "목표 없음";
+        }
+
+        progress.EnsureCollections();
+        if (progress.activeNodeGuids.Count == 0)
+        {
+            return "목표 없음";
+        }
+
+        var text = new StringBuilder();
+        foreach (string guid in progress.activeNodeGuids)
+        {
+            if (!index.Nodes.TryGetValue(guid, out NodeBaseData node))
+            {
+                continue;
+            }
+
+            if (node is QuestObjectiveNodeData objective)
+            {
+                progress.nodeProgressCounts.TryGetValue(guid, out int count);
+                string label = string.IsNullOrWhiteSpace(objective.ObjectiveDescription)
+                    ? objective.ObjectiveType
+                    : objective.ObjectiveDescription;
+                text.AppendLine($"- {label} ({count}/{Math.Max(1, objective.RequiredAmount)})");
+            }
+            else if (node is QuestSubGraphNodeData subGraph)
+            {
+                text.AppendLine($"- 하위 Quest {subGraph.SubQuestId} 완료");
+            }
+        }
+
+        return text.Length > 0 ? text.ToString().TrimEnd() : "진행 중";
+    }
+
+    /// <summary>저장된 진행 상태를 Controller에 불러온 뒤 상태 변경 알림을 다시 보냅니다.</summary>
+    public static void ResumeLoadedQuests(IQuestController controller)
+    {
+        if (controller == null)
+        {
+            throw new ArgumentNullException(nameof(controller), "Quest 진행 데이터를 복원할 Controller가 필요합니다.");
+        }
+
+        int resumedCount = 0;
+        foreach (QuestProgress progress in controller.QuestProgress.Values
+                     .Where(item => item != null && item.state == QuestState.InProgress))
+        {
+            progress.EnsureCollections();
+            QuestContainer template = QuestManager.Instance?.GetQuestTemplate(progress.questId);
+            if (template == null)
+            {
+                Debug.LogWarning($"[Quest] 저장 데이터가 알 수 없는 Quest ID {progress.questId}를 참조합니다.");
+                continue;
+            }
+
+            controller.InvokeStatusChanged(template, progress);
+            resumedCount++;
+        }
+
+        Debug.Log($"[Quest] 진행 중인 Quest 기록 {resumedCount}개를 복원했습니다.");
+    }
 	}
 }
-
-

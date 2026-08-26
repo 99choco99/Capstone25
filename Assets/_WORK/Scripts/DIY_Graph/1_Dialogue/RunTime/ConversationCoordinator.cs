@@ -5,82 +5,95 @@ using UnityEngine;
 
 namespace UniversalGraph
 {
-	public class ConversationCoordinator : MonoBehaviour
-	{
-		public static ConversationCoordinator Instance { get; private set; }
+    /// <summary>
+    /// 상호작용에 들어온 대화 요청 중 하나를 선택해 시작하는 선택적 씬 연결 컴포넌트입니다.
+    /// 별도 대화 UI를 사용하는 게임은 이 컴포넌트 없이 <see cref="DialogueManager"/>를 직접 호출할 수 있습니다.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public sealed class ConversationCoordinator : MonoBehaviour
+    {
+        public static ConversationCoordinator Instance { get; private set; }
 
-		private void Awake()
-		{
-			if (Instance != null && Instance != this)
-			{
-				UnityEngine.Object.Destroy(((Component)this).gameObject);
-			}
-			else
-			{
-				Instance = this;
-			}
-		}
+        /// <summary>
+        /// 여러 요청이 겹쳤을 때 사용할 선택 규칙입니다. 기본값은 우선순위가 가장 높은 요청을 고릅니다.
+        /// 게임에서 주제 선택 UI 또는 프로젝트 전용 규칙으로 교체할 수 있습니다.
+        /// </summary>
+        public Func<IReadOnlyList<DialogueRequest>, DialogueRequest> RequestSelector { get; set; }
 
-		public void HandleInteraction(IEnumerable<DialogueRequest> requests, DialogueContext context, DialogueReference? defaultReference = null, Action onComplete = null)
-		{
-			if (requests == null)
-			{
-				ExecuteDefaultOrEnd(defaultReference, context, onComplete);
-				return;
-			}
-			List<DialogueRequest> list = (from r in requests
-				where r != null && (object)r.Reference.GraphAsset != (object)null
-				orderby r.Priority descending
-				select r).ToList();
-			if (list.Count == 0)
-			{
-				ExecuteDefaultOrEnd(defaultReference, context, onComplete);
-				return;
-			}
-			if (list.Count == 1)
-			{
-				StartDialogue(list[0].Reference, context, onComplete);
-				return;
-			}
-			Debug.Log((object)$"[ConversationCoordinator] 寃뱀튂???\u0080???꾨낫媛\u0080 {list.Count}媛?議댁옱?⑸땲??");
-			for (int i = 0; i < list.Count; i++)
-			{
-				Debug.Log((object)$" - {i + 1}: [{list[i].Priority}] {list[i].TopicName} (from {list[i].SourceQuestId})");
-			}
-			Debug.Log((object)"[ConversationCoordinator] 媛\u0080???곗꽑?쒖쐞媛\u0080 ?믪? ?\u0080?붾? ?꾩떆濡??먮룞 ?ㅽ뻾?⑸땲??");
-			StartDialogue(list[0].Reference, context, onComplete);
-		}
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
 
-		private void ExecuteDefaultOrEnd(DialogueReference? defaultReference, DialogueContext context, Action onComplete)
-		{
-			if (defaultReference.HasValue && (object)defaultReference.Value.GraphAsset != (object)null)
-			{
-				Debug.Log((object)"[ConversationCoordinator] ?좏슚???섏뒪???\u0080?붽? ?놁뼱 湲곕낯(Default) ?\u0080?붾? ?ㅽ뻾?⑸땲??");
-				StartDialogue(defaultReference.Value, context, onComplete);
-			}
-			else
-			{
-				Debug.Log((object)"[ConversationCoordinator] ?ㅽ뻾??湲곕낯 ?\u0080?붽? ?놁뒿?덈떎.");
-				onComplete?.Invoke();
-			}
-		}
+            Instance = this;
+        }
 
-		private void StartDialogue(DialogueReference reference, DialogueContext context, Action onComplete)
-		{
-			Debug.Log((object)("[ConversationCoordinator] ?\u0080???쒖옉 ?붿껌: " + ((UnityEngine.Object)reference.GraphAsset).name + " (Entry: " + reference.EntryId + ")"));
-			if (DialogueManager.Instance != null)
-			{
-				DialogueManager.Instance.TryStartConversation(reference.GraphAsset, reference.EntryId, context, onComplete);
-			}
-			else
-			{
-				Debug.LogWarning((object)"[ConversationCoordinator] DialogueManager ?몄뒪?댁뒪瑜?李얠쓣 ???놁뒿?덈떎.");
-			}
-		}
-	}
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
+        /// <summary>
+        /// 잘못된 요청을 제외하고 우선순위순으로 정렬해 하나를 선택하며, 없으면 기본 대화를 사용합니다.
+        /// </summary>
+        public void HandleInteraction(
+            IEnumerable<DialogueRequest> requests,
+            DialogueContext context,
+            DialogueReference? defaultReference = null,
+            Action onComplete = null)
+        {
+            List<DialogueRequest> candidates = requests?
+                .Where(request => request?.Reference.GraphAsset != null)
+                .OrderByDescending(request => request.Priority)
+                .ThenBy(request => request.TopicName, StringComparer.Ordinal)
+                .ToList() ?? new List<DialogueRequest>();
+
+            if (candidates.Count == 0)
+            {
+                ExecuteDefaultOrComplete(defaultReference, context, onComplete);
+                return;
+            }
+
+            DialogueRequest selected = RequestSelector?.Invoke(candidates) ?? candidates[0];
+            if (selected == null || !candidates.Contains(selected))
+            {
+                Debug.LogWarning("[Dialogue] 요청 선택기가 올바르지 않은 요청을 반환하여 우선순위가 가장 높은 요청을 사용합니다.");
+                selected = candidates[0];
+            }
+
+            StartDialogue(selected.Reference, context, onComplete);
+        }
+
+        private static void ExecuteDefaultOrComplete(
+            DialogueReference? defaultReference,
+            DialogueContext context,
+            Action onComplete)
+        {
+            if (defaultReference.HasValue && defaultReference.Value.GraphAsset != null)
+            {
+                StartDialogue(defaultReference.Value, context, onComplete);
+                return;
+            }
+
+            onComplete?.Invoke();
+        }
+
+        private static void StartDialogue(
+            DialogueReference reference,
+            DialogueContext context,
+            Action onComplete)
+        {
+            DialogueManager.Instance.TryStartConversation(
+                reference.GraphAsset,
+                reference.EntryId,
+                context,
+                onComplete);
+        }
+    }
 }
-
-
-
-
-

@@ -9,68 +9,46 @@ using UnityEngine.Scripting;
 namespace UniversalGraph.Dialogue.Editor
 {
     /// <summary>
-    /// Builds the editor-only list of methods that can be selected by dialogue nodes.
-    /// Runtime invocation remains the responsibility of <see cref="DialogueEventRegistry"/>.
+    /// Dialogue 노드에서 선택할 수 있는 메서드의 에디터 전용 목록을 만듭니다.
+    /// 런타임 호출은 <see cref="DialogueEventRegistry"/>가 담당합니다.
     /// </summary>
     [Preserve]
     internal static class DialogueMethodCatalog
     {
         private static readonly List<DialogueMethodDescriptor> actions = new List<DialogueMethodDescriptor>();
         private static readonly List<DialogueMethodDescriptor> conditions = new List<DialogueMethodDescriptor>();
-        private static readonly Dictionary<string, DialogueMethodDescriptor> actionByKey = new Dictionary<string, DialogueMethodDescriptor>(StringComparer.Ordinal);
-        private static readonly Dictionary<string, DialogueMethodDescriptor> conditionByKey = new Dictionary<string, DialogueMethodDescriptor>(StringComparer.Ordinal);
-
-        /// <summary>Gets selectable action methods, ordered by key.</summary>
-        public static IReadOnlyList<DialogueMethodDescriptor> Actions => actions;
-
-        /// <summary>Gets selectable condition methods, ordered by key.</summary>
-        public static IReadOnlyList<DialogueMethodDescriptor> Conditions => conditions;
+        private static readonly Dictionary<string, DialogueMethodDescriptor> actionByKey = new Dictionary<string, DialogueMethodDescriptor>();
+        private static readonly Dictionary<string, DialogueMethodDescriptor> conditionByKey = new Dictionary<string, DialogueMethodDescriptor>();
 
         static DialogueMethodCatalog()
         {
             BuildRegistry();
         }
 
-        /// <summary>Looks up an action by its stable dialogue key.</summary>
-        public static bool TryGetAction(string key, out DialogueMethodDescriptor descriptor)
+        /// <summary>바인딩 종류에 사용할 수 있는 메서드를 반환합니다.</summary>
+        public static IReadOnlyList<DialogueMethodDescriptor> GetMethods(MethodKind kind)
         {
-            return TryGet(actionByKey, key, out descriptor);
+            return kind == MethodKind.Action ? actions : conditions;
         }
 
-        /// <summary>Looks up a condition by its stable dialogue key.</summary>
-        public static bool TryGetCondition(string key, out DialogueMethodDescriptor descriptor)
+        /// <summary>종류와 키로 메서드를 찾습니다.</summary>
+        public static bool TryGetMethod(MethodKind kind, string key, out DialogueMethodDescriptor descriptor)
         {
-            return TryGet(conditionByKey, key, out descriptor);
-        }
-
-        /// <summary>Returns the methods available for a binding kind.</summary>
-        public static IReadOnlyList<DialogueMethodDescriptor> GetMethods(DialogueMethodKind kind)
-        {
-            return kind == DialogueMethodKind.Action ? Actions : Conditions;
-        }
-
-        /// <summary>Looks up a method by kind and key.</summary>
-        public static bool TryGetMethod(DialogueMethodKind kind, string key, out DialogueMethodDescriptor descriptor)
-        {
-            return kind == DialogueMethodKind.Action
-                ? TryGetAction(key, out descriptor)
-                : TryGetCondition(key, out descriptor);
-        }
-
-        private static bool TryGet(Dictionary<string, DialogueMethodDescriptor> registry, string key, out DialogueMethodDescriptor descriptor)
-        {
+            descriptor = null;
             if (string.IsNullOrWhiteSpace(key))
             {
-                descriptor = null;
                 return false;
             }
 
-            return registry.TryGetValue(key, out descriptor);
+            Dictionary<string, DialogueMethodDescriptor> methodsByKey = kind == MethodKind.Action
+                ? actionByKey
+                : conditionByKey;
+            return methodsByKey.TryGetValue(key, out descriptor);
         }
 
         /// <summary>
-        /// Scans player assemblies only, so editor helper methods never leak into the authoring menu.
-        /// Duplicate keys are intentionally excluded: choosing either candidate would make assets ambiguous.
+        /// 플레이어 어셈블리만 검사하여 에디터 보조 메서드가 작성 메뉴에 나타나지 않게 합니다.
+        /// 중복 키는 어느 메서드인지 확정할 수 없으므로 의도적으로 목록에서 제외합니다.
         /// </summary>
         private static void BuildRegistry()
         {
@@ -79,29 +57,29 @@ namespace UniversalGraph.Dialogue.Editor
             actionByKey.Clear();
             conditionByKey.Clear();
 
-            var playerAssemblyNames = new HashSet<string>(StringComparer.Ordinal);
+            var playerAssemblyNames = new HashSet<string>();
             foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player))
             {
                 playerAssemblyNames.Add(assembly.name);
             }
 
-            var actionCandidates = new Dictionary<string, List<DialogueMethodDescriptor>>(StringComparer.Ordinal);
+            var actionCandidates = new Dictionary<string, List<DialogueMethodDescriptor>>();
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<DialogueActionAttribute>())
             {
                 var attribute = method.GetCustomAttribute<DialogueActionAttribute>(inherit: false);
                 if (attribute != null && IsPlayerMethod(method, playerAssemblyNames, "action"))
                 {
-                    AddCandidate(method, DialogueMethodKind.Action, attribute.Key, attribute.Target, actionCandidates);
+                    AddCandidate(method, MethodKind.Action, attribute.Key, attribute.Target, actionCandidates);
                 }
             }
 
-            var conditionCandidates = new Dictionary<string, List<DialogueMethodDescriptor>>(StringComparer.Ordinal);
+            var conditionCandidates = new Dictionary<string, List<DialogueMethodDescriptor>>();
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<DialogueConditionAttribute>())
             {
                 var attribute = method.GetCustomAttribute<DialogueConditionAttribute>(inherit: false);
                 if (attribute != null && IsPlayerMethod(method, playerAssemblyNames, "condition"))
                 {
-                    AddCandidate(method, DialogueMethodKind.Condition, attribute.Key, attribute.Target, conditionCandidates);
+                    AddCandidate(method, MethodKind.Condition, attribute.Key, attribute.Target, conditionCandidates);
                 }
             }
 
@@ -117,20 +95,20 @@ namespace UniversalGraph.Dialogue.Editor
                 return true;
             }
 
-            Debug.LogWarning($"[Dialogue] Editor-only {kind} method is ignored: {method.DeclaringType?.FullName}.{method.Name}");
+            Debug.LogWarning($"[Dialogue] Editor 전용 {kind} 메서드는 무시합니다: {method.DeclaringType?.FullName}.{method.Name}");
             return false;
         }
 
         private static void AddCandidate(
             MethodInfo method,
-            DialogueMethodKind kind,
+            MethodKind kind,
             string key,
             DialogueTarget target,
             Dictionary<string, List<DialogueMethodDescriptor>> candidatesByKey)
         {
             if (!DialogueMethodDescriptorFactory.TryCreate(method, kind, key, target, out DialogueMethodDescriptor descriptor, out string error))
             {
-                Debug.LogError($"[Dialogue] Could not register {kind} '{method.DeclaringType?.FullName}.{method.Name}': {error}");
+                Debug.LogError($"[Dialogue] {kind} '{method.DeclaringType?.FullName}.{method.Name}'을 등록하지 못했습니다: {error}");
                 return;
             }
 
@@ -153,7 +131,7 @@ namespace UniversalGraph.Dialogue.Editor
             {
                 if (pair.Value.Count != 1)
                 {
-                    Debug.LogError($"[Dialogue] Duplicate {kind} key '{pair.Key}' is excluded from the graph menu.");
+                    Debug.LogError($"[Dialogue] 중복된 {kind} 키 '{pair.Key}'는 그래프 메뉴에서 제외합니다.");
                     continue;
                 }
 

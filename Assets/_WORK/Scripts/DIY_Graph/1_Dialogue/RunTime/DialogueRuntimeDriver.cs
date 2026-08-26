@@ -3,8 +3,8 @@ using UnityEngine;
 namespace UniversalGraph
 {
 	/// <summary>
-	/// Drives time-based dialogue nodes from Unity's frame loop.
-	/// The object is created only when a <see cref="WaitNodeData"/> needs it.
+	/// Unity 프레임 루프에서 시간 기반 대화 노드를 갱신합니다.
+	/// <see cref="DialogueWaitNodeData"/>가 필요할 때만 객체를 생성합니다.
 	/// </summary>
 	internal sealed class DialogueRuntimeDriver : MonoBehaviour
 	{
@@ -12,45 +12,49 @@ namespace UniversalGraph
 
 		private static DialogueRuntimeDriver instance;
 
-		[RuntimeInitializeOnLoadMethod]
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 		private static void ResetStaticState()
 		{
 			instance = null;
 		}
 
 		/// <summary>
-		/// Ensures that exactly one persistent driver exists while a dialogue waits for time.
+		/// 대화가 시간을 기다리는 동안 유지되는 드라이버가 정확히 하나만 존재하도록 보장합니다.
 		/// </summary>
 		internal static void Ensure()
 		{
-			if (Application.isPlaying && !(instance != null))
+			if (!Application.isPlaying || instance != null)
 			{
-				instance = Object.FindAnyObjectByType<DialogueRuntimeDriver>((FindObjectsInactive)1);
-				if (!(instance != null))
-				{
-				GameObject val = new GameObject(DriverObjectName)
-					{
-						hideFlags = (HideFlags)1
-					};
-					val.AddComponent<DialogueRuntimeDriver>();
-				}
+				return;
 			}
+
+			instance = Object.FindAnyObjectByType<DialogueRuntimeDriver>(FindObjectsInactive.Include);
+			if (instance != null)
+			{
+				return;
+			}
+
+			var driverObject = new GameObject(DriverObjectName)
+			{
+				hideFlags = HideFlags.HideInHierarchy
+			};
+			driverObject.AddComponent<DialogueRuntimeDriver>();
 		}
 
 		private void Awake()
 		{
 			if (instance != null && instance != this)
 			{
-				UnityEngine.Object.Destroy(((Component)this).gameObject);
+				Destroy(gameObject);
 				return;
 			}
 			instance = this;
-			UnityEngine.Object.DontDestroyOnLoad(((Component)this).gameObject);
+			DontDestroyOnLoad(gameObject);
 		}
 
 		private void OnDestroy()
 		{
-			if ((object)instance == (object)this)
+			if (instance == this)
 			{
 				instance = null;
 			}

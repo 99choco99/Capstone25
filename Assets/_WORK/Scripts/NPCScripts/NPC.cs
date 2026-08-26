@@ -1,6 +1,4 @@
-using UniversalGraph;
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -15,14 +13,6 @@ public class NPC : MonoBehaviour, IInteractable
     public string NPC_Name;
     public string InteractionPrompt => NPCName.text;
 
-    [Header("Dialogue")]
-    [Tooltip("기본 대화")]
-    [SerializeField] private DialogueContainer defaultDialogue;
-
-    [Header("Quest Graphs")]
-    [Tooltip("관련 퀘스트")]
-    public List<QuestContainer> questGraphs = new();
-
     private void Start()
     {
         anim = GetComponent<Animator>();
@@ -33,12 +23,6 @@ public class NPC : MonoBehaviour, IInteractable
     public virtual void Interact(GameObject interactor)
     {
         StartCoroutine(LookAtPlayer(interactor.transform));
-
-        if (defaultDialogue != null)
-        {
-            DialogueManager.Instance.StartConversation(
-                defaultDialogue, gameObject, interactor);
-        }
     }
 
 

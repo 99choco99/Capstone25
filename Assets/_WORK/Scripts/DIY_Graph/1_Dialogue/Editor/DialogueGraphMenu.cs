@@ -5,14 +5,14 @@ using UniversalGraph.Editor;
 
 namespace UniversalGraph.Dialogue.Editor
 {
-    /// <summary>Creates a dialogue graph asset with one named default entry point.</summary>
+    /// <summary>이름이 있는 기본 시작점 하나를 포함한 Dialogue 그래프 에셋을 만듭니다.</summary>
     internal static class DialogueGraphMenu
     {
-        [MenuItem("Window/Dialogue Graph/Create Dialogue Graph")]
+        [MenuItem("Assets/Create/Universal/Dialogue Graph")]
         private static void CreateDialogueGraph()
         {
             string path = EditorUtility.SaveFilePanelInProject(
-                "Create Dialogue Graph",
+                "Draw Dialogue Graph",
                 "NewDialogue",
                 "asset",
                 "Choose a location for the dialogue graph asset.");
@@ -22,15 +22,16 @@ namespace UniversalGraph.Dialogue.Editor
             }
 
             var container = ScriptableObject.CreateInstance<DialogueContainer>();
-            container.Nodes.Add(new StartNodeData
+            GraphAssetMigrator.EnsureCurrent(container);
+            container.Nodes.Add(new DialogueStartNodeData
             {
                 Guid = Guid.NewGuid().ToString(),
                 Position = new Vector2(100f, 100f),
-                EntryId = StartNodeData.DefaultEntryId
+                EntryId = DialogueStartNodeData.DefaultEntryId
             });
             AssetDatabase.CreateAsset(container, path);
             AssetDatabase.SaveAssets();
-            UniversalGraphWindow.Open(container);
+            UniversalGraphWindow.OpenWindow(container);
         }
     }
 }

@@ -1,0 +1,94 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ca347d3ba80a0b44b795bb276b934cd, type: 3}
+  m_Name: NewDialogue
+  m_EditorClassIdentifier: UniversalGraph.Runtime::UniversalGraph.DialogueContainer
+  schemaVersion: 1
+  NodeLinks:
+  - StartNodeGuid: dbb9ea24-e7b9-437d-91f5-2523d8be6f83
+    StartPortName: Next
+    TargetNodeGuid: 3e0cc93b-4425-4840-a942-eb7cb44f7949
+    TargetPortName: Input
+  - StartNodeGuid: 3e0cc93b-4425-4840-a942-eb7cb44f7949
+    StartPortName: Next
+    TargetNodeGuid: 8366cdb0-14fb-4f19-9e63-604573214e01
+    TargetPortName: Input
+  Nodes:
+  - rid: 1445881474650472720
+  - rid: 1445881474650472721
+  - rid: 1445881474650472722
+  - rid: 1445881474650472784
+  - rid: 1445881474650472785
+  - rid: 1445881474650472783
+  - rid: 1445881474650472743
+  references:
+    version: 2
+    RefIds:
+    - rid: 1445881474650472720
+      type: {class: DialogueStartNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: dbb9ea24-e7b9-437d-91f5-2523d8be6f83
+        Position: {x: -17, y: 196}
+        entryId: Entry
+    - rid: 1445881474650472721
+      type: {class: DialogueNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 3e0cc93b-4425-4840-a942-eb7cb44f7949
+        Position: {x: 150, y: 196}
+        SpeakerName: 
+        DialogueText: 
+        Event:
+          Key: 
+          Arguments: []
+    - rid: 1445881474650472722
+      type: {class: DialogueChoiceNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 8366cdb0-14fb-4f19-9e63-604573214e01
+        Position: {x: 350, y: 196}
+        Choices:
+        - PortName: f1e1492e-4d61-43aa-a9d6-808181502c87
+          ChoiceText: New Choice
+          VisibilityCondition:
+            Key: 
+            Arguments: []
+          ChoiceEvent:
+            Key: 
+            Arguments: []
+    - rid: 1445881474650472743
+      type: {class: DialogueConditionNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 5a524a7c-540a-4c15-af8d-51997f2f9760
+        Position: {x: 58, y: 76}
+        Condition:
+          Key: 
+          Arguments: []
+    - rid: 1445881474650472783
+      type: {class: DialogueActionNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 088a14eb-7ee4-4199-aea4-dc7fc6be3af8
+        Position: {x: 301, y: 86}
+        Event:
+          Key: 
+          Arguments: []
+    - rid: 1445881474650472784
+      type: {class: DialogueWaitNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: fd8775a3-64fd-4404-9950-c0f81f866e77
+        Position: {x: 180, y: 319}
+        DurationSeconds: 1
+        UseUnscaledTime: 1
+    - rid: 1445881474650472785
+      type: {class: DialogueWaitSignalNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: e09ff460-bbe4-4f18-a032-6ed75ca1fd70
+        Position: {x: 169, y: 418}
+        signalKey: 

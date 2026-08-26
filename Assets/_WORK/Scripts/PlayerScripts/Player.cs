@@ -1,6 +1,4 @@
-﻿using UniversalGraph;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 
@@ -41,7 +39,6 @@ public class Player : MonoBehaviour
 
     public PlayerStateMachine StateMachine { get; private set; }
     public InventoryManager Inventory { get; private set; }
-    public PlayerQuestController Quest { get; private set; }
 
 
 
@@ -87,7 +84,6 @@ public class Player : MonoBehaviour
     {
         StateMachine = new PlayerStateMachine(this);
         Inventory = new InventoryManager();
-        Quest = new PlayerQuestController();
     }
 
     private void InjectBasicStats()
@@ -98,11 +94,6 @@ public class Player : MonoBehaviour
             Stats.LoadPlayerData(playerData);
         }
 
-        List<QuestProgress> data = DataManager.Instance.Server_QuestProgress;
-        if (data != null)
-        {
-            Quest.LoadQuestData(data);
-        }
     }
 
     private void WireSystem()
@@ -110,20 +101,12 @@ public class Player : MonoBehaviour
         InputHandler.OnTargetPressed += TargetingSystem.ToggleTarget;
         InputHandler.OnInteractionPressed += Interaction.ExecuteInteraction;
 
-        Stats.OnLevelUp += Quest.SyncPlayerLevel;
         Stats.OnDamage += HandleDamageReceived;
         Stats.OnPostureBroken += HandlePostureBroken;
         Stats.OnDeath += HandleDeath;
 
         Inventory.OnEquipmentChanged += Stats.UpdateEquipmentStats;
 
-        DialogueManager.Instance.OnConversationStart += HandleConversationStart;
-        DialogueManager.Instance.OnConversationEnd += HandleConversationEnd;
-
-        Quest.OnStatRewardEarned += HandleStatReward;
-        Quest.OnItemRewardEarned += HandleItemReward;
-        Quest.CheckInventorySpace = HandleCheckInventorySpace;
-        Quest.OnRewardFailed_InventoryFull += HandleInventoryFullWarning;
     }
 
 
@@ -155,31 +138,6 @@ public class Player : MonoBehaviour
     }
 
     private void HandleDeath() => StateMachine.TransitionTo(StateMachine.PlayerDeadState);
-    private void HandleConversationStart() => StateMachine.TransitionTo(StateMachine.ConversationState);
-    private void HandleConversationEnd() => StateMachine.TransitionTo(StateMachine.PlayerGroundedState);
-
-    private void HandleStatReward(int exp, int gold)
-    {
-        Stats.AddExp(exp);         // PlayerStats에 경험치 추가 로직
-        //Inventory.AddGold(gold); // 재화를 인벤토리(또는 지갑)에 추가
-    }
-
-    private void HandleItemReward(int itemId, int count)
-    {
-        Inventory.AddItem(itemId, count); // 이미 검증된 아이템이므로 안전하게 들어감!
-    }
-    private bool HandleCheckInventorySpace(int itemId)
-    {
-        ItemBase data = ItemManager.Instance.GetItem(itemId);
-        if (data == null) return false;
-        return Inventory.FindEmptySlot(data.type) != null;
-    }
-
-    private void HandleInventoryFullWarning()
-    {
-        Debug.LogWarning("인벤토리가 꽉 차서 퀘스트를 완료할 수 없습니다!");
-        // TODO: MainUIManager.Instance.ShowSystemMessage("인벤토리 공간이 부족합니다.");
-    }
 
 
     /// <summary>
@@ -231,25 +189,11 @@ public class Player : MonoBehaviour
             Stats.OnDamage -= HandleDamageReceived;
             Stats.OnPostureBroken -= HandlePostureBroken;
 
-            if (Quest != null)
-                Stats.OnLevelUp -= Quest.SyncPlayerLevel;
         }
 
         if (Inventory != null)
             Inventory.OnEquipmentChanged -= Stats.UpdateEquipmentStats;
 
-        if (DialogueManager.Instance != null)
-        {
-            DialogueManager.Instance.OnConversationStart -= HandleConversationStart;
-            DialogueManager.Instance.OnConversationEnd -= HandleConversationEnd;
-        }
-        if (Quest != null)
-        {
-            Quest.OnStatRewardEarned -= HandleStatReward;
-            Quest.OnItemRewardEarned -= HandleItemReward;
-            Quest.CheckInventorySpace = null;
-            Quest.OnRewardFailed_InventoryFull -= HandleInventoryFullWarning;
-        }
     }
 }
 

@@ -5521,26 +5521,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 233, y: 30}
   m_Pivot: {x: 0, y: 0.5}
---- !u!114 &1452317196212512786
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6371548644771582186}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0252c1df2731e14d80d037d78ee1801, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  panelType: 0
-  questPrefab: {fileID: 3861963131469543748, guid: 6762c7eecdd0829408dd138093fb6758,
-    type: 3}
-  content: {fileID: 2140108204151098402}
-  questNameText: {fileID: 2929583309162920801}
-  questDescriptionText: {fileID: 2561199576366072758}
-  questObjectiveText: {fileID: 3255269323122956666}
-  abandonButton: {fileID: 7922431392538258567}
 --- !u!1 &1455178913409533833
 GameObject:
   m_ObjectHideFlags: 0
@@ -11083,10 +11063,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PanelUI
   uiPanels:
-  - {fileID: 1452317196212512786}
   - {fileID: 9027638978851961119}
   - {fileID: 7100751154424755021}
-  - {fileID: 8690001542315843436}
   - {fileID: 1709827990067520257}
   currentOpenUI: 
 --- !u!223 &4336022020619176800
@@ -15521,14 +15499,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8969852696520713474}
-  - component: {fileID: 1452317196212512786}
   m_Layer: 6
   m_Name: QuestUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &6384986506517845106
 GameObject:
   m_ObjectHideFlags: 0
@@ -18470,19 +18447,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8713070949705839250}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1452317196212512786}
-        m_TargetAssemblyTypeName: QuestUI, Assembly-CSharp
-        m_MethodName: 
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!114 &7927463881502258011
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19890,7 +19855,6 @@ GameObject:
   - component: {fileID: 155123035600316125}
   - component: {fileID: 6602761785970902823}
   - component: {fileID: 7909749366663927020}
-  - component: {fileID: 8690001542315843436}
   - component: {fileID: 8690001542315843437}
   - component: {fileID: 8690001542315843438}
   m_Layer: 6
@@ -19899,25 +19863,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &8690001542315843436
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8690001542315843435}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0ef82c78667b2544c8a3ef6d2639b41b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DialogueUI
-  panelType: 5
-  speakerText: {fileID: 7126636809269226115}
-  dialogueText: {fileID: 8024571808901699366}
-  choiceButtonPrefab: {fileID: 4617649306944675366, guid: c668b8ba9a5d5d745bc19d072903ae2b,
-    type: 3}
-  choiceButtonContainer: {fileID: 443250197}
+  m_IsActive: 0
 --- !u!223 &8690001542315843437
 Canvas:
   m_ObjectHideFlags: 0

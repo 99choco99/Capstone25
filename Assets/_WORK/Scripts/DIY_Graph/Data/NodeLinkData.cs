@@ -2,22 +2,21 @@ using System;
 
 namespace UniversalGraph
 {
-	/// <summary>Serializable directed connection between two graph node ports.</summary>
+	/// <summary>두 그래프 노드의 포트를 잇는 직렬화 가능한 단방향 연결 정보입니다.</summary>
 	[Serializable]
 	public class NodeLinkData
 	{
-		/// <summary>GUID of the node that owns the output port.</summary>
-		public string BaseNodeGuid;
+		/// <summary>출력 포트를 가진 노드의 GUID</summary>
+		public string StartNodeGuid;
 
-		/// <summary>Stable identifier of the source output port.</summary>
-		public string PortName;
+		/// <summary>출발 출력 포트의 고정 식별자</summary>
+		public string StartPortName;
 
-		/// <summary>GUID of the node that owns the input port.</summary>
+		/// <summary>도착 입력 포트를 가진 노드의 GUID</summary>
 		public string TargetNodeGuid;
 
 		/// <summary>
-		/// Stable identifier of the target input port. Empty values are legacy links and are supported only
-		/// when the target node has exactly one input port.
+		/// 도착 입력 포트의 고정 식별자
 		/// </summary>
 		public string TargetPortName;
 	}

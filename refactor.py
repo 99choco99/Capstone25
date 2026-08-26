@@ -7,7 +7,7 @@ dirs_to_process = [
     r"Assets\_WORK\Scripts\DIY_Graph\2_Quest",
     r"Assets\_WORK\Scripts\QuestIntegration",
     r"Assets\_WORK\Tests",
-    r"Tools\UniversalDialogue.Generator"
+    r"Tools\UniversalGraph.Generator"
 ]
 
 def replace_in_file(filepath):
@@ -21,13 +21,13 @@ def replace_in_file(filepath):
         except UnicodeDecodeError:
             with open(filepath, 'r', encoding='utf-8-sig') as f:
                 content = f.read()
-    
+
     original = content
-    
+
     content = content.replace("using UniversalDialogue.Editor;", "using UniversalGraph.Editor;\nusing UniversalGraph.Dialogue.Editor;\nusing UniversalGraph.Quest.Editor;")
     content = content.replace("using UniversalDialogue;", "using UniversalGraph;\nusing UniversalGraph.Dialogue;\nusing UniversalGraph.Quest;")
-    
-    if r"DIY_Graph\1_Dialogue" in filepath or r"UniversalDialogue.Generator" in filepath:
+
+    if r"DIY_Graph\1_Dialogue" in filepath or r"UniversalGraph.Generator" in filepath:
         content = content.replace("namespace UniversalDialogue.Editor", "namespace UniversalGraph.Dialogue.Editor")
         content = content.replace("namespace UniversalDialogue", "namespace UniversalGraph.Dialogue")
         content = content.replace('"UniversalDialogue.', '"UniversalGraph.Dialogue.')

@@ -1,29 +1,56 @@
 using System;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine.UIElements;
 
 namespace UniversalGraph.Editor
 {
+	/// <summary>선택한 노드의 정보를 띄워주는 인스펙터에 관한 클래스</summary>
 	public sealed class NodeInspector : ScrollView
 	{
-		private readonly NodeInspectorContext context;
+		private readonly NodeInspectorEditHandler editHandler;
 
-		public NodeInspector(Action<string, Action> applyEdit)
+		private readonly VisualElement validationRoot = new();	//유효성 검사결과가 들어갈 부분
+		private readonly VisualElement contentRoot = new();		//실제 내용이 들어갈 부분
+		private GraphNode selectedGraphNode;
+
+		public NodeInspector(Action<string, Action> applyDataEdit, Action<string, Action> applyStructureEdit)
 		{
-			context = new NodeInspectorContext(applyEdit);
-			((VisualElement)this).AddToClassList("inspector-panel");
+			editHandler = new NodeInspectorEditHandler(applyDataEdit, applyStructureEdit);
+			AddToClassList("inspector-panel");
+			Add(validationRoot);
+			Add(contentRoot);
 		}
 
-		public void UpdateInspector(Node selectedNode)
+		/// <summary>노드 선택시 인스펙터의 내용을 해당 노드로 업데이트</summary>
+		public void UpdateInspector(GraphNode selectedNode)
 		{
-			((VisualElement)this).Clear();
-			if (selectedNode is GraphNode graphNode)
+			selectedGraphNode = selectedNode;
+			contentRoot.Clear();
+			if (selectedGraphNode != null)
 			{
-				VisualElement val = graphNode.CreateInspector(context);
-				if (val != null)
+				VisualElement inspectorContent = selectedGraphNode.CreateInspector(editHandler);
+				if (inspectorContent != null)
 				{
-					((VisualElement)this).Add(val);
+					contentRoot.Add(inspectorContent);
 				}
+			}
+
+			RefreshValidation();
+		}
+
+		/// <summary>필드 편집 도중 인스펙터 전체를 업데이트 하지 않고 진단 표시만 갱신</summary>
+		public void RefreshValidation()
+		{
+			validationRoot.Clear();
+			if (selectedGraphNode == null)
+			{
+				return;
+			}
+
+			foreach (GraphValidationIssue issue in selectedGraphNode.ValidationIssues)
+			{
+				validationRoot.Add(
+					new HelpBox($"[{issue.Code}] {issue.Message}",
+					issue.Severity == GraphValidationSeverity.Error ? HelpBoxMessageType.Error : HelpBoxMessageType.Warning));
 			}
 		}
 	}

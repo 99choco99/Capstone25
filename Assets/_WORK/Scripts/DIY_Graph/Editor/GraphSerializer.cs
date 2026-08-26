@@ -1,67 +1,69 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEditor.Experimental.GraphView;
+using UnityEngine;
 
 namespace UniversalGraph.Editor
 {
     /// <summary>
-    /// Translates between the visual GraphView canvas and a serializable <see cref="GraphContainer"/>.
-    /// It performs structural validation but deliberately does not contain dialogue or quest domain rules.
+    /// 시각적인 GraphView 캔버스와 직렬화 가능한 GraphContainer를 저장 및 로드
     /// </summary>
     public static class GraphSerializer
     {
         /// <summary>
-        /// Stores the current node positions, data, and explicit source/target port links in an asset.
-        /// Data is assigned only after the complete canvas has been validated.
+        /// 현재 GraphView의 노드 위치, 데이터와 포트 연결을 GraphContainer에 기록
         /// </summary>
-        public static void SaveGraphToMemory(UniversalGraphView view, GraphContainer container)
+        public static void WriteGraphViewToContainer(UniversalGraphView view, GraphContainer container)
         {
             if (view == null || container == null)
             {
                 return;
             }
 
-            var nodes = view.nodes.OfType<GraphNode>().ToList();
-            var links = new List<NodeLinkData>();
-            var savedNodes = new List<NodeBaseData>();
-            var guids = new HashSet<string>(StringComparer.Ordinal);
+            GraphAssetMigrator.EnsureCurrent(container);
 
+            List<GraphNode> nodes = view.nodes.OfType<GraphNode>().ToList();
+            List<NodeLinkData> links = new();
+            List<NodeBaseData> savedNodes = new();
+            HashSet<string> guids = new();
+
+            //노드 검사
             foreach (GraphNode node in nodes)
             {
                 if (node?.Data == null)
                 {
-                    throw new InvalidOperationException("A graph node has no backing node data.");
+                    throw new InvalidOperationException("노드에 연결된 데이터가 없습니다.");
                 }
 
                 if (string.IsNullOrWhiteSpace(node.Data.Guid))
                 {
-                    throw new InvalidOperationException($"{node.Data.GetType().Name} has no node GUID.");
+                    throw new InvalidOperationException($"{node.Data.GetType().Name}에 노드 GUID가 없습니다.");
                 }
 
                 if (!guids.Add(node.Data.Guid))
                 {
-                    throw new InvalidOperationException($"Duplicate node GUID '{node.Data.Guid}' was found in the canvas.");
+                    throw new InvalidOperationException($"캔버스에서 중복된 노드 GUID '{node.Data.Guid}'가 발견되었습니다.");
                 }
             }
-
+            
+            //엣지 검사
             foreach (Edge edge in view.edges.ToList())
             {
-                if (!(edge?.output?.node is GraphNode sourceNode) || !(edge.input?.node is GraphNode targetNode))
+                if (edge?.output?.node is not GraphNode sourceNode || edge.input?.node is not GraphNode targetNode)
                 {
-                    throw new InvalidOperationException("An edge is not connected to two graph nodes.");
+                    throw new InvalidOperationException("연결선의 양쪽 끝이 그래프 노드에 연결되어 있지 않습니다.");
                 }
 
                 if (string.IsNullOrWhiteSpace(edge.output.portName) || string.IsNullOrWhiteSpace(edge.input.portName))
                 {
-                    throw new InvalidOperationException("Every connected graph port must have a stable port name.");
+                    throw new InvalidOperationException("연결된 모든 그래프 포트에는 고정된 포트 이름이 있어야 합니다.");
                 }
 
                 links.Add(new NodeLinkData
                 {
-                    BaseNodeGuid = sourceNode.Data.Guid,
-                    PortName = edge.output.portName,
+                    StartNodeGuid = sourceNode.Data.Guid,
+                    StartPortName = edge.output.portName,
                     TargetNodeGuid = targetNode.Data.Guid,
                     TargetPortName = edge.input.portName
                 });
@@ -75,35 +77,28 @@ namespace UniversalGraph.Editor
 
             container.NodeLinks = links;
             container.Nodes = savedNodes;
-            EditorUtility.SetDirty(container);
         }
 
-        /// <summary>
-        /// Compatibility alias retained for existing editor extensions. New code should use
-        /// <see cref="SaveGraphToMemory"/> because the serializer is graph-domain agnostic.
-        /// </summary>
-        public static void SaveDialogueGraphToMemory(UniversalGraphView view, GraphContainer container)
-        {
-            SaveGraphToMemory(view, container);
-        }
+        //============================ Load 함수들 =================================
 
         /// <summary>
-        /// Rebuilds a canvas from serialized data. Validation and temporary construction finish before
-        /// the existing view is cleared, so a malformed asset does not leave the window half-empty.
+        /// 직렬화 데이터로 캔버스를 복원
         /// </summary>
         public static void LoadGraph(UniversalGraphView view, GraphContainer container)
         {
             if (view == null)
             {
-                throw new ArgumentNullException(nameof(view));
+                throw new ArgumentNullException(nameof(view), "그래프를 불러올 GraphView가 필요합니다.");
             }
 
             if (container == null)
             {
-                throw new ArgumentNullException(nameof(container));
+                throw new ArgumentNullException(nameof(container), "불러올 GraphContainer가 필요합니다.");
             }
 
+            GraphAssetMigrator.EnsureCurrent(container);
             ValidateContainerData(container);
+
             List<GraphNode> nodes = LoadNodes(container);
             List<Edge> edges = LoadEdges(nodes, container);
 
@@ -119,7 +114,7 @@ namespace UniversalGraph.Editor
             }
         }
 
-        /// <summary>Removes all current nodes and edges after replacement data has been prepared.</summary>
+        /// <summary>교체할 데이터가 준비된 뒤 현재 노드와 연결선을 모두 제거합니다.</summary>
         private static void ClearGraph(UniversalGraphView view)
         {
             foreach (Edge edge in view.edges.ToList())
@@ -133,28 +128,15 @@ namespace UniversalGraph.Editor
             }
         }
 
-        /// <summary>Creates and binds each visual node through the registered node-editor factory.</summary>
+        /// <summary>각 시각 노드를 만들고 데이터를 연결</summary>
         private static List<GraphNode> LoadNodes(GraphContainer container)
         {
-            var nodes = new List<GraphNode>();
+            List<GraphNode> nodes = new();
             foreach (NodeBaseData data in container.Nodes)
             {
-                GraphNode node;
-                try
-                {
-                    node = GraphNodeEditorRegistry.CreateNode(container, data);
-                }
-                catch (Exception exception)
-                {
-                    throw new InvalidOperationException($"Could not create an editor node for '{data.GetType().FullName}'.", exception);
-                }
+                GraphNode node = GraphNodeEditorRegistry.CreateNode(container, data);
 
-                if (node == null)
-                {
-                    throw new InvalidOperationException($"No editor node is registered for '{data.GetType().FullName}'.");
-                }
-
-                var position = node.GetPosition();
+                Rect position = node.GetPosition();
                 position.position = data.Position;
                 node.SetPosition(position);
                 nodes.Add(node);
@@ -163,45 +145,42 @@ namespace UniversalGraph.Editor
             return nodes;
         }
 
-        /// <summary>Resolves serialized port names into connected GraphView edges.</summary>
+        /// <summary>직렬화된 포트 이름을 찾아서 GraphView 연결선으로 복원</summary>
         private static List<Edge> LoadEdges(List<GraphNode> nodes, GraphContainer container)
         {
-            var nodesByGuid = nodes.ToDictionary(node => node.Data.Guid, StringComparer.Ordinal);
-            var edges = new List<Edge>();
-            var usedSingleOutputs = new HashSet<string>(StringComparer.Ordinal);
-            var usedSingleInputs = new HashSet<string>(StringComparer.Ordinal);
-            var uniqueEdges = new HashSet<string>(StringComparer.Ordinal);
+            List<Edge> edges = new();
+
+            Dictionary<string,GraphNode> nodesByGuid = nodes.ToDictionary(node => node.Data.Guid);
+            HashSet<string> usedSingleOutputs = new();
+            HashSet<string> usedSingleInputs = new();
 
             foreach (NodeLinkData link in container.NodeLinks)
             {
-                GraphNode sourceNode = nodesByGuid[link.BaseNodeGuid];
+                GraphNode sourceNode = nodesByGuid[link.StartNodeGuid];
                 GraphNode targetNode = nodesByGuid[link.TargetNodeGuid];
-                Port output = FindSinglePort(sourceNode.outputContainer.Children().OfType<Port>(), link.PortName, "output", link);
+                Port output = FindOutputPort(sourceNode, link);
                 Port input = FindInputPort(targetNode, link);
 
-                string outputKey = $"{link.BaseNodeGuid}\u001F{link.PortName}";
+                string outputKey = $"{link.StartNodeGuid}\u001F{link.StartPortName}";
                 string inputKey = $"{link.TargetNodeGuid}\u001F{input.portName}";
-                string edgeKey = $"{outputKey}\u001F{inputKey}";
-                if (!uniqueEdges.Add(edgeKey))
-                {
-                    throw new InvalidOperationException($"Duplicate edge was found: {link.BaseNodeGuid}.{link.PortName} -> {link.TargetNodeGuid}.{input.portName}.");
-                }
 
                 if (output.capacity == Port.Capacity.Single && !usedSingleOutputs.Add(outputKey))
                 {
-                    throw new InvalidOperationException($"Output '{link.BaseNodeGuid}.{link.PortName}' allows only one connection.");
+                    throw new InvalidOperationException($"출력 포트 '{link.StartNodeGuid}.{link.StartPortName}'에는 하나의 연결만 허용됩니다.");
                 }
 
                 if (input.capacity == Port.Capacity.Single && !usedSingleInputs.Add(inputKey))
                 {
-                    throw new InvalidOperationException($"Input '{link.TargetNodeGuid}.{input.portName}' allows only one connection.");
+                    throw new InvalidOperationException($"입력 포트 '{link.TargetNodeGuid}.{input.portName}'에는 하나의 연결만 허용됩니다.");
                 }
 
-                var edge = new Edge
+                Edge edge = new()
                 {
                     output = output,
                     input = input
                 };
+
+                //양방향으로 서로를 인식
                 output.Connect(edge);
                 input.Connect(edge);
                 edges.Add(edge);
@@ -210,92 +189,51 @@ namespace UniversalGraph.Editor
             return edges;
         }
 
-        private static Port FindInputPort(GraphNode targetNode, NodeLinkData link)
+
+        //============================ 포트 찾기 함수들 =================================
+
+        /// <summary>연결 정보에 기록된 출발 출력 포트를 찾기</summary>
+        private static Port FindOutputPort(GraphNode sourceNode, NodeLinkData link)
         {
-            IEnumerable<Port> inputs = targetNode.inputContainer.Children().OfType<Port>();
-            if (!string.IsNullOrWhiteSpace(link.TargetPortName))
-            {
-                return FindSinglePort(inputs, link.TargetPortName, "input", link);
-            }
-
-            Port[] legacyInputs = inputs.ToArray();
-            if (legacyInputs.Length == 1)
-            {
-                return legacyInputs[0];
-            }
-
-            throw new InvalidOperationException(
-                $"Legacy link to '{link.TargetNodeGuid}' has no target port name, but the node has {legacyInputs.Length} input ports. Reconnect this edge once in the graph editor.");
+            return FindPort(sourceNode.outputContainer.Children().OfType<Port>(), link.StartPortName, "출력", link);
         }
 
-        private static Port FindSinglePort(IEnumerable<Port> candidates, string portName, string direction, NodeLinkData link)
+        /// <summary>연결 정보에 기록된 도착 입력 포트를 찾기</summary>
+        private static Port FindInputPort(GraphNode targetNode, NodeLinkData link)
         {
-            Port[] ports = candidates.Where(port => string.Equals(port.portName, portName, StringComparison.Ordinal)).ToArray();
+            return FindPort(targetNode.inputContainer.Children().OfType<Port>(), link.TargetPortName, "입력", link);
+        }
+
+        /// <summary>포트 중 저장된 이름과 정확히 일치하는 포트 하나를 반환</summary>
+        private static Port FindPort(IEnumerable<Port> candidates, string portName, string direction, NodeLinkData link)
+        {
+            Port[] ports = candidates.Where(port => port.portName == portName).ToArray();
             if (ports.Length != 1)
             {
                 throw new InvalidOperationException(
-                    $"Expected one {direction} port named '{portName}' for link '{link.BaseNodeGuid}' -> '{link.TargetNodeGuid}', but found {ports.Length}.");
+                    $"연결선 '{link.StartNodeGuid}' -> '{link.TargetNodeGuid}'에서 이름이 '{portName}'인 {direction} 포트가 하나여야 하지만 {ports.Length}개 발견되었습니다.");
             }
 
             return ports[0];
         }
 
-        /// <summary>Validates data that can be checked without constructing editor views.</summary>
+        //============================ 유효성 검사=================================
+
+
+        /// <summary>에디터 화면 노드를 만들지 않고 확인할 수 있는 컨테이너 데이터를 검증합니다.</summary>
         private static void ValidateContainerData(GraphContainer container)
         {
-            if (SerializationUtility.HasManagedReferencesWithMissingTypes(container))
+            GraphValidationIssue[] errors = GraphValidatorRegistry.ValidateStructure(container)
+                .Where(issue => issue.Severity == GraphValidationSeverity.Error)
+                .ToArray();
+            if (errors.Length == 0)
             {
-                throw new InvalidOperationException($"'{container.name}' contains SerializeReference data whose concrete type is missing.");
+                return;
             }
 
-            if (container.Nodes == null)
-            {
-                throw new InvalidOperationException("Graph node list is null.");
-            }
-
-            if (container.NodeLinks == null)
-            {
-                throw new InvalidOperationException("Graph link list is null.");
-            }
-
-            var nodeGuids = new HashSet<string>(StringComparer.Ordinal);
-            foreach (NodeBaseData node in container.Nodes)
-            {
-                if (node == null)
-                {
-                    throw new InvalidOperationException("Graph node list contains a null entry.");
-                }
-
-                if (string.IsNullOrWhiteSpace(node.Guid))
-                {
-                    throw new InvalidOperationException($"{node.GetType().Name} has no GUID.");
-                }
-
-                if (!nodeGuids.Add(node.Guid))
-                {
-                    throw new InvalidOperationException($"Duplicate node GUID '{node.Guid}' was found in the asset.");
-                }
-            }
-
-            foreach (NodeLinkData link in container.NodeLinks)
-            {
-                if (link == null)
-                {
-                    throw new InvalidOperationException("Graph link list contains a null entry.");
-                }
-
-                if (string.IsNullOrWhiteSpace(link.BaseNodeGuid)
-                    || string.IsNullOrWhiteSpace(link.TargetNodeGuid)
-                    || string.IsNullOrWhiteSpace(link.PortName))
-                {
-                    throw new InvalidOperationException("A link is missing a source GUID, target GUID, or source port name.");
-                }
-
-                if (!nodeGuids.Contains(link.BaseNodeGuid) || !nodeGuids.Contains(link.TargetNodeGuid))
-                {
-                    throw new InvalidOperationException($"Link references a missing node: {link.BaseNodeGuid} -> {link.TargetNodeGuid}.");
-                }
-            }
+            string details = string.Join(Environment.NewLine, errors.Select(issue => issue.ToString()));
+            throw new InvalidOperationException(
+                $"'{container.name}'의 그래프 데이터가 올바르지 않아 불러올 수 없습니다.{Environment.NewLine}{details}");
         }
     }
 }

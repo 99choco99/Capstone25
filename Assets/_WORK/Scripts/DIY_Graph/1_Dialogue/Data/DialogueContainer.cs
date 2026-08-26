@@ -1,97 +1,44 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
-using UnityEngine.Scripting.APIUpdating;
 
 namespace UniversalGraph
 {
-	[MovedFrom(true, "UniversalGraph", "Assembly-CSharp", "DialogueContainer")]
-	public class DialogueContainer : GraphContainer
-	{
-		public bool TryResolveEntry(string entryId, out StartNodeData entryNode, out string error)
-		{
-			entryNode = null;
-			if (Nodes == null || Nodes.Count == 0)
-			{
-				error = "'" + ((UnityEngine.Object)this).name + "' 洹몃옒?꾩뿉 ?몃뱶媛\u0080 ?놁뒿?덈떎.";
-				return false;
-			}
-			HashSet<string> hashSet = new HashSet<string>(StringComparer.Ordinal);
-			foreach (NodeBaseData node in Nodes)
-			{
-				if (node == null)
-				{
-					error = "'" + ((UnityEngine.Object)this).name + "' 洹몃옒?꾩뿉 鍮꾩뼱 ?덈뒗 ?몃뱶 ?곗씠?곌? ?덉뒿?덈떎.";
-					return false;
-				}
-				if (string.IsNullOrWhiteSpace(node.Guid))
-				{
-					error = "'" + ((UnityEngine.Object)this).name + "' 洹몃옒?꾩뿉 GUID媛\u0080 ?녿뒗 ?몃뱶媛\u0080 ?덉뒿?덈떎.";
-					return false;
-				}
-				if (!hashSet.Add(node.Guid))
-				{
-					error = "'" + ((UnityEngine.Object)this).name + "' 洹몃옒?꾩뿉 以묐났 ?몃뱶 GUID '" + node.Guid + "'媛\u0080 ?덉뒿?덈떎.";
-					return false;
-				}
-				if (!(node is DialogueNodeData { Choices: not null } dialogueNodeData))
-				{
-					continue;
-				}
-				HashSet<string> hashSet2 = new HashSet<string>(StringComparer.Ordinal);
-				foreach (DialogueChoiceData choice in dialogueNodeData.Choices)
-				{
-					if (choice == null)
-					{
-						error = "'" + ((UnityEngine.Object)this).name + "' 洹몃옒?꾩쓽 Dialogue ?몃뱶 '" + node.Guid + "'??鍮꾩뼱 ?덈뒗 Choice媛\u0080 ?덉뒿?덈떎.";
-						return false;
-					}
-					if (string.IsNullOrWhiteSpace(choice.PortName))
-					{
-						error = "'" + ((UnityEngine.Object)this).name + "' 洹몃옒?꾩쓽 Dialogue ?몃뱶 '" + node.Guid + "'??Port ID媛\u0080 ?녿뒗 Choice媛\u0080 ?덉뒿?덈떎.";
-						return false;
-					}
-					if (string.Equals(choice.PortName, "Next", StringComparison.Ordinal) || !hashSet2.Add(choice.PortName))
-					{
-						error = "'" + ((UnityEngine.Object)this).name + "' 洹몃옒?꾩쓽 Dialogue ?몃뱶 '" + node.Guid + "'??以묐났?섍굅???덉빟??Choice Port ID '" + choice.PortName + "'媛\u0080 ?덉뒿?덈떎.";
-						return false;
-					}
-				}
-			}
-			Dictionary<string, StartNodeData> dictionary = new Dictionary<string, StartNodeData>(StringComparer.OrdinalIgnoreCase);
-			foreach (StartNodeData item in Nodes.OfType<StartNodeData>())
-			{
-				string normalizedEntryId = item.GetNormalizedEntryId();
-				if (!dictionary.TryAdd(normalizedEntryId, item))
-				{
-					error = "'" + ((UnityEngine.Object)this).name + "' 洹몃옒?꾩뿉 以묐났 Entry ID '" + normalizedEntryId + "'媛\u0080 ?덉뒿?덈떎.";
-					return false;
-				}
-			}
-			string text = StartNodeData.NormalizeEntryId(entryId);
-			if (!dictionary.TryGetValue(text, out var resolvedEntry))
-			{
-				error = "'" + ((UnityEngine.Object)this).name + "' 洹몃옒?꾩뿉??Entry '" + text + "'瑜?李얠쓣 ???놁뒿?덈떎.";
-				return false;
-			}
-			List<NodeLinkData> list = NodeLinks?.Where((NodeLinkData link) => link != null && string.Equals(link.BaseNodeGuid, resolvedEntry.Guid, StringComparison.Ordinal) && string.Equals(link.PortName, "Next", StringComparison.Ordinal)).ToList() ?? new List<NodeLinkData>();
-			if (list.Count != 1)
-			{
-				error = "Error";
-				return false;
-			}
-			if (!hashSet.Contains(list[0].TargetNodeGuid))
-			{
-				error = "'" + ((UnityEngine.Object)this).name + "' 洹몃옒?꾩쓽 Entry '" + text + "'媛\u0080 議댁옱?섏? ?딅뒗 ?몃뱶瑜?媛\u0080由ы궢?덈떎.";
-				return false;
-			}
-			entryNode = resolvedEntry;
-			error = null;
-			return true;
-		}
-	}
+    /// <summary>Dialogue 노드와 연결선 데이터를 저장하는 그래프 에셋</summary>
+    public class DialogueContainer : GraphContainer
+    {
+        /// <summary>
+        /// entryId로 시작점을 찾기
+        /// </summary>
+        public bool FindEntryNode(string entryId, out DialogueStartNodeData entryNode, out string error)
+        {
+            entryNode = null;
+            if (Nodes == null || Nodes.Count == 0)
+            {
+                error = $"대화 그래프 '{name}'에 노드가 없습니다.";
+                return false;
+            }
+
+            //시작점 찾기
+            Dictionary<string, DialogueStartNodeData> entries = new ();
+            foreach (DialogueStartNodeData candidate in Nodes.OfType<DialogueStartNodeData>())
+            {
+                string candidateId = candidate.EntryId;
+                if (!entries.TryAdd(candidateId, candidate))
+                {
+                    error = $"대화 그래프 '{name}'에 중복된 진입점 ID '{candidateId}'가 있습니다.";
+                    return false;
+                }
+            }
+
+            string requestedId = string.IsNullOrWhiteSpace(entryId)? DialogueStartNodeData.DefaultEntryId : entryId;
+            if (!entries.TryGetValue(requestedId, out entryNode))
+            {
+                error = $"대화 그래프 '{name}'에 진입점 '{requestedId}'가 없습니다.";
+                return false;
+            }
+
+            error = null;
+            return true;
+        }
+    }
 }
-
-
-

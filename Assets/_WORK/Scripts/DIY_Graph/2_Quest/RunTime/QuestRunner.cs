@@ -1,174 +1,178 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UniversalGraph;
 
-public static class QuestRunner
+namespace UniversalGraph
 {
-	public static void ProcessEvent(IQuestController controller, string type, int targetId, int amount)
-	{
-		foreach (QuestProgress item in controller.QuestProgress.Values.Where((QuestProgress p) => p.state == QuestState.InProgress))
-		{
-			QuestContainer questTemplate = QuestManager.Instance.GetQuestTemplate(item.questId);
-			if ((object)questTemplate == (object)null || item.activeNodeGuids.Count == 0)
-			{
-				continue;
-			}
-			foreach (string activeGuid in item.activeNodeGuids.ToList())
-			{
-				NodeBaseData nodeBaseData = questTemplate.Nodes.FirstOrDefault((NodeBaseData n) => n.Guid == activeGuid);
-				if (nodeBaseData is QuestObjectiveNodeData questObjectiveNodeData && string.Equals(questObjectiveNodeData.ObjectiveType, type, StringComparison.OrdinalIgnoreCase) && questObjectiveNodeData.TargetId == targetId)
-				{
-					if (!item.nodeProgressCounts.ContainsKey(activeGuid))
-					{
-						item.nodeProgressCounts[activeGuid] = 0;
-					}
-					item.nodeProgressCounts[activeGuid] += amount;
-					if (item.nodeProgressCounts[activeGuid] >= questObjectiveNodeData.RequiredAmount)
-					{
-						item.activeNodeGuids.Remove(activeGuid);
-						AdvanceToNextNodes(controller, questTemplate, item, questObjectiveNodeData);
-					}
-					else
-					{
-						controller.InvokeStatusChanged(questTemplate, item);
-					}
-				}
-			}
-		}
-	}
+    /// <summary>
+    /// Quest 진행 그래프를 항상 같은 결과로 실행하는 런타임 해석기입니다. 공개 메서드는 게임 이벤트를
+    /// 진행 데이터에 연결하고, 실제 노드 해석은 같은 partial 클래스의 책임별 파일로 위임합니다.
+    /// </summary>
+    public static partial class QuestRunner
+    {
+        /// <summary>게임 이벤트 하나를 조건이 일치하는 모든 활성 목표에 적용합니다.</summary>
+        public static void ProcessEvent(IQuestController controller, string type, int targetId, int amount)
+        {
+            if (controller == null)
+            {
+                throw new ArgumentNullException(nameof(controller), "QuestRunner를 만들려면 Quest Controller가 필요합니다.");
+            }
 
-	public static void StartQuestGraph(IQuestController controller, int questId)
-	{
-		QuestProgress questStatus = controller.GetQuestStatus(questId);
-		QuestContainer questTemplate = QuestManager.Instance.GetQuestTemplate(questId);
-		if (questStatus == null || (object)questTemplate == (object)null)
-		{
-			return;
-		}
-		questStatus.state = QuestState.InProgress;
-		questStatus.activeNodeGuids.Clear();
-		questStatus.nodeProgressCounts.Clear();
-		NodeBaseData nodeBaseData = questTemplate.Nodes.FirstOrDefault((NodeBaseData n) => n is QuestEventEntryNodeData);
-		if (nodeBaseData != null)
-		{
-			AdvanceToNextNodes(controller, questTemplate, questStatus, nodeBaseData);
-			return;
-		}
-		NodeBaseData nodeBaseData2 = questTemplate.Nodes.FirstOrDefault((NodeBaseData n) => n is QuestObjectiveNodeData);
-		if (nodeBaseData2 != null)
-		{
-			questStatus.activeNodeGuids.Add(nodeBaseData2.Guid);
-			controller.InvokeStatusChanged(questTemplate, questStatus);
-		}
-	}
+            QuestManager manager = QuestManager.Instance;
+            if (string.IsNullOrWhiteSpace(type) || amount <= 0 || manager == null)
+            {
+                return;
+            }
 
-	private static void AdvanceToNextNodes(IQuestController controller, QuestContainer container, QuestProgress progress, NodeBaseData currentNode)
-	{
-		List<NodeLinkData> list = container.NodeLinks.Where((NodeLinkData l) => l.BaseNodeGuid == currentNode.Guid).ToList();
-		if (list.Count == 0)
-		{
-			return;
-		}
-		foreach (NodeLinkData link in list)
-		{
-			if (currentNode is QuestConditionBranchNodeData branch)
-			{
-				string text = (EvaluateCondition(controller, branch) ? "True" : "False");
-				if (link.PortName != text)
-				{
-					continue;
-				}
-			}
-			NodeBaseData nodeBaseData = container.Nodes.FirstOrDefault((NodeBaseData n) => n.Guid == link.TargetNodeGuid);
-			if (nodeBaseData != null)
-			{
-				ProcessNode(controller, container, progress, nodeBaseData);
-			}
-		}
-	}
+            foreach (QuestProgress progress in controller.QuestProgress.Values
+                         .Where(item => item != null && item.state == QuestState.InProgress)
+                         .ToArray())
+            {
+                if (!manager.TryBuildQuestIndex(
+                        progress.questId,
+                        out QuestContainer container,
+                        out QuestGraphIndex flowIndex))
+                {
+                    continue;
+                }
 
-	private static void ProcessNode(IQuestController controller, QuestContainer container, QuestProgress progress, NodeBaseData node)
-	{
-		if (node is QuestAndGateNodeData questAndGateNodeData)
-		{
-			if (!progress.nodeProgressCounts.ContainsKey(questAndGateNodeData.Guid))
-			{
-				progress.nodeProgressCounts[questAndGateNodeData.Guid] = 0;
-			}
-			progress.nodeProgressCounts[questAndGateNodeData.Guid]++;
-			if (progress.nodeProgressCounts[questAndGateNodeData.Guid] >= questAndGateNodeData.RequiredInputCount)
-			{
-				AdvanceToNextNodes(controller, container, progress, questAndGateNodeData);
-			}
-		}
-		else if (node is QuestStateChangeNodeData questStateChangeNodeData)
-		{
-			progress.state = questStateChangeNodeData.NewState;
-			controller.InvokeStatusChanged(container, progress);
-			AdvanceToNextNodes(controller, container, progress, node);
-		}
-		else if (node is QuestActionTriggerNodeData questActionTriggerNodeData)
-		{
-			QuestEventManager.TriggerAction(questActionTriggerNodeData.ActionId);
-			AdvanceToNextNodes(controller, container, progress, node);
-		}
-		else if (node is QuestFailNodeData)
-		{
-			progress.state = QuestState.Failed;
-			progress.activeNodeGuids.Clear();
-			controller.InvokeStatusChanged(container, progress);
-		}
-		else if (node is QuestRewardNodeData)
-		{
-			controller.TurnInQuest(progress.questId);
-			AdvanceToNextNodes(controller, container, progress, node);
-		}
-		else if (node is QuestSubGraphNodeData questSubGraphNodeData)
-		{
-			if (!progress.activeNodeGuids.Contains(node.Guid))
-			{
-				progress.activeNodeGuids.Add(node.Guid);
-				StartQuestGraph(controller, questSubGraphNodeData.SubQuestId);
-			}
-			controller.InvokeStatusChanged(container, progress);
-		}
-		else if (node is QuestObjectiveNodeData)
-		{
-			if (!progress.activeNodeGuids.Contains(node.Guid))
-			{
-				progress.activeNodeGuids.Add(node.Guid);
-			}
-			controller.InvokeStatusChanged(container, progress);
-		}
-	}
+                progress.EnsureCollections();
+                bool changed = false;
+                foreach (string activeGuid in progress.activeNodeGuids.ToArray())
+                {
+                    if (!flowIndex.Nodes.TryGetValue(activeGuid, out NodeBaseData activeNode)
+                        || activeNode is not QuestObjectiveNodeData objective
+                        || objective.ObjectiveType != type
+                        || objective.TargetId != targetId)
+                    {
+                        continue;
+                    }
 
-	private static bool EvaluateCondition(IQuestController controller, QuestConditionBranchNodeData branch)
-	{
-		return true;
-	}
+                    int requiredAmount = Math.Max(1, objective.RequiredAmount);
+                    progress.nodeProgressCounts.TryGetValue(activeGuid, out int currentAmount);
+                    long increased = (long)currentAmount + amount;
+                    progress.nodeProgressCounts[activeGuid] = (int)Math.Min(requiredAmount, increased);
+                    changed = true;
 
-	public static void NotifyQuestCompleted(IQuestController controller, int completedQuestId)
-	{
-		foreach (QuestProgress item in controller.QuestProgress.Values.Where((QuestProgress p) => p.state == QuestState.InProgress))
-		{
-			QuestContainer questTemplate = QuestManager.Instance.GetQuestTemplate(item.questId);
-			if ((object)questTemplate == (object)null || item.activeNodeGuids.Count == 0)
-			{
-				continue;
-			}
-			foreach (string activeGuid in item.activeNodeGuids.ToList())
-			{
-				NodeBaseData nodeBaseData = questTemplate.Nodes.FirstOrDefault((NodeBaseData n) => n.Guid == activeGuid);
-				if (nodeBaseData is QuestSubGraphNodeData questSubGraphNodeData && questSubGraphNodeData.SubQuestId == completedQuestId)
-				{
-					item.activeNodeGuids.Remove(activeGuid);
-					AdvanceToNextNodes(controller, questTemplate, item, questSubGraphNodeData);
-				}
-			}
-		}
-	}
+                    if (increased < requiredAmount)
+                    {
+                        continue;
+                    }
+
+                    progress.activeNodeGuids.Remove(activeGuid);
+                    MarkCompleted(progress, activeGuid);
+                    RunFromOutputs(controller, container, progress, flowIndex, objective.Guid, null);
+                }
+
+                if (changed)
+                {
+                    controller.InvokeStatusChanged(container, progress);
+                }
+            }
+        }
+
+        /// <summary>Quest 하나를 초기화하고 명시적인 Quest Start 노드에서 시작합니다.</summary>
+        public static void StartQuestGraph(IQuestController controller, int questId)
+        {
+            if (controller == null)
+            {
+                throw new ArgumentNullException(nameof(controller), "Quest를 시작할 Controller가 필요합니다.");
+            }
+
+            QuestProgress progress = controller.GetQuestStatus(questId);
+            QuestManager manager = QuestManager.Instance;
+            if (progress == null
+                || manager == null
+                || !manager.TryBuildQuestIndex(
+                    questId,
+                    out QuestContainer container,
+                    out QuestGraphIndex flowIndex))
+            {
+                return;
+            }
+
+            progress.EnsureCollections();
+            if (progress.state == QuestState.InProgress
+                || progress.state == QuestState.CanComplete
+                || progress.state == QuestState.TurnedIn)
+            {
+                return;
+            }
+
+            NodeBaseData entry = ResolveStartNode(container, flowIndex);
+            if (entry == null)
+            {
+                Debug.LogError($"[Quest] '{container.name}'에 Quest Start 노드가 없습니다.", container);
+                return;
+            }
+
+            progress.state = QuestState.InProgress;
+            progress.currentNodeGuid = entry.Guid;
+            progress.activeNodeGuids.Clear();
+            progress.nodeProgressCounts.Clear();
+            progress.completedNodeGuids.Clear();
+            progress.completedGateInputs.Clear();
+
+            if (entry is QuestObjectiveNodeData objective)
+            {
+                ActivateObjective(progress, objective);
+            }
+            else
+            {
+                RunFromOutputs(controller, container, progress, flowIndex, entry.Guid, null);
+            }
+
+            controller.InvokeStatusChanged(container, progress);
+        }
+
+        /// <summary>완료된 하위 Quest를 기다리던 상위 Quest 그래프를 다시 진행합니다.</summary>
+        public static void NotifyQuestCompleted(IQuestController controller, int completedQuestId)
+        {
+            if (controller == null)
+            {
+                throw new ArgumentNullException(nameof(controller), "Quest를 재개할 Controller가 필요합니다.");
+            }
+
+            QuestManager manager = QuestManager.Instance;
+            if (manager == null)
+            {
+                return;
+            }
+
+            foreach (QuestProgress progress in controller.QuestProgress.Values
+                         .Where(item => item != null && item.state == QuestState.InProgress)
+                         .ToArray())
+            {
+                if (!manager.TryBuildQuestIndex(
+                        progress.questId,
+                        out QuestContainer container,
+                        out QuestGraphIndex flowIndex))
+                {
+                    continue;
+                }
+
+                progress.EnsureCollections();
+                bool changed = false;
+                foreach (string activeGuid in progress.activeNodeGuids.ToArray())
+                {
+                    if (!flowIndex.Nodes.TryGetValue(activeGuid, out NodeBaseData node)
+                        || node is not QuestSubGraphNodeData subGraph
+                        || subGraph.SubQuestId != completedQuestId)
+                    {
+                        continue;
+                    }
+
+                    progress.activeNodeGuids.Remove(activeGuid);
+                    MarkCompleted(progress, activeGuid);
+                    RunFromOutputs(controller, container, progress, flowIndex, node.Guid, null);
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    controller.InvokeStatusChanged(container, progress);
+                }
+            }
+        }
+    }
 }
-
-

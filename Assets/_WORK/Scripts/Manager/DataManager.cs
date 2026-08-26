@@ -12,7 +12,6 @@ public class DataManager
 
     [Header("서버 데이터")]
     public PlayerData Server_PlayerData;
-    public List<QuestProgress> Server_QuestProgress;
     public InventoryData Server_InventoryData;
 
     public event Action OnSave;

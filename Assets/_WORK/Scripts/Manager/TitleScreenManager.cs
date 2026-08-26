@@ -4,7 +4,6 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using UniversalGraph;
 
 public class TitleScreenManager : MonoBehaviour
 {
@@ -56,7 +55,6 @@ public class TitleScreenManager : MonoBehaviour
         NetworkManager.Instance.API.SetUserId(userId);
 
         var playerData = await NetworkManager.Instance.API.PlayerData.LoadPlayerData();
-        var questProgress = await NetworkManager.Instance.API.Quest.GetQuestData();
         var inventoryData = await NetworkManager.Instance.API.Inventory.GetInventoryItem();
 
         if(playerData == null)
@@ -70,7 +68,6 @@ public class TitleScreenManager : MonoBehaviour
         NetworkManager.Instance.socket.ConnectToServer(userId);
 
         DataManager.Instance.Server_PlayerData = playerData;
-        DataManager.Instance.Server_QuestProgress = questProgress;
         DataManager.Instance.Server_InventoryData = inventoryData;
 
         NetworkManager.Instance.JoinRoom(playerData, playerData.currentSceneName);
@@ -80,13 +77,9 @@ public class TitleScreenManager : MonoBehaviour
     {
         // Assets/Resources/Data/itemData.json
         TextAsset itemJson = Resources.Load<TextAsset>("Data/itemData");
-        TextAsset questJson = Resources.Load<TextAsset>("Data/questData");
-
-        if (itemJson != null && questJson != null)
+        if (itemJson != null)
         {
             ItemManager.Init(itemJson.text);
-            DialogueManager.Init();
-            QuestManager.Init();
             Debug.Log("[����] ���� ������ �ε� �Ϸ�!");
         }
         else
