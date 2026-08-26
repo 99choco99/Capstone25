@@ -22,23 +22,23 @@ public class TitleScreenManager : MonoBehaviour
     }
 
 
-    //버튼 눌렀을 때 게임 시작
+    //��ư ������ �� ���� ����
     public async void OnConnectButtonClick()
     {
         string userId = TEST_STEAM_ID;
         LoadLocalStaticData();
 
 
-        //API 연결 시도
+        //API ���� �õ�
         if (NetworkManager.Instance != null)
         {
-            SetStatus("서버에 연결 중 입니다...");
-            //서버 연결 시도
+            SetStatus("������ ���� �� �Դϴ�...");
+            //���� ���� �õ�
             var loginResponse = await NetworkManager.Instance.API.Login.RequestLogin(userId);
 
             if (!loginResponse.success)
             {
-                SetStatus($"로그인 실패: {loginResponse.message}");
+                SetStatus($"�α��� ����: {loginResponse.message}");
                 return;
             }
 
@@ -50,26 +50,24 @@ public class TitleScreenManager : MonoBehaviour
             return;
         }
 
-        //유저정보 세팅
-        SetStatus("데이터를 불러오는 중...");
+        //�������� ����
+        SetStatus("�����͸� �ҷ����� ��...");
         NetworkManager.Instance.API.SetUserId(userId);
 
         var playerData = await NetworkManager.Instance.API.PlayerData.LoadPlayerData();
-        var questProgress = await NetworkManager.Instance.API.Quest.GetQuestData();
         var inventoryData = await NetworkManager.Instance.API.Inventory.GetInventoryItem();
 
         if(playerData == null)
         {
-            SetStatus("플레이어 정보를 가져오는데 실패했습니다.");
+            SetStatus("�÷��̾� ������ �������µ� �����߽��ϴ�.");
             return;
         }
 
-        //소켓 연결
-        SetStatus("서버에 연결 중...");
+        //���� ����
+        SetStatus("������ ���� ��...");
         NetworkManager.Instance.socket.ConnectToServer(userId);
 
         DataManager.Instance.Server_PlayerData = playerData;
-        DataManager.Instance.Server_QuestProgress = questProgress;
         DataManager.Instance.Server_InventoryData = inventoryData;
 
         NetworkManager.Instance.JoinRoom(playerData, playerData.currentSceneName);
@@ -79,25 +77,20 @@ public class TitleScreenManager : MonoBehaviour
     {
         // Assets/Resources/Data/itemData.json
         TextAsset itemJson = Resources.Load<TextAsset>("Data/itemData");
-        TextAsset questJson = Resources.Load<TextAsset>("Data/questData");
-        TextAsset dialogueJson = Resources.Load<TextAsset>("Data/dialogue");
-
-        if (itemJson != null && dialogueJson != null && questJson != null)
+        if (itemJson != null)
         {
             ItemManager.Init(itemJson.text);
-            DialogueManager.Init(dialogueJson.text);
-            QuestManager.Init(questJson.text);
-            Debug.Log("[로컬] 정적 데이터 로드 완료!");
+            Debug.Log("[����] ���� ������ �ε� �Ϸ�!");
         }
         else
         {
-            Debug.LogError("[로컬] 정적 데이터 로드 실패!");
-            SetStatus("로컬 파일에 손상이 있습니다.");
+            Debug.LogError("[����] ���� ������ �ε� ����!");
+            SetStatus("���� ���Ͽ� �ջ��� �ֽ��ϴ�.");
         }
     }
 
 
-    //메세지 표시
+    //�޼��� ǥ��
     void SetStatus(string message)
     {
         StatusText.text = message;
@@ -107,3 +100,5 @@ public class TitleScreenManager : MonoBehaviour
 
 
 }
+
+

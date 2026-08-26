@@ -1,0 +1,22 @@
+using System;
+using UnityEngine.Scripting;
+
+namespace UniversalGraph
+{
+	/// <summary>
+	/// 그래프에서 편집할 메서드 인수에 고정 직렬화 ID를 부여합니다.
+	/// 따라서 C# 인수 이름을 바꿔도 그래프에 저장된 인수가 깨지지 않습니다.
+	/// </summary>
+	[RequireAttributeUsages]
+	[AttributeUsage(AttributeTargets.Parameter, Inherited = false, AllowMultiple = false)]
+	public sealed class DialogueParameterAttribute : Attribute
+	{
+		public string Id { get; }
+
+		/// <summary>고정 인수 식별자를 만듭니다.</summary>
+		public DialogueParameterAttribute(string id)
+		{
+			Id = id;
+		}
+	}
+}

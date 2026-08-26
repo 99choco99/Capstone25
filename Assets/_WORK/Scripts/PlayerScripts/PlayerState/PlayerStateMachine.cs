@@ -19,9 +19,6 @@ public class PlayerStateMachine
 
     public PlayerStunState PlayerStunState { get; private set; }
     public PlayerDeadState PlayerDeadState { get; private set; }
-    public ConversationState ConversationState { get; private set; }  // 대화 상태
-
-
     //==============변수들==============
     public AttackData RequestedAttackData { get; set; }
 
@@ -46,8 +43,6 @@ public class PlayerStateMachine
         PlayerDeadState = new PlayerDeadState(player, this);
         PlayerHitState = new PlayerHitState(player, this);
         PlayerStunState = new PlayerStunState(player, this);
-        ConversationState = new ConversationState(player, this);
-
         TransitionTo(PlayerGroundedState);
     }
 

@@ -68,18 +68,6 @@ public class MainUIManager : MonoBehaviour
 
         currentInput.OnEscapePressed += CloseLastUI;
 
-        if (DialogueManager.Instance != null)
-        {
-            // 중복 구독 방지
-            DialogueManager.Instance.OnConversationStart -= OnConversationStart;
-            DialogueManager.Instance.OnConversationEnd -= OnConversationEnd;
-
-            DialogueManager.Instance.OnConversationStart += OnConversationStart;
-            DialogueManager.Instance.OnConversationEnd += OnConversationEnd;
-        }
-        currentInput.OnDialogueNextPressed += OnDialogueNextInput;
-
-
         UpdateCursorState();
     }
 
@@ -88,25 +76,6 @@ public class MainUIManager : MonoBehaviour
     private void OnProfileInput() => ToggleUI(UIPanelType.Profile);
     private void OnSettingInput() => ToggleUI(UIPanelType.Setting);
     private void OnQuestInput() => ToggleUI(UIPanelType.Quest);
-
-    private void OnConversationStart()
-    {
-        if (panels != null)
-        {
-            panels.CloseAllPanels();
-        }
-        OpenUI(UIPanelType.Dialogue);
-    }
-    private void OnConversationEnd() => CloseUI(UIPanelType.Dialogue);
-    private void OnDialogueNextInput()
-    {
-        if (DialogueManager.Instance != null)
-        {
-            DialogueManager.Instance.ShowNextLine();
-        }
-    }
-
-
 
     // UI를 열고 닫을 때 사용하는 통로
     public void ToggleUI(UIPanelType type){panels?.ToggleUI(type);UpdateCursorState();}
@@ -150,16 +119,11 @@ public class MainUIManager : MonoBehaviour
         currentInput.OnQuestPressed -= OnQuestInput;
         currentInput.OnEscapePressed -= CloseLastUI;
 
-        currentInput.OnDialogueNextPressed -= OnDialogueNextInput;
-
-        if (DialogueManager.Instance != null)
-        {
-            DialogueManager.Instance.OnConversationStart -= OnConversationStart;
-            DialogueManager.Instance.OnConversationEnd -= OnConversationEnd;
-        }
     }
 
 
 
 }
+
+
 

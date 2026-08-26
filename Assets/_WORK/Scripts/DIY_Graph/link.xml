@@ -1,0 +1,5 @@
+<linker>
+  <!-- The package runtime is intentionally small. Preserve its contracts so generated providers,
+       attribute metadata, and reflection fallbacks behave identically under managed stripping. -->
+  <assembly fullname="UniversalGraph.Runtime" preserve="all" />
+</linker>
