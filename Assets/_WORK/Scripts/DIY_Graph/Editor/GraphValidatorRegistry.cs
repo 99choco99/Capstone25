@@ -57,7 +57,7 @@ namespace UniversalGraph.Editor
             EnsureInitialized();
             var issues = new List<GraphValidationIssue>();
             GraphStructureValidator.Validate(container, issues);
-            var context = new GraphValidationContext(container);
+            var index = new GraphValidationIndex(container);
 
             Type containerType = container.GetType();
             foreach (IGraphValidator validator in Validators
@@ -65,7 +65,7 @@ namespace UniversalGraph.Editor
             {
                 try
                 {
-                    validator.Validate(context, issues);
+                    validator.Validate(index, issues);
                 }
                 catch (Exception exception)
                 {
@@ -101,7 +101,7 @@ namespace UniversalGraph.Editor
 
         /// <summary>선택한 노드 집합 안에서 단방향 순환에 포함된 노드를 찾습니다.</summary>
         public static HashSet<string> FindCycleNodes(
-            GraphValidationContext context,
+            GraphValidationIndex index,
             Func<NodeBaseData, bool> includeNode)
         {
             var visited = new HashSet<string>();
@@ -109,7 +109,7 @@ namespace UniversalGraph.Editor
             var stack = new List<string>();
             var cycleNodes = new HashSet<string>();
 
-            foreach (NodeBaseData node in context.Nodes.Where(node => node != null && includeNode(node)))
+            foreach (NodeBaseData node in index.Nodes.Where(node => node != null && includeNode(node)))
             {
                 Visit(node.Guid);
             }
@@ -135,9 +135,9 @@ namespace UniversalGraph.Editor
 
                 active.Add(guid);
                 stack.Add(guid);
-                foreach (NodeLinkData link in context.GetOutgoing(guid))
+                foreach (NodeLinkData link in index.GetOutgoing(guid))
                 {
-                    if (context.TryGetNode(link.TargetNodeGuid, out NodeBaseData target)
+                    if (index.TryGetNode(link.TargetNodeGuid, out NodeBaseData target)
                         && includeNode(target))
                     {
                         Visit(target.Guid);

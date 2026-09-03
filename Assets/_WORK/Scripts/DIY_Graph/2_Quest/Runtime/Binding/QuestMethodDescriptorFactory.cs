@@ -22,7 +22,7 @@ namespace UniversalGraph
                 return false;
             }
 
-            string key = registration.Key;
+            string key = registration.Key?.Trim();
             if (string.IsNullOrWhiteSpace(key)
                 || key == "None")
             {
@@ -71,7 +71,6 @@ namespace UniversalGraph
             GeneratedParameterRegistration[] generatedParameters =
                 registration.Parameters ?? Array.Empty<GeneratedParameterRegistration>();
             var parameters = new MethodParameterDescriptor[generatedParameters.Length];
-            var serialized = new List<MethodParameterDescriptor>();
             var signatureTypes = new Type[generatedParameters.Length];
             var parameterIds = new HashSet<string>();
             bool hasContext = false;
@@ -108,13 +107,12 @@ namespace UniversalGraph
                         displayName,
                         displayName,
                         parameterType,
-                        MethodParameterSource.QuestContext,
-                        MethodArgumentKind.String,
-                        MethodTypeUtility.GetStableTypeId(parameterType));
+                        MethodParameterSource.QuestExecutionContext,
+                        MethodArgumentKind.String);
                     continue;
                 }
 
-                if (!MethodArgumentCodec.TryGetKind(parameterType, out MethodArgumentKind argumentKind))
+                if (!MethodArgumentCodec.TryGetArgumentKind(parameterType, out MethodArgumentKind argumentKind))
                 {
                     error = $"'{key}'의 파라미터 '{displayName}' 타입 '{parameterType.FullName}'은 지원하지 않습니다.";
                     return false;
@@ -133,10 +131,8 @@ namespace UniversalGraph
                     displayName,
                     parameterType,
                     MethodParameterSource.Serialized,
-                    argumentKind,
-                    MethodTypeUtility.GetStableTypeId(parameterType));
+                    argumentKind);
                 parameters[index] = parameter;
-                serialized.Add(parameter);
             }
 
             MethodInfo method = null;
@@ -171,14 +167,13 @@ namespace UniversalGraph
                 registration.IsStatic,
                 method,
                 parameters,
-                serialized.ToArray(),
                 registration.DirectInvoker);
             error = null;
             return true;
         }
 
         /// <summary>Attribute가 붙은 Quest 메서드 하나를 검증하고 에디터·런타임 호출 정보를 만듭니다.</summary>
-        public static bool TryCreate(
+        public static bool TryCreateFromReflection(
             MethodInfo method,
             MethodKind kind,
             string key,
@@ -194,9 +189,22 @@ namespace UniversalGraph
             }
 
             string qualifiedName = $"{method.DeclaringType?.FullName}.{method.Name}";
+            key = key?.Trim();
             if (string.IsNullOrWhiteSpace(key) || key == "None")
             {
                 error = $"'{qualifiedName}'에 빈 키가 있거나 예약 값 'None'을 사용했습니다.";
+                return false;
+            }
+
+            if (kind != MethodKind.Action && kind != MethodKind.Condition)
+            {
+                error = $"'{key}'의 Quest 메서드 종류가 올바르지 않습니다.";
+                return false;
+            }
+
+            if (target != QuestMethodTarget.Controller && target != QuestMethodTarget.Global)
+            {
+                error = $"'{key}'의 Quest 호출 대상이 올바르지 않습니다.";
                 return false;
             }
 
@@ -232,16 +240,16 @@ namespace UniversalGraph
                 return false;
             }
 
-            if (target == QuestMethodTarget.Controller && method.IsStatic)
+            if (target == QuestMethodTarget.Controller
+                && (method.IsStatic || !typeof(IQuestController).IsAssignableFrom(method.DeclaringType)))
             {
-                error = $"Controller Quest 메서드 '{key}'는 인스턴스 메서드여야 합니다.";
+                error = $"Controller Quest 메서드 '{key}'는 IQuestController의 인스턴스 메서드여야 합니다.";
                 return false;
             }
 
             ParameterInfo[] methodParameters = method.GetParameters();
             var parameters = new MethodParameterDescriptor[methodParameters.Length];
-            var serialized = new List<MethodParameterDescriptor>();
-            var parameterIds = new HashSet<string>();
+            int serializedParameterCount = 0;
             bool hasContext = false;
 
             for (int index = 0; index < methodParameters.Length; index++)
@@ -275,26 +283,18 @@ namespace UniversalGraph
                         parameterName,
                         parameterName,
                         parameterType,
-                        MethodParameterSource.QuestContext,
-                        MethodArgumentKind.String,
-                        MethodTypeUtility.GetStableTypeId(parameterType));
+                        MethodParameterSource.QuestExecutionContext,
+                        MethodArgumentKind.String);
                     continue;
                 }
 
-                if (!MethodArgumentCodec.TryGetKind(parameterType, out MethodArgumentKind argumentKind))
+                if (!MethodArgumentCodec.TryGetArgumentKind(parameterType, out MethodArgumentKind argumentKind))
                 {
                     error = $"'{key}'의 파라미터 '{parameterName}' 타입 '{parameterType.FullName}'은 지원하지 않습니다.";
                     return false;
                 }
 
-                string parameterId = parameter.GetCustomAttribute<QuestParameterAttribute>(false)?.Id
-                                     ?? parameter.GetCustomAttribute<DialogueParameterAttribute>(false)?.Id
-                                     ?? parameterName;
-                if (string.IsNullOrWhiteSpace(parameterId) || !parameterIds.Add(parameterId))
-                {
-                    error = $"'{key}'에 비어 있거나 중복된 파라미터 ID '{parameterId}'가 있습니다.";
-                    return false;
-                }
+                string parameterId = $"arg{serializedParameterCount++}";
 
                 var descriptorParameter = new MethodParameterDescriptor(
                     index,
@@ -302,19 +302,16 @@ namespace UniversalGraph
                     parameterName,
                     parameterType,
                     MethodParameterSource.Serialized,
-                    argumentKind,
-                    MethodTypeUtility.GetStableTypeId(parameterType));
+                    argumentKind);
                 parameters[index] = descriptorParameter;
-                serialized.Add(descriptorParameter);
             }
 
             descriptor = new QuestMethodDescriptor(
-                key.Trim(),
+                key,
                 kind,
                 target,
                 method,
-                parameters,
-                serialized.ToArray());
+                parameters);
             error = null;
             return true;
         }

@@ -28,7 +28,8 @@ namespace UniversalGraph
             new Dictionary<int, Func<QuestSaveData, string>>
             {
                 [0] = MigrateVersion0To1,
-                [1] = MigrateVersion1To2
+                [1] = MigrateVersion1To2,
+                [2] = MigrateVersion2To3
             };
 
         /// <summary>구형 스냅샷을 현재 스키마로 변경하고, 알 수 없는 미래 버전 데이터는 거부합니다.</summary>
@@ -111,6 +112,21 @@ namespace UniversalGraph
                     progress.definitionSchemaVersion = GraphAssetMigrator.CurrentVersion;
                 }
             }
+            return null;
+        }
+
+        /// <summary>Locked와 Ready로 나뉘어 있던 시작 전 상태를 NotStarted로 통합합니다.</summary>
+        private static string MigrateVersion2To3(QuestSaveData saveData)
+        {
+            NormalizeCollections(saveData);
+            foreach (QuestProgressSaveData progress in saveData.quests)
+            {
+                if (progress != null && ((int)progress.state == 0 || (int)progress.state == 1))
+                {
+                    progress.state = QuestState.NotStarted;
+                }
+            }
+
             return null;
         }
 

@@ -12,8 +12,6 @@ namespace UniversalGraph
 	/// <summary>현재 Quest 진행 단계입니다.</summary>
 	public QuestState state;
 
-	public string currentNodeGuid;
-
 	/// <summary>외부 진행을 기다리며 현재 흐름을 막고 있는 목표 또는 하위 Quest 노드입니다.</summary>
 	public List<string> activeNodeGuids = new List<string>();
 
@@ -26,8 +24,6 @@ namespace UniversalGraph
 	/// <summary>AND Gate가 소비한 중복 없는 입력 분기 도착 기록입니다.</summary>
 	public List<string> completedGateInputs = new List<string>();
 
-	public int currentObjectiveCount;
-
 	public QuestProgress()
 	{
 	}
@@ -39,10 +35,8 @@ namespace UniversalGraph
 			throw new ArgumentNullException(nameof(data), "복원할 Quest 진행 데이터가 필요합니다.");
 		}
 
-		questId = data.questId;
-		state = QuestState.Locked;
-		currentNodeGuid = string.Empty;
-		currentObjectiveCount = 0;
+		questId = data.QuestId;
+		state = QuestState.NotStarted;
 	}
 
 	/// <summary>구형 저장 데이터나 Serializer가 null로 만든 컬렉션 필드를 복구합니다.</summary>

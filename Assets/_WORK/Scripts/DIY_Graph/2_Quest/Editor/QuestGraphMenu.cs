@@ -23,13 +23,13 @@ namespace UniversalGraph.Quest.Editor
             }
 
             int nextQuestId = QuestAssetIndex.Quests
-                .Where(quest => quest != null && quest.questId > 0)
-                .Select(quest => quest.questId)
+                .Where(quest => quest != null && quest.QuestId > 0)
+                .Select(quest => quest.QuestId)
                 .DefaultIfEmpty(0)
                 .Max() + 1;
             var container = ScriptableObject.CreateInstance<QuestContainer>();
             GraphAssetMigrator.EnsureCurrent(container);
-            container.id = nextQuestId;
+            container.QuestId = nextQuestId;
             container.questName = System.IO.Path.GetFileNameWithoutExtension(path);
             container.Nodes.Add(new QuestStartNodeData
             {

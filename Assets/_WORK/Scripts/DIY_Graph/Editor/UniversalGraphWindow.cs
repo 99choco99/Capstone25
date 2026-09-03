@@ -214,7 +214,7 @@ namespace UniversalGraph.Editor
         /// <summary>현재 GraphView 상태를 Container에 쓰고 변경 상태와 검증 결과를 갱신</summary>
         private void SyncGraphViewToContainer()
         {
-            GraphSerializer.WriteGraphViewToContainer(graphView, currentContainer);
+            GraphViewSerializer.WriteGraphViewToContainer(graphView, currentContainer);
             EditorUtility.SetDirty(currentContainer);
             ValidateCurrentGraph();
         }
@@ -310,7 +310,7 @@ namespace UniversalGraph.Editor
             try
             {
                 MigrateGraphAssetIfNeeded(container);
-                graphView.ApplyWithoutSaveRequest(() => GraphSerializer.LoadGraph(graphView, container));
+                graphView.ApplyWithoutSaveRequest(() => GraphViewSerializer.LoadGraph(graphView, container));
 
                 currentContainer = container;
                 loadedContainer = container;
@@ -325,7 +325,10 @@ namespace UniversalGraph.Editor
                 loadedContainer = null;
                 graphView.SetContainer(null);
                 inspectorPanel?.UpdateInspector(null);
-                Debug.LogError($"[Flow Graph] '{container.name}'을 불러오지 못했습니다. 에셋은 변경하지 않았습니다.\n{exception}", container);
+                Debug.LogError(
+                    $"[Flow Graph] '{container.name}'의 화면을 불러오지 못했습니다. " +
+                    $"마이그레이션이 실행된 경우 에셋에는 이미 반영되어 있을 수 있습니다.\n{exception}",
+                    container);
             }
             finally
             {

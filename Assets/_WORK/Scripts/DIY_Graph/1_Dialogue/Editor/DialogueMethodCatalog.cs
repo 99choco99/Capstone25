@@ -4,21 +4,19 @@ using System.Reflection;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
-using UnityEngine.Scripting;
 
 namespace UniversalGraph.Dialogue.Editor
 {
     /// <summary>
-    /// Dialogue 노드에서 선택할 수 있는 메서드의 에디터 전용 목록을 만듭니다.
-    /// 런타임 호출은 <see cref="DialogueEventRegistry"/>가 담당합니다.
+    /// Dialogue 노드에서 선택할 수 있는 메서드의 드롭다운을 만들기
     /// </summary>
-    [Preserve]
     internal static class DialogueMethodCatalog
     {
-        private static readonly List<DialogueMethodDescriptor> actions = new List<DialogueMethodDescriptor>();
-        private static readonly List<DialogueMethodDescriptor> conditions = new List<DialogueMethodDescriptor>();
-        private static readonly Dictionary<string, DialogueMethodDescriptor> actionByKey = new Dictionary<string, DialogueMethodDescriptor>();
-        private static readonly Dictionary<string, DialogueMethodDescriptor> conditionByKey = new Dictionary<string, DialogueMethodDescriptor>();
+        //메서드들 보관
+        private static readonly List<DialogueMethodDescriptor> actions = new();
+        private static readonly List<DialogueMethodDescriptor> conditions = new();
+        private static readonly Dictionary<string, DialogueMethodDescriptor> actionByKey = new();
+        private static readonly Dictionary<string, DialogueMethodDescriptor> conditionByKey = new();
 
         static DialogueMethodCatalog()
         {
@@ -26,13 +24,13 @@ namespace UniversalGraph.Dialogue.Editor
         }
 
         /// <summary>바인딩 종류에 사용할 수 있는 메서드를 반환합니다.</summary>
-        public static IReadOnlyList<DialogueMethodDescriptor> GetMethods(MethodKind kind)
+        public static IReadOnlyList<DialogueMethodDescriptor> GetMethodList(MethodKind kind)
         {
             return kind == MethodKind.Action ? actions : conditions;
         }
 
-        /// <summary>종류와 키로 메서드를 찾습니다.</summary>
-        public static bool TryGetMethod(MethodKind kind, string key, out DialogueMethodDescriptor descriptor)
+        /// <summary>kind랑 key로 메서드 가져오기</summary>
+        public static bool GetMethod(MethodKind kind, string key, out DialogueMethodDescriptor descriptor)
         {
             descriptor = null;
             if (string.IsNullOrWhiteSpace(key))
@@ -40,15 +38,12 @@ namespace UniversalGraph.Dialogue.Editor
                 return false;
             }
 
-            Dictionary<string, DialogueMethodDescriptor> methodsByKey = kind == MethodKind.Action
-                ? actionByKey
-                : conditionByKey;
+            Dictionary<string, DialogueMethodDescriptor> methodsByKey = kind == MethodKind.Action ? actionByKey : conditionByKey;
             return methodsByKey.TryGetValue(key, out descriptor);
         }
 
         /// <summary>
-        /// 플레이어 어셈블리만 검사하여 에디터 보조 메서드가 작성 메뉴에 나타나지 않게 합니다.
-        /// 중복 키는 어느 메서드인지 확정할 수 없으므로 의도적으로 목록에서 제외합니다.
+        /// 플레이어 어셈블리만 검사해서 드롭다운에 띄우기위해서 Registry를 만듦
         /// </summary>
         private static void BuildRegistry()
         {
@@ -57,36 +52,41 @@ namespace UniversalGraph.Dialogue.Editor
             actionByKey.Clear();
             conditionByKey.Clear();
 
-            var playerAssemblyNames = new HashSet<string>();
+            HashSet<string> playerAssemblyNames = new();
             foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player))
             {
                 playerAssemblyNames.Add(assembly.name);
             }
 
-            var actionCandidates = new Dictionary<string, List<DialogueMethodDescriptor>>();
+            //action 함수들
+            Dictionary<string, List<DialogueMethodDescriptor>> actionCandidates = new ();
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<DialogueActionAttribute>())
             {
                 var attribute = method.GetCustomAttribute<DialogueActionAttribute>(inherit: false);
                 if (attribute != null && IsPlayerMethod(method, playerAssemblyNames, "action"))
                 {
-                    AddCandidate(method, MethodKind.Action, attribute.Key, attribute.Target, actionCandidates);
+                    AddCandidate(method, MethodKind.Action, attribute.Key, attribute.Owner, actionCandidates);
                 }
             }
 
-            var conditionCandidates = new Dictionary<string, List<DialogueMethodDescriptor>>();
+            //condition 함수들
+            Dictionary<string, List<DialogueMethodDescriptor>> conditionCandidates = new ();
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<DialogueConditionAttribute>())
             {
                 var attribute = method.GetCustomAttribute<DialogueConditionAttribute>(inherit: false);
                 if (attribute != null && IsPlayerMethod(method, playerAssemblyNames, "condition"))
                 {
-                    AddCandidate(method, MethodKind.Condition, attribute.Key, attribute.Target, conditionCandidates);
+                    AddCandidate(method, MethodKind.Condition, attribute.Key, attribute.Owner, conditionCandidates);
                 }
             }
 
-            PublishUnique(actionCandidates, actions, actionByKey, "action");
-            PublishUnique(conditionCandidates, conditions, conditionByKey, "condition");
+            FinalizeCandidates(actionCandidates, actions, actionByKey, "action");
+            FinalizeCandidates(conditionCandidates, conditions, conditionByKey, "condition");
         }
 
+        /// <summary>
+        /// 플레이어 어셈블리인지 ?
+        /// </summary>
         private static bool IsPlayerMethod(MethodInfo method, HashSet<string> playerAssemblyNames, string kind)
         {
             string assemblyName = method.DeclaringType?.Assembly.GetName().Name;
@@ -99,14 +99,12 @@ namespace UniversalGraph.Dialogue.Editor
             return false;
         }
 
-        private static void AddCandidate(
-            MethodInfo method,
-            MethodKind kind,
-            string key,
-            DialogueTarget target,
-            Dictionary<string, List<DialogueMethodDescriptor>> candidatesByKey)
+        /// <summary>
+        /// 메서드 후보를 목록에 추가
+        /// </summary>
+        private static void AddCandidate(MethodInfo method, MethodKind kind, string key, DialogueMethodOwner owner, Dictionary<string, List<DialogueMethodDescriptor>> candidatesByKey)
         {
-            if (!DialogueMethodDescriptorFactory.TryCreate(method, kind, key, target, out DialogueMethodDescriptor descriptor, out string error))
+            if (!DialogueMethodDescriptorFactory.TryCreateFromReflection(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out string error))
             {
                 Debug.LogError($"[Dialogue] {kind} '{method.DeclaringType?.FullName}.{method.Name}'을 등록하지 못했습니다: {error}");
                 return;
@@ -121,10 +119,13 @@ namespace UniversalGraph.Dialogue.Editor
             candidates.Add(descriptor);
         }
 
-        private static void PublishUnique(
+        /// <summary>
+        /// 후보 메서드들을 검증 후 확정
+        /// </summary>
+        private static void FinalizeCandidates(
             Dictionary<string, List<DialogueMethodDescriptor>> candidatesByKey,
-            List<DialogueMethodDescriptor> published,
-            Dictionary<string, DialogueMethodDescriptor> publishedByKey,
+            List<DialogueMethodDescriptor> list,
+            Dictionary<string, DialogueMethodDescriptor> listByKey,
             string kind)
         {
             foreach (KeyValuePair<string, List<DialogueMethodDescriptor>> pair in candidatesByKey)
@@ -134,13 +135,13 @@ namespace UniversalGraph.Dialogue.Editor
                     Debug.LogError($"[Dialogue] 중복된 {kind} 키 '{pair.Key}'는 그래프 메뉴에서 제외합니다.");
                     continue;
                 }
-
+                //유일한것만 담기
                 DialogueMethodDescriptor descriptor = pair.Value[0];
-                published.Add(descriptor);
-                publishedByKey.Add(descriptor.Key, descriptor);
+                list.Add(descriptor);
+                listByKey.Add(descriptor.Key, descriptor);
             }
 
-            published.Sort((left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
+            list.Sort((left, right) => string.CompareOrdinal(left.Key, right.Key));
         }
     }
 }

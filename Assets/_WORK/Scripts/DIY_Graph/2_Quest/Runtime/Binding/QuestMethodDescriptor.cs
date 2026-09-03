@@ -11,8 +11,7 @@ namespace UniversalGraph
             MethodKind kind,
             QuestMethodTarget target,
             MethodInfo method,
-            MethodParameterDescriptor[] parameters,
-            MethodParameterDescriptor[] serializedParameters)
+            MethodParameterDescriptor[] parameters)
             : this(
                 key,
                 kind,
@@ -22,7 +21,6 @@ namespace UniversalGraph
                 method?.IsStatic ?? false,
                 method,
                 parameters,
-                serializedParameters,
                 null)
         {
         }
@@ -36,7 +34,6 @@ namespace UniversalGraph
             bool isStatic,
             MethodInfo method,
             MethodParameterDescriptor[] parameters,
-            MethodParameterDescriptor[] serializedParameters,
             GeneratedMethodInvoker generatedInvoker)
             : base(
                 key,
@@ -46,7 +43,6 @@ namespace UniversalGraph
                 isStatic,
                 method,
                 parameters,
-                serializedParameters,
                 generatedInvoker)
         {
             Target = target;

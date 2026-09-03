@@ -7,7 +7,7 @@ namespace UniversalGraph.Editor
     public interface IGraphValidator
     {
         Type ContainerType { get; }
-        void Validate(GraphValidationContext context, ICollection<GraphValidationIssue> issues);
+        void Validate(GraphValidationIndex index, ICollection<GraphValidationIssue> issues);
     }
 
     /// <summary>도메인 그래프 검증기를 위한 강타입 부모 클래스입니다.</summary>
@@ -16,15 +16,15 @@ namespace UniversalGraph.Editor
         public Type ContainerType => typeof(TContainer);
 
         /// <summary>컨테이너 타입을 확인하고 강타입 검증 구현으로 전달합니다.</summary>
-        public void Validate(GraphValidationContext context, ICollection<GraphValidationIssue> issues)
+        public void Validate(GraphValidationIndex index, ICollection<GraphValidationIssue> issues)
         {
-            Validate((TContainer)context.Container, context, issues);
+            Validate((TContainer)index.Container, index, issues);
         }
 
         /// <summary>실제 그래프 컨테이너 도메인에 필요한 검증 규칙을 구현합니다.</summary>
         protected abstract void Validate(
             TContainer container,
-            GraphValidationContext context,
+            GraphValidationIndex index,
             ICollection<GraphValidationIssue> issues);
     }
 }

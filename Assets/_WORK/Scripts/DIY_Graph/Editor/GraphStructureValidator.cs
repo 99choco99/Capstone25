@@ -92,10 +92,13 @@ namespace UniversalGraph.Editor
 
                 if (string.IsNullOrWhiteSpace(link.TargetPortName))
                 {
+                    bool requiresTargetPort = container.SchemaVersion >= GraphAssetMigrator.CurrentVersion;
                     issues.Add(new GraphValidationIssue(
-                        GraphValidationSeverity.Warning,
-                        "LEGACY_TARGET_PORT",
-                        "레거시 연결선에 대상 포트 ID가 없습니다. 대상을 명확히 하려면 연결선을 한 번 다시 연결하세요.",
+                        requiresTargetPort ? GraphValidationSeverity.Error : GraphValidationSeverity.Warning,
+                        requiresTargetPort ? "MISSING_TARGET_PORT" : "LEGACY_TARGET_PORT",
+                        requiresTargetPort
+                            ? "연결선에 대상 입력 포트 ID가 없어 그래프를 불러올 수 없습니다."
+                            : "레거시 연결선에 대상 포트 ID가 없습니다. 그래프를 마이그레이션하세요.",
                         sourceGuid));
                 }
 

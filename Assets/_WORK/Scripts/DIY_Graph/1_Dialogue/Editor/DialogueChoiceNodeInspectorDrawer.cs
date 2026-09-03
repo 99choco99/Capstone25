@@ -102,9 +102,9 @@ namespace UniversalGraph.Dialogue.Editor
             });
             box.Add(textField);
 
-            //이벤트 함수들
-            box.Add(MethodCallEditor.Create(editHandler, "선택지 공개 조건", choice.VisibilityCondition, DialogueMethodCatalog.GetMethods(MethodKind.Condition)));
-            box.Add(MethodCallEditor.Create(editHandler, "실행할 이벤트", choice.ChoiceEvent, DialogueMethodCatalog.GetMethods(MethodKind.Action)));
+            //선택 시 실행할 Action
+            box.Add(MethodCallInspector.Create(editHandler, "선택지 공개 조건", choice.VisibilityCondition, DialogueMethodCatalog.GetMethodList(MethodKind.Condition)));
+            box.Add(MethodCallInspector.Create(editHandler, "실행할 Action", choice.SelectionAction, DialogueMethodCatalog.GetMethodList(MethodKind.Action)));
 
             return box;
         }

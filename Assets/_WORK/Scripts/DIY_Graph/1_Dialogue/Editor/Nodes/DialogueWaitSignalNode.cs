@@ -20,7 +20,7 @@ namespace UniversalGraph.Dialogue.Editor
             inputContainer.Add(input);
 
             Port next = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(float));
-            next.portName = "Next";
+            next.portName = DialoguePortNames.Next;
             outputContainer.Add(next);
 
             AddToClassList("wait-signal-node");

@@ -22,7 +22,7 @@ namespace UniversalGraph.Generator
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        internal static readonly DiagnosticDescriptor InvalidTarget = new DiagnosticDescriptor(
+        internal static readonly DiagnosticDescriptor InvalidOwner = new DiagnosticDescriptor(
             "UDG003",
             "올바르지 않은 Dialogue 메서드 대상",
             "{0} '{1}'은(는) 대상 '{2}'을(를) 사용할 수 없습니다: {3}",
@@ -34,14 +34,6 @@ namespace UniversalGraph.Generator
             "UDG004",
             "올바르지 않은 Dialogue 메서드 파라미터",
             "{0} '{1}'의 파라미터 '{2}'은(는) 지원되지 않습니다: {3}",
-            Category,
-            DiagnosticSeverity.Error,
-            isEnabledByDefault: true);
-
-        internal static readonly DiagnosticDescriptor DuplicateParameterId = new DiagnosticDescriptor(
-            "UDG005",
-            "중복된 Dialogue 파라미터 ID",
-            "{0} '{1}'에 중복된 파라미터 ID '{2}'이(가) 있습니다.",
             Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);

@@ -23,7 +23,7 @@ namespace UniversalGraph
     /// </summary>
     public static class GraphAssetMigrator
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;
 
         private static readonly GraphAssetMigrationRegistry Registry = CreateRegistry();
 

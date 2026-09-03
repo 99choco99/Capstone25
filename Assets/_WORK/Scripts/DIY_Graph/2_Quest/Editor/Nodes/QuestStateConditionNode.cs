@@ -17,15 +17,15 @@ namespace UniversalGraph.Quest.Editor
             RefreshTitle();
 
             Port input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(float));
-            input.portName = "Input";
+            input.portName = QuestPortNames.Input;
             inputContainer.Add(input);
 
             Port truePort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(float));
-            truePort.portName = "True";
+            truePort.portName = QuestPortNames.True;
             outputContainer.Add(truePort);
 
             Port falsePort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(float));
-            falsePort.portName = "False";
+            falsePort.portName = QuestPortNames.False;
             outputContainer.Add(falsePort);
 
             AddToClassList("condition-node");

@@ -1,5 +1,4 @@
 using System;
-using UnityEngine;
 
 namespace UniversalGraph
 {
@@ -7,7 +6,5 @@ namespace UniversalGraph
 	[Serializable]
 	public class QuestFailNodeData : NodeBaseData
 	{
-		[Tooltip("게임에서 필요에 따라 표시하거나 기록할 실패 이유입니다.")]
-		public string FailReason;
 	}
 }

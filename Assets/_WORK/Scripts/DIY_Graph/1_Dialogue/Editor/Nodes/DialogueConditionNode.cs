@@ -21,11 +21,11 @@ namespace UniversalGraph.Dialogue.Editor
             inputContainer.Add(input);
 
             Port truePort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(float));
-            truePort.portName = "True";
+            truePort.portName = DialoguePortNames.True;
             outputContainer.Add(truePort);
 
             Port falsePort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(float));
-            falsePort.portName = "False";
+            falsePort.portName = DialoguePortNames.False;
             outputContainer.Add(falsePort);
 
             AddToClassList("condition-node");
@@ -45,7 +45,7 @@ namespace UniversalGraph.Dialogue.Editor
             VisualElement root = new ();
             root.Add(new HelpBox("조건 결과에 따라 True 또는 False 포트 중 하나로 진행합니다.", HelpBoxMessageType.Info));
 
-            root.Add(MethodCallEditor.Create(editHandler, "조건" , NodeData.Condition, DialogueMethodCatalog.GetMethods(MethodKind.Condition), RefreshPreview));
+            root.Add(MethodCallInspector.Create(editHandler, "조건" , NodeData.Condition, DialogueMethodCatalog.GetMethodList(MethodKind.Condition), RefreshPreview));
             return root;
         }
     }

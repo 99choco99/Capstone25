@@ -1,257 +1,330 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace UniversalGraph
 {
     /// <summary>Dialogue 노드 종류별 실행과 선택지 평가를 담당합니다.</summary>
     public sealed partial class DialogueManager
     {
-        /// <summary>대기 노드나 종료 노드에 도달할 때까지 즉시 노드를 연속 실행합니다.</summary>
-        private void ProcessCurrentNode()
+        /// <summary>현재 노드를 실행, 처리</summary>
+        private void RunUntilBlocked()
         {
-            int immediateSteps = 0;
-            while (currentNode != null)
+            if (isNodeProcessing)
             {
-                if (++immediateSteps > MaxImmediateNodeSteps)
-                {
-                    FaultConversation(
-                        $"[Dialogue] 즉시 실행 노드가 최대 허용 횟수 {MaxImmediateNodeSteps}회를 초과했습니다. " +
-                        "Condition, Action, 0초 Wait 또는 Default로 진행하는 Choice 노드의 순환 연결이 있는지 확인하세요.");
-                    return;
-                }
-
-                switch (currentNode)
-                {
-                    case DialogueConditionNodeData condition:
-                        if (!ProcessCondition(condition))
-                        {
-                            return;
-                        }
-                        continue;
-
-                    case DialogueActionNodeData action:
-                        if (!ProcessAction(action))
-                        {
-                            return;
-                        }
-                        continue;
-
-                    case DialogueEndNodeData:
-                        FinishConversation(DialogueEndReason.Completed);
-                        return;
-
-                    case DialogueWaitNodeData wait:
-                        if (ProcessWait(wait))
-                        {
-                            continue;
-                        }
-                        return;
-
-                    case DialogueWaitSignalNodeData waitSignal:
-                        ProcessSignalWait(waitSignal);
-                        return;
-
-                    case DialogueNodeData dialogue:
-                        ProcessDialogueLine(dialogue);
-                        return;
-
-                    case DialogueChoiceNodeData choiceNode:
-                        if (ProcessChoiceNode(choiceNode))
-                        {
-                            continue;
-                        }
-                        return;
-
-                    default:
-                        FaultConversation($"[Dialogue] 지원하지 않는 노드 타입입니다: '{currentNode.GetType().FullName}'.");
-                        return;
-                }
+                return;
             }
 
-            FaultConversation("[Dialogue] 현재 노드가 예기치 않게 null이 되었습니다.");
+            isNodeProcessing = true;
+            int stepCount = 0;
+            try
+            {
+                while (IsConversationActive && blockKind == BlockKind.None)
+                {
+                    if (currentNodeData == null)
+                    {
+                        FailConversation("[Dialogue] 현재 노드가 예기치 않게 null이 되었습니다.");
+                        break;
+                    }
+
+                    //순한 참조를 막기 위해 노드의 수를 체크
+                    if (++stepCount > MaxNodeStepsPerProcess)
+                    {
+                        FailConversation(
+                            $"[Dialogue] 한 번의 동기 진행에서 처리한 노드가 최대 허용 횟수 {MaxNodeStepsPerProcess}회를 초과했습니다. " +
+                            "즉시 진행되는 노드 또는 UI 자동 진행의 순환 연결이 있는지 확인하세요.");
+                        break;
+                    }
+
+                    //현재 노드 종류에 따라 다르게 처리
+                    switch (currentNodeData)
+                    {
+                        case DialogueConditionNodeData conditionData:
+                            ProcessCondition(conditionData);
+                            break;
+
+                        case DialogueActionNodeData actionData:
+                            ProcessAction(actionData);
+                            break;
+
+                        case DialogueEndNodeData:
+                            FinishConversation(DialogueEndReason.Completed);
+                            break;
+
+                        case DialogueWaitNodeData waitData:
+                            ProcessWait(waitData);
+                            break;
+
+                        case DialogueWaitSignalNodeData waitSignalData:
+                            ProcessSignalWait(waitSignalData);
+                            break;
+
+                        case DialogueLineNodeData lineData:
+                            ProcessDialogueLine(lineData);
+                            break;
+
+                        case DialogueChoiceNodeData choiceData:
+                            ProcessChoiceNode(choiceData);
+                            break;
+
+                        default:
+                            FailConversation($"[Dialogue] 지원하지 않는 노드 타입입니다: '{currentNodeData.GetType().FullName}'.");
+                            break;
+                    }
+                }
+            }
+            finally
+            {
+                isNodeProcessing = false;
+            }
+
+            InvokePendingCompletionCallbacks();
         }
 
-        private bool ProcessCondition(DialogueConditionNodeData condition)
-        {
-            int sessionId = activeSessionId;
-            NodeBaseData expectedNode = currentNode;
-            bool evaluated = DialogueEventRegistry.TryEvaluateCondition(
-                condition.Condition,
-                currentContext,
-                out bool result);
 
-            if (!IsCurrentSession(sessionId, expectedNode))
+        //======================================각 노드들의 처리 방법에 대한 함수들 ===============================
+
+        /// <summary>
+        /// Condition 노드를 처리
+        /// </summary>
+        private void ProcessCondition(DialogueConditionNodeData data)
+        {
+            int conversationId = activeConversationId;
+            bool evaluated = DialogueMethodInvoker.TryEvaluateCondition(data.Condition, currentExecutionContext, out bool result);
+
+            if (!IsCurrentConversation(conversationId, data))
             {
-                return false;
+                return;
             }
 
             if (!evaluated)
             {
-                FaultConversation($"[Dialogue] Condition '{condition.Condition.Key}'을(를) 평가하지 못했습니다.");
-                return false;
+                FailConversation($"[Dialogue] Condition '{data.Condition.Key}'을(를) 평가하지 못했습니다.");
+                return;
             }
 
-            return TryMoveToNextNode(condition.Guid, result ? "True" : "False");
+            MoveToNextNode(data.Guid, result ? DialoguePortNames.True : DialoguePortNames.False);
         }
 
-        private bool ProcessAction(DialogueActionNodeData action)
+
+        /// <summary>
+        /// Action 노드를 처리
+        /// </summary>
+        private void ProcessAction(DialogueActionNodeData data)
         {
-            if (!HasActionKey(action.Event.Key))
-            {
-                FaultConversation($"[Dialogue] Action 노드 '{action.Guid}'에 이벤트 키가 없습니다.");
-                return false;
-            }
+            int conversationId = activeConversationId;
+            bool executed = DialogueMethodInvoker.TryExecuteAction(data.Action, currentExecutionContext);
 
-            int sessionId = activeSessionId;
-            NodeBaseData expectedNode = currentNode;
-            bool executed = DialogueEventRegistry.ExecuteAction(
-                action.Event,
-                currentContext);
-
-            if (!IsCurrentSession(sessionId, expectedNode))
+            if (!IsCurrentConversation(conversationId, data))
             {
-                return false;
+                return;
             }
 
             if (!executed)
             {
-                FaultConversation($"[Dialogue] 노드 '{action.Guid}'에서 Action '{action.Event.Key}' 실행에 실패했습니다.");
-                return false;
+                FailConversation($"[Dialogue] 노드 '{data.Guid}'에서 Action '{data.Action.Key}' 실행에 실패했습니다.");
+                return;
             }
 
-            return TryMoveToNextNode(action.Guid, "Next");
+            MoveToNextNode(data.Guid, DialoguePortNames.Next);
         }
 
-        /// <returns>대기 시간이 0이라 즉시 진행했으면 true, 실제 대기를 시작했으면 false입니다.</returns>
-        private bool ProcessWait(DialogueWaitNodeData wait)
+
+        /// <summary>
+        /// Wait 노드를 처리 , Tick으로 시간처리함
+        /// </summary>
+        private void ProcessWait(DialogueWaitNodeData data)
         {
-            float duration = wait.DurationSeconds;
+            float duration = data.DurationSeconds;
             if (duration < 0f || float.IsNaN(duration) || float.IsInfinity(duration))
             {
-                FaultConversation($"[Dialogue] Wait 노드 '{wait.Guid}'의 대기 시간 '{duration}'이(가) 올바르지 않습니다.");
-                return false;
+                FailConversation($"[Dialogue] Wait 노드 '{data.Guid}'의 대기 시간 '{duration}'이(가) 올바르지 않습니다.");
+                return;
             }
 
             if (duration == 0f)
             {
-                return TryMoveToNextNode(wait.Guid, "Next");
-            }
-
-            blockKind = BlockKind.Time;
-            waitRemainingSeconds = duration;
-            waitUsesUnscaledTime = wait.UseUnscaledTime;
-            DialogueRuntimeDriver.Ensure();
-            return false;
-        }
-
-        private void ProcessSignalWait(DialogueWaitSignalNodeData waitSignal)
-        {
-            string signalKey = waitSignal.SignalKey;
-            if (string.IsNullOrEmpty(signalKey))
-            {
-                FaultConversation($"[Dialogue] Wait Signal 노드 '{waitSignal.Guid}'에 Signal 키가 없습니다.");
+                MoveToNextNode(data.Guid, DialoguePortNames.Next);
                 return;
             }
 
-            BeginSignalWait(signalKey);
+            blockKind = BlockKind.Time;
+            waitTimeLeft = duration;
+            useUnscaledTime = data.UseUnscaledTime;
+
+            DialogueTickDriver.Ensure();
         }
 
-        private void ProcessDialogueLine(DialogueNodeData dialogue)
-        {
-            int sessionId = activeSessionId;
-            NodeBaseData expectedNode = currentNode;
 
-            if (HasActionKey(dialogue.Event.Key)
-                && !DialogueEventRegistry.ExecuteAction(
-                    dialogue.Event,
-                    currentContext))
+        /// <summary>
+        /// SignalWait 노드 처리
+        /// </summary>
+        private void ProcessSignalWait(DialogueWaitSignalNodeData data)
+        {
+            string signalKey = data.SignalKey;
+            if (string.IsNullOrWhiteSpace(signalKey))
             {
-                if (IsCurrentSession(sessionId, expectedNode))
+                FailConversation($"[Dialogue] Wait Signal 노드 '{data.Guid}'에 Signal 키가 없습니다.");
+                return;
+            }
+
+            blockKind = BlockKind.Signal;
+            waitSignalKey = signalKey;
+        }
+
+        /// <summary>
+        /// 기본 대화문 노드 처리
+        /// </summary>
+        private void ProcessDialogueLine(DialogueLineNodeData data)
+        {
+            int conversationId = activeConversationId;
+
+            if (!string.IsNullOrWhiteSpace(data.EnterAction.Key) && !DialogueMethodInvoker.TryExecuteAction(data.EnterAction, currentExecutionContext))
+            {
+                if (IsCurrentConversation(conversationId, data))
                 {
-                    FaultConversation(
-                        $"[Dialogue] 노드 '{dialogue.Guid}'에서 Action '{dialogue.Event.Key}' 실행에 실패했습니다.");
+                    FailConversation($"[Dialogue] 노드 '{data.Guid}'에서 Action '{data.EnterAction.Key}' 실행에 실패했습니다.");
                 }
+                return;
+            }
+
+            if (!IsCurrentConversation(conversationId, data))
+            {
                 return;
             }
 
             blockKind = BlockKind.Line;
+            currentPromptId = ++promptCounter;
 
-            if (!IsCurrentSession(sessionId, expectedNode)
-                || !DispatchSessionEvent(OnShowLine, dialogue, nameof(OnShowLine), sessionId, expectedNode))
+            InvokeDuringConversation(ShowLine, data, nameof(ShowLine), conversationId, data);
+        }
+
+
+        /// <summary>표시 가능한 선택지를 준비하고 선택 입력을 대기</summary>
+        private void ProcessChoiceNode(DialogueChoiceNodeData data)
+        {
+            int conversationId = activeConversationId;
+
+            if (!BuildChoices(data, conversationId))
             {
                 return;
             }
-        }
 
-        /// <summary>표시 가능한 선택지를 준비하고 선택 입력을 기다립니다.</summary>
-        /// <returns>표시할 선택지가 없어 Default로 즉시 진행했으면 true입니다.</returns>
-        private bool ProcessChoiceNode(DialogueChoiceNodeData choiceNode)
-        {
-            int sessionId = activeSessionId;
-            NodeBaseData expectedNode = currentNode;
-
-            if (!TryBuildVisibleChoices(choiceNode, sessionId, expectedNode))
+            if (visibleChoices.Count == 0)
             {
-                return false;
-            }
-
-            if (currentVisibleChoices.Count == 0)
-            {
-                return TryMoveToNextNode(
-                    choiceNode.Guid,
-                    DialogueChoiceNodeData.DefaultPortName,
-                    allowImplicitCompletion: true);
+                MoveToNextNode(data.Guid, DialoguePortNames.Default);
+                return;
             }
 
             blockKind = BlockKind.Choice;
-            DispatchSessionEvent(
-                OnShowChoices,
-                new List<DialogueChoiceData>(currentVisibleChoices),
-                nameof(OnShowChoices),
-                sessionId,
-                expectedNode);
-            return false;
+            currentPromptId = ++promptCounter;
+
+            IReadOnlyList<DialogueChoiceData> choicesToShow = visibleChoices.ToArray();
+            InvokeDuringConversation(ShowChoices, choicesToShow, nameof(ShowChoices), conversationId, data);
         }
 
-        /// <summary>선택지별 조건을 평가하고 현재 진입에서 사용할 수 있는 선택지만 보관합니다.</summary>
-        private bool TryBuildVisibleChoices(
-            DialogueChoiceNodeData choiceNode,
-            int sessionId,
-            NodeBaseData expectedNode)
+        /// <summary>선택지별 조건을 평가하고 현재 진입에서 사용할 수 있는 선택지만 보관</summary>
+        private bool BuildChoices(DialogueChoiceNodeData data, int conversationId)
         {
-            currentVisibleChoices.Clear();
-            foreach (DialogueChoiceData choice in choiceNode.Choices)
+            visibleChoices.Clear();
+            foreach (DialogueChoiceData choiceData in data.Choices)
             {
-                if (string.IsNullOrWhiteSpace(choice.VisibilityCondition.Key))
+                //조건이 없으면 일단 띄움
+                if (string.IsNullOrWhiteSpace(choiceData.VisibilityCondition.Key))
                 {
-                    currentVisibleChoices.Add(choice);
+                    visibleChoices.Add(choiceData);
                     continue;
                 }
 
-                bool evaluated = DialogueEventRegistry.TryEvaluateCondition(
-                    choice.VisibilityCondition,
-                    currentContext,
-                    out bool visible);
-                if (!IsCurrentSession(sessionId, expectedNode))
+                bool evaluated = DialogueMethodInvoker.TryEvaluateCondition(choiceData.VisibilityCondition, currentExecutionContext, out bool visible);
+                if (!IsCurrentConversation(conversationId, data))
                 {
                     return false;
                 }
 
                 if (!evaluated)
                 {
-                    FaultConversation(
-                        $"[Dialogue] 노드 '{choiceNode.Guid}'에서 선택지 Condition " +
-                        $"'{choice.VisibilityCondition.Key}'을(를) 평가하지 못했습니다.");
+                    FailConversation($"[Dialogue] 노드 '{data.Guid}'에서 선택지 Condition " + $"'{choiceData.VisibilityCondition.Key}'을(를) 평가하지 못했습니다.");
                     return false;
                 }
 
                 if (visible)
                 {
-                    currentVisibleChoices.Add(choice);
+                    visibleChoices.Add(choiceData);
                 }
             }
 
             return true;
         }
+
+
+
+        //===========================진행 중 대화 알림================================
+
+        /// <summary>진행 중인 대화의 알림을 전달하고, 대화가 바뀌거나 예외가 발생하면 호출을 중단</summary>
+        private void InvokeDuringConversation(Action callbacks, string notificationName, int conversationId)
+        {
+            if (callbacks == null)
+            {
+                return;
+            }
+
+            foreach (Action callback in callbacks.GetInvocationList())
+            {
+                try
+                {
+                    callback.Invoke();
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogError($"[Dialogue] {notificationName} 콜백 실행 중 예외가 발생했습니다.");
+                    Debug.LogException(exception);
+                    if (IsCurrentConversation(conversationId, null))
+                    {
+                        FinishConversation(DialogueEndReason.Faulted);
+                    }
+                    return;
+                }
+
+                if (!IsCurrentConversation(conversationId))
+                {
+                    return;
+                }
+            }
+        }
+
+
+        /// <summary>데이터를 포함한 진행 중 대화 알림을 전달하고, 대화가 바뀌거나 예외가 발생하면 호출을 중단</summary>
+        private void InvokeDuringConversation<T>(Action<T> callbacks, T value, string notificationName, int conversationId, NodeBaseData nodeData = null)
+        {
+            if (callbacks == null)
+            {
+                return;
+            }
+
+            foreach (Action<T> callback in callbacks.GetInvocationList())
+            {
+                try
+                {
+                    callback.Invoke(value);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogError($"[Dialogue] {notificationName} 콜백 실행 중 예외가 발생했습니다.");
+                    Debug.LogException(exception);
+                    if (IsCurrentConversation(conversationId, nodeData))
+                    {
+                        FinishConversation(DialogueEndReason.Faulted);
+                    }
+                    return;
+                }
+
+                if (!IsCurrentConversation(conversationId, nodeData))
+                {
+                    return;
+                }
+            }
+        }
+
     }
 }

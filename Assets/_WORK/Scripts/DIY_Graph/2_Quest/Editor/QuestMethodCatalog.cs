@@ -21,13 +21,13 @@ namespace UniversalGraph.Quest.Editor
         }
 
         /// <summary>특정 바인딩 종류의 유효하고 중복되지 않는 메서드를 반환합니다.</summary>
-        public static IReadOnlyList<QuestMethodDescriptor> GetMethods(MethodKind kind)
+        public static IReadOnlyList<QuestMethodDescriptor> GetMethodList(MethodKind kind)
         {
             return kind == MethodKind.Action ? actions : conditions;
         }
 
         /// <summary>고정 키로 유효한 메서드 하나를 찾습니다.</summary>
-        public static bool TryGetMethod(
+        public static bool GetMethod(
             MethodKind kind,
             string key,
             out QuestMethodDescriptor descriptor)
@@ -39,7 +39,7 @@ namespace UniversalGraph.Quest.Editor
             }
 
             return (kind == MethodKind.Action ? actionByKey : conditionByKey)
-                .TryGetValue(key, out descriptor);
+                .TryGetValue(key.Trim(), out descriptor);
         }
 
         /// <summary>플레이어 어셈블리를 검사하고 대상을 확정할 수 없는 중복 키를 제외합니다.</summary>
@@ -87,8 +87,8 @@ namespace UniversalGraph.Quest.Editor
                 }
             }
 
-            PublishUnique(actionCandidates, actions, actionByKey, "action");
-            PublishUnique(conditionCandidates, conditions, conditionByKey, "condition");
+            FinalizeCandidates(actionCandidates, actions, actionByKey, "action");
+            FinalizeCandidates(conditionCandidates, conditions, conditionByKey, "condition");
         }
 
         private static bool IsPlayerMethod(
@@ -115,7 +115,7 @@ namespace UniversalGraph.Quest.Editor
             QuestMethodTarget target,
             IDictionary<string, List<QuestMethodDescriptor>> candidatesByKey)
         {
-            if (!QuestMethodDescriptorFactory.TryCreate(
+            if (!QuestMethodDescriptorFactory.TryCreateFromReflection(
                     method,
                     kind,
                     key,
@@ -138,7 +138,7 @@ namespace UniversalGraph.Quest.Editor
             candidates.Add(descriptor);
         }
 
-        private static void PublishUnique(
+        private static void FinalizeCandidates(
             IReadOnlyDictionary<string, List<QuestMethodDescriptor>> candidatesByKey,
             ICollection<QuestMethodDescriptor> published,
             IDictionary<string, QuestMethodDescriptor> publishedByKey,

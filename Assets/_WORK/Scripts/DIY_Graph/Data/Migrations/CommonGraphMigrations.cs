@@ -9,6 +9,7 @@ namespace UniversalGraph
         internal static void Register(GraphAssetMigrationRegistry registry)
         {
             registry.Register<GraphContainer>(0, MigrateVersion0To1);
+            registry.Register<GraphContainer>(1, MigrateVersion1To2);
         }
 
         /// <summary>기본 노드·연결 컬렉션과 구형 연결의 도착 포트를 복구합니다.</summary>
@@ -25,6 +26,12 @@ namespace UniversalGraph
                 }
             }
 
+            return null;
+        }
+
+        /// <summary>두 번째 스키마에서 공통 데이터 변경은 없으며 도메인별 변환만 실행합니다.</summary>
+        private static string MigrateVersion1To2(GraphContainer container)
+        {
             return null;
         }
     }

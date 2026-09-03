@@ -44,7 +44,7 @@ namespace UnityEngine.Scripting
 
 namespace UniversalGraph
 {
-    public enum DialogueTarget { Speaker, Interactor, Global }
+    public enum DialogueMethodOwner { Speaker, Interactor, Global }
     public enum MethodKind { Action, Condition }
 
     [UnityEngine.Scripting.RequireAttributeUsages]
@@ -53,7 +53,7 @@ namespace UniversalGraph
     {
         public DialogueActionAttribute(string key) { Key = key; }
         public string Key { get; }
-        public DialogueTarget Target { get; set; } = DialogueTarget.Speaker;
+        public DialogueMethodOwner Owner { get; set; } = DialogueMethodOwner.Speaker;
     }
 
     [UnityEngine.Scripting.RequireAttributeUsages]
@@ -62,17 +62,10 @@ namespace UniversalGraph
     {
         public DialogueConditionAttribute(string key) { Key = key; }
         public string Key { get; }
-        public DialogueTarget Target { get; set; } = DialogueTarget.Speaker;
+        public DialogueMethodOwner Owner { get; set; } = DialogueMethodOwner.Speaker;
     }
 
-    [AttributeUsage(AttributeTargets.Parameter, Inherited = false, AllowMultiple = false)]
-    public sealed class DialogueParameterAttribute : Attribute
-    {
-        public DialogueParameterAttribute(string id) { Id = id; }
-        public string Id { get; }
-    }
-
-    public sealed class DialogueContext { }
+    public sealed class DialogueExecutionContext { }
 
     [UnityEngine.Scripting.RequireAttributeUsages]
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
@@ -99,7 +92,7 @@ namespace UniversalGraph
         public DialogueGeneratedMethodRegistration(
             MethodKind kind,
             string key,
-            DialogueTarget target,
+            DialogueMethodOwner owner,
             string declaringTypeMetadataName,
             string methodMetadataName,
             bool isStatic,
@@ -108,7 +101,7 @@ namespace UniversalGraph
         {
             Kind = kind;
             Key = key;
-            Target = target;
+            Owner = owner;
             DeclaringTypeMetadataName = declaringTypeMetadataName;
             MethodMetadataName = methodMetadataName;
             IsStatic = isStatic;
@@ -118,7 +111,7 @@ namespace UniversalGraph
 
         public MethodKind Kind { get; }
         public string Key { get; }
-        public DialogueTarget Target { get; }
+        public DialogueMethodOwner Owner { get; }
         public string DeclaringTypeMetadataName { get; }
         public string MethodMetadataName { get; }
         public bool IsStatic { get; }
@@ -175,13 +168,6 @@ namespace UniversalGraph
         public QuestConditionAttribute(string key) { Key = key; }
         public string Key { get; }
         public QuestMethodTarget Target { get; set; } = QuestMethodTarget.Controller;
-    }
-
-    [AttributeUsage(AttributeTargets.Parameter, Inherited = false, AllowMultiple = false)]
-    public sealed class QuestParameterAttribute : Attribute
-    {
-        public QuestParameterAttribute(string id) { Id = id; }
-        public string Id { get; }
     }
 
     public interface IQuestController { }
@@ -262,28 +248,28 @@ namespace Game
         public ItemData LastItem;
         public int LastAmount;
         public bool LastSecret;
-        public DialogueContext LastContext;
+        public DialogueExecutionContext LastExecutionContext;
 
-        [DialogueAction(""give_item"", Target = DialogueTarget.Speaker)]
+        [DialogueAction(""give_item"", Owner = DialogueMethodOwner.Speaker)]
         internal void GiveItem(
-            [DialogueParameter(""item_id"")] ItemData item,
+            ItemData item,
             int amount,
             bool isSecret,
-            DialogueContext context)
+            DialogueExecutionContext executionContext)
         {
             LastItem = item;
             LastAmount = amount;
             LastSecret = isSecret;
-            LastContext = context;
+            LastExecutionContext = executionContext;
         }
 
-        [DialogueCondition(""has_amount"", Target = DialogueTarget.Global)]
+        [DialogueCondition(""has_amount"", Owner = DialogueMethodOwner.Global)]
         public static bool HasAmount(int amount)
         {
             return amount == 7;
         }
 
-        [DialogueAction(""private_action"", Target = DialogueTarget.Global)]
+        [DialogueAction(""private_action"", Owner = DialogueMethodOwner.Global)]
         private static void PrivateAction() { }
     }
 
@@ -291,7 +277,7 @@ namespace Game
     {
         internal enum Mode { One, Two }
 
-        [DialogueCondition(""nested_condition"", Target = DialogueTarget.Global)]
+        [DialogueCondition(""nested_condition"", Owner = DialogueMethodOwner.Global)]
         internal static bool IsMode(Mode mode)
         {
             return mode == Mode.Two;
@@ -311,7 +297,7 @@ namespace Game
         public QuestExecutionContext LastContext;
 
         [QuestAction(""quest.give"", Target = QuestMethodTarget.Controller)]
-        public void Give(QuestExecutionContext context, [QuestParameter(""amount"")] int amount)
+        public void Give(QuestExecutionContext context, int amount)
         {
             LastContext = context;
             LastAmount = amount;
@@ -321,7 +307,7 @@ namespace Game
     public static class GlobalQuestHandler
     {
         [QuestCondition(""quest.ready"", Target = QuestMethodTarget.Global)]
-        internal static bool IsReady([DialogueParameter(""required"")] int required)
+        internal static bool IsReady(int required)
         {
             return required == 9;
         }
@@ -382,7 +368,7 @@ namespace Game
 
             string generated = run.GeneratedSources.Single();
             AssertContains(generated, "new global::UniversalGraph.GeneratedParameterRegistration(");
-            AssertContains(generated, "\"item_id\"");
+            AssertContains(generated, "\"arg0\"");
             AssertContains(generated, "\"Game.ItemData\"");
             AssertContains(generated, "\"Game.Outer+Mode\"");
             AssertContains(generated, "Invoke_");
@@ -406,8 +392,8 @@ namespace Game
             Array giveParameters = (Array)GetProperty(give, "Parameters");
             Assert(giveParameters.Length == 4, "Parameter registration count is incorrect.");
             object itemParameter = giveParameters.GetValue(0);
-            Assert((string)GetProperty(itemParameter, "ParameterId") == "item_id",
-                "Stable DialogueParameter id was not emitted.");
+            Assert((string)GetProperty(itemParameter, "ParameterId") == "arg0",
+                "Automatic parameter id was not emitted.");
             Assert((string)GetProperty(itemParameter, "DisplayName") == "item",
                 "Parameter display name was not emitted.");
             Assert((string)GetProperty(itemParameter, "TypeMetadataName") == "Game.ItemData",
@@ -417,15 +403,15 @@ namespace Game
 
             Type handlerType = assembly.GetType("Game.Handler", throwOnError: true);
             Type itemType = assembly.GetType("Game.ItemData", throwOnError: true);
-            Type contextType = assembly.GetType("UniversalGraph.DialogueContext", throwOnError: true);
+            Type executionContextType = assembly.GetType("UniversalGraph.DialogueExecutionContext", throwOnError: true);
             object handler = Activator.CreateInstance(handlerType);
             object item = Activator.CreateInstance(itemType);
-            object dialogueContext = Activator.CreateInstance(contextType);
+            object executionContext = Activator.CreateInstance(executionContextType);
             Delegate giveInvoker = (Delegate)GetProperty(give, "DirectInvoker");
             Assert(giveInvoker != null, "Accessible instance action did not get a direct invoker.");
             object actionResult = giveInvoker.DynamicInvoke(
                 handler,
-                new object[] { item, 12, true, dialogueContext });
+                new object[] { item, 12, true, executionContext });
             Assert(actionResult == null, "Action direct invoker must return null.");
             Assert(ReferenceEquals(handlerType.GetField("LastItem").GetValue(handler), item),
                 "Direct action invoker passed the wrong Unity object.");
@@ -433,8 +419,8 @@ namespace Game
                 "Direct action invoker passed the wrong integer.");
             Assert((bool)handlerType.GetField("LastSecret").GetValue(handler),
                 "Direct action invoker passed the wrong boolean.");
-            Assert(ReferenceEquals(handlerType.GetField("LastContext").GetValue(handler), dialogueContext),
-                "Direct action invoker passed the wrong DialogueContext.");
+            Assert(ReferenceEquals(handlerType.GetField("LastExecutionContext").GetValue(handler), executionContext),
+                "Direct action invoker passed the wrong DialogueExecutionContext.");
 
             object condition = FindRegistration(items, "has_amount");
             Assert((bool)GetProperty(condition, "IsStatic"), "Global condition was not marked static.");
@@ -455,30 +441,25 @@ namespace Game
 {
     public sealed class InvalidHandler : UnityEngine.Component
     {
-        [DialogueAction("""", Target = DialogueTarget.Global)]
+        [DialogueAction("""", Owner = DialogueMethodOwner.Global)]
         public static void EmptyKey() { }
 
-        [DialogueCondition(""wrong_return"", Target = DialogueTarget.Global)]
+        [DialogueCondition(""wrong_return"", Owner = DialogueMethodOwner.Global)]
         public static int WrongReturn() { return 1; }
 
         [DialogueAction(""wrong_target"")]
         public static void WrongTarget() { }
 
-        [DialogueAction(""unsupported_parameter"", Target = DialogueTarget.Global)]
+        [DialogueAction(""unsupported_parameter"", Owner = DialogueMethodOwner.Global)]
         public static void Unsupported(long value) { }
 
-        [DialogueAction(""duplicate_parameter"", Target = DialogueTarget.Global)]
-        public static void Duplicate(
-            [DialogueParameter(""same"")] int first,
-            [DialogueParameter(""same"")] int second) { }
-
-        [DialogueAction(""vararg_action"", Target = DialogueTarget.Global)]
+        [DialogueAction(""vararg_action"", Owner = DialogueMethodOwner.Global)]
         public static void VarargAction(__arglist) { }
     }
 
     public static class InvalidExtensions
     {
-        [DialogueAction(""extension_action"", Target = DialogueTarget.Global)]
+        [DialogueAction(""extension_action"", Owner = DialogueMethodOwner.Global)]
         public static void ExtensionAction(this InvalidHandler handler) { }
     }
 }
@@ -494,7 +475,6 @@ namespace Game
             Assert(ids.Contains("UDG002"), "Missing invalid-method diagnostic.");
             Assert(ids.Contains("UDG003"), "Missing invalid-target diagnostic.");
             Assert(ids.Contains("UDG004"), "Missing invalid-parameter diagnostic.");
-            Assert(ids.Contains("UDG005"), "Missing duplicate-parameter diagnostic.");
             Assert(!run.GeneratedSources.Single().Contains("wrong_return"),
                 "Invalid method leaked into the generated provider.");
             Assert(!run.GeneratedSources.Single().Contains("vararg_action"),
@@ -510,13 +490,13 @@ using UniversalGraph;
 
 public static class DuplicateHandlers
 {
-    [DialogueAction(""duplicate"", Target = DialogueTarget.Global)]
+    [DialogueAction(""duplicate"", Owner = DialogueMethodOwner.Global)]
     public static void First() { }
 
-    [DialogueAction(""duplicate"", Target = DialogueTarget.Global)]
+    [DialogueAction(""duplicate"", Owner = DialogueMethodOwner.Global)]
     public static void Second() { }
 
-    [DialogueCondition(""duplicate"", Target = DialogueTarget.Global)]
+    [DialogueCondition(""duplicate"", Owner = DialogueMethodOwner.Global)]
     public static bool DifferentKindIsAllowed() { return true; }
 }
 ";
@@ -543,7 +523,7 @@ internal static class HiddenContainer
 {
     private static class HiddenType
     {
-        [DialogueAction(""hidden_type"", Target = DialogueTarget.Global)]
+        [DialogueAction(""hidden_type"", Owner = DialogueMethodOwner.Global)]
         public static void Run() { }
     }
 }
@@ -577,8 +557,7 @@ internal static class HiddenContainer
 
             string generated = run.GeneratedSources.Single();
             AssertContains(generated, "QuestGeneratedProviderAttribute");
-            AssertContains(generated, "\"amount\"");
-            AssertContains(generated, "\"required\"");
+            AssertContains(generated, "\"arg0\"");
 
             Assembly assembly = EmitAndLoad(run.OutputCompilation);
             object provider = CreateGeneratedProvider(

@@ -34,15 +34,14 @@ DIY_Graph
 |   |   |-- Nodes            Dialogue 노드 데이터
 |   |   `-- Migrations       DialogueContainer 전용 스키마 단계
 |   |-- Runtime              Dialogue 재생과 씬 연결 API
-|   |   |-- Binding          Dialogue Attribute와 생성 메서드 등록부
-|   |   `-- Debug            선택적인 내장 디버그 Action
+|   |   `-- Binding          Dialogue Attribute와 생성 메서드 등록부
 |   `-- Editor
 |       `-- Nodes            Dialogue 노드 화면
 |-- 2_Quest
 |   |-- Data                 Quest 정의와 진행 데이터
 |   |   |-- Nodes            Quest 노드 데이터
 |   |   `-- Migrations       QuestContainer 전용 스키마 단계
-|   |-- Runtime              Quest Manager, Runner, 경로 탐색, 게임 연결 API
+|   |-- Runtime              Quest 정의 등록부, Runner, 조회 API
 |   |   |-- Binding          Attribute와 생성 메서드 등록부
 |   |   `-- Save             저장 DTO와 순차 마이그레이션
 |   `-- Editor
@@ -57,20 +56,20 @@ DIY_Graph
 그래프에서 실행할 게임 메서드에 고정 키를 부여합니다.
 
 ```csharp
-[DialogueAction("inventory.give-item", Target = DialogueTarget.Interactor)]
+[DialogueAction("inventory.give-item", Owner = DialogueMethodOwner.Interactor)]
 public void GiveItem(ItemData item, int amount, bool showPopup)
 {
     // 게임 전용 구현
 }
 ```
 
-`ItemData`는 `ScriptableObject` 또는 다른 `UnityEngine.Object`일 수 있습니다. 현재 그래프에서 편집할 수 있는 인수는 string, bool, int, float, enum, Unity 객체와 자동 주입되는 `DialogueContext` 하나입니다. `ref`, `out`, `in`, 선택적 인수, `params`, 제네릭, 비동기, 임의 관리 객체 인수는 진단 오류로 거부합니다.
+`ItemData`는 `ScriptableObject` 또는 다른 `UnityEngine.Object`일 수 있습니다. 현재 그래프에서 편집할 수 있는 인수는 string, bool, int, float, enum, Unity 객체와 자동 주입되는 `DialogueExecutionContext` 하나입니다. `ref`, `out`, `in`, 선택적 인수, `params`, 제네릭, 비동기, 임의 관리 객체 인수는 진단 오류로 거부합니다.
 
-Roslyn Source Generator는 가능하면 직접 등록·호출 코드를 만들고, 접근할 수 없는 메서드만 검증된 Reflection 경로를 사용합니다. 그래프 노드는 고정 인수 ID를 저장하므로 공개 인수 이름을 바꾸기 전 `[DialogueParameter("item")]`을 붙이는 것이 안전합니다.
+Roslyn Source Generator는 가능하면 직접 등록·호출 코드를 만들고, 접근할 수 없는 메서드만 검증된 Reflection 경로를 사용합니다. 그래프에 저장되는 인수 ID는 편집 가능한 파라미터 순서로 자동 생성되므로 파라미터 이름은 자유롭게 바꿀 수 있습니다. 단, 기존 그래프가 사용 중일 때 파라미터 순서를 바꾸거나 중간 파라미터를 삭제하면 호출 계약이 달라집니다.
 
-UI는 `DialogueManager.OnShowLine`과 `OnShowChoices`를 구독하고 `ContinueNextLine` 또는 `OnSelectionChoice`를 호출합니다. 프로젝트에 맞지 않으면 `ConversationCoordinator`를 거치지 않고 `DialogueManager`를 직접 사용할 수 있습니다.
+게임 코드는 `DialogueManager.StartConversation`에 `DialogueEntryPoint`와 선택적인 `DialogueExecutionContext`를 전달합니다. 텍스트 전용 또는 전역 메서드만 쓰는 대화는 실행 문맥 없이도 시작할 수 있습니다. UI는 `ShowLine`과 `ShowChoices`를 구독하고 `ContinueDialogue` 또는 `SelectChoice`를 호출합니다.
 
-`DialogueNode`는 대사 한 줄을 표시하고, 다음에 연결한 `DialogueChoiceNode`는 선택지 묶음을 표시합니다. UI가 `OnShowChoices`에서 기존 대사를 지우지 않으면 마지막 대사를 유지한 채 선택지를 함께 보여줄 수 있습니다.
+`DialogueLineNode`는 대사 한 줄을 표시하고, 다음에 연결한 `DialogueChoiceNode`는 선택지 묶음을 표시합니다. UI가 `ShowChoices`에서 기존 대사를 지우지 않으면 마지막 대사를 유지한 채 선택지를 함께 보여줄 수 있습니다.
 
 각 선택지는 `DialogueCondition`을 가질 수 있습니다. Condition은 `DialogueChoiceNode`에 진입할 때 평가하며 false인 선택지는 표시하지 않고 선택 요청도 거부합니다. 표시 가능한 선택지가 하나도 없으면 `Default` 포트로 즉시 진행합니다.
 
@@ -86,17 +85,31 @@ public void GiveItem(QuestExecutionContext context, ItemData item, int amount)
 }
 ```
 
-Quest는 Dialogue와 같은 기본형, enum, 에셋 인수와 자동 주입되는 `QuestExecutionContext` 하나를 지원합니다. `IQuestConditionResolver`와 `IQuestActionReceiver`는 등록되지 않은 키를 위한 선택적 호환 연결 방식입니다.
+Quest는 Dialogue와 같은 기본형, enum, 에셋 인수와 자동 주입되는 `QuestExecutionContext` 하나를 지원합니다. Action과 Condition은 Attribute가 붙은 메서드만 실행하며, 등록되지 않은 키는 에디터 검증과 런타임 오류로 바로 알려줍니다.
 
 이식 가능한 로더에서는 Quest 정의를 명시적으로 등록합니다.
 
 ```csharp
-QuestManager.Initialize(loadedQuestCatalog);
+QuestDefinitionRegistry.Initialize(loadedQuestCatalog);
 ```
 
-`QuestManager.Init()`은 `Resources/QuestCatalog`를 불러오는 간편 함수입니다. Addressables, 원격 콘텐츠, 테스트, 멀티플레이 서버에서는 `Initialize`를 직접 호출합니다.
+게임은 `QuestRunner.AdvanceObjective`로 목표 하나를 직접 진행할 수 있습니다. 처치·수집처럼 타입과 대상 ID로 여러 Quest를 함께 갱신할 때는 `QuestRunner.ReportObjectiveProgress`를 사용합니다. `QuestQueries`는 `IQuestController`와 고정 상호작용 대상 문자열만 사용해 Quest 상태별 대화 경로를 `DialogueCandidate` 또는 `QuestOffer`로 반환합니다.
 
-게임은 `QuestRunner.ProcessEvent`로 목표 진행을 보고합니다. `QuestDialogueRouter`는 `IQuestController`와 고정 상호작용 대상 문자열만 사용해 Quest 상태별 대화 경로를 `DialogueRequest`로 변환합니다. 현재 게임의 `QuestEvaluator`는 이 API를 Player와 NPC에 연결하는 얇은 어댑터입니다.
+Quest를 제공할 때는 그래프에 `Interaction Entry → Condition → Quest Offer` 경로를 만듭니다. False 경로를 연결하지 않으면 목록에서 숨길 수 있고, 선택할 수 없는 Offer 노드로 연결하면 이유가 있는 비활성 항목을 표시할 수 있습니다.
+
+```csharp
+QuestOffer[] offers = QuestQueries.GetQuestOffers(controller, npcId);
+QuestOffer selected = offers.First(offer => offer.IsAvailable);
+bool started = QuestRunner.TryStartQuest(controller, selected);
+```
+
+`TryStartQuest`는 UI에 표시한 뒤 조건이 바뀐 오래된 Offer를 수락하지 않도록 같은 그래프 경로를 다시 검사합니다. 컷신·튜토리얼·하위 Quest처럼 게임 흐름이 시작을 이미 결정한 경우에만 `ForceStartQuest`를 사용합니다. 게임이 재시작·포기 정책을 결정한 뒤 `ResetQuest`를 호출하면 모든 노드 진행 기록을 지우고 `NotStarted` 상태로 되돌릴 수 있습니다.
+
+`QuestQueries.GetQuestOffers`와 `GetDialogueCandidates`는 후보를 정렬하거나 하나를 선택하지 않습니다. UI 표시 순서, 자동 선택, 추적 Quest 우선 같은 규칙은 `DialogueCandidate.Priority`, `QuestOffer.Priority`, 상태와 프로젝트 데이터를 이용해 게임에서 결정합니다. 현재 목표 UI도 `GetCurrentObjectives`가 반환하는 구조화된 데이터를 원하는 문장과 형식으로 표시합니다.
+
+게임 코드가 Quest 상태만 직접 변경할 때는 `QuestRunner.SetQuestState`를 사용합니다. Reward 노드는 보상 Action만 실행하므로 완료 시점은 State Change 노드나 게임 코드가 결정합니다. `CanComplete`와 `TurnedIn` State Change는 현재 실행을 끝내는 종점이며, `InProgress` State Change만 다음 흐름을 가질 수 있습니다. Wait For Quest 노드는 대상 Quest를 자동 시작하지 않고, 다른 Quest가 Inspector에서 선택한 `RequiredState`에 도달할 때까지 현재 흐름을 기다립니다.
+
+여러 Quest는 기본적으로 동시에 진행할 수 있습니다. 동시에 진행하면 안 되는 조합은 각 Offer 앞에서 다른 Quest의 상태를 검사하도록 기획자가 그래프로 정합니다. 따라서 단일 진행, 다중 진행, 선행 Quest, 일시적 상호 배제, 반복 Quest 정책을 특정 게임 규칙으로 코드에 고정하지 않습니다. `QuestOffer.DialogueEntryPoint`는 선택 전후에 게임 UI가 재생할 수 있는 선택적 시작점이며, Quest 시작 API가 대화를 강제로 재생하지는 않습니다.
 
 저장 시스템은 Dictionary 기반 목표 수치를 포함한 모든 Runtime 컬렉션을 저장하고 복원할 수 있습니다.
 
@@ -122,15 +135,16 @@ save.TryApplyTo(controller, replaceExisting: true, out error);
 
 ## 현재 한계
 
-- Dialogue는 한 번에 하나의 로컬 세션만 실행합니다. 현 단계에서는 다국어 테이블, 음성·오디오 타이밍, 리치 텍스트 명령, 대화 저장·재개, 네트워크 복제를 제공하지 않습니다.
-- Dialogue 신호는 현재 프로세스 안에서 문자열만 전달하며 Payload, 발신자, 세션 범위가 없습니다.
+- Dialogue는 한 번에 하나의 로컬 대화만 실행합니다. 현 단계에서는 다국어 테이블, 음성·오디오 타이밍, 리치 텍스트 명령, 대화 저장·재개, 네트워크 복제를 제공하지 않습니다.
+- Dialogue 신호는 현재 프로세스 안에서 문자열만 전달하며 Payload, 발신자, 대화 범위가 없습니다.
 - 임의의 직렬화 가능한 POCO 인수는 자동으로 그리거나 변환하지 않습니다. 지원 범위를 넓히려면 명시적인 Codec과 입력 필드를 추가해야 합니다.
-- `QuestContainer`에는 현재 게임에서 사용하는 `startNPCId`, `turnInNPCId`, 고정 `QuestReward` 정보가 남아 있습니다. 이식 가능한 그래프에서는 상호작용 대상 문자열과 Reward Action을 사용할 수 있지만 기존 필드를 제거하려면 에셋 마이그레이션이 필요합니다.
-- Dialogue 세션 저장·재개는 의도적으로 현재 범위에서 제외했습니다. 게임 체크포인트에서 저장하고 긴 대화는 게임의 Skip·기록 정책을 사용합니다. 지속적인 Quest 진행은 `QuestSaveData`가 저장합니다.
+- Quest 수락 목록, 비활성 사유와 선택 UI는 제공 데이터와 API만 정의하며 화면 디자인과 입력 방식은 게임이 구현합니다. 특정 게임의 동시 진행 제한은 고정 정책 대신 Offer 앞의 조건 그래프로 작성합니다.
+- `CanComplete` 이후 제출 시점에 그래프를 다시 열어 Reward를 실행하는 전용 Turn-In API는 아직 없습니다. 현재는 Reward를 `CanComplete` 전에 실행하거나, 게임 코드·Dialogue Action에서 보상 지급과 `TurnedIn` 변경을 함께 처리해야 합니다.
+- 진행 중인 Dialogue의 저장·재개는 의도적으로 현재 범위에서 제외했습니다. 게임 체크포인트에서 저장하고 긴 대화는 게임의 Skip·기록 정책을 사용합니다. 지속적인 Quest 진행은 `QuestSaveData`가 저장합니다.
 - 프로젝트 전체 검증 메뉴는 있지만 실패 코드로 빌드를 종료하는 Headless CI 진입점은 없습니다.
 - 에디터는 `UnityEditor.Experimental.GraphView`를 사용하므로 상용 패키지의 장기 유지보수 위험이 있습니다.
 - 배포 전 지원할 Unity·플랫폼 조합마다 내보낸 패키지의 IL2CPP 플레이어 Smoke Test가 필요합니다. 빌드 전 검증기는 누락된 생성 바인딩을 찾지만 플랫폼 QA를 대신할 수 없습니다.
 
 ## 현재 완성도
 
-공통 그래프 에디터, Dialogue Runtime, 로컬 Quest Runtime은 실제로 사용할 수 있는 Alpha 기반입니다. 두 도메인의 타입 기반 Attribute 호출, 조건부 선택지, 항상 같은 결과의 Quest 탐색, 이식 가능한 대화 경로, 순차 그래프·저장 마이그레이션, 범용 보상 Action, 실시간 검증, IL2CPP 빌드 전 검사와 핵심 EditMode·Generator 테스트를 제공합니다. 실제 배포 단계로 가려면 깨끗한 프로젝트에서의 장시간 연동 테스트, 플랫폼별 플레이어 Smoke Build와 다국어 및 미래 Dialogue 세션 저장 정책 결정이 추가로 필요합니다.
+공통 그래프 에디터, Dialogue Runtime, 로컬 Quest Runtime은 실제로 사용할 수 있는 Alpha 기반입니다. 두 도메인의 타입 기반 Attribute 호출, 조건부 선택지, 그래프 기반 Quest Offer와 수락 직전 재검증, 독립적인 다중 Quest 진행, 포기·재시작, 이식 가능한 대화 경로, 순차 그래프·저장 마이그레이션, 범용 보상 Action, 실시간 검증, IL2CPP 빌드 전 검사와 핵심 EditMode·Generator 테스트를 제공합니다. 실제 배포 단계로 가려면 깨끗한 프로젝트에서의 장시간 연동 테스트, 플랫폼별 플레이어 Smoke Build와 다국어 및 미래 Dialogue 진행 저장 정책 결정이 추가로 필요합니다.

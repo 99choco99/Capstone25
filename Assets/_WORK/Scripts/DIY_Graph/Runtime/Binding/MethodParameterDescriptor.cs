@@ -2,32 +2,46 @@ using System;
 
 namespace UniversalGraph
 {
-	/// <summary>Attribute 메서드 인수 하나의 타입, 저장 ID와 Runtime 주입 방식을 설명합니다.</summary>
-	public sealed class MethodParameterDescriptor
+    /// <summary>Attribute 메서드 파라미터 하나에 대한 설명서</summary>
+    public sealed class MethodParameterDescriptor
 	{
-		public int MethodIndex { get; }
+		internal MethodParameterDescriptor(int parameterIndex, string parameterId, string displayName, Type parameterType, MethodParameterSource source, MethodArgumentKind argumentKind)
+		{
+			ParameterIndex = parameterIndex;
+            ParameterId = parameterId;
+            DisplayName = displayName;
+            ParameterType = parameterType;
+            Source = source;
+            ArgumentKind = argumentKind;
+            TypeSignature = parameterType == null ? string.Empty : $"{parameterType.FullName}, {parameterType.Assembly.GetName().Name}";
+        }
 
+        //================================ 파라미터 식별 =====================================
+        /// <summary>파라미터가 위치한 순서</summary>
+        public int ParameterIndex { get; }
+
+		/// <summary>파라미터 ID</summary>
 		public string ParameterId { get; }
 
-		public string DisplayName { get; }
+        //================================ 파라미터 정의 =====================================
 
+		/// <summary>파라미터의 실제 타입</summary>
 		public Type ParameterType { get; }
 
-		public MethodParameterSource Source { get; }
+        /// <summary>그래프에 저장된 인수의 타입 변경을 감지하기 위한 타입 식별자</summary>
+        public string TypeSignature { get; }
 
-		public MethodArgumentKind Kind { get; }
+        /// <summary>파라미터 값을 어떤 타입으로 처리할지 구분</summary>
+        public MethodArgumentKind ArgumentKind { get; }
 
-		public string DeclaredTypeId { get; }
+        //=================================== 값의 출처 ========================================
 
-		internal MethodParameterDescriptor(int methodIndex, string parameterId, string displayName, Type parameterType, MethodParameterSource source, MethodArgumentKind kind, string declaredTypeId)
-		{
-			MethodIndex = methodIndex;
-			ParameterId = parameterId;
-			DisplayName = displayName;
-			ParameterType = parameterType;
-			Source = source;
-			Kind = kind;
-			DeclaredTypeId = declaredTypeId;
-		}
-	}
+        /// <summary>파라미터 값이 코드로써 적힌 것인지, 그래프에서 적은거인지 구분</summary>
+        public MethodParameterSource Source { get; }
+
+
+        //=================================== 에디터 표시 ========================================
+        /// <summary>에디터에 표시할 파라미터 이름</summary>
+        public string DisplayName { get; }
+    }
 }

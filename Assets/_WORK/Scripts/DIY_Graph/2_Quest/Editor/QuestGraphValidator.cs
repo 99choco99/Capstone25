@@ -21,7 +21,7 @@ namespace UniversalGraph.Quest.Editor
         /// <summary>주어진 고정 ID를 사용하는 Quest 에셋이 프로젝트에 이미 있는지 반환합니다.</summary>
         public static bool ContainsId(int questId)
         {
-            return Quests.Any(quest => quest != null && quest.questId == questId);
+            return Quests.Any(quest => quest != null && quest.QuestId == questId);
         }
 
         private static void Invalidate()
@@ -35,7 +35,7 @@ namespace UniversalGraph.Quest.Editor
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .Select(AssetDatabase.LoadAssetAtPath<QuestContainer>)
                 .Where(quest => quest != null)
-                .OrderBy(quest => quest.questId)
+                .OrderBy(quest => quest.QuestId)
                 .ThenBy(quest => quest.name, StringComparer.Ordinal)
                 .ToArray();
         }
@@ -47,12 +47,12 @@ namespace UniversalGraph.Quest.Editor
         /// <summary>Quest 흐름, 참조, 바인딩, 도달 가능 여부와 완료 경로를 검사합니다.</summary>
         protected override void Validate(
             QuestContainer container,
-            GraphValidationContext context,
+            GraphValidationIndex index,
             ICollection<GraphValidationIssue> issues)
         {
             ValidateQuestMetadata();
 
-            if (context.Nodes.Count == 0)
+            if (index.Nodes.Count == 0)
             {
                 AddError(
                     "QUEST_EMPTY_GRAPH",
@@ -60,10 +60,10 @@ namespace UniversalGraph.Quest.Editor
                 return;
             }
 
-            QuestStartNodeData[] starts = context.Nodes.OfType<QuestStartNodeData>().ToArray();
-            QuestEventEntryNodeData[] conversationEntries = context.Nodes.OfType<QuestEventEntryNodeData>().ToArray();
-            HashSet<string> progressionReachable = context.GetReachableNodeGuids(starts.Select(node => node.Guid));
-            HashSet<string> conversationReachable = context.GetReachableNodeGuids(conversationEntries.Select(node => node.Guid));
+            QuestStartNodeData[] starts = index.Nodes.OfType<QuestStartNodeData>().ToArray();
+            QuestInteractionEntryNodeData[] interactionEntries = index.Nodes.OfType<QuestInteractionEntryNodeData>().ToArray();
+            HashSet<string> progressionReachable = index.GetReachableNodeGuids(starts.Select(node => node.Guid));
+            HashSet<string> interactionReachable = index.GetReachableNodeGuids(interactionEntries.Select(node => node.Guid));
 
             if (starts.Length != 1)
             {
@@ -72,12 +72,12 @@ namespace UniversalGraph.Quest.Editor
                     $"Quest 그래프에는 Quest Start 노드가 정확히 하나 필요하지만 {starts.Length}개 발견되었습니다.");
             }
 
-            foreach (NodeBaseData node in context.Nodes.Where(node => node != null))
+            foreach (NodeBaseData node in index.Nodes.Where(node => node != null))
             {
                 bool inProgression = progressionReachable.Contains(node.Guid);
-                bool inConversation = conversationReachable.Contains(node.Guid);
+                bool inInteraction = interactionReachable.Contains(node.Guid);
 
-                if (inConversation && !IsConversationRouteNode(node))
+                if (inInteraction && !IsInteractionRouteNode(node))
                 {
                     AddError(
                         "QUEST_ROUTE_UNSAFE_NODE",
@@ -88,20 +88,20 @@ namespace UniversalGraph.Quest.Editor
                 switch (node)
                 {
                     case QuestStartNodeData start:
-                        RequireAtLeastOneOutput(start.Guid, "Next", "Quest Start는 첫 번째 진행 노드에 연결되어야 합니다.");
+                        RequireAtLeastOneOutput(start.Guid, QuestPortNames.Next, "Quest Start는 첫 번째 진행 노드에 연결되어야 합니다.");
                         break;
 
-                    case QuestEventEntryNodeData entry:
+                    case QuestInteractionEntryNodeData entry:
                         RequireExactlyOneOutput(
                             entry.Guid,
-                            "Next",
-                            "Interaction Dialogue Entry는 경로 노드 하나에 정확히 연결되어야 합니다.");
+                            QuestPortNames.Next,
+                            "Interaction Entry는 경로 노드 하나에 정확히 연결되어야 합니다.");
                         break;
 
                     case QuestObjectiveNodeData objective:
                         if (string.IsNullOrWhiteSpace(objective.ObjectiveType))
                         {
-                            AddError("QUEST_OBJECTIVE_KEY", "Objective Event Type이 필요합니다.", objective.Guid);
+                            AddError("QUEST_OBJECTIVE_KEY", "Objective Type이 필요합니다.", objective.Guid);
                         }
                         if (objective.RequiredAmount < 1)
                         {
@@ -112,12 +112,16 @@ namespace UniversalGraph.Quest.Editor
                         }
                         if (inProgression)
                         {
-                            RequireAtLeastOneOutput(objective.Guid, "Next", "완료된 Objective는 다른 노드로 이어져야 합니다.");
+                            RequireAtLeastOneOutput(objective.Guid, QuestPortNames.Next, "완료된 Objective는 다른 노드로 이어져야 합니다.");
                         }
                         break;
 
-                    case QuestConditionBranchNodeData condition:
-                        if (string.IsNullOrWhiteSpace(condition.Condition.Key))
+                    case QuestConditionNodeData condition:
+                        if (condition.Condition == null)
+                        {
+                            AddError("QUEST_CONDITION_DATA", "Custom Condition 호출 정보가 없습니다.", condition.Guid);
+                        }
+                        else if (string.IsNullOrWhiteSpace(condition.Condition.Key))
                         {
                             AddError("QUEST_CONDITION_KEY", "Custom Condition Key가 필요합니다.", condition.Guid);
                         }
@@ -137,7 +141,7 @@ namespace UniversalGraph.Quest.Editor
                         break;
 
                     case QuestAndGateNodeData gate:
-                        int connectedSources = context.GetIncoming(gate.Guid)
+                        int connectedSources = index.GetIncoming(gate.Guid)
                             .Select(link => link.StartNodeGuid)
                             .Distinct()
                             .Count();
@@ -150,12 +154,16 @@ namespace UniversalGraph.Quest.Editor
                         }
                         if (inProgression)
                         {
-                            RequireAtLeastOneOutput(gate.Guid, "Next", "AND Gate는 연결된 모든 Branch가 도착한 뒤 다음 노드로 이어져야 합니다.");
+                            RequireAtLeastOneOutput(gate.Guid, QuestPortNames.Next, "AND Gate는 연결된 모든 Branch가 도착한 뒤 다음 노드로 이어져야 합니다.");
                         }
                         break;
 
-                    case QuestActionTriggerNodeData action:
-                        if (string.IsNullOrWhiteSpace(action.Action.Key))
+                    case QuestActionNodeData action:
+                        if (action.Action == null)
+                        {
+                            AddError("QUEST_ACTION_DATA", "Quest Action 호출 정보가 없습니다.", action.Guid);
+                        }
+                        else if (string.IsNullOrWhiteSpace(action.Action.Key))
                         {
                             AddError("QUEST_ACTION_KEY", "Quest Action Key가 필요합니다.", action.Guid);
                         }
@@ -168,67 +176,103 @@ namespace UniversalGraph.Quest.Editor
                         }
                         if (inProgression)
                         {
-                            RequireAtLeastOneOutput(action.Guid, "Next", "Quest Action은 다른 노드로 이어져야 합니다.");
+                            RequireAtLeastOneOutput(action.Guid, QuestPortNames.Next, "Quest Action은 다른 노드로 이어져야 합니다.");
                         }
                         break;
 
                     case QuestStateChangeNodeData stateChange:
-                        if (inProgression
-                            && context.GetOutgoing(stateChange.Guid, "Next").Count == 0
-                            && stateChange.NewState != QuestState.Failed
+                        if (stateChange.NewState != QuestState.InProgress
+                            && stateChange.NewState != QuestState.CanComplete
                             && stateChange.NewState != QuestState.TurnedIn)
                         {
-                            AddWarning(
+                            AddError(
+                                "QUEST_STATE_CHANGE_TARGET",
+                                "State Change는 InProgress, CanComplete, TurnedIn만 선택할 수 있습니다. " +
+                                "실패는 Fail 노드, 초기화는 QuestRunner.ResetQuest를 사용하세요.",
+                                stateChange.Guid);
+                        }
+
+                        int stateOutputCount = index.GetOutgoing(
+                            stateChange.Guid,
+                            QuestPortNames.Next).Count;
+                        if (stateChange.NewState != QuestState.InProgress && stateOutputCount > 0)
+                        {
+                            AddError(
+                                "QUEST_TERMINAL_STATE_OUTPUT",
+                                $"{stateChange.NewState}은 현재 Quest 흐름을 끝내므로 나가는 연결선을 가질 수 없습니다.",
+                                stateChange.Guid);
+                        }
+                        else if (inProgression
+                                 && stateChange.NewState == QuestState.InProgress
+                                 && stateOutputCount == 0)
+                        {
+                            AddError(
                                 "QUEST_STATE_DEAD_END",
-                                $"Next 연결 없이 상태를 {stateChange.NewState}(으)로 변경하면 진행이 여기서 멈춥니다.",
+                                "InProgress 상태로 유지하는 State Change는 다음 진행 노드에 연결되어야 합니다.",
                                 stateChange.Guid);
                         }
                         break;
 
                     case QuestRewardNodeData reward:
-                        if (!string.IsNullOrWhiteSpace(reward.RewardAction.Key))
+                        if (reward.RewardAction == null)
+                        {
+                            AddError("QUEST_REWARD_DATA", "Reward Action 호출 정보가 없습니다.", reward.Guid);
+                        }
+                        else if (!string.IsNullOrWhiteSpace(reward.RewardAction.Key))
                         {
                             ValidateMethodCall(
                                 MethodKind.Action,
                                 reward.RewardAction,
                                 reward.Guid);
                         }
-                        if (context.GetOutgoing(reward.Guid).Count > 0)
+                        if (inProgression)
                         {
-                            AddWarning(
-                                "QUEST_REWARD_OUTPUT",
-                                "Reward는 일반적으로 Quest를 완료 처리하므로 나가는 연결선의 실행을 보장할 수 없습니다.",
-                                reward.Guid);
+                            RequireAtLeastOneOutput(reward.Guid, QuestPortNames.Next, "Reward는 다음 노드로 이어져야 합니다.");
                         }
                         break;
 
                     case QuestFailNodeData fail:
-                        if (context.GetOutgoing(fail.Guid).Count > 0)
+                        if (index.GetOutgoing(fail.Guid).Count > 0)
                         {
                             AddError("QUEST_FAIL_OUTPUT", "Fail은 종점이므로 나가는 연결선을 가질 수 없습니다.", fail.Guid);
                         }
                         break;
 
-                    case QuestSubGraphNodeData subQuest:
-                        ValidateQuestReference(subQuest.SubQuestId, "하위 Quest", subQuest.Guid);
-                        if (subQuest.SubQuestId == container.questId)
+                    case QuestWaitForQuestNodeData waitForQuest:
+                        ValidateQuestReference(waitForQuest.TargetQuestId, "대기할 Quest", waitForQuest.Guid);
+                        if (waitForQuest.TargetQuestId == container.QuestId)
                         {
-                            AddError("QUEST_SELF_SUBQUEST", "Quest는 자신을 하위 Quest로 사용할 수 없습니다.", subQuest.Guid);
+                            AddError("QUEST_SELF_DEPENDENCY", "Quest는 자신의 상태를 기다릴 수 없습니다.", waitForQuest.Guid);
+                        }
+                        else if (inProgression)
+                        {
+                            ValidateWaitDependencyCycle(waitForQuest.TargetQuestId, waitForQuest.Guid);
                         }
                         if (inProgression)
                         {
-                            RequireAtLeastOneOutput(subQuest.Guid, "Next", "하위 Quest가 완료되면 다음 노드로 이어져야 합니다.");
+                            RequireAtLeastOneOutput(waitForQuest.Guid, QuestPortNames.Next, "대기 중인 Quest가 지정 상태가 되면 다음 노드로 이어져야 합니다.");
                         }
                         break;
 
-                    case DialogueRequestNodeData request:
-                        ValidateDialogueRequest(request);
+                    case DialogueCandidateNodeData candidate:
+                        ValidateDialogueCandidate(candidate);
                         if (inProgression)
                         {
                             AddError(
                                 "QUEST_DIALOGUE_IN_PROGRESS_FLOW",
-                                "Dialogue Request는 대화 경로의 종점이므로 Quest 진행을 앞으로 이동시킬 수 없습니다.",
-                                request.Guid);
+                                "Dialogue Candidate는 대화 경로의 종점이므로 Quest 진행을 앞으로 이동시킬 수 없습니다.",
+                                candidate.Guid);
+                        }
+                        break;
+
+                    case QuestOfferNodeData offer:
+                        ValidateQuestOffer(offer);
+                        if (inProgression)
+                        {
+                            AddError(
+                                "QUEST_OFFER_IN_PROGRESS_FLOW",
+                                "Quest Offer는 상호작용 경로의 종점이므로 Quest 진행 흐름에서 사용할 수 없습니다.",
+                                offer.Guid);
                         }
                         break;
 
@@ -242,16 +286,16 @@ namespace UniversalGraph.Quest.Editor
             }
 
             HashSet<string> reachable = new(progressionReachable);
-            reachable.UnionWith(conversationReachable);
-            foreach (NodeBaseData node in context.Nodes.Where(node => node != null && !reachable.Contains(node.Guid)))
+            reachable.UnionWith(interactionReachable);
+            foreach (NodeBaseData node in index.Nodes.Where(node => node != null && !reachable.Contains(node.Guid)))
             {
                 AddWarning(
                     "QUEST_UNREACHABLE",
-                    "Quest Start 또는 Interaction Dialogue Entry에서 이 노드에 도달할 수 없습니다.",
+                    "Quest Start 또는 Interaction Entry에서 이 노드에 도달할 수 없습니다.",
                     node.Guid);
             }
 
-            foreach (string nodeGuid in GraphValidatorRegistry.FindCycleNodes(context, _ => true))
+            foreach (string nodeGuid in GraphValidatorRegistry.FindCycleNodes(index, _ => true))
             {
                 AddError(
                     "QUEST_CYCLE",
@@ -261,7 +305,7 @@ namespace UniversalGraph.Quest.Editor
 
             void ValidateQuestMetadata()
             {
-                if (container.questId <= 0)
+                if (container.QuestId <= 0)
                 {
                     AddError(
                         "QUEST_ID",
@@ -274,41 +318,24 @@ namespace UniversalGraph.Quest.Editor
                 }
 
                 QuestContainer[] duplicates = QuestAssetIndex.Quests
-                    .Where(quest => quest != null && quest != container && quest.questId == container.questId)
+                    .Where(quest => quest != null && quest != container && quest.QuestId == container.QuestId)
                     .ToArray();
                 if (duplicates.Length > 0)
                 {
                     AddError(
                         "QUEST_DUPLICATE_ID",
-                        $"Quest ID {container.questId}를 다음 에셋도 사용하고 있습니다: {string.Join(", ", duplicates.Select(quest => quest.name))}.");
-                }
-
-                var seenPrerequisites = new HashSet<int>();
-                foreach (int prerequisiteId in container.prerequisiteQuestIds ?? Enumerable.Empty<int>())
-                {
-                    if (!seenPrerequisites.Add(prerequisiteId))
-                    {
-                        AddError("QUEST_DUPLICATE_PREREQUISITE", $"선행 Quest ID {prerequisiteId}가 중복되었습니다.");
-                    }
-                    else if (prerequisiteId == container.questId)
-                    {
-                        AddError("QUEST_SELF_PREREQUISITE", "Quest는 자신을 선행 조건으로 요구할 수 없습니다.");
-                    }
-                    else if (!QuestAssetIndex.ContainsId(prerequisiteId))
-                    {
-                        AddError("QUEST_MISSING_PREREQUISITE", $"선행 Quest ID {prerequisiteId}가 존재하지 않습니다.");
-                    }
+                        $"Quest ID {container.QuestId}를 다음 에셋도 사용하고 있습니다: {string.Join(", ", duplicates.Select(quest => quest.name))}.");
                 }
             }
 
             void ValidateConditionOutputs(string nodeGuid, bool requiredForProgression)
             {
-                ValidateConditionalPort("True");
-                ValidateConditionalPort("False");
+                ValidateConditionalPort(QuestPortNames.True);
+                ValidateConditionalPort(QuestPortNames.False);
 
                 void ValidateConditionalPort(string portName)
                 {
-                    int count = context.GetOutgoing(nodeGuid, portName).Count;
+                    int count = index.GetOutgoing(nodeGuid, portName).Count;
                     if (count > 1)
                     {
                         AddError("QUEST_CONDITION_OUTPUT", $"{portName}에는 연결선 하나만 허용되지만 {count}개 발견되었습니다.", nodeGuid);
@@ -331,18 +358,71 @@ namespace UniversalGraph.Quest.Editor
                 }
             }
 
+            void ValidateWaitDependencyCycle(int targetQuestId, string nodeGuid)
+            {
+                if (!CanReachQuest(targetQuestId, container.QuestId, new HashSet<int>()))
+                {
+                    return;
+                }
+
+                AddError(
+                    "QUEST_WAIT_DEPENDENCY_CYCLE",
+                    $"Quest {container.QuestId}와 Quest {targetQuestId} 사이의 대기 의존성이 순환합니다.",
+                    nodeGuid);
+
+                bool CanReachQuest(int currentQuestId, int destinationQuestId, ISet<int> visitedQuestIds)
+                {
+                    if (currentQuestId == destinationQuestId)
+                    {
+                        return true;
+                    }
+
+                    if (!visitedQuestIds.Add(currentQuestId))
+                    {
+                        return false;
+                    }
+
+                    QuestContainer definition = QuestAssetIndex.Quests.FirstOrDefault(
+                        quest => quest != null && quest.QuestId == currentQuestId);
+                    if (definition == null)
+                    {
+                        return false;
+                    }
+
+                    var definitionContext = new GraphValidationIndex(definition);
+                    IEnumerable<string> startGuids = definitionContext.Nodes
+                        .OfType<QuestStartNodeData>()
+                        .Select(start => start.Guid);
+                    HashSet<string> reachableGuids = definitionContext.GetReachableNodeGuids(startGuids);
+                    foreach (QuestWaitForQuestNodeData dependency in definitionContext.Nodes
+                                 .OfType<QuestWaitForQuestNodeData>()
+                                 .Where(wait => reachableGuids.Contains(wait.Guid)))
+                    {
+                        if (CanReachQuest(dependency.TargetQuestId, destinationQuestId, visitedQuestIds))
+                        {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+            }
+
             void ValidateMethodCall(
                 MethodKind kind,
                 MethodCallData methodCall,
                 string nodeGuid)
             {
-                // 알 수 없는 키는 명시적인 구형 연결 인터페이스에서 처리할 수 있으므로 허용합니다.
-                if (!QuestMethodCatalog.TryGetMethod(kind, methodCall.Key, out QuestMethodDescriptor descriptor))
+                if (!QuestMethodCatalog.GetMethod(kind, methodCall.Key, out QuestMethodDescriptor descriptor))
                 {
+                    AddError(
+                        "QUEST_METHOD_KEY",
+                        $"등록되지 않은 Attribute {kind} 키 '{methodCall.Key}'입니다.",
+                        nodeGuid);
                     return;
                 }
 
-                if (MethodArgumentCodec.TryValidateArguments(methodCall.Arguments, descriptor, out string error))
+                if (MethodArgumentCodec.TryDecodeAllArgumentData(methodCall.Arguments, descriptor, out _, out string error))
                 {
                     return;
                 }
@@ -353,56 +433,97 @@ namespace UniversalGraph.Quest.Editor
                     nodeGuid);
             }
 
-            void ValidateDialogueRequest(DialogueRequestNodeData request)
+            void ValidateDialogueCandidate(DialogueCandidateNodeData candidate)
             {
-                DialogueContainer graph = request.DialogueReference.GraphAsset;
+                ValidateDialogueEntryPoint(candidate.EntryPoint, candidate.Guid, "Dialogue Candidate");
+
+                if (string.IsNullOrWhiteSpace(candidate.DisplayName))
+                {
+                    issues.Add(new GraphValidationIssue(
+                        GraphValidationSeverity.Warning,
+                        "QUEST_DIALOGUE_DISPLAY_NAME",
+                        "Dialogue Candidate의 Display Name이 비어 있습니다.",
+                        candidate.Guid));
+                }
+
+                if (index.GetOutgoing(candidate.Guid).Count > 0)
+                {
+                    AddError(
+                        "QUEST_DIALOGUE_OUTPUT",
+                        "Dialogue Candidate는 조회 결과를 만드는 종점이므로 나가는 연결선을 가질 수 없습니다.",
+                        candidate.Guid);
+                }
+            }
+
+            void ValidateQuestOffer(QuestOfferNodeData offer)
+            {
+                if (offer.DialogueEntryPoint.GraphAsset != null)
+                {
+                    ValidateDialogueEntryPoint(offer.DialogueEntryPoint, offer.Guid, "Quest Offer");
+                }
+
+                if (!offer.IsAvailable && string.IsNullOrWhiteSpace(offer.BlockReason))
+                {
+                    AddWarning(
+                        "QUEST_OFFER_BLOCK_REASON",
+                        "선택할 수 없는 Quest Offer에는 UI에 표시할 차단 이유를 적는 편이 좋습니다.",
+                        offer.Guid);
+                }
+
+                if (index.GetOutgoing(offer.Guid).Count > 0)
+                {
+                    AddError(
+                        "QUEST_OFFER_OUTPUT",
+                        "Quest Offer는 조회 결과를 만드는 종점이므로 나가는 연결선을 가질 수 없습니다.",
+                        offer.Guid);
+                }
+            }
+
+            void ValidateDialogueEntryPoint(
+                DialogueEntryPoint entryPoint,
+                string nodeGuid,
+                string label)
+            {
+                DialogueContainer graph = entryPoint.GraphAsset;
                 if (graph == null)
                 {
-                    AddError("QUEST_DIALOGUE_GRAPH", "Dialogue Request에 Dialogue Graph 에셋이 없습니다.", request.Guid);
+                    AddError("QUEST_DIALOGUE_GRAPH", $"{label}에 Dialogue Graph 에셋이 없습니다.", nodeGuid);
                     return;
                 }
 
                 if (!graph.FindEntryNode(
-                        request.DialogueReference.EntryId,
-                        out DialogueStartNodeData entry,
+                        entryPoint.EntryId,
+                        out DialogueEntryNodeData entry,
                         out string error))
                 {
-                    AddError("QUEST_DIALOGUE_ENTRY", $"Dialogue Request가 올바르지 않습니다: {error}", request.Guid);
-                }
-                else
-                {
-                    var dialogueContext = new GraphValidationContext(graph);
-                    IReadOnlyList<NodeLinkData> entryLinks = dialogueContext.GetOutgoing(entry.Guid, "Next");
-                    if (entryLinks.Count != 1)
-                    {
-                        AddError(
-                            "QUEST_DIALOGUE_ENTRY",
-                            $"Dialogue Request의 Entry '{entry.EntryId}'는 Next 연결이 정확히 하나여야 하지만 " +
-                            $"{entryLinks.Count}개 발견되었습니다.",
-                            request.Guid);
-                    }
-                    else if (!dialogueContext.TryGetNode(entryLinks[0].TargetNodeGuid, out _))
-                    {
-                        AddError(
-                            "QUEST_DIALOGUE_ENTRY",
-                            $"Dialogue Request의 Entry '{entry.EntryId}'가 존재하지 않는 첫 노드를 참조합니다.",
-                            request.Guid);
-                    }
+                    AddError("QUEST_DIALOGUE_ENTRY", $"{label}가 올바르지 않습니다: {error}", nodeGuid);
+                    return;
                 }
 
-                if (string.IsNullOrWhiteSpace(request.TopicName))
+                var dialogueIndex = new GraphValidationIndex(graph);
+                IReadOnlyList<NodeLinkData> entryLinks = dialogueIndex.GetOutgoing(
+                    entry.Guid,
+                    DialoguePortNames.Next);
+                if (entryLinks.Count != 1)
                 {
-                    issues.Add(new GraphValidationIssue(
-                        GraphValidationSeverity.Warning,
-                        "QUEST_DIALOGUE_TOPIC",
-                        "Dialogue Topic 이름이 비어 있습니다.",
-                        request.Guid));
+                    AddError(
+                        "QUEST_DIALOGUE_ENTRY",
+                        $"{label}의 Entry '{entry.EntryId}'는 Next 연결이 정확히 하나여야 하지만 " +
+                        $"{entryLinks.Count}개 발견되었습니다.",
+                        nodeGuid);
+                }
+                else if (!dialogueIndex.TryGetNode(entryLinks[0].TargetNodeGuid, out _))
+                {
+                    AddError(
+                        "QUEST_DIALOGUE_ENTRY",
+                        $"{label}의 Entry '{entry.EntryId}'가 존재하지 않는 첫 노드를 참조합니다.",
+                        nodeGuid);
                 }
             }
 
             void RequireAtLeastOneOutput(string nodeGuid, string portName, string message)
             {
-                if (context.GetOutgoing(nodeGuid, portName).Count == 0)
+                if (index.GetOutgoing(nodeGuid, portName).Count == 0)
                 {
                     AddError("QUEST_MISSING_OUTPUT", message, nodeGuid);
                 }
@@ -410,7 +531,7 @@ namespace UniversalGraph.Quest.Editor
 
             void RequireExactlyOneOutput(string nodeGuid, string portName, string message)
             {
-                int count = context.GetOutgoing(nodeGuid, portName).Count;
+                int count = index.GetOutgoing(nodeGuid, portName).Count;
                 if (count != 1)
                 {
                     AddError("QUEST_OUTPUT_COUNT", $"{message} {count}개 발견되었습니다.", nodeGuid);
@@ -435,12 +556,13 @@ namespace UniversalGraph.Quest.Editor
             }
         }
 
-        private static bool IsConversationRouteNode(NodeBaseData node)
+        private static bool IsInteractionRouteNode(NodeBaseData node)
         {
-            return node is QuestEventEntryNodeData
+            return node is QuestInteractionEntryNodeData
                    || node is QuestStateConditionNodeData
-                   || node is QuestConditionBranchNodeData
-                   || node is DialogueRequestNodeData;
+                   || node is QuestConditionNodeData
+                   || node is DialogueCandidateNodeData
+                   || node is QuestOfferNodeData;
         }
     }
 }

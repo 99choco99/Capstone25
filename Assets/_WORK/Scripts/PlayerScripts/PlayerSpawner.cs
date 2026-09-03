@@ -8,7 +8,7 @@ public class PlayerSpawner
 
 
     private GameObject playerPrefab;
-    private List<Transform> SpawnPoints = new List<Transform>();
+    private List<Transform> SpawnPoints = new();
     private PlayerRepository repository;
 
     public static void Init(GameObject prefab, SocketManager socket)

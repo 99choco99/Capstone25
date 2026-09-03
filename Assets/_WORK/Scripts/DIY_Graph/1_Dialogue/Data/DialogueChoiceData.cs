@@ -15,6 +15,6 @@ namespace UniversalGraph
         /// <summary>
         /// 이 선택지 버튼을 눌렀을 때 무슨 일을 할까?(버튼 클릭 액션)
         /// </summary>
-        public MethodCallData ChoiceEvent = new();
+        public MethodCallData SelectionAction = new();
 	}
 }

@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 
 namespace UniversalGraph
 {
@@ -45,23 +43,41 @@ namespace UniversalGraph
             }
 
             var created = new QuestGraphIndex();
-            foreach (NodeBaseData node in container.Nodes)
+            foreach (NodeBaseData nodeData in container.Nodes)
             {
-                if (node == null)
+                if (nodeData == null)
                 {
                     error = $"'{container.name}'에 null 노드가 있습니다.";
                     return false;
                 }
 
-                if (string.IsNullOrWhiteSpace(node.Guid))
+                if (string.IsNullOrWhiteSpace(nodeData.Guid))
                 {
-                    error = $"'{container.name}'의 {node.GetType().Name} 노드에 GUID가 없습니다.";
+                    error = $"'{container.name}'의 {nodeData.GetType().Name} 노드에 GUID가 없습니다.";
                     return false;
                 }
 
-                if (!created.nodes.TryAdd(node.Guid, node))
+                if (!created.nodes.TryAdd(nodeData.Guid, nodeData))
                 {
-                    error = $"'{container.name}'에 중복된 노드 GUID '{node.Guid}'가 있습니다.";
+                    error = $"'{container.name}'에 중복된 노드 GUID '{nodeData.Guid}'가 있습니다.";
+                    return false;
+                }
+
+                if (nodeData is QuestActionNodeData action && action.Action == null)
+                {
+                    error = $"'{container.name}'의 Action 노드 '{nodeData.Guid}'에 호출 정보가 없습니다.";
+                    return false;
+                }
+
+                if (nodeData is QuestConditionNodeData condition && condition.Condition == null)
+                {
+                    error = $"'{container.name}'의 Condition 노드 '{nodeData.Guid}'에 호출 정보가 없습니다.";
+                    return false;
+                }
+
+                if (nodeData is QuestRewardNodeData reward && reward.RewardAction == null)
+                {
+                    error = $"'{container.name}'의 Reward 노드 '{nodeData.Guid}'에 호출 정보가 없습니다.";
                     return false;
                 }
             }
@@ -150,40 +166,6 @@ namespace UniversalGraph
             }
 
             links.Add(link);
-        }
-    }
-
-    /// <summary>Quest 진행 시작점을 선택합니다.</summary>
-    public static partial class QuestRunner
-    {
-        private static NodeBaseData ResolveStartNode(
-            QuestContainer container,
-            QuestGraphIndex index)
-        {
-            QuestStartNodeData[] starts = index.Nodes.Values.OfType<QuestStartNodeData>().ToArray();
-            if (starts.Length == 1)
-            {
-                return starts[0];
-            }
-
-            if (starts.Length > 1)
-            {
-                Debug.LogError($"[Quest] '{container.name}'에 Quest Start 노드가 {starts.Length}개 있습니다.", container);
-                return null;
-            }
-
-            // 전용 Quest Start 노드가 생기기 전에 만든 그래프를 위한 호환 처리입니다.
-            QuestEventEntryNodeData[] legacyEntries = index.Nodes.Values.OfType<QuestEventEntryNodeData>().ToArray();
-            if (legacyEntries.Length == 1)
-            {
-                Debug.LogWarning(
-                    $"[Quest] '{container.name}'은 상호작용 진입점을 레거시 진행 시작점으로 사용합니다. " +
-                    "다음에 그래프를 편집할 때 Quest Start 노드를 추가하세요.",
-                    container);
-                return legacyEntries[0];
-            }
-
-            return index.Nodes.Values.OfType<QuestObjectiveNodeData>().FirstOrDefault();
         }
     }
 }

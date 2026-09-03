@@ -22,10 +22,6 @@ namespace UniversalGraph.Generator
             "UQG004", "올바르지 않은 Quest 메서드 파라미터", "{0} '{1}'의 파라미터 '{2}'은(는) 지원되지 않습니다: {3}",
             Category, DiagnosticSeverity.Error, true);
 
-        internal static readonly DiagnosticDescriptor DuplicateParameterId = new DiagnosticDescriptor(
-            "UQG005", "중복된 Quest 파라미터 ID", "{0} '{1}'에 중복된 파라미터 ID '{2}'이(가) 있습니다.",
-            Category, DiagnosticSeverity.Error, true);
-
         internal static readonly DiagnosticDescriptor DuplicateKey = new DiagnosticDescriptor(
             "UQG006", "중복된 Quest 메서드 키", "어셈블리 '{2}'에 {0} 키 '{1}'이(가) 중복 선언되어 있습니다.",
             Category, DiagnosticSeverity.Error, true);

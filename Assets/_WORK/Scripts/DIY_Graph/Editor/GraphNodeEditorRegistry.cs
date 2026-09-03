@@ -163,7 +163,7 @@ namespace UniversalGraph.Editor
         /// 생성 메뉴에서 고른 항목에 맞는 새 데이터와 화면 노드 쌍을 만들기
         /// 마우스 우클릭으로 노드를 처음 만들 때 사용하는 함수
         /// </summary>
-        public static GraphNode CreateNewNode(GraphContainer container, NodeDefinition nodeDef, GraphNodeDataCreationContext context)
+        public static GraphNode CreateNewNode(GraphContainer container, NodeDefinition nodeDef, GraphNodeCreationContext creationContext)
         {
             if (container == null)
             {
@@ -189,7 +189,7 @@ namespace UniversalGraph.Editor
             NodeBaseData data;
             try
             {
-                data = node.CreateNewData(context);
+                data = node.CreateNewData(creationContext);
             }
             catch (Exception exception)
             {
@@ -206,7 +206,7 @@ namespace UniversalGraph.Editor
 
             //노드랑 데이터랑 1ㄷ1 매칭 근데 서로 비어있는
             node.BindNodeData(data);
-            node.SetPosition(new Rect(context.Position, node.DefaultSize));
+            node.SetPosition(new Rect(creationContext.Position, node.DefaultSize));
             return node;
         }
 
@@ -309,25 +309,50 @@ namespace UniversalGraph.Editor
         private static void CheckDuplicateMenuPaths(IEnumerable<NodeDefinition> candidates, ISet<NodeDefinition> invalid)
         {
             foreach (IGrouping<string, NodeDefinition> group in candidates
-                         .GroupBy(candidate => candidate.MenuPath, StringComparer.OrdinalIgnoreCase)
-                         .Where(group => group.Count() > 1))
+                         .GroupBy(candidate => candidate.MenuPath, StringComparer.OrdinalIgnoreCase))
             {
-                foreach (NodeDefinition duplicate in group)
+                NodeDefinition[] samePath = group.ToArray();
+                var conflicts = new HashSet<NodeDefinition>();
+                for (int firstIndex = 0; firstIndex < samePath.Length; firstIndex++)
+                {
+                    for (int secondIndex = firstIndex + 1; secondIndex < samePath.Length; secondIndex++)
+                    {
+                        NodeDefinition first = samePath[firstIndex];
+                        NodeDefinition second = samePath[secondIndex];
+                        bool sharesContainerScope = first.ContainerType.IsAssignableFrom(second.ContainerType)
+                                                   || second.ContainerType.IsAssignableFrom(first.ContainerType);
+                        if (!sharesContainerScope)
+                        {
+                            continue;
+                        }
+
+                        conflicts.Add(first);
+                        conflicts.Add(second);
+                    }
+                }
+
+                if (conflicts.Count == 0)
+                {
+                    continue;
+                }
+
+                foreach (NodeDefinition duplicate in conflicts)
                 {
                     invalid.Add(duplicate);
                 }
 
                 Debug.LogError(
-                    $"[Flow Graph] 메뉴 경로 '{group.Key}'가 두 번 이상 등록되어 있습니다: " + FormatViewNames(group));
+                    $"[Flow Graph] 같은 컨테이너에서 메뉴 경로 '{group.Key}'가 두 번 이상 등록되어 있습니다: " +
+                    FormatViewNames(conflicts));
             }
         }
 
-        private static void EnsureContainerCompatibility(GraphContainer container, NodeDefinition registration)
+        private static void EnsureContainerCompatibility(GraphContainer container, NodeDefinition definition)
         {
-            if (!registration.ContainerType.IsAssignableFrom(container.GetType()))
+            if (!definition.ContainerType.IsAssignableFrom(container.GetType()))
             {
                 throw new InvalidOperationException(
-                    $"노드 '{registration.ViewType.FullName}'은 '{registration.ContainerType.FullName}' 컨테이너를 지원하지만, " +
+                    $"노드 '{definition.ViewType.FullName}'은 '{definition.ContainerType.FullName}' 컨테이너를 지원하지만, " +
                     $"'{container.GetType().FullName}' 컨테이너는 지원하지 않습니다.");
             }
         }

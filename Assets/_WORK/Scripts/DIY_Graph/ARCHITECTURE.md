@@ -10,7 +10,7 @@ Dialogue와 Quest가 각각 Runtime, Editor, Attribute Binding을 갖기 때문�
 Graph Asset
   └─ GraphContainer + NodeBaseData + NodeLinkData
             │
-            ├─ Editor: GraphNode 화면 ↔ GraphSerializer 저장·복원
+            ├─ Editor: GraphNode 화면 ↔ GraphViewSerializer 저장·복원
             │
             └─ Runtime: DialogueManager 또는 QuestRunner가 데이터 실행
 ```
@@ -28,10 +28,10 @@ Graph Asset
 3. `Data/NodeLinkData.cs` — 출력 포트와 입력 포트의 연결
 4. `Editor/GraphNode.cs` — Data와 GraphView 화면 노드를 묶는 공통 부모
 5. `Editor/GraphNodeEditorRegistry.cs` — Data 타입에 맞는 화면 노드를 찾는 등록부
-6. `Editor/GraphSerializer.cs` — 에셋과 화면 사이의 저장·불러오기
+6. `Editor/GraphViewSerializer.cs` — 에셋과 화면 사이의 저장·불러오기
 7. `1_Dialogue/Data/DialogueContainer.cs` — 이름 있는 Dialogue 시작점
-8. `1_Dialogue/Runtime/DialogueManager.cs` — Dialogue 세션 실행
-9. `2_Quest/Runtime/QuestManager.cs` — Quest 정의 등록과 ID 조회
+8. `1_Dialogue/Runtime/DialogueManager.API.cs` — Dialogue 실행 공개 API
+9. `2_Quest/Runtime/QuestDefinitionRegistry.cs` — Quest 정의 등록과 ID 조회
 10. `2_Quest/Runtime/QuestRunner.cs` — Quest 진행 상태와 노드 실행
 
 처음 분석할 때 `Binding`, `Generator`, `Validation`, `Save`, `Tests`는 건너뛰어도 됩니다.
@@ -41,9 +41,9 @@ Graph Asset
 
 ```text
 UniversalGraphWindow
-  ├─ GraphCanvas                        캔버스와 노드 선택·연결
+  ├─ UniversalGraphView                 캔버스와 노드 선택·연결
   ├─ NodeInspector                      선택한 노드의 필드 편집
-  └─ GraphSerializer
+  └─ GraphViewSerializer
        ├─ WriteGraphViewToContainer     GraphNode → NodeBaseData/NodeLinkData
        └─ LoadGraph
             └─ GraphNodeEditorRegistry  NodeBaseData 실제 타입 → GraphNode 화면 타입
@@ -56,23 +56,24 @@ UniversalGraphWindow
 ## Dialogue 실행 흐름
 
 ```text
-게임 또는 ConversationCoordinator
-  └─ DialogueManager.TryStartConversation
+게임 코드
+  └─ DialogueManager.StartConversation
        ├─ DialogueContainer.TryResolveEntry
        ├─ 실행용 노드·연결 인덱스 생성
        └─ 현재 노드 실행
-            ├─ DialogueNode   대사 이벤트 발생 후 입력 대기
+            ├─ DialogueLineNode       대사 이벤트 발생 후 입력 대기
             ├─ DialogueChoiceNode     선택지 조건 평가 후 선택 입력 대기
             ├─ Condition     조건 평가 후 포트 선택
             ├─ Action        Attribute 메서드 실행
             ├─ Wait          시간 대기
-            ├─ WaitSignal    DialogueSignal 대기
-            └─ End           세션 종료
+            ├─ WaitSignal    DialogueManager.SendSignal 대기
+            └─ End           대화 종료
 ```
 
-- `DialogueManager.cs`: 세션 시작·종료 요청과 게임/UI가 호출하는 공개 API
+- `DialogueManager.API.cs`: 대화 시작·종료 요청과 게임/UI가 호출하는 공개 API
 - `DialogueManager.Execution.cs`: 노드 종류별 실행과 선택지 조건 평가
-- `DialogueManager.Session.cs`: 실행 인덱스, 세션 정리와 이벤트 구독자 예외 격리
+- `DialogueManager.Navigation.cs`: 포트에 연결된 다음 노드 탐색과 이동
+- `DialogueManager.State.cs`: 실행 인덱스, 종료, 상태 정리와 외부 콜백 실행
 
 게임 UI는 `DialogueManager` 이벤트를 구독하고 다음 대사 또는 선택지만 전달합니다.
 그래프 실행기는 특정 UI, Player, NPC 클래스를 알지 못합니다.
@@ -81,33 +82,49 @@ UniversalGraphWindow
 
 ```text
 게임 시작
-  └─ QuestManager.Initialize            Quest 정의 등록
+  └─ QuestDefinitionRegistry.Initialize            Quest 정의 등록
 
 플레이어별 연결
   └─ IQuestController                   QuestProgress 보관·변경 알림
 
+NPC 또는 오브젝트 상호작용
+  └─ QuestQueries.GetQuestOffers
+       └─ Interaction Entry부터 조건 경로 평가
+            ├─ QuestOffer 목록을 UI에 제공
+            └─ QuestRunner.TryStartQuest가 수락 직전 같은 조건을 다시 검사
+
 게임 이벤트
-  └─ QuestEventManager.ReportEvent
-       └─ 게임 Bridge가 QuestRunner.ProcessEvent 호출
-            ├─ 목표 수치 갱신
-            ├─ 조건·Action·보상 노드 실행
-            └─ IQuestController.InvokeStatusChanged
+  ├─ QuestRunner.AdvanceObjective          목표 하나를 직접 진행
+  └─ QuestRunner.ReportObjectiveProgress   타입·대상이 같은 목표를 일괄 진행
+       ├─ 목표 수치 갱신
+       ├─ 조건·Action·보상 노드 실행
+       └─ IQuestController.InvokeStatusChanged
 ```
 
-- `QuestManager`: 모든 플레이어가 공유하는 Quest **정의 목록**
+- `QuestDefinitionRegistry`: 모든 플레이어가 공유하는 Quest **정의 목록**
 - `IQuestController`: 플레이어 한 명이 소유한 Quest **진행 상태**
 - `QuestRunner`: 노드를 따라가며 진행 상태를 **변경하는 실행기**
-- `QuestEngineAPI`: UI가 그래프를 직접 읽지 않도록 제공하는 **조회 API**
-- `QuestDialogueRouter`: Quest 상태에 맞는 `DialogueRequest`를 만드는 **조회 전용 연결기**
+- `QuestQueries`: UI가 그래프를 직접 읽지 않도록 제공하는 **조회 API**
+- `QuestInteractionQuery`: API 내부에서 Quest 상태에 맞는 `DialogueCandidate`와 `QuestOffer`를 만드는 **조회 전용 연결기**
+
+`GetQuestOffers`와 `GetDialogueCandidates`는 후보를 선택하거나 정렬하지 않습니다. 게임 코드는 반환된
+데이터를 이용해 자동 선택, 플레이어 선택, 추적 Quest 우선 같은 프로젝트 전용 정책을 정합니다.
+상태를 게임 코드에서 직접 바꿀 때는 `SetQuestState`를 사용하며, Wait For Quest 노드는 기획자가 지정한
+`RequiredState`에 도달했을 때만 상위 흐름을 재개합니다.
+
+Quest 진행 기록이 아직 없는 ID는 조건 평가에서 `NotStarted`로 취급합니다. 여러 Quest는 서로 다른
+`QuestProgress`로 동시에 진행되며, 동시에 진행할 수 없는 조합은 Offer 앞의 Quest 상태 또는 Attribute
+Condition으로 작성합니다. UI가 받은 Offer는 표시 중 상태가 바뀔 수 있으므로 `TryStartQuest`가 원래
+Interaction Entry부터 다시 평가하고 같은 Offer에 도달할 때만 시작합니다.
 
 `QuestRunner`의 공개 진입점은 `QuestRunner.cs`에만 있습니다. 내부 구현은 즉시 흐름을 처리하는
-`QuestRunner.Flow.cs`, Attribute 및 구형 연결을 호출하는 `QuestRunner.Bindings.cs`, 한 번의 작업에서
+`QuestRunner.Flow.cs`, Attribute 메서드를 호출하는 `QuestRunner.Bindings.cs`, 한 번의 작업에서
 재사용할 노드·연결 인덱스를 만드는 `QuestRunner.Index.cs`로 구분합니다.
 
 ## Editor 검증 코드 구성
 
 - `GraphValidation.cs`: 심각도와 개별 진단 결과
-- `GraphValidationContext.cs`: 도메인 검증기가 공유하는 읽기 전용 그래프 인덱스
+- `GraphValidationIndex.cs`: 도메인 검증기가 공유하는 읽기 전용 그래프 인덱스
 - `GraphValidator.cs`: 검증기 인터페이스와 강타입 부모 클래스
 - `GraphValidatorRegistry.cs`: 검증기 검색과 전체 검증 공개 진입점
 - `GraphStructureValidator.cs`: 모든 그래프에 공통인 직렬화·연결 무결성 검사
@@ -126,7 +143,7 @@ UniversalGraphWindow
 각 도메인 Binding 폴더의 `Attribute → DescriptorFactory → Descriptor → Registry`가 한 묶음입니다.
 공통 `Runtime/Binding`은 두 도메인이 함께 사용하는 `MethodDescriptor`, 생성 호출자,
 인수 데이터, Parameter Descriptor와 Codec을 가집니다. Dialogue와 Quest Descriptor는 대상 종류와 표시 이름만 추가합니다.
-Editor의 `MethodCatalog`와 `MethodCallEditor`는 같은 Descriptor를 이용해 드롭다운과 인수 필드를 만듭니다.
+Editor의 `MethodCatalog`와 `MethodCallInspector`는 같은 Descriptor를 이용해 드롭다운과 인수 필드를 만듭니다.
 
 ## 노드 하나를 추가할 때
 

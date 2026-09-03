@@ -12,18 +12,18 @@ namespace UniversalGraph
 
         private readonly struct FlowStep
         {
-            public FlowStep(NodeBaseData node, string sourceNodeGuid)
+            public FlowStep(NodeBaseData nodeData, string sourceNodeGuid)
             {
-                Node = node;
+                NodeData = nodeData;
                 SourceNodeGuid = sourceNodeGuid;
             }
 
-            public NodeBaseData Node { get; }
+            public NodeBaseData NodeData { get; }
             public string SourceNodeGuid { get; }
         }
 
         /// <summary>출발 출력 하나에서 도달 가능한 즉시 노드를 재귀 호출 없이 처리합니다.</summary>
-        private static void RunFromOutputs(
+        private static bool RunFromOutputs(
             IQuestController controller,
             QuestContainer container,
             QuestProgress progress,
@@ -43,156 +43,200 @@ namespace UniversalGraph
                         $"[Quest] '{container.name}'에서 즉시 실행 단계가 {MaxImmediateNodeSteps}회를 초과했습니다. " +
                         "그래프에 Condition/Action 순환이 있는지 확인하세요.",
                         container);
-                    return;
+                    return StopAfterExecutionError(controller, progress);
                 }
 
                 FlowStep step = queue.Dequeue();
-                NodeBaseData node = step.Node;
-                progress.currentNodeGuid = node.Guid;
-
-                if (node is QuestStartNodeData || node is QuestEventEntryNodeData)
+                NodeBaseData nodeData = step.NodeData;
+                if (nodeData is QuestStartNodeData || nodeData is QuestInteractionEntryNodeData)
                 {
-                    EnqueueOutputs(flowIndex, queue, node.Guid, null);
+                    EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
                 }
-                else if (node is QuestObjectiveNodeData objective)
+                else if (nodeData is QuestObjectiveNodeData objective)
                 {
-                    if (IsCompleted(progress, node.Guid))
+                    if (IsCompleted(progress, nodeData.Guid))
                     {
-                        EnqueueOutputs(flowIndex, queue, node.Guid, null);
+                        EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
                     }
                     else
                     {
                         ActivateObjective(progress, objective);
                     }
                 }
-                else if (node is QuestConditionBranchNodeData condition)
+                else if (nodeData is QuestConditionNodeData condition)
                 {
-                    if (!TryEvaluateCustomCondition(
+                    var executionContext = new QuestExecutionContext(controller, container, progress, condition);
+                    if (!QuestMethodInvoker.TryEvaluateCondition(
+                            condition.Condition,
                             controller,
-                            container,
-                            progress,
-                            condition,
+                            executionContext,
                             out bool result,
                             out bool handlerFound))
                     {
                         Debug.LogError(
                             handlerFound
-                                ? $"[Quest] '{container.name}'의 Condition '{condition.Condition.Key}' 실행에 실패했습니다."
-                                : $"[Quest] '{container.name}'의 Condition '{condition.Condition.Key}'을 처리한 Handler가 없습니다.",
+                                ? $"[Quest] '{container.name}'의 Condition '{condition.Condition?.Key}' 실행에 실패했습니다."
+                                : $"[Quest] '{container.name}'의 Condition '{condition.Condition?.Key}'을 처리한 Handler가 없습니다.",
                             container);
-                        continue;
+                        return StopAfterExecutionError(controller, progress);
                     }
 
-                    EnqueueOutputs(flowIndex, queue, node.Guid, result ? "True" : "False");
+                    EnqueueOutputs(
+                        flowIndex,
+                        queue,
+                        nodeData.Guid,
+                        result ? QuestPortNames.True : QuestPortNames.False);
                 }
-                else if (node is QuestStateConditionNodeData stateCondition)
+                else if (nodeData is QuestStateConditionNodeData stateCondition)
                 {
-                    QuestProgress inspected = controller.GetQuestStatus(stateCondition.QuestId);
-                    bool result = inspected != null && inspected.state == stateCondition.TargetState;
-                    EnqueueOutputs(flowIndex, queue, node.Guid, result ? "True" : "False");
+                    controller.QuestProgress.TryGetValue(stateCondition.QuestId, out QuestProgress inspected);
+                    QuestState currentState = inspected?.state ?? QuestState.NotStarted;
+                    bool result = currentState == stateCondition.TargetState;
+                    EnqueueOutputs(
+                        flowIndex,
+                        queue,
+                        nodeData.Guid,
+                        result ? QuestPortNames.True : QuestPortNames.False);
                 }
-                else if (node is QuestAndGateNodeData gate)
+                else if (nodeData is QuestAndGateNodeData gate)
                 {
                     ProcessAndGate(progress, flowIndex, queue, gate, step.SourceNodeGuid);
                 }
-                else if (node is QuestStateChangeNodeData stateChange)
+                else if (nodeData is QuestStateChangeNodeData stateChange)
                 {
-                    if (MarkCompleted(progress, node.Guid))
-                    {
-                        progress.state = stateChange.NewState;
-                    }
-
-                    EnqueueOutputs(flowIndex, queue, node.Guid, null);
-                }
-                else if (node is QuestActionTriggerNodeData action)
-                {
-                    if (!IsCompleted(progress, node.Guid))
-                    {
-                        if (!ExecuteAction(controller, container, progress, action))
-                        {
-                            continue;
-                        }
-
-                        MarkCompleted(progress, node.Guid);
-                    }
-
-                    EnqueueOutputs(flowIndex, queue, node.Guid, null);
-                }
-                else if (node is QuestFailNodeData)
-                {
-                    MarkCompleted(progress, node.Guid);
-                    progress.state = QuestState.Failed;
-                    progress.activeNodeGuids.Clear();
-                    return;
-                }
-                else if (node is QuestRewardNodeData reward)
-                {
-                    if (!IsCompleted(progress, node.Guid))
-                    {
-                        if (!ExecuteRewardAction(controller, container, progress, reward))
-                        {
-                            continue;
-                        }
-
-                        MarkCompleted(progress, node.Guid);
-                        progress.state = QuestState.CanComplete;
-                        controller.TurnInQuest(progress.questId);
-                    }
-
-                    if (progress.state == QuestState.InProgress || progress.state == QuestState.CanComplete)
-                    {
-                        EnqueueOutputs(flowIndex, queue, node.Guid, null);
-                    }
-                }
-                else if (node is QuestSubGraphNodeData subGraph)
-                {
-                    if (IsCompleted(progress, node.Guid))
-                    {
-                        EnqueueOutputs(flowIndex, queue, node.Guid, null);
-                        continue;
-                    }
-
-                    QuestProgress subProgress = controller.GetQuestStatus(subGraph.SubQuestId);
-                    if (subProgress == null)
+                    if (stateChange.NewState != QuestState.InProgress
+                        && stateChange.NewState != QuestState.CanComplete
+                        && stateChange.NewState != QuestState.TurnedIn)
                     {
                         Debug.LogError(
-                            $"[Quest] 하위 Quest ID {subGraph.SubQuestId}의 진행 기록이 없습니다.",
+                            $"[Quest] State Change 노드는 상태를 {stateChange.NewState}(으)로 변경할 수 없습니다. " +
+                            "실패는 Fail 노드, 초기화는 QuestRunner.ResetQuest를 사용하세요.",
                             container);
+                        return StopAfterExecutionError(controller, progress);
+                    }
+
+                    if (MarkCompleted(progress, nodeData.Guid))
+                    {
+                        progress.state = stateChange.NewState;
+                        if (stateChange.NewState != QuestState.InProgress)
+                        {
+                            progress.activeNodeGuids.Clear();
+                        }
+
+                        ResumeWaitingQuests(controller, progress.questId);
+                    }
+
+                    if (stateChange.NewState != QuestState.InProgress)
+                    {
+                        return true;
+                    }
+
+                    EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
+                }
+                else if (nodeData is QuestActionNodeData action)
+                {
+                    if (!IsCompleted(progress, nodeData.Guid))
+                    {
+                        if (!ExecuteAction(
+                                controller,
+                                container,
+                                progress,
+                                action,
+                                action.Action,
+                                "Action"))
+                        {
+                            return StopAfterExecutionError(controller, progress);
+                        }
+
+                        MarkCompleted(progress, nodeData.Guid);
+                    }
+
+                    EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
+                }
+                else if (nodeData is QuestFailNodeData)
+                {
+                    MarkCompleted(progress, nodeData.Guid);
+                    progress.state = QuestState.Failed;
+                    progress.activeNodeGuids.Clear();
+                    ResumeWaitingQuests(controller, progress.questId);
+                    return true;
+                }
+                else if (nodeData is QuestRewardNodeData reward)
+                {
+                    if (!IsCompleted(progress, nodeData.Guid))
+                    {
+                        if (!ExecuteAction(
+                                controller,
+                                container,
+                                progress,
+                                reward,
+                                reward.RewardAction,
+                                "Reward Action"))
+                        {
+                            return StopAfterExecutionError(controller, progress);
+                        }
+
+                        MarkCompleted(progress, nodeData.Guid);
+                    }
+
+                    EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
+                }
+                else if (nodeData is QuestWaitForQuestNodeData waitForQuest)
+                {
+                    if (IsCompleted(progress, nodeData.Guid))
+                    {
+                        EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
                         continue;
                     }
 
-                    if (subProgress.state == QuestState.TurnedIn)
+                    controller.QuestProgress.TryGetValue(waitForQuest.TargetQuestId, out QuestProgress targetProgress);
+                    QuestState targetState = targetProgress?.state ?? QuestState.NotStarted;
+                    if (targetState == waitForQuest.RequiredState)
                     {
-                        MarkCompleted(progress, node.Guid);
-                        EnqueueOutputs(flowIndex, queue, node.Guid, null);
+                        MarkCompleted(progress, nodeData.Guid);
+                        EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
                         continue;
                     }
 
-                    if (!progress.activeNodeGuids.Contains(node.Guid))
+                    if (!progress.activeNodeGuids.Contains(nodeData.Guid))
                     {
-                        progress.activeNodeGuids.Add(node.Guid);
-                    }
-
-                    if (subProgress.state != QuestState.InProgress
-                        && subProgress.state != QuestState.CanComplete)
-                    {
-                        StartQuestGraph(controller, subGraph.SubQuestId);
+                        progress.activeNodeGuids.Add(nodeData.Guid);
                     }
                 }
-                else if (node is DialogueRequestNodeData)
+                else if (nodeData is DialogueCandidateNodeData || nodeData is QuestOfferNodeData)
                 {
-                    Debug.LogWarning(
-                        $"[Quest] Dialogue Request 노드 '{node.Guid}'는 대화 경로의 종점이므로 " +
+                    Debug.LogError(
+                        $"[Quest] {nodeData.GetType().Name} '{nodeData.Guid}'는 상호작용 경로의 종점이므로 " +
                         "Quest 진행을 앞으로 이동시키지 않습니다.",
                         container);
+                    return StopAfterExecutionError(controller, progress);
                 }
                 else
                 {
                     Debug.LogError(
-                        $"[Quest] '{container.name}'에서 지원하지 않는 노드 타입 '{node.GetType().FullName}'을 발견했습니다.",
+                        $"[Quest] '{container.name}'에서 지원하지 않는 노드 타입 '{nodeData.GetType().FullName}'을 발견했습니다.",
                         container);
+                    return StopAfterExecutionError(controller, progress);
                 }
             }
+
+            if (progress.state == QuestState.InProgress && progress.activeNodeGuids.Count == 0)
+            {
+                Debug.LogError(
+                    $"[Quest] '{container.name}'의 진행 경로가 활성 목표나 대기 노드 없이 끝났습니다.",
+                    container);
+                return StopAfterExecutionError(controller, progress);
+            }
+
+            return true;
+        }
+
+        private static bool StopAfterExecutionError(IQuestController controller, QuestProgress progress)
+        {
+            progress.state = QuestState.Failed;
+            progress.activeNodeGuids.Clear();
+            ResumeWaitingQuests(controller, progress.questId);
+            return false;
         }
 
         private static void ProcessAndGate(

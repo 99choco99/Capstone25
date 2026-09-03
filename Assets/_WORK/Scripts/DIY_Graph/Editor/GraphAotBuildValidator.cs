@@ -109,12 +109,12 @@ namespace UniversalGraph.Editor
                 DialogueConditionAttribute condition = method.GetCustomAttribute<DialogueConditionAttribute>(false);
                 MethodKind kind = action != null ? MethodKind.Action : MethodKind.Condition;
                 string key = action?.Key ?? condition?.Key;
-                DialogueTarget target = action?.Target ?? condition.Target;
-                if (!DialogueMethodDescriptorFactory.TryCreate(
+                DialogueMethodOwner owner = action?.Owner ?? condition.Owner;
+                if (!DialogueMethodDescriptorFactory.TryCreateFromReflection(
                         method,
                         kind,
                         key,
-                        target,
+                        owner,
                         out _,
                         out string error))
                 {
@@ -165,7 +165,7 @@ namespace UniversalGraph.Editor
                 MethodKind kind = action != null ? MethodKind.Action : MethodKind.Condition;
                 string key = action?.Key ?? condition?.Key;
                 QuestMethodTarget target = action?.Target ?? condition.Target;
-                if (!QuestMethodDescriptorFactory.TryCreate(
+                if (!QuestMethodDescriptorFactory.TryCreateFromReflection(
                         method,
                         kind,
                         key,

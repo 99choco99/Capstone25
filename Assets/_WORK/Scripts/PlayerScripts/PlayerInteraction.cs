@@ -12,7 +12,7 @@ public class PlayerInteraction : MonoBehaviour
 
     public bool IsDetectionPaused { get; set; } = false;
 
-    //Event
+    //EnterAction
     public event Action<List<IInteractable>> OnInteractableChanged;
     public event Action<IInteractable, int> OnSelectionChanged;
 

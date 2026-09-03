@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace UniversalGraph
 {
-	/// <summary>다른 Quest의 현재 상태에 따라 대화 선택 흐름을 분기합니다.</summary>
+	/// <summary>다른 Quest의 현재 상태에 따라 진행 또는 상호작용 조회 흐름을 분기합니다.</summary>
 	[Serializable]
 	public sealed class QuestStateConditionNodeData : NodeBaseData
 	{

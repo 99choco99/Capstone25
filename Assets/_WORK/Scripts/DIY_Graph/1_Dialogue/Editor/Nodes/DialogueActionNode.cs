@@ -20,7 +20,7 @@ namespace UniversalGraph.Dialogue.Editor
             inputContainer.Add(input);
 
             Port next = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(float));
-            next.portName = "Next";
+            next.portName = DialoguePortNames.Next;
             outputContainer.Add(next);
 
             AddToClassList("action-node");
@@ -31,7 +31,7 @@ namespace UniversalGraph.Dialogue.Editor
         /// <summary>현재 연결된 Action 키로 노드 제목을 갱신</summary>
         private void RefreshPreview()
         {
-            title = string.IsNullOrWhiteSpace(NodeData?.Event?.Key) ? "ACTION: 선택 안 됨" : $"ACTION: {NodeData.Event.Key}";
+            title = string.IsNullOrWhiteSpace(NodeData?.Action?.Key) ? "ACTION: 선택 안 됨" : $"ACTION: {NodeData.Action.Key}";
         }
 
         /// <summary>인스펙터에 메서드 하나를 선택하고 그 파라미터들 값들 채울 수 있게 생성</summary>
@@ -40,7 +40,7 @@ namespace UniversalGraph.Dialogue.Editor
             VisualElement root = new();
 
             root.Add(new HelpBox("Action을 한 번 실행한 뒤 Next 포트로 진행합니다.", HelpBoxMessageType.Info));
-            root.Add(MethodCallEditor.Create(editHandler, "Action", NodeData.Event, DialogueMethodCatalog.GetMethods(MethodKind.Action), RefreshPreview));
+            root.Add(MethodCallInspector.Create(editHandler, "Action", NodeData.Action, DialogueMethodCatalog.GetMethodList(MethodKind.Action), RefreshPreview));
             return root;
         }
     }

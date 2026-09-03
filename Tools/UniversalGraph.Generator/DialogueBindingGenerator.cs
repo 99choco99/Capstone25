@@ -18,10 +18,8 @@ namespace UniversalGraph.Generator
             "UniversalGraph.DialogueActionAttribute";
         private const string ConditionAttributeName =
             "UniversalGraph.DialogueConditionAttribute";
-        private const string ParameterAttributeName =
-            "UniversalGraph.DialogueParameterAttribute";
         private const string ContextTypeName =
-            "UniversalGraph.DialogueContext";
+            "UniversalGraph.DialogueExecutionContext";
         private const string ProviderAttributeName =
             "UniversalGraph.DialogueGeneratedProviderAttribute";
         private const string ProviderInterfaceName =
@@ -89,8 +87,6 @@ namespace UniversalGraph.Generator
                 }
             }
 
-            INamedTypeSymbol parameterAttribute =
-                compilation.GetTypeByMetadataName(ParameterAttributeName);
             INamedTypeSymbol contextType =
                 compilation.GetTypeByMetadataName(ContextTypeName);
             INamedTypeSymbol componentType =
@@ -104,7 +100,6 @@ namespace UniversalGraph.Generator
                 if (ValidateBinding(
                         context,
                         candidate,
-                        parameterAttribute,
                         contextType,
                         componentType,
                         unityObjectType))
@@ -160,10 +155,10 @@ namespace UniversalGraph.Generator
             if (attribute.ConstructorArguments.Length > 0)
                 key = attribute.ConstructorArguments[0].Value as string;
 
-            int target = 0;
+            int owner = 0;
             foreach (KeyValuePair<string, TypedConstant> namedArgument in attribute.NamedArguments)
             {
-                if (!string.Equals(namedArgument.Key, "Target", StringComparison.Ordinal) ||
+                if (!string.Equals(namedArgument.Key, "Owner", StringComparison.Ordinal) ||
                     namedArgument.Value.Value == null)
                 {
                     continue;
@@ -171,11 +166,11 @@ namespace UniversalGraph.Generator
 
                 try
                 {
-                    target = Convert.ToInt32(namedArgument.Value.Value);
+                    owner = Convert.ToInt32(namedArgument.Value.Value);
                 }
                 catch (Exception)
                 {
-                    target = int.MinValue;
+                    owner = int.MinValue;
                 }
             }
 
@@ -183,13 +178,12 @@ namespace UniversalGraph.Generator
                                 method.Locations.FirstOrDefault() ??
                                 Location.None;
 
-            return new DialogueBinding(method, kind, key, target, location);
+            return new DialogueBinding(method, kind, key, owner, location);
         }
 
         private static bool ValidateBinding(
             GeneratorExecutionContext context,
             DialogueBinding binding,
-            INamedTypeSymbol parameterAttribute,
             INamedTypeSymbol contextType,
             INamedTypeSymbol componentType,
             INamedTypeSymbol unityObjectType)
@@ -199,8 +193,7 @@ namespace UniversalGraph.Generator
             string kindName = binding.Kind.ToString();
             string methodName = method.ToDisplayString();
 
-            if (string.IsNullOrWhiteSpace(binding.Key) ||
-                string.Equals(binding.Key, "None", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(binding.Key) || binding.Key == "None")
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     DialogueDiagnostics.InvalidKey,
@@ -255,37 +248,37 @@ namespace UniversalGraph.Generator
                 isValid = false;
             }
 
-            if (binding.Target < 0 || binding.Target > 2)
+            if (binding.Owner < 0 || binding.Owner > 2)
             {
-                ReportInvalidTarget(context, binding, "Unknown", "열거형 값이 지원 범위를 벗어났습니다.");
+                ReportInvalidOwner(context, binding, "Unknown", "열거형 값이 지원 범위를 벗어났습니다.");
                 isValid = false;
             }
-            else if (binding.Target == 2)
+            else if (binding.Owner == 2)
             {
                 if (!method.IsStatic)
                 {
-                    ReportInvalidTarget(context, binding, "Global", "Global 메서드는 static이어야 합니다.");
+                    ReportInvalidOwner(context, binding, "Global", "Global 메서드는 static이어야 합니다.");
                     isValid = false;
                 }
             }
             else
             {
-                string targetName = binding.Target == 0 ? "Speaker" : "Interactor";
+                string ownerName = binding.Owner == 0 ? "Speaker" : "Interactor";
                 if (method.IsStatic)
                 {
-                    ReportInvalidTarget(context, binding, targetName, "Speaker/Interactor 메서드는 인스턴스 메서드여야 합니다.");
+                    ReportInvalidOwner(context, binding, ownerName, "Speaker/Interactor 메서드는 인스턴스 메서드여야 합니다.");
                     isValid = false;
                 }
 
                 if (!DialogueSymbolUtility.IsOrDerivesFrom(method.ContainingType, componentType))
                 {
-                    ReportInvalidTarget(context, binding, targetName, "선언 타입은 UnityEngine.Component를 상속해야 합니다.");
+                    ReportInvalidOwner(context, binding, ownerName, "선언 타입은 UnityEngine.Component를 상속해야 합니다.");
                     isValid = false;
                 }
             }
 
             bool hasContextParameter = false;
-            var parameterIds = new HashSet<string>(StringComparer.Ordinal);
+            int serializedParameterIndex = 0;
             binding.Parameters.Clear();
             foreach (IParameterSymbol parameter in method.Parameters)
             {
@@ -333,7 +326,7 @@ namespace UniversalGraph.Generator
                             binding,
                             parameter,
                             parameterLocation,
-                            "DialogueContext는 한 번만 사용할 수 있습니다.");
+                            "DialogueExecutionContext는 한 번만 사용할 수 있습니다.");
                         isValid = false;
                     }
 
@@ -354,46 +347,7 @@ namespace UniversalGraph.Generator
                     continue;
                 }
 
-                string parameterId = parameter.Name;
-                if (parameterAttribute != null)
-                {
-                    foreach (AttributeData attribute in parameter.GetAttributes())
-                    {
-                        if (!SymbolEqualityComparer.Default.Equals(
-                                attribute.AttributeClass,
-                                parameterAttribute))
-                        {
-                            continue;
-                        }
-
-                        parameterId = attribute.ConstructorArguments.Length > 0
-                            ? attribute.ConstructorArguments[0].Value as string
-                            : null;
-                        break;
-                    }
-                }
-
-                if (string.IsNullOrWhiteSpace(parameterId))
-                {
-                    ReportInvalidParameter(
-                        context,
-                        binding,
-                        parameter,
-                        parameterLocation,
-                        "DialogueParameter ID는 비워 둘 수 없습니다.");
-                    isValid = false;
-                }
-                else if (!parameterIds.Add(parameterId))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        DialogueDiagnostics.DuplicateParameterId,
-                        parameterLocation,
-                        kindName,
-                        methodName,
-                        parameterId));
-                    isValid = false;
-                }
-
+                string parameterId = "arg" + serializedParameterIndex++;
                 binding.Parameters.Add(CreateParameterMetadata(parameter, parameterId));
             }
 
@@ -480,8 +434,8 @@ namespace UniversalGraph.Generator
                 builder.Append("                ")
                     .Append(DialogueSymbolUtility.EscapeString(binding.Key))
                     .AppendLine(",");
-                builder.Append("                global::UniversalGraph.DialogueTarget.")
-                    .Append(GetTargetName(binding.Target))
+                builder.Append("                global::UniversalGraph.DialogueMethodOwner.")
+                    .Append(GetOwnerName(binding.Owner))
                     .AppendLine(",");
                 builder.Append("                ")
                     .Append(DialogueSymbolUtility.EscapeString(
@@ -584,14 +538,14 @@ namespace UniversalGraph.Generator
                 reason));
         }
 
-        private static void ReportInvalidTarget(
+        private static void ReportInvalidOwner(
             GeneratorExecutionContext context,
             DialogueBinding binding,
             string targetName,
             string reason)
         {
             context.ReportDiagnostic(Diagnostic.Create(
-                DialogueDiagnostics.InvalidTarget,
+                DialogueDiagnostics.InvalidOwner,
                 binding.Location,
                 binding.Kind.ToString(),
                 binding.Method.ToDisplayString(),
@@ -615,9 +569,9 @@ namespace UniversalGraph.Generator
                 reason));
         }
 
-        private static string GetTargetName(int target)
+        private static string GetOwnerName(int owner)
         {
-            switch (target)
+            switch (owner)
             {
                 case 0:
                     return "Speaker";
@@ -642,20 +596,20 @@ namespace UniversalGraph.Generator
                 IMethodSymbol method,
                 DialogueBindingKind kind,
                 string key,
-                int target,
+                int owner,
                 Location location)
             {
                 Method = method;
                 Kind = kind;
                 Key = key;
-                Target = target;
+                Owner = owner;
                 Location = location;
             }
 
             internal IMethodSymbol Method { get; }
             internal DialogueBindingKind Kind { get; }
             internal string Key { get; }
-            internal int Target { get; }
+            internal int Owner { get; }
             internal Location Location { get; }
             internal bool HasDirectInvoker { get; set; }
             internal List<DialogueParameterMetadata> Parameters { get; } =

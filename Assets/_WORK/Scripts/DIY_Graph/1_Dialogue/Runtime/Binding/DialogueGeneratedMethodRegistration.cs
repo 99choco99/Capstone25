@@ -10,7 +10,7 @@ namespace UniversalGraph
 
 		public string Key { get; }
 
-		public DialogueTarget Target { get; }
+		public DialogueMethodOwner Owner { get; }
 
 		public string DeclaringTypeMetadataName { get; }
 
@@ -22,11 +22,11 @@ namespace UniversalGraph
 
 		public GeneratedMethodInvoker DirectInvoker { get; }
 
-		public DialogueGeneratedMethodRegistration(MethodKind kind, string key, DialogueTarget target, string declaringTypeMetadataName, string methodMetadataName, bool isStatic, GeneratedParameterRegistration[] parameters, GeneratedMethodInvoker directInvoker)
+		public DialogueGeneratedMethodRegistration(MethodKind kind, string key, DialogueMethodOwner owner, string declaringTypeMetadataName, string methodMetadataName, bool isStatic, GeneratedParameterRegistration[] parameters, GeneratedMethodInvoker directInvoker)
 		{
 			Kind = kind;
 			Key = key;
-			Target = target;
+			Owner = owner;
 			DeclaringTypeMetadataName = declaringTypeMetadataName;
 			MethodMetadataName = methodMetadataName;
 			IsStatic = isStatic;

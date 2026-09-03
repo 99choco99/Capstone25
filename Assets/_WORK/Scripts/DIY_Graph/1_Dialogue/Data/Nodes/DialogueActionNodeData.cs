@@ -6,8 +6,8 @@ namespace UniversalGraph
 	public sealed class DialogueActionNodeData : NodeBaseData
 	{
 		/// <summary>
-		/// ½ÇÇàÇÒ ÀÌº¥Æ®
+		/// ë…¸ë“œì— ì§„ì…í–ˆì„ ë•Œ ì‹¤í–‰í•  Action
 		/// </summary>
-		public MethodCallData Event = new();
+		public MethodCallData Action = new();
 	}
 }

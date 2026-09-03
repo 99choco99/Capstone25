@@ -21,6 +21,7 @@ namespace UniversalGraph.Editor
         private int silentDepth;
         private bool changeQueued;
         private int pasteCount;
+        private GraphNode lastSelectedNode;
 
         public event Action SaveRequest;
         public event Action<GraphNode> Selected;
@@ -48,7 +49,21 @@ namespace UniversalGraph.Editor
         /// <summary>매개변수로 받은 그래프 노드가 선택됐음을 알리는 함수</summary>
         internal void OnNodeSelected(GraphNode node)
         {
+            lastSelectedNode = node;
             Selected?.Invoke(node);
+        }
+
+        /// <summary>인스펙터가 제거된 노드 데이터를 계속 표시하지 않도록 선택 해제를 알립니다.</summary>
+        internal void OnNodeUnselected(GraphNode node)
+        {
+            if (!ReferenceEquals(lastSelectedNode, node))
+            {
+                return;
+            }
+
+            lastSelectedNode = selection.OfType<GraphNode>()
+                .FirstOrDefault(candidate => !ReferenceEquals(candidate, node));
+            Selected?.Invoke(lastSelectedNode);
         }
 
         /// <summary>현재 그래프 뷰의 컨테이너를 설정</summary>
@@ -62,6 +77,13 @@ namespace UniversalGraph.Editor
 
         private GraphViewChange HandleChange(GraphViewChange change)
         {
+            if (lastSelectedNode != null && change.elementsToRemove?.Contains(lastSelectedNode) == true)
+            {
+                lastSelectedNode = selection.OfType<GraphNode>()
+                    .FirstOrDefault(node => !change.elementsToRemove.Contains(node));
+                Selected?.Invoke(lastSelectedNode);
+            }
+
             //없어지거나, 생기거나, 이동했을 때
             bool hasChange = change.elementsToRemove != null || change.edgesToCreate != null || change.movedElements != null;
             if (silentDepth == 0 && hasChange)
@@ -193,7 +215,7 @@ namespace UniversalGraph.Editor
                     .Where(node => node.Data != null)
                     .Select(node => node.Data)
                     .ToList();
-                GraphNodeDataCreationContext context = new(position, existingNodes);
+                GraphNodeCreationContext context = new(position, existingNodes);
                 GraphNode node = GraphNodeEditorRegistry.CreateNewNode(container, definition, context);
                 AddElement(node);
                 ScheduleSave();
@@ -284,7 +306,7 @@ namespace UniversalGraph.Editor
                 Dictionary<string, string> newIds = new();
                 Dictionary<string, GraphNode> pasted = new();
                 
-                Vector2 offset = Vector2.one * (30f * (++pasteCount % 10 + 1));
+                Vector2 offset = Vector2.one * (30f * (pasteCount++ % 10 + 1));
 
 
                 //복사된 노드를 돌면서 데이터를 채워넣음
@@ -413,7 +435,15 @@ namespace UniversalGraph.Editor
             List<Port> compatible = new();
             foreach(Port port in ports)
             {
-                if (startPort.direction != port.direction && startPort.node != port.node)
+                bool isAlreadyConnected = startPort.connections.Any(edge =>
+                    edge != null
+                    && (edge.output == startPort && edge.input == port
+                        || edge.output == port && edge.input == startPort));
+
+                if (startPort.direction != port.direction
+                    && startPort.node != port.node
+                    && startPort.portType == port.portType
+                    && !isAlreadyConnected)
                 {
                     compatible.Add(port);
                 }
