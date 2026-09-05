@@ -11,6 +11,7 @@ namespace UniversalGraph
 	public sealed class QuestDefinitionRegistry
 	{
     private readonly Dictionary<int, QuestContainer> definitionsById = new();
+    private readonly Dictionary<int, QuestGraphIndex> indexesById = new();
     private readonly List<QuestContainer> definitionsInRegistrationOrder = new();
 
     public static QuestDefinitionRegistry Instance { get; private set; }
@@ -72,17 +73,17 @@ namespace UniversalGraph
                     $"중복된 Quest ID {definition.QuestId}: '{duplicate.name}', '{definition.name}'.");
             }
 
-            if (!QuestGraphIndex.TryCreate(definition, out _, out string indexError))
+            if (!QuestGraphIndex.TryCreate(definition, out QuestGraphIndex index, out string indexError))
             {
                 throw new InvalidOperationException($"Quest '{definition.name}'을 등록하지 못했습니다: {indexError}");
             }
 
             registry.definitionsById.Add(definition.QuestId, definition);
+            registry.indexesById.Add(definition.QuestId, index);
             registry.definitionsInRegistrationOrder.Add(definition);
         }
 
         Instance = registry;
-        Debug.Log($"[Quest] Quest 정의 {registry.definitionsById.Count}개를 등록했습니다.");
     }
 
     /// <summary>Quest 정의 하나를 반환하며, 등록되지 않은 ID이면 null을 반환합니다.</summary>
@@ -98,24 +99,20 @@ namespace UniversalGraph
         return definitionsById.TryGetValue(questId, out definition);
     }
 
-    /// <summary>등록된 Quest를 찾고 현재 그래프 구조로 조회용 인덱스를 만듭니다.</summary>
-    internal bool TryBuildQuestIndex(
+    /// <summary>등록된 Quest 정의와 초기화할 때 만들어 둔 조회용 인덱스를 반환합니다.</summary>
+    internal bool TryGetQuestIndex(
         int questId,
         out QuestContainer container,
         out QuestGraphIndex index)
     {
-        index = null;
-        if (!definitionsById.TryGetValue(questId, out container))
-        {
-            return false;
-        }
-
-        if (QuestGraphIndex.TryCreate(container, out index, out string error))
+        if (definitionsById.TryGetValue(questId, out container)
+            && indexesById.TryGetValue(questId, out index))
         {
             return true;
         }
 
-        Debug.LogError($"[Quest] '{container.name}'의 그래프를 읽지 못했습니다: {error}", container);
+        container = null;
+        index = null;
         return false;
     }
 	}

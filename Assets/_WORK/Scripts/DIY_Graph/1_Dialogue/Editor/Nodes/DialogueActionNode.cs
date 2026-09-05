@@ -40,7 +40,7 @@ namespace UniversalGraph.Dialogue.Editor
             VisualElement root = new();
 
             root.Add(new HelpBox("Action을 한 번 실행한 뒤 Next 포트로 진행합니다.", HelpBoxMessageType.Info));
-            root.Add(MethodCallInspector.Create(editHandler, "Action", NodeData.Action, DialogueMethodCatalog.GetMethodList(MethodKind.Action), RefreshPreview));
+            root.Add(MethodBindingInspector.Create(editHandler, "Action", NodeData.Action, DialogueMethodCatalog.GetMethodList(MethodKind.Action), RefreshPreview));
             return root;
         }
     }

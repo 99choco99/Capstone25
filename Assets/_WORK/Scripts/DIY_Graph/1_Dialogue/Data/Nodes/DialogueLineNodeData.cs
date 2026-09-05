@@ -10,6 +10,6 @@ namespace UniversalGraph
 		public string DialogueText;
 
         //대화시 
-		public MethodCallData EnterAction = new();
+		public MethodBindingData EnterAction = new();
 	}
 }

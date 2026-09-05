@@ -118,8 +118,8 @@ Condition으로 작성합니다. UI가 받은 Offer는 표시 중 상태가 바�
 Interaction Entry부터 다시 평가하고 같은 Offer에 도달할 때만 시작합니다.
 
 `QuestRunner`의 공개 진입점은 `QuestRunner.cs`에만 있습니다. 내부 구현은 즉시 흐름을 처리하는
-`QuestRunner.Flow.cs`, Attribute 메서드를 호출하는 `QuestRunner.Bindings.cs`, 한 번의 작업에서
-재사용할 노드·연결 인덱스를 만드는 `QuestRunner.Index.cs`로 구분합니다.
+`QuestRunner.Flow.cs`, Attribute 메서드를 호출하는 `QuestRunner.Bindings.cs`로 구분합니다.
+별도 클래스 `QuestGraphIndex.cs`는 정의를 등록할 때 노드·연결 조회용 인덱스를 만듭니다.
 
 ## Editor 검증 코드 구성
 
@@ -143,7 +143,7 @@ Interaction Entry부터 다시 평가하고 같은 Offer에 도달할 때만 시
 각 도메인 Binding 폴더의 `Attribute → DescriptorFactory → Descriptor → Registry`가 한 묶음입니다.
 공통 `Runtime/Binding`은 두 도메인이 함께 사용하는 `MethodDescriptor`, 생성 호출자,
 인수 데이터, Parameter Descriptor와 Codec을 가집니다. Dialogue와 Quest Descriptor는 대상 종류와 표시 이름만 추가합니다.
-Editor의 `MethodCatalog`와 `MethodCallInspector`는 같은 Descriptor를 이용해 드롭다운과 인수 필드를 만듭니다.
+Editor의 `MethodCatalog`와 `MethodBindingInspector`는 같은 Descriptor를 이용해 드롭다운과 인수 필드를 만듭니다.
 
 ## 노드 하나를 추가할 때
 

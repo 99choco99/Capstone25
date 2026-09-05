@@ -51,19 +51,23 @@ namespace UniversalGraph.Dialogue.Editor
                         break;
 
                     case DialogueConditionNodeData condition:
-                        ValidateRequiredBinding(
+                        ValidateMethodBinding(
                             condition.Guid,
                             MethodKind.Condition,
-                            condition.Condition);
+                            condition.Condition,
+                            "condition",
+                            required: true);
                         RequireExactlyOneOutput(condition.Guid, DialoguePortNames.True, "Condition의 True 출력은 노드 하나에 정확히 연결되어야 합니다.");
                         RequireExactlyOneOutput(condition.Guid, DialoguePortNames.False, "Condition의 False 출력은 노드 하나에 정확히 연결되어야 합니다.");
                         break;
 
                     case DialogueActionNodeData action:
-                        ValidateRequiredBinding(
+                        ValidateMethodBinding(
                             action.Guid,
                             MethodKind.Action,
-                            action.Action);
+                            action.Action,
+                            "action",
+                            required: true);
                         RequireExactlyOneOutput(action.Guid, DialoguePortNames.Next, "Action 노드는 다음 노드 하나에 정확히 연결되어야 합니다.");
                         break;
 
@@ -130,7 +134,7 @@ namespace UniversalGraph.Dialogue.Editor
                     AddWarning("DIALOGUE_EMPTY_TEXT", "대화문이 비어 있습니다.", line.Guid);
                 }
 
-                ValidateOptionalBinding(
+                ValidateMethodBinding(
                     line.Guid,
                     MethodKind.Action,
                     line.EnterAction,
@@ -172,13 +176,13 @@ namespace UniversalGraph.Dialogue.Editor
                         AddWarning("DIALOGUE_EMPTY_CHOICE", "선택지에 표시할 문장이 없습니다.", choiceNode.Guid);
                     }
 
-                    ValidateOptionalBinding(
+                    ValidateMethodBinding(
                         choiceNode.Guid,
                         MethodKind.Condition,
                         choice.VisibilityCondition,
                         "선택지 표시 Condition");
 
-                    ValidateOptionalBinding(
+                    ValidateMethodBinding(
                         choiceNode.Guid,
                         MethodKind.Action,
                         choice.SelectionAction,
@@ -221,59 +225,41 @@ namespace UniversalGraph.Dialogue.Editor
 
             }
 
-            void ValidateRequiredBinding(
+            void ValidateMethodBinding(
                 string nodeGuid,
                 MethodKind kind,
-                MethodCallData methodCall)
+                MethodBindingData binding,
+                string label,
+                bool required = false)
             {
-                if (methodCall == null)
+                if (binding == null)
                 {
                     AddError(
                         "DIALOGUE_BINDING_DATA",
-                        $"Dialogue {kind} 바인딩 데이터가 없습니다.",
+                        required ? $"Dialogue {kind} 바인딩 데이터가 없습니다." : $"{label} 바인딩 데이터가 없습니다.",
                         nodeGuid);
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(methodCall.Key))
+                if (string.IsNullOrWhiteSpace(binding.Key))
                 {
-                    AddError(
-                        kind == MethodKind.Action ? "DIALOGUE_ACTION_REQUIRED" : "DIALOGUE_CONDITION_REQUIRED",
-                        $"등록된 Dialogue {kind}을 선택하세요.",
-                        nodeGuid);
+                    if (required)
+                    {
+                        AddError(
+                            kind == MethodKind.Action ? "DIALOGUE_ACTION_REQUIRED" : "DIALOGUE_CONDITION_REQUIRED",
+                            $"등록된 Dialogue {kind}을 선택하세요.",
+                            nodeGuid);
+                    }
                     return;
                 }
 
-                ValidateOptionalBinding(nodeGuid, kind, methodCall, kind.ToString().ToLowerInvariant());
-            }
-
-            void ValidateOptionalBinding(
-                string nodeGuid,
-                MethodKind kind,
-                MethodCallData methodCall,
-                string label)
-            {
-                if (methodCall == null)
+                if (!DialogueMethodCatalog.GetMethod(kind, binding.Key, out DialogueMethodDescriptor descriptor))
                 {
-                    AddError(
-                        "DIALOGUE_BINDING_DATA",
-                        $"{label} 바인딩 데이터가 없습니다.",
-                        nodeGuid);
+                    AddError("DIALOGUE_MISSING_METHOD", $"{label} 키 '{binding.Key}'가 등록되어 있지 않습니다.", nodeGuid);
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(methodCall.Key))
-                {
-                    return;
-                }
-
-                if (!DialogueMethodCatalog.GetMethod(kind, methodCall.Key, out DialogueMethodDescriptor descriptor))
-                {
-                    AddError("DIALOGUE_MISSING_METHOD", $"{label} 키 '{methodCall.Key}'가 등록되어 있지 않습니다.", nodeGuid);
-                    return;
-                }
-
-                if (!MethodArgumentCodec.TryDecodeAllArgumentData(methodCall.Arguments, descriptor, out _, out string error))
+                if (!MethodArgumentCodec.TryDecodeAllArgumentData(binding.Arguments, descriptor, out _, out string error))
                 {
                     AddError("DIALOGUE_ARGUMENTS", $"{label} 인수가 올바르지 않습니다: {error}", nodeGuid);
                 }

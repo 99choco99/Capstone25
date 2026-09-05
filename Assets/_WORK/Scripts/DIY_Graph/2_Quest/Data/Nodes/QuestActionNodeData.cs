@@ -9,6 +9,6 @@ namespace UniversalGraph
     {
         /// <summary>Attribute가 붙은 Quest Action에 전달할 타입 기반 인수입니다.</summary>
         [Tooltip("프로젝트에서 정의한 Action 키입니다. 예: PlayCutscene_01")]
-        public MethodCallData Action = new();
+        public MethodBindingData Action = new();
     }
 }

@@ -157,7 +157,7 @@ namespace UniversalGraph.Quest.Editor
                 "코드 작성 없이 그래프에 연결하려면 Attribute가 붙은 메서드를 선택하세요.",
                 HelpBoxMessageType.Info));
 
-            root.Add(MethodCallInspector.Create(
+            root.Add(MethodBindingInspector.Create(
                 editHandler,
                 "Quest Condition",
                 NodeData.Condition,
@@ -207,7 +207,7 @@ namespace UniversalGraph.Quest.Editor
             root.Add(new HelpBox(
                 "코드 작성 없이 그래프에 연결하려면 Attribute가 붙은 메서드를 선택하세요.",
                 HelpBoxMessageType.Info));
-            root.Add(MethodCallInspector.Create(
+            root.Add(MethodBindingInspector.Create(
                 editHandler,
                 "Quest Action",
                 NodeData.Action,
@@ -258,7 +258,7 @@ namespace UniversalGraph.Quest.Editor
             root.Add(new HelpBox(
                 "보상 Action만 실행합니다. Quest 상태 변경이 필요하면 State Change 노드를 연결하세요.",
                 HelpBoxMessageType.Info));
-            root.Add(MethodCallInspector.Create(
+            root.Add(MethodBindingInspector.Create(
                 editHandler,
                 "Optional Reward Action",
                 NodeData.RewardAction,

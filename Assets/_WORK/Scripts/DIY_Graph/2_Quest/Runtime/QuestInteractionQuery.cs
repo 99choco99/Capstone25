@@ -19,35 +19,38 @@ namespace UniversalGraph
         /// 비어 있는 ID는 모든 대상과 일치합니다.
         /// </summary>
         internal static List<DialogueCandidate> GetDialogueCandidates(
-            IEnumerable<QuestContainer> questGraphs,
+            QuestDefinitionRegistry registry,
             IQuestController controller,
             IEnumerable<string> targetIds)
         {
             var candidates = new List<DialogueCandidate>();
-            CollectInteractionResults(questGraphs, controller, targetIds, candidates, null);
+            CollectInteractionResults(registry, controller, targetIds, candidates, null);
             return candidates;
         }
 
         /// <summary>상호작용 시작점에서 도달 가능한 모든 Quest 수락 후보를 반환합니다.</summary>
         internal static List<QuestOffer> GetQuestOffers(
-            IEnumerable<QuestContainer> questGraphs,
+            QuestDefinitionRegistry registry,
             IQuestController controller,
             IEnumerable<string> targetIds)
         {
             var offers = new List<QuestOffer>();
-            CollectInteractionResults(questGraphs, controller, targetIds, null, offers);
+            CollectInteractionResults(registry, controller, targetIds, null, offers);
             return offers;
         }
 
         /// <summary>후보를 만든 같은 시작점부터 조건을 다시 평가하고 현재 결과를 반환합니다.</summary>
         internal static bool TryRefreshOffer(
+            QuestDefinitionRegistry registry,
             IQuestController controller,
             QuestOffer offer,
             out QuestOffer refreshed)
         {
             refreshed = null;
-            QuestContainer graph = offer.Definition;
-            if (!TryCreateIndex(graph, out QuestGraphIndex index)
+            if (!registry.TryGetQuestIndex(
+                    offer.QuestId,
+                    out QuestContainer graph,
+                    out QuestGraphIndex index)
                 || !index.Nodes.TryGetValue(offer.SourceEntryGuid, out NodeBaseData entryData)
                 || entryData is not QuestInteractionEntryNodeData entry)
             {
@@ -61,7 +64,7 @@ namespace UniversalGraph
         }
 
         private static void CollectInteractionResults(
-            IEnumerable<QuestContainer> questGraphs,
+            QuestDefinitionRegistry registry,
             IQuestController controller,
             IEnumerable<string> targetIds,
             ICollection<DialogueCandidate> candidates,
@@ -72,7 +75,7 @@ namespace UniversalGraph
                 throw new ArgumentNullException(nameof(controller), "상호작용 경로를 조회할 Quest Controller가 필요합니다.");
             }
 
-            if (questGraphs == null)
+            if (registry == null)
             {
                 return;
             }
@@ -81,9 +84,9 @@ namespace UniversalGraph
                 targetIds?.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value.Trim())
                 ?? Enumerable.Empty<string>());
 
-            foreach (QuestContainer graph in questGraphs)
+            foreach (QuestContainer graph in registry.Definitions)
             {
-                if (graph == null || !TryCreateIndex(graph, out QuestGraphIndex index))
+                if (!registry.TryGetQuestIndex(graph.QuestId, out _, out QuestGraphIndex index))
                 {
                     continue;
                 }
@@ -124,9 +127,6 @@ namespace UniversalGraph
                 NodeBaseData nodeData = pending.Dequeue();
                 if (!visited.Add(nodeData.Guid))
                 {
-                    Debug.LogWarning(
-                        $"[Quest Interaction] '{graph.name}'의 노드 '{nodeData.Guid}'에서 순환이 발견되었습니다.",
-                        graph);
                     continue;
                 }
 
@@ -168,12 +168,11 @@ namespace UniversalGraph
                             graph,
                             routeProgress,
                             customCondition);
-                        bool evaluated = QuestMethodInvoker.TryEvaluateCondition(
+                        bool evaluated = QuestMethodInvoker.TryInvokeMethod(
                             customCondition.Condition,
-                            controller,
                             executionContext,
-                            out bool result,
-                            out bool registered);
+                            MethodKind.Condition,
+                            out bool result);
 
                         if (evaluated)
                         {
@@ -182,14 +181,6 @@ namespace UniversalGraph
                                 pending,
                                 nodeData.Guid,
                                 result ? QuestPortNames.True : QuestPortNames.False);
-                        }
-                        else
-                        {
-                            Debug.LogWarning(
-                                registered
-                                    ? $"[Quest Interaction] 등록된 Condition '{customCondition.Condition?.Key}' 실행에 실패했습니다."
-                                    : $"[Quest Interaction] 등록되지 않은 Condition '{customCondition.Condition?.Key}'입니다.",
-                                graph);
                         }
                         break;
 
@@ -200,24 +191,6 @@ namespace UniversalGraph
                         break;
                 }
             }
-        }
-
-        private static bool TryCreateIndex(QuestContainer graph, out QuestGraphIndex index)
-        {
-            index = null;
-            if (!GraphAssetMigrator.TryMigrate(graph, out _, out string migrationError))
-            {
-                Debug.LogError($"[Quest Interaction] {migrationError}", graph);
-                return false;
-            }
-
-            if (QuestGraphIndex.TryCreate(graph, out index, out string indexError))
-            {
-                return true;
-            }
-
-            Debug.LogError($"[Quest Interaction] {indexError}", graph);
-            return false;
         }
 
         private static void EnqueueTargets(

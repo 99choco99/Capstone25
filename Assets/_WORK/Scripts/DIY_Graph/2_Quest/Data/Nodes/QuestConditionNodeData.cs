@@ -9,6 +9,6 @@ namespace UniversalGraph
     {
         /// <summary>Attribute가 붙은 Quest Condition에 전달할 타입 기반 인수입니다.</summary>
         [Tooltip("고정된 Condition 키입니다. 예: player.level, inventory.item-count 또는 프로젝트 정의 키")]
-        public MethodCallData Condition = new();
+        public MethodBindingData Condition = new();
     }
 }

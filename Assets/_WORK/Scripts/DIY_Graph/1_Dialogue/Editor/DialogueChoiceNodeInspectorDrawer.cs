@@ -103,8 +103,8 @@ namespace UniversalGraph.Dialogue.Editor
             box.Add(textField);
 
             //선택 시 실행할 Action
-            box.Add(MethodCallInspector.Create(editHandler, "선택지 공개 조건", choice.VisibilityCondition, DialogueMethodCatalog.GetMethodList(MethodKind.Condition)));
-            box.Add(MethodCallInspector.Create(editHandler, "실행할 Action", choice.SelectionAction, DialogueMethodCatalog.GetMethodList(MethodKind.Action)));
+            box.Add(MethodBindingInspector.Create(editHandler, "선택지 공개 조건", choice.VisibilityCondition, DialogueMethodCatalog.GetMethodList(MethodKind.Condition)));
+            box.Add(MethodBindingInspector.Create(editHandler, "실행할 Action", choice.SelectionAction, DialogueMethodCatalog.GetMethodList(MethodKind.Action)));
 
             return box;
         }

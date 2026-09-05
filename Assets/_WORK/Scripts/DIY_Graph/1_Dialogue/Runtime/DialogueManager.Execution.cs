@@ -90,7 +90,7 @@ namespace UniversalGraph
         private void ProcessCondition(DialogueConditionNodeData data)
         {
             int conversationId = activeConversationId;
-            bool evaluated = DialogueMethodInvoker.TryEvaluateCondition(data.Condition, currentExecutionContext, out bool result);
+            bool evaluated = DialogueMethodInvoker.TryInvokeMethod(data.Condition, currentExecutionContext, MethodKind.Condition, out bool result);
 
             if (!IsCurrentConversation(conversationId, data))
             {
@@ -99,7 +99,7 @@ namespace UniversalGraph
 
             if (!evaluated)
             {
-                FailConversation($"[Dialogue] Condition '{data.Condition.Key}'을(를) 평가하지 못했습니다.");
+                FinishConversation(DialogueEndReason.Faulted);
                 return;
             }
 
@@ -113,7 +113,7 @@ namespace UniversalGraph
         private void ProcessAction(DialogueActionNodeData data)
         {
             int conversationId = activeConversationId;
-            bool executed = DialogueMethodInvoker.TryExecuteAction(data.Action, currentExecutionContext);
+            bool executed = DialogueMethodInvoker.TryInvokeMethod(data.Action, currentExecutionContext, MethodKind.Action, out _);
 
             if (!IsCurrentConversation(conversationId, data))
             {
@@ -122,7 +122,7 @@ namespace UniversalGraph
 
             if (!executed)
             {
-                FailConversation($"[Dialogue] 노드 '{data.Guid}'에서 Action '{data.Action.Key}' 실행에 실패했습니다.");
+                FinishConversation(DialogueEndReason.Faulted);
                 return;
             }
 
@@ -179,11 +179,11 @@ namespace UniversalGraph
         {
             int conversationId = activeConversationId;
 
-            if (!string.IsNullOrWhiteSpace(data.EnterAction.Key) && !DialogueMethodInvoker.TryExecuteAction(data.EnterAction, currentExecutionContext))
+            if (!string.IsNullOrWhiteSpace(data.EnterAction.Key) && !DialogueMethodInvoker.TryInvokeMethod(data.EnterAction, currentExecutionContext, MethodKind.Action, out _))
             {
                 if (IsCurrentConversation(conversationId, data))
                 {
-                    FailConversation($"[Dialogue] 노드 '{data.Guid}'에서 Action '{data.EnterAction.Key}' 실행에 실패했습니다.");
+                    FinishConversation(DialogueEndReason.Faulted);
                 }
                 return;
             }
@@ -236,7 +236,7 @@ namespace UniversalGraph
                     continue;
                 }
 
-                bool evaluated = DialogueMethodInvoker.TryEvaluateCondition(choiceData.VisibilityCondition, currentExecutionContext, out bool visible);
+                bool evaluated = DialogueMethodInvoker.TryInvokeMethod(choiceData.VisibilityCondition, currentExecutionContext, MethodKind.Condition, out bool visible);
                 if (!IsCurrentConversation(conversationId, data))
                 {
                     return false;
@@ -244,7 +244,7 @@ namespace UniversalGraph
 
                 if (!evaluated)
                 {
-                    FailConversation($"[Dialogue] 노드 '{data.Guid}'에서 선택지 Condition " + $"'{choiceData.VisibilityCondition.Key}'을(를) 평가하지 못했습니다.");
+                    FinishConversation(DialogueEndReason.Faulted);
                     return false;
                 }
 
@@ -277,8 +277,7 @@ namespace UniversalGraph
                 }
                 catch (Exception exception)
                 {
-                    Debug.LogError($"[Dialogue] {notificationName} 콜백 실행 중 예외가 발생했습니다.");
-                    Debug.LogException(exception);
+                    Debug.LogError($"[Dialogue] {notificationName} 콜백 실행 중 예외가 발생했습니다.\n{exception}");
                     if (IsCurrentConversation(conversationId, null))
                     {
                         FinishConversation(DialogueEndReason.Faulted);
@@ -310,8 +309,7 @@ namespace UniversalGraph
                 }
                 catch (Exception exception)
                 {
-                    Debug.LogError($"[Dialogue] {notificationName} 콜백 실행 중 예외가 발생했습니다.");
-                    Debug.LogException(exception);
+                    Debug.LogError($"[Dialogue] {notificationName} 콜백 실행 중 예외가 발생했습니다.\n{exception}");
                     if (IsCurrentConversation(conversationId, nodeData))
                     {
                         FinishConversation(DialogueEndReason.Faulted);

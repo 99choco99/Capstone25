@@ -55,7 +55,7 @@ namespace UniversalGraph
         /// <summary>메서드 이름</summary>
         public string MethodName { get; }
 
-        /// <summary>static 메서드인지?</summary>
+        /// <summary>static 메서드인지?<para> owner 가 global 인지를 판별하는 주요 bool값</prara></summary>
         public bool IsStatic { get; }
 
         //================================ 파라미터 정의 =====================================

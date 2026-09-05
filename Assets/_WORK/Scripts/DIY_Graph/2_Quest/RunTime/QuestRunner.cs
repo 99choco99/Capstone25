@@ -30,7 +30,7 @@ namespace UniversalGraph
                          .Where(item => item != null && item.state == QuestState.InProgress)
                          .ToArray())
             {
-                if (!registry.TryBuildQuestIndex(
+                if (!registry.TryGetQuestIndex(
                         progress.questId,
                         out QuestContainer container,
                         out QuestGraphIndex flowIndex))
@@ -39,10 +39,11 @@ namespace UniversalGraph
                 }
 
                 progress.EnsureCollections();
+                int runVersion = progress.runVersion;
                 bool changed = false;
                 foreach (string activeGuid in progress.activeNodeGuids.ToArray())
                 {
-                    if (progress.state != QuestState.InProgress)
+                    if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
                     {
                         break;
                     }
@@ -76,7 +77,7 @@ namespace UniversalGraph
                     }
                 }
 
-                if (changed)
+                if (changed && IsCurrentRun(controller, progress, runVersion))
                 {
                     controller.InvokeStatusChanged(container, progress);
                 }
@@ -105,7 +106,7 @@ namespace UniversalGraph
             if (registry == null
                 || progress == null
                 || progress.state != QuestState.InProgress
-                || !registry.TryBuildQuestIndex(
+                || !registry.TryGetQuestIndex(
                     questId,
                     out QuestContainer container,
                     out QuestGraphIndex flowIndex))
@@ -121,6 +122,7 @@ namespace UniversalGraph
                 return false;
             }
 
+            int runVersion = progress.runVersion;
             bool changed = ApplyObjectiveProgress(
                 controller,
                 container,
@@ -129,7 +131,7 @@ namespace UniversalGraph
                 objective,
                 amount,
                 out bool executionSucceeded);
-            if (changed)
+            if (changed && IsCurrentRun(controller, progress, runVersion))
             {
                 controller.InvokeStatusChanged(container, progress);
             }
@@ -152,9 +154,9 @@ namespace UniversalGraph
 
             QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
             if (registry == null
-                || !registry.TryGetDefinition(offer.QuestId, out QuestContainer registered)
-                || registered != offer.Definition
-                || !QuestInteractionQuery.TryRefreshOffer(controller, offer, out QuestOffer refreshed)
+                || !registry.TryGetDefinition(offer.QuestId, out QuestContainer definition)
+                || definition != offer.Definition
+                || !QuestInteractionQuery.TryRefreshOffer(registry, controller, offer, out QuestOffer refreshed)
                 || !refreshed.IsAvailable)
             {
                 return false;
@@ -258,7 +260,6 @@ namespace UniversalGraph
                     "Quest 복원 알림을 보내기 전에 QuestDefinitionRegistry.Initialize를 호출해야 합니다.");
             }
 
-            int notifiedCount = 0;
             foreach (QuestProgress progress in controller.QuestProgress.Values
                          .Where(item => item != null
                                         && (item.state == QuestState.InProgress
@@ -274,10 +275,7 @@ namespace UniversalGraph
                 }
 
                 controller.InvokeStatusChanged(definition, progress);
-                notifiedCount++;
             }
-
-            Debug.Log($"[Quest] 활성 Quest 기록 {notifiedCount}개의 복원 알림을 보냈습니다.");
         }
 
         /// <summary>Quest 실행 상태를 초기화하고 명시적인 Quest Start 노드에서 흐름을 시작합니다.</summary>
@@ -290,7 +288,7 @@ namespace UniversalGraph
 
             QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
             if (registry == null
-                || !registry.TryBuildQuestIndex(
+                || !registry.TryGetQuestIndex(
                     questId,
                     out QuestContainer container,
                     out QuestGraphIndex flowIndex))
@@ -316,7 +314,14 @@ namespace UniversalGraph
 
             ResetProgress(progress);
             progress.state = QuestState.InProgress;
+            int runVersion = progress.runVersion;
             ResumeWaitingQuests(controller, questId);
+
+            // 다른 Quest의 Action이 방금 시작한 Quest를 중단하거나 다시 시작했을 수 있습니다.
+            if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
+            {
+                return true;
+            }
 
             bool executionSucceeded = RunFromOutputs(
                 controller,
@@ -326,7 +331,10 @@ namespace UniversalGraph
                 startData.Guid,
                 null);
 
-            controller.InvokeStatusChanged(container, progress);
+            if (IsCurrentRun(controller, progress, runVersion))
+            {
+                controller.InvokeStatusChanged(container, progress);
+            }
             return executionSucceeded;
         }
 
@@ -347,11 +355,20 @@ namespace UniversalGraph
 
         private static void ResetProgress(QuestProgress progress)
         {
+            progress.runVersion++;
             progress.EnsureCollections();
             progress.activeNodeGuids.Clear();
             progress.nodeProgressCounts.Clear();
             progress.completedNodeGuids.Clear();
             progress.completedGateInputs.Clear();
+        }
+
+        /// <summary>외부 코드 실행 후 초기화되거나 저장 데이터로 교체된 진행 기록인지 확인합니다.</summary>
+        private static bool IsCurrentRun(IQuestController controller, QuestProgress progress, int runVersion)
+        {
+            return progress.runVersion == runVersion
+                   && controller.QuestProgress.TryGetValue(progress.questId, out QuestProgress current)
+                   && ReferenceEquals(current, progress);
         }
 
         /// <summary>목표 진행량을 반영하고 완료되면 연결된 Quest 흐름을 계속 실행합니다.</summary>
@@ -410,7 +427,7 @@ namespace UniversalGraph
                          .Where(item => item != null && item.state == QuestState.InProgress)
                          .ToArray())
             {
-                if (!registry.TryBuildQuestIndex(
+                if (!registry.TryGetQuestIndex(
                         progress.questId,
                         out QuestContainer container,
                         out QuestGraphIndex flowIndex))
@@ -419,6 +436,7 @@ namespace UniversalGraph
                 }
 
                 progress.EnsureCollections();
+                int runVersion = progress.runVersion;
                 bool changed = false;
                 int resumedNodeCount = 0;
                 bool resumeAnotherNode;
@@ -428,6 +446,7 @@ namespace UniversalGraph
                     foreach (string activeGuid in progress.activeNodeGuids.ToArray())
                     {
                         if (progress.state != QuestState.InProgress
+                            || !IsCurrentRun(controller, progress, runVersion)
                             || !progress.activeNodeGuids.Contains(activeGuid))
                         {
                             break;
@@ -451,7 +470,8 @@ namespace UniversalGraph
                             nodeData.Guid,
                             null);
                         changed = true;
-                        resumeAnotherNode = executionSucceeded && progress.state == QuestState.InProgress;
+                        resumeAnotherNode = executionSucceeded && progress.state == QuestState.InProgress
+                                            && IsCurrentRun(controller, progress, runVersion);
                         break;
                     }
 
@@ -459,7 +479,7 @@ namespace UniversalGraph
                 }
                 while (resumeAnotherNode && resumedNodeCount <= MaxImmediateNodeSteps);
 
-                if (changed)
+                if (changed && IsCurrentRun(controller, progress, runVersion))
                 {
                     controller.InvokeStatusChanged(container, progress);
                 }

@@ -12,6 +12,10 @@ namespace UniversalGraph
 	/// <summary>현재 Quest 진행 단계입니다.</summary>
 	public QuestState state;
 
+	/// <summary>초기화·재시작 전의 실행이 새 진행 기록을 덮어쓰지 않도록 구분하는 런타임 번호입니다.</summary>
+	[NonSerialized]
+	internal int runVersion;
+
 	/// <summary>외부 진행을 기다리며 현재 흐름을 막고 있는 목표 또는 하위 Quest 노드입니다.</summary>
 	public List<string> activeNodeGuids = new List<string>();
 

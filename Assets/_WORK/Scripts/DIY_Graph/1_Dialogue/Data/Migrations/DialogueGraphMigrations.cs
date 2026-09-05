@@ -20,7 +20,7 @@ namespace UniversalGraph
                 switch (node)
                 {
                     case DialogueLineNodeData lineData:
-                        lineData.EnterAction ??= new MethodCallData();
+                        lineData.EnterAction ??= new MethodBindingData();
                         break;
 
                     case DialogueChoiceNodeData choiceNode:
@@ -32,8 +32,8 @@ namespace UniversalGraph
                                 continue;
                             }
 
-                            choice.SelectionAction ??= new MethodCallData();
-                            choice.VisibilityCondition ??= new MethodCallData();
+                            choice.SelectionAction ??= new MethodBindingData();
+                            choice.VisibilityCondition ??= new MethodBindingData();
                             if (string.IsNullOrWhiteSpace(choice.PortName))
                             {
                                 choice.PortName = Guid.NewGuid().ToString();
@@ -42,11 +42,11 @@ namespace UniversalGraph
                         break;
 
                     case DialogueActionNodeData action:
-                        action.Action ??= new MethodCallData();
+                        action.Action ??= new MethodBindingData();
                         break;
 
                     case DialogueConditionNodeData condition:
-                        condition.Condition ??= new MethodCallData();
+                        condition.Condition ??= new MethodBindingData();
                         break;
                 }
             }

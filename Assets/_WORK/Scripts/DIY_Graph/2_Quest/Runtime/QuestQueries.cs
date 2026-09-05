@@ -31,7 +31,7 @@ namespace UniversalGraph
         }
 
         return QuestInteractionQuery
-            .GetQuestOffers(registry.Definitions, controller, targetIds)
+            .GetQuestOffers(registry, controller, targetIds)
             .ToArray();
     }
 
@@ -59,7 +59,7 @@ namespace UniversalGraph
         }
 
         return QuestInteractionQuery
-            .GetDialogueCandidates(registry.Definitions, controller, targetIds)
+            .GetDialogueCandidates(registry, controller, targetIds)
             .ToArray();
     }
 
@@ -90,7 +90,7 @@ namespace UniversalGraph
         QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
         if (progress == null
             || registry == null
-            || !registry.TryBuildQuestIndex(questId, out _, out QuestGraphIndex index))
+            || !registry.TryGetQuestIndex(questId, out _, out QuestGraphIndex index))
         {
             return Array.Empty<QuestObjectiveProgress>();
         }

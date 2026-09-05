@@ -3,14 +3,14 @@ using System.Collections.Generic;
 
 namespace UniversalGraph
 {
-    /// <summary>노드에서 선택한 Attribute 메서드 키와 파라미터 값을 함께 저장</summary>
+    /// <summary>그래프 노드와 Attribute 메서드를 연결하는 키와 전달 인수를 저장</summary>
     [Serializable]
-    public sealed class MethodCallData
+    public sealed class MethodBindingData
     {
         /// <summary>실행할 Attribute 메서드를 찾는 키</summary>
         public string Key = string.Empty;
 
-        /// <summary>메서드 파라미터에 대한 정보들</summary>
+        /// <summary>메서드에 전달할 인수 목록</summary>
         public List<MethodArgumentData> Arguments = new();
     }
 }

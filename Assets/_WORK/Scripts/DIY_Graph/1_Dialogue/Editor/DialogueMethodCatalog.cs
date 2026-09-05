@@ -20,10 +20,10 @@ namespace UniversalGraph.Dialogue.Editor
 
         static DialogueMethodCatalog()
         {
-            BuildRegistry();
+            BuildCatalog();
         }
 
-        /// <summary>바인딩 종류에 사용할 수 있는 메서드를 반환합니다.</summary>
+        /// <summary>바인딩 종류에 사용할 수 있는 메서드를 반환</summary>
         public static IReadOnlyList<DialogueMethodDescriptor> GetMethodList(MethodKind kind)
         {
             return kind == MethodKind.Action ? actions : conditions;
@@ -43,9 +43,9 @@ namespace UniversalGraph.Dialogue.Editor
         }
 
         /// <summary>
-        /// 플레이어 어셈블리만 검사해서 드롭다운에 띄우기위해서 Registry를 만듦
+        /// 플레이어 어셈블리만 검사해서 드롭다운에 띄우기위해서 Catalog를 만듦
         /// </summary>
-        private static void BuildRegistry()
+        private static void BuildCatalog()
         {
             actions.Clear();
             conditions.Clear();

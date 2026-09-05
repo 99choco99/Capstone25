@@ -36,7 +36,7 @@ namespace UniversalGraph
 
             QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
             if (registry == null
-                || !registry.TryBuildQuestIndex(
+                || !registry.TryGetQuestIndex(
                     progress.questId,
                     out QuestContainer definition,
                     out QuestGraphIndex graphIndex))
@@ -251,7 +251,7 @@ namespace UniversalGraph
                     return false;
                 }
 
-                if (!registry.TryBuildQuestIndex(
+                if (!registry.TryGetQuestIndex(
                         progress.questId,
                         out QuestContainer definition,
                         out QuestGraphIndex graphIndex))

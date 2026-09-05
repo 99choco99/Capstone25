@@ -117,21 +117,12 @@ namespace UniversalGraph.Quest.Editor
                         break;
 
                     case QuestConditionNodeData condition:
-                        if (condition.Condition == null)
-                        {
-                            AddError("QUEST_CONDITION_DATA", "Custom Condition 호출 정보가 없습니다.", condition.Guid);
-                        }
-                        else if (string.IsNullOrWhiteSpace(condition.Condition.Key))
-                        {
-                            AddError("QUEST_CONDITION_KEY", "Custom Condition Key가 필요합니다.", condition.Guid);
-                        }
-                        else
-                        {
-                            ValidateMethodCall(
-                                MethodKind.Condition,
-                                condition.Condition,
-                                condition.Guid);
-                        }
+                        ValidateMethodBinding(
+                            condition.Guid,
+                            MethodKind.Condition,
+                            condition.Condition,
+                            "Custom Condition",
+                            required: true);
                         ValidateConditionOutputs(condition.Guid, inProgression);
                         break;
 
@@ -159,21 +150,12 @@ namespace UniversalGraph.Quest.Editor
                         break;
 
                     case QuestActionNodeData action:
-                        if (action.Action == null)
-                        {
-                            AddError("QUEST_ACTION_DATA", "Quest Action 호출 정보가 없습니다.", action.Guid);
-                        }
-                        else if (string.IsNullOrWhiteSpace(action.Action.Key))
-                        {
-                            AddError("QUEST_ACTION_KEY", "Quest Action Key가 필요합니다.", action.Guid);
-                        }
-                        else
-                        {
-                            ValidateMethodCall(
-                                MethodKind.Action,
-                                action.Action,
-                                action.Guid);
-                        }
+                        ValidateMethodBinding(
+                            action.Guid,
+                            MethodKind.Action,
+                            action.Action,
+                            "Quest Action",
+                            required: true);
                         if (inProgression)
                         {
                             RequireAtLeastOneOutput(action.Guid, QuestPortNames.Next, "Quest Action은 다른 노드로 이어져야 합니다.");
@@ -214,17 +196,11 @@ namespace UniversalGraph.Quest.Editor
                         break;
 
                     case QuestRewardNodeData reward:
-                        if (reward.RewardAction == null)
-                        {
-                            AddError("QUEST_REWARD_DATA", "Reward Action 호출 정보가 없습니다.", reward.Guid);
-                        }
-                        else if (!string.IsNullOrWhiteSpace(reward.RewardAction.Key))
-                        {
-                            ValidateMethodCall(
-                                MethodKind.Action,
-                                reward.RewardAction,
-                                reward.Guid);
-                        }
+                        ValidateMethodBinding(
+                            reward.Guid,
+                            MethodKind.Action,
+                            reward.RewardAction,
+                            "Reward Action");
                         if (inProgression)
                         {
                             RequireAtLeastOneOutput(reward.Guid, QuestPortNames.Next, "Reward는 다음 노드로 이어져야 합니다.");
@@ -408,28 +384,51 @@ namespace UniversalGraph.Quest.Editor
                 }
             }
 
-            void ValidateMethodCall(
+            void ValidateMethodBinding(
+                string nodeGuid,
                 MethodKind kind,
-                MethodCallData methodCall,
-                string nodeGuid)
+                MethodBindingData binding,
+                string label,
+                bool required = false)
             {
-                if (!QuestMethodCatalog.GetMethod(kind, methodCall.Key, out QuestMethodDescriptor descriptor))
+                if (binding == null)
+                {
+                    string code = "QUEST_REWARD_DATA";
+                    if (required)
+                    {
+                        code = kind == MethodKind.Action ? "QUEST_ACTION_DATA" : "QUEST_CONDITION_DATA";
+                    }
+                    AddError(code, $"{label} 호출 정보가 없습니다.", nodeGuid);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(binding.Key))
+                {
+                    if (required)
+                    {
+                        string code = kind == MethodKind.Action ? "QUEST_ACTION_KEY" : "QUEST_CONDITION_KEY";
+                        AddError(code, $"{label} Key가 필요합니다.", nodeGuid);
+                    }
+                    return;
+                }
+
+                if (!QuestMethodCatalog.GetMethod(kind, binding.Key, out QuestMethodDescriptor descriptor))
                 {
                     AddError(
                         "QUEST_METHOD_KEY",
-                        $"등록되지 않은 Attribute {kind} 키 '{methodCall.Key}'입니다.",
+                        $"등록되지 않은 Attribute {kind} 키 '{binding.Key}'입니다.",
                         nodeGuid);
                     return;
                 }
 
-                if (MethodArgumentCodec.TryDecodeAllArgumentData(methodCall.Arguments, descriptor, out _, out string error))
+                if (MethodArgumentCodec.TryDecodeAllArgumentData(binding.Arguments, descriptor, out _, out string error))
                 {
                     return;
                 }
 
                 AddError(
                     "QUEST_METHOD_ARGUMENTS",
-                    $"Attribute {kind} '{methodCall.Key}'의 인수가 올바르지 않습니다: {error}",
+                    $"Attribute {kind} '{binding.Key}'의 인수가 올바르지 않습니다: {error}",
                     nodeGuid);
             }
 

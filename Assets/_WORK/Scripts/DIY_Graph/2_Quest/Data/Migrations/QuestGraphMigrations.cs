@@ -18,15 +18,15 @@ namespace UniversalGraph
                 switch (node)
                 {
                     case QuestActionNodeData action:
-                        action.Action ??= new MethodCallData();
+                        action.Action ??= new MethodBindingData();
                         break;
 
                     case QuestConditionNodeData condition:
-                        condition.Condition ??= new MethodCallData();
+                        condition.Condition ??= new MethodBindingData();
                         break;
 
                     case QuestRewardNodeData reward:
-                        reward.RewardAction ??= new MethodCallData();
+                        reward.RewardAction ??= new MethodBindingData();
                         break;
                 }
             }

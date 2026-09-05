@@ -31,12 +31,18 @@ namespace UniversalGraph
             string sourceGuid,
             string sourcePort)
         {
+            int runVersion = progress.runVersion;
             var queue = new Queue<FlowStep>();
             EnqueueOutputs(flowIndex, queue, sourceGuid, sourcePort);
 
             int stepCount = 0;
             while (queue.Count > 0)
             {
+                if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
+                {
+                    return true;
+                }
+
                 if (++stepCount > MaxImmediateNodeSteps)
                 {
                     Debug.LogError(
@@ -66,18 +72,14 @@ namespace UniversalGraph
                 else if (nodeData is QuestConditionNodeData condition)
                 {
                     var executionContext = new QuestExecutionContext(controller, container, progress, condition);
-                    if (!QuestMethodInvoker.TryEvaluateCondition(
-                            condition.Condition,
-                            controller,
-                            executionContext,
-                            out bool result,
-                            out bool handlerFound))
+                    bool evaluated = QuestMethodInvoker.TryInvokeMethod(condition.Condition, executionContext, MethodKind.Condition, out bool result);
+                    if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
                     {
-                        Debug.LogError(
-                            handlerFound
-                                ? $"[Quest] '{container.name}'의 Condition '{condition.Condition?.Key}' 실행에 실패했습니다."
-                                : $"[Quest] '{container.name}'의 Condition '{condition.Condition?.Key}'을 처리한 Handler가 없습니다.",
-                            container);
+                        return true;
+                    }
+
+                    if (!evaluated)
+                    {
                         return StopAfterExecutionError(controller, progress);
                     }
 
@@ -137,13 +139,19 @@ namespace UniversalGraph
                 {
                     if (!IsCompleted(progress, nodeData.Guid))
                     {
-                        if (!ExecuteAction(
+                        bool executed = ExecuteAction(
                                 controller,
                                 container,
                                 progress,
                                 action,
                                 action.Action,
-                                "Action"))
+                                "Action");
+                        if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
+                        {
+                            return true;
+                        }
+
+                        if (!executed)
                         {
                             return StopAfterExecutionError(controller, progress);
                         }
@@ -165,13 +173,19 @@ namespace UniversalGraph
                 {
                     if (!IsCompleted(progress, nodeData.Guid))
                     {
-                        if (!ExecuteAction(
+                        bool executed = ExecuteAction(
                                 controller,
                                 container,
                                 progress,
                                 reward,
                                 reward.RewardAction,
-                                "Reward Action"))
+                                "Reward Action");
+                        if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
+                        {
+                            return true;
+                        }
+
+                        if (!executed)
                         {
                             return StopAfterExecutionError(controller, progress);
                         }

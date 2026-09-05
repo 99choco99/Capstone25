@@ -197,13 +197,6 @@ namespace UniversalGraph.Editor
                     $"'{nodeDef.ViewType.FullName}'에서 기본 노드 데이터를 생성하지 못했습니다.", exception);
             }
 
-            if (data == null || data.GetType() != nodeDef.DataType)
-            {
-                throw new InvalidOperationException(
-                    $"'{nodeDef.ViewType.FullName}'에서 등록된 타입 '{nodeDef.DataType.FullName}' 대신 " +
-                    $"'{data?.GetType().FullName ?? "null"}' 타입을 생성했습니다.");
-            }
-
             //노드랑 데이터랑 1ㄷ1 매칭 근데 서로 비어있는
             node.BindNodeData(data);
             node.SetPosition(new Rect(creationContext.Position, node.DefaultSize));
@@ -216,19 +209,13 @@ namespace UniversalGraph.Editor
             try
             {
                 //아묻따 클래스의 인스턴스를 만드는 함수
-                if (Activator.CreateInstance(nodeDef.ViewType) is GraphNode node)
-                {
-                    return node;
-                }
+                return (GraphNode)Activator.CreateInstance(nodeDef.ViewType);
             }
             catch (Exception exception)
             {
                 throw new InvalidOperationException(
                     $"GraphNode 화면 '{nodeDef.ViewType.FullName}'의 인스턴스를 생성하지 못했습니다.", exception);
             }
-
-            throw new InvalidOperationException(
-                $"'{nodeDef.ViewType.FullName}'에서 생성된 인스턴스가 GraphNode가 아닙니다.");
         }
 
         /// <summary>Attribute가 붙은 시각 노드 타입을 검증하고 NodeDefinition을 생성</summary>
@@ -236,9 +223,9 @@ namespace UniversalGraph.Editor
         {
             nodeDef = null;
             //뷰 타입
-            if (viewType == null || !viewType.IsClass || viewType.IsAbstract || viewType.ContainsGenericParameters || !typeof(GraphNode).IsAssignableFrom(viewType))
+            if (viewType.IsAbstract || viewType.ContainsGenericParameters || !typeof(GraphNode).IsAssignableFrom(viewType))
             {
-                error = $"'{viewType?.FullName ?? "null"}'은 구체적인 GraphNode 클래스여야 합니다.";
+                error = $"'{viewType.FullName}'은 구체적인 GraphNode 클래스여야 합니다.";
                 return false;
             }
 
@@ -250,7 +237,7 @@ namespace UniversalGraph.Editor
 
             //컨테이너 타입
             GraphNodeEditorAttribute attribute = viewType.GetCustomAttribute<GraphNodeEditorAttribute>(false);
-            Type containerType = attribute?.ContainerType;
+            Type containerType = attribute.ContainerType;
             if (containerType == null || !typeof(GraphContainer).IsAssignableFrom(containerType))
             {
                 error = $"'{viewType.FullName}'은 GraphContainer와 호환되는 컨테이너 타입으로 선언해야 합니다.";
@@ -267,14 +254,9 @@ namespace UniversalGraph.Editor
 
             //데이터 타입
             Type dataType = FindDataTypeByViewType(viewType);
-            if (dataType == null || !typeof(NodeBaseData).IsAssignableFrom(dataType) || dataType.IsAbstract || dataType.ContainsGenericParameters)
+            if (dataType == null)
             {
                 error = $"'{viewType.FullName}'에서 구체적인 NodeBaseData 타입을 확인할 수 없습니다.";
-                return false;
-            }
-            if (dataType.GetConstructor(Type.EmptyTypes) == null)
-            {
-                error = $"노드 데이터 타입 '{dataType.FullName}'에는 public 기본 생성자가 필요합니다.";
                 return false;
             }
 

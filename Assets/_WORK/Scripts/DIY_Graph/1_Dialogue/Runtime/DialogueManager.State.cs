@@ -250,8 +250,7 @@ namespace UniversalGraph
                     }
                     catch (Exception exception)
                     {
-                        Debug.LogError($"[Dialogue] {nameof(ConversationEnd)} 콜백 실행 중 예외가 발생했습니다.");
-                        Debug.LogException(exception);
+                        Debug.LogError($"[Dialogue] {nameof(ConversationEnd)} 콜백 실행 중 예외가 발생했습니다.\n{exception}");
                     }
                 }
             }
@@ -291,8 +290,7 @@ namespace UniversalGraph
                 }
                 catch (Exception exception)
                 {
-                    Debug.LogError($"[Dialogue] 콜백 실행 중 예외가 발생했습니다.");
-                    Debug.LogException(exception);
+                    Debug.LogError($"[Dialogue] 콜백 실행 중 예외가 발생했습니다.\n{exception}");
                 }
             }
         }

@@ -145,11 +145,7 @@ namespace UniversalGraph
 
             //파라미터 타입 가져오기
             Type parameterType = descriptor.ParameterType;
-            if (!TryGetArgumentKind(parameterType, out MethodArgumentKind argumentKind) || argumentKind != descriptor.ArgumentKind)
-            {
-                error = $"인수 '{descriptor.ParameterId}'의 타입 정보가 올바르지 않습니다.";
-                return false;
-            }
+            MethodArgumentKind argumentKind = descriptor.ArgumentKind;
 
             bool acceptsNull = argumentKind == MethodArgumentKind.String || argumentKind == MethodArgumentKind.UnityObject;
             if (value == null && !acceptsNull)
@@ -252,9 +248,9 @@ namespace UniversalGraph
                     break;
                 case MethodArgumentKind.FloatingPoint:
                     {
-                        if (parameterType == typeof(float) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var result2) && !float.IsNaN(result2) && !float.IsInfinity(result2))
+                        if (parameterType == typeof(float) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float floatValue) && !float.IsNaN(floatValue) && !float.IsInfinity(floatValue))
                         {
-                            value = result2;
+                            value = floatValue;
                             error = null;
                             return true;
                         }

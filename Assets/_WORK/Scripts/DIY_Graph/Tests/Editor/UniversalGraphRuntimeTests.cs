@@ -14,10 +14,43 @@ namespace UniversalGraph.Tests
         private static int attributedQuestActionAmount;
         private static bool attributedQuestActionFlag;
         private static int dialogueChoiceActionCount;
+        private static Action<QuestExecutionContext> questRunAction;
+        private static Func<QuestExecutionContext, bool> questRunCondition;
+        private static int overloadedActionAmount;
+
+        [OneTimeSetUp]
+        public void RegisterTestMethods()
+        {
+            // Editor 전용 테스트 메서드는 운영 초기화에서 제외되므로 테스트에서만 등록합니다.
+            foreach (Type invoker in new[] { typeof(DialogueMethodInvoker), typeof(QuestMethodInvoker) })
+            {
+                invoker.GetMethod("ResetStaticState", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
+                invoker.GetMethod("Initialize").Invoke(null, null);
+                object[] arguments = { typeof(UniversalGraphRuntimeTests).Assembly };
+                bool registered = (bool)invoker.GetMethod("TryRegisterGeneratedAssembly", BindingFlags.Static | BindingFlags.NonPublic)
+                    .Invoke(null, arguments);
+                if (!registered)
+                {
+                    string scanMethod = invoker == typeof(DialogueMethodInvoker) ? "ScanAssemblyByReflection" : "ScanAssembly";
+                    invoker.GetMethod(scanMethod, BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, arguments);
+                }
+            }
+        }
+
+        [OneTimeTearDown]
+        public void ResetMethodInvokers()
+        {
+            foreach (Type invoker in new[] { typeof(DialogueMethodInvoker), typeof(QuestMethodInvoker) })
+            {
+                invoker.GetMethod("ResetStaticState", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
+            }
+        }
 
         [TearDown]
         public void TearDown()
         {
+            questRunAction = null;
+            questRunCondition = null;
             if (DialogueManager.Instance.IsConversationActive)
             {
                 DialogueManager.Instance.CancelConversation();
@@ -31,6 +64,94 @@ namespace UniversalGraph.Tests
                 }
             }
             createdObjects.Clear();
+        }
+
+        [TestCase(typeof(DialogueMethodInvoker), "actionRegistry")]
+        [TestCase(typeof(QuestMethodInvoker), "Actions")]
+        public void MethodInvokers_InitializeExcludesEditorOnlyTestAssembly(Type invoker, string registryName)
+        {
+            try
+            {
+                invoker.GetMethod("ResetStaticState", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
+                invoker.GetMethod("Initialize").Invoke(null, null);
+                invoker.GetMethod("Initialize").Invoke(null, null);
+                var registry = (System.Collections.IDictionary)invoker.GetField(registryName, BindingFlags.Static | BindingFlags.NonPublic)
+                    .GetValue(null);
+                Assert.That(registry.Values.Cast<MethodDescriptor>().Any(
+                    descriptor => descriptor.DeclaringType.Assembly == typeof(UniversalGraphRuntimeTests).Assembly), Is.False);
+            }
+            finally
+            {
+                RegisterTestMethods();
+            }
+        }
+
+        [TestCase(typeof(DialogueMethodInvoker), "Dialogue", "tests.dialogue.choice-visible")]
+        [TestCase(typeof(QuestMethodInvoker), "Quest", "tests.quest.choice-visible")]
+        public void MethodInvokers_InvokeActionAndConditionWithOneApi(Type invoker, string label, string conditionKey)
+        {
+            MethodInfo invoke = invoker.GetMethod("TryInvokeMethod");
+            var binding = new MethodBindingData { Key = "tests.invoker.action" };
+            object[] arguments = { binding, null, MethodKind.Action, true };
+            int actionCount = dialogueChoiceActionCount;
+
+            Assert.That((bool)invoke.Invoke(null, arguments), Is.True);
+            Assert.That(arguments[3], Is.False);
+            Assert.That(dialogueChoiceActionCount, Is.EqualTo(actionCount + 1));
+
+            binding.Key = conditionKey;
+            arguments[2] = MethodKind.Condition;
+            foreach (bool expected in new[] { false, true })
+            {
+                binding.Arguments = CreateDialogueArguments(
+                    nameof(IsDialogueChoiceVisible), MethodKind.Condition, ("arg0", expected));
+                Assert.That((bool)invoke.Invoke(null, arguments), Is.True);
+                Assert.That(arguments[3], Is.EqualTo(expected));
+            }
+
+            binding.Key = "tests.invoker.action";
+            binding.Arguments.Clear();
+            arguments[2] = (MethodKind)(-1);
+            LogAssert.Expect(LogType.Error, $"[{label}] 메서드 종류가 올바르지 않습니다.");
+            Assert.That((bool)invoke.Invoke(null, arguments), Is.False);
+            Assert.That(arguments[3], Is.False);
+            Assert.That(dialogueChoiceActionCount, Is.EqualTo(actionCount + 1));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void MethodDescriptorFactories_ResolveNonGenericOverload(bool quest)
+        {
+            var parameters = new[]
+            {
+                new GeneratedParameterRegistration("arg0", "amount", typeof(int).FullName, typeof(int).Assembly.GetName().Name)
+            };
+            object registration;
+            Type factory;
+            if (quest)
+            {
+                registration = new QuestGeneratedMethodRegistration(
+                    MethodKind.Action, "tests.overload", QuestMethodTarget.Global,
+                    typeof(UniversalGraphRuntimeTests).FullName, nameof(RecordOverloadedAction), true, parameters, null);
+                factory = typeof(QuestMethodDescriptorFactory);
+            }
+            else
+            {
+                registration = new DialogueGeneratedMethodRegistration(
+                    MethodKind.Action, "tests.overload", DialogueMethodOwner.Global,
+                    typeof(UniversalGraphRuntimeTests).FullName, nameof(RecordOverloadedAction), true, parameters, null);
+                factory = typeof(DialogueMethodDescriptorFactory);
+            }
+
+            object[] arguments = { typeof(UniversalGraphRuntimeTests).Assembly, registration, null, null };
+            bool created = (bool)factory.GetMethod("TryCreateGenerated", BindingFlags.Static | BindingFlags.NonPublic)
+                .Invoke(null, arguments);
+            Assert.That(created, Is.True, arguments[3] as string);
+            var descriptor = (MethodDescriptor)arguments[2];
+            Assert.That(descriptor.MethodInfo.IsGenericMethod, Is.False);
+            overloadedActionAmount = 0;
+            descriptor.MethodInfo.Invoke(null, new object[] { 23 });
+            Assert.That(overloadedActionAmount, Is.EqualTo(23));
         }
 
         [Test]
@@ -610,7 +731,7 @@ namespace UniversalGraph.Tests
             quest.Nodes.Add(new QuestActionNodeData
             {
                 Guid = "action",
-                Action = new MethodCallData { Key = "tests.quest.missing-action" }
+                Action = new MethodBindingData { Key = "tests.quest.missing-action" }
             });
             quest.NodeLinks.Add(Link("start", "Next", "action"));
             QuestDefinitionRegistry.Initialize(new[] { quest });
@@ -623,6 +744,106 @@ namespace UniversalGraph.Tests
             Assert.That(started, Is.False);
             Assert.That(progress.state, Is.EqualTo(QuestState.Failed));
             Assert.That(progress.activeNodeGuids, Is.Empty);
+        }
+
+        [TestCase(MethodKind.Action, QuestState.Failed)]
+        [TestCase(MethodKind.Action, QuestState.NotStarted)]
+        [TestCase(MethodKind.Condition, QuestState.Failed)]
+        [TestCase(MethodKind.Condition, QuestState.NotStarted)]
+        public void QuestRunner_StopsOldFlowWhenMethodChangesQuestState(MethodKind kind, QuestState state)
+        {
+            QuestContainer quest = CreateAsset<QuestContainer>();
+            quest.QuestId = 1201;
+            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            NodeBaseData stop = kind == MethodKind.Action
+                ? new QuestActionNodeData { Guid = "stop", Action = new MethodBindingData { Key = "tests.quest.change-run" } }
+                : new QuestConditionNodeData { Guid = "stop", Condition = new MethodBindingData { Key = "tests.quest.run-condition" } };
+            quest.Nodes.Add(stop);
+            quest.Nodes.Add(new QuestObjectiveNodeData { Guid = "unexpected-objective", RequiredAmount = 1 });
+            quest.NodeLinks.Add(Link("start", "Next", "stop"));
+            quest.NodeLinks.Add(Link("stop", kind == MethodKind.Action ? "Next" : "True", "unexpected-objective"));
+
+            questRunAction = context => Assert.That(QuestRunner.SetQuestState(context.Controller, quest.QuestId, state), Is.True);
+            questRunCondition = context =>
+            {
+                questRunAction(context);
+                return true;
+            };
+            QuestDefinitionRegistry.Initialize(new[] { quest });
+            var controller = new FakeQuestController();
+
+            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+
+            QuestProgress progress = controller.QuestProgress[quest.QuestId];
+            Assert.That(progress.state, Is.EqualTo(state));
+            Assert.That(progress.activeNodeGuids, Is.Empty);
+            Assert.That(progress.completedNodeGuids, Does.Not.Contain("stop"));
+        }
+
+        [Test]
+        public void QuestRunner_ResetAndRestartInsideActionDoesNotResumeOldRun()
+        {
+            QuestContainer quest = CreateAsset<QuestContainer>();
+            quest.QuestId = 1202;
+            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            quest.Nodes.Add(new QuestConditionNodeData { Guid = "route", Condition = new MethodBindingData { Key = "tests.quest.run-condition" } });
+            quest.Nodes.Add(new QuestActionNodeData { Guid = "restart", Action = new MethodBindingData { Key = "tests.quest.change-run" } });
+            quest.Nodes.Add(new QuestObjectiveNodeData { Guid = "old-objective", RequiredAmount = 1 });
+            quest.Nodes.Add(new QuestObjectiveNodeData { Guid = "new-objective", RequiredAmount = 1 });
+            quest.NodeLinks.Add(Link("start", "Next", "route"));
+            quest.NodeLinks.Add(Link("route", "False", "restart"));
+            quest.NodeLinks.Add(Link("route", "True", "new-objective"));
+            quest.NodeLinks.Add(Link("restart", "Next", "old-objective"));
+
+            bool restarted = false;
+            questRunCondition = _ => restarted;
+            questRunAction = context =>
+            {
+                restarted = true;
+                Assert.That(QuestRunner.ResetQuest(context.Controller, quest.QuestId), Is.True);
+                Assert.That(QuestRunner.ForceStartQuest(context.Controller, quest.QuestId), Is.True);
+            };
+            QuestDefinitionRegistry.Initialize(new[] { quest });
+            var controller = new FakeQuestController();
+
+            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+
+            QuestProgress progress = controller.QuestProgress[quest.QuestId];
+            Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
+            Assert.That(progress.activeNodeGuids, Is.EqualTo(new[] { "new-objective" }));
+            Assert.That(progress.completedNodeGuids, Does.Not.Contain("restart"));
+            Assert.That(controller.StatusChangedQuestIds, Has.Count.EqualTo(2));
+        }
+
+        [Test]
+        public void QuestRunner_DoesNotStartNodesIfWaitingQuestStopsTheNewQuest()
+        {
+            QuestContainer quest = CreateAsset<QuestContainer>();
+            quest.QuestId = 1203;
+            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            quest.Nodes.Add(new QuestObjectiveNodeData { Guid = "unexpected-objective", RequiredAmount = 1 });
+            quest.NodeLinks.Add(Link("start", "Next", "unexpected-objective"));
+
+            QuestContainer waiting = CreateAsset<QuestContainer>();
+            waiting.QuestId = 1204;
+            waiting.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            waiting.Nodes.Add(new QuestWaitForQuestNodeData { Guid = "wait", TargetQuestId = quest.QuestId, RequiredState = QuestState.InProgress });
+            waiting.Nodes.Add(new QuestActionNodeData { Guid = "stop-other-quest", Action = new MethodBindingData { Key = "tests.quest.change-run" } });
+            waiting.Nodes.Add(new QuestObjectiveNodeData { Guid = "waiting-objective", RequiredAmount = 1 });
+            waiting.NodeLinks.Add(Link("start", "Next", "wait"));
+            waiting.NodeLinks.Add(Link("wait", "Next", "stop-other-quest"));
+            waiting.NodeLinks.Add(Link("stop-other-quest", "Next", "waiting-objective"));
+
+            questRunAction = context => Assert.That(QuestRunner.SetQuestState(context.Controller, quest.QuestId, QuestState.Failed), Is.True);
+            QuestDefinitionRegistry.Initialize(new[] { quest, waiting });
+            var controller = new FakeQuestController();
+            Assert.That(QuestRunner.ForceStartQuest(controller, waiting.QuestId), Is.True);
+
+            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+
+            Assert.That(controller.QuestProgress[quest.QuestId].state, Is.EqualTo(QuestState.Failed));
+            Assert.That(controller.QuestProgress[quest.QuestId].activeNodeGuids, Is.Empty);
+            Assert.That(controller.QuestProgress[waiting.QuestId].activeNodeGuids, Is.EqualTo(new[] { "waiting-objective" }));
         }
 
         [Test]
@@ -652,7 +873,7 @@ namespace UniversalGraph.Tests
         }
 
         [Test]
-        public void QuestDefinitionRegistry_RebuildsIndexWhenGraphListsAreReplaced()
+        public void QuestDefinitionRegistry_UsesCachedIndexUntilReinitialized()
         {
             QuestContainer quest = CreateAsset<QuestContainer>();
             quest.QuestId = 22;
@@ -684,8 +905,16 @@ namespace UniversalGraph.Tests
             controller.QuestProgress.Add(quest.QuestId, progress);
 
             Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
+            Assert.That(progress.activeNodeGuids, Does.Contain("old-objective"));
 
-            Assert.That(progress.state, Is.EqualTo(QuestState.CanComplete));
+            QuestDefinitionRegistry.Initialize(new[] { quest });
+            var refreshedController = new FakeQuestController();
+            var refreshedProgress = new QuestProgress(quest) { state = QuestState.NotStarted };
+            refreshedController.QuestProgress.Add(quest.QuestId, refreshedProgress);
+
+            Assert.That(QuestRunner.ForceStartQuest(refreshedController, quest.QuestId), Is.True);
+            Assert.That(refreshedProgress.state, Is.EqualTo(QuestState.CanComplete));
         }
 
         [Test]
@@ -1312,7 +1541,7 @@ namespace UniversalGraph.Tests
             var condition = new QuestConditionNodeData
             {
                 Guid = "condition",
-                Condition = new MethodCallData
+                Condition = new MethodBindingData
                 {
                     Key = "tests.quest.is-ready",
                     Arguments = CreateQuestArguments(
@@ -1324,7 +1553,7 @@ namespace UniversalGraph.Tests
             var action = new QuestActionNodeData
             {
                 Guid = "action",
-                Action = new MethodCallData
+                Action = new MethodBindingData
                 {
                     Key = "tests.quest.record-action",
                     Arguments = CreateQuestArguments(
@@ -1379,7 +1608,7 @@ namespace UniversalGraph.Tests
                     {
                         PortName = "visible",
                         ChoiceText = "Visible",
-                        VisibilityCondition = new MethodCallData
+                        VisibilityCondition = new MethodBindingData
                         {
                             Key = "tests.dialogue.choice-visible",
                             Arguments = CreateDialogueArguments(
@@ -1392,7 +1621,7 @@ namespace UniversalGraph.Tests
                     {
                         PortName = "hidden",
                         ChoiceText = "Hidden",
-                        VisibilityCondition = new MethodCallData
+                        VisibilityCondition = new MethodBindingData
                         {
                             Key = "tests.dialogue.choice-visible",
                             Arguments = CreateDialogueArguments(
@@ -1452,7 +1681,7 @@ namespace UniversalGraph.Tests
                     {
                         PortName = "hidden",
                         ChoiceText = "Hidden",
-                        VisibilityCondition = new MethodCallData
+                        VisibilityCondition = new MethodBindingData
                         {
                             Key = "tests.dialogue.choice-visible",
                             Arguments = CreateDialogueArguments(
@@ -1510,7 +1739,7 @@ namespace UniversalGraph.Tests
             {
                 PortName = "accept",
                 ChoiceText = "Accept",
-                SelectionAction = new MethodCallData
+                SelectionAction = new MethodBindingData
                 {
                     Key = "tests.dialogue.choice-action"
                 }
@@ -1568,7 +1797,7 @@ namespace UniversalGraph.Tests
             {
                 Guid = "ending-line",
                 DialogueText = "End",
-                EnterAction = new MethodCallData { Key = "tests.dialogue.end-current" }
+                EnterAction = new MethodBindingData { Key = "tests.dialogue.end-current" }
             };
             firstGraph.Nodes.Add(firstEntry);
             firstGraph.Nodes.Add(endingLine);
@@ -1787,7 +2016,7 @@ namespace UniversalGraph.Tests
             {
                 PortName = "accept",
                 ChoiceText = "Second",
-                SelectionAction = new MethodCallData { Key = "tests.dialogue.choice-action" }
+                SelectionAction = new MethodBindingData { Key = "tests.dialogue.choice-action" }
             };
             var secondChoiceNode = new DialogueChoiceNodeData
             {
@@ -2094,10 +2323,10 @@ namespace UniversalGraph.Tests
             DialogueManager.Instance.ConversationEnd += CaptureFinished;
             try
             {
-                LogAssert.Expect(LogType.Error, "[Dialogue] ShowLine 콜백 실행 중 예외가 발생했습니다.");
                 LogAssert.Expect(
-                    LogType.Exception,
-                    new System.Text.RegularExpressions.Regex("InvalidOperationException: test line subscriber"));
+                    LogType.Error,
+                    new System.Text.RegularExpressions.Regex(
+                        "ShowLine 콜백 실행 중 예외가 발생했습니다.[\\s\\S]*InvalidOperationException: test line subscriber"));
 
                 Assert.That(DialogueManager.Instance.StartConversation(
                         new DialogueEntryPoint(graph, "Default"),
@@ -2152,10 +2381,8 @@ namespace UniversalGraph.Tests
             {
                 LogAssert.Expect(
                     LogType.Error,
-                    "[Dialogue] ConversationEnd 콜백 실행 중 예외가 발생했습니다.");
-                LogAssert.Expect(
-                    LogType.Exception,
-                    new System.Text.RegularExpressions.Regex("InvalidOperationException: test finished subscriber"));
+                    new System.Text.RegularExpressions.Regex(
+                        "ConversationEnd 콜백 실행 중 예외가 발생했습니다.[\\s\\S]*InvalidOperationException: test finished subscriber"));
 
                 Assert.That(DialogueManager.Instance.StartConversation(
                         new DialogueEntryPoint(graph, "Default"),
@@ -2330,7 +2557,6 @@ namespace UniversalGraph.Tests
                         executionContext,
                         () => callbackCount++),
                     Is.True);
-                LogAssert.Expect(LogType.Warning, "[Dialogue] 빈 Signal 키는 무시했습니다.");
                 Assert.That(DialogueManager.Instance.SendSignal("   "), Is.False);
                 Assert.That(DialogueManager.Instance.SendSignal("ready"), Is.False);
 
@@ -2387,8 +2613,6 @@ namespace UniversalGraph.Tests
             Assert.That(DialogueManager.Instance.StartConversation(
                 new DialogueEntryPoint(activeGraph, "Default"),
                 executionContext), Is.True);
-            LogAssert.Expect(LogType.Warning, "[Dialogue] 대화가 진행 중이거나 노드·시작·종료 이벤트를 처리하는 동안에는 새 대화를 시작할 수 없습니다.");
-
             bool started = DialogueManager.Instance.StartConversation(
                 new DialogueEntryPoint(requestedGraph, "Default"),
                 executionContext,
@@ -2397,6 +2621,18 @@ namespace UniversalGraph.Tests
             Assert.That(started, Is.False);
             Assert.That(callbackCount, Is.Zero);
             Assert.That(DialogueManager.Instance.CurrentLine, Is.SameAs(activeLine));
+        }
+
+        [QuestAction("tests.quest.change-run", Target = QuestMethodTarget.Global)]
+        internal static void ChangeQuestRun(QuestExecutionContext context)
+        {
+            questRunAction?.Invoke(context);
+        }
+
+        [QuestCondition("tests.quest.run-condition", Target = QuestMethodTarget.Global)]
+        internal static bool EvaluateQuestRunCondition(QuestExecutionContext context)
+        {
+            return questRunCondition?.Invoke(context) ?? true;
         }
 
         [QuestCondition("tests.quest.is-ready", Target = QuestMethodTarget.Global)]
@@ -2418,6 +2654,7 @@ namespace UniversalGraph.Tests
         }
 
         [DialogueCondition("tests.dialogue.choice-visible", Owner = DialogueMethodOwner.Global)]
+        [QuestCondition("tests.quest.choice-visible", Target = QuestMethodTarget.Global)]
         private static bool IsDialogueChoiceVisible(bool visible)
         {
             return visible;
@@ -2433,6 +2670,23 @@ namespace UniversalGraph.Tests
         private static void EndCurrentDialogue()
         {
             DialogueManager.Instance.EndConversation();
+        }
+
+        [DialogueAction("tests.invoker.action", Owner = DialogueMethodOwner.Global)]
+        [QuestAction("tests.invoker.action", Target = QuestMethodTarget.Global)]
+        private static void RecordInvokerAction()
+        {
+            dialogueChoiceActionCount++;
+        }
+
+        private static void RecordOverloadedAction(int amount)
+        {
+            overloadedActionAmount = amount;
+        }
+
+        private static void RecordOverloadedAction<T>(int amount)
+        {
+            throw new InvalidOperationException("제네릭 오버로드가 선택되면 안 됩니다.");
         }
 
         private static void AcceptAllSupportedArgumentTypes(

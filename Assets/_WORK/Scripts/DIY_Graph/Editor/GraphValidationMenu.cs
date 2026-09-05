@@ -95,11 +95,6 @@ namespace UniversalGraph.Editor
             }
 
             string summary = $"그래프 에셋 {graphs.Length}개 검증 완료: 오류 {errorCount}개, 경고 {warningCount}개.";
-            if (errorCount == 0 && warningCount == 0)
-            {
-                Debug.Log($"[Flow Graph] {summary}");
-            }
-
             EditorUtility.DisplayDialog("Universal Graph 검증", summary, "확인");
         }
 

@@ -140,6 +140,7 @@ namespace UniversalGraph
             {
                 method = declaringType.GetMethod(
                     registration.MethodMetadataName,
+                    genericParameterCount: 0,
                     BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static |
                     BindingFlags.Public | BindingFlags.NonPublic,
                     null,

@@ -8,6 +8,6 @@ namespace UniversalGraph
 		/// <summary>
 		/// 노드에 진입했을 때 실행할 Action
 		/// </summary>
-		public MethodCallData Action = new();
+		public MethodBindingData Action = new();
 	}
 }

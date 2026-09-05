@@ -10,10 +10,10 @@ namespace UniversalGraph
             QuestContainer container,
             QuestProgress progress,
             NodeBaseData nodeData,
-            MethodCallData methodCall,
+            MethodBindingData binding,
             string label)
         {
-            if (methodCall == null || string.IsNullOrWhiteSpace(methodCall.Key))
+            if (binding == null || string.IsNullOrWhiteSpace(binding.Key))
             {
                 if (nodeData is QuestRewardNodeData)
                 {
@@ -25,23 +25,7 @@ namespace UniversalGraph
             }
 
             var executionContext = new QuestExecutionContext(controller, container, progress, nodeData);
-            if (QuestMethodInvoker.TryExecuteAction(
-                    methodCall,
-                    controller,
-                    executionContext,
-                    out bool registered))
-            {
-                return true;
-            }
-
-            if (registered)
-            {
-                Debug.LogError($"[Quest] 등록된 {label} '{methodCall.Key}' 실행에 실패했습니다.", container);
-                return false;
-            }
-
-            Debug.LogError($"[Quest] {label} '{methodCall.Key}'이 등록되지 않았습니다.", container);
-            return false;
+            return QuestMethodInvoker.TryInvokeMethod(binding, executionContext, MethodKind.Action, out _);
         }
     }
 }

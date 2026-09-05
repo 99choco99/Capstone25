@@ -45,7 +45,7 @@ namespace UniversalGraph.Dialogue.Editor
             VisualElement root = new ();
             root.Add(new HelpBox("조건 결과에 따라 True 또는 False 포트 중 하나로 진행합니다.", HelpBoxMessageType.Info));
 
-            root.Add(MethodCallInspector.Create(editHandler, "조건" , NodeData.Condition, DialogueMethodCatalog.GetMethodList(MethodKind.Condition), RefreshPreview));
+            root.Add(MethodBindingInspector.Create(editHandler, "조건" , NodeData.Condition, DialogueMethodCatalog.GetMethodList(MethodKind.Condition), RefreshPreview));
             return root;
         }
     }

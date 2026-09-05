@@ -254,7 +254,7 @@ namespace UniversalGraph.Editor
                    && playerAssemblies.Contains(method.DeclaringType.Assembly.GetName().Name);
         }
 
-        /// <summary>AOT 검증 경고와 오류, 성공 요약을 Unity Console에 출력합니다.</summary>
+        /// <summary>AOT 검증 경고와 오류를 Unity Console에 출력합니다.</summary>
         internal static void Log(Report report)
         {
             foreach (string warning in report.Warnings)
@@ -264,11 +264,6 @@ namespace UniversalGraph.Editor
             foreach (string error in report.Errors)
             {
                 Debug.LogError("[Universal Graph AOT] " + error);
-            }
-            if (report.Errors.Count == 0)
-            {
-                Debug.Log($"[Universal Graph AOT] 검증 통과. Dialogue: {report.DialogueMethodCount}, " +
-                          $"Quest: {report.QuestMethodCount}, 경고: {report.Warnings.Count}개.");
             }
         }
     }

@@ -67,7 +67,6 @@ namespace UniversalGraph
 
             if (IsConversationActive || isNodeProcessing || isConversationStarting || isConversationEnding)
             {
-                Debug.LogWarning("[Dialogue] 대화가 진행 중이거나 노드·시작·종료 이벤트를 처리하는 동안에는 새 대화를 시작할 수 없습니다.");
                 return false;
             }
 
@@ -162,7 +161,6 @@ namespace UniversalGraph
             DialogueChoiceData selectedChoiceData = visibleChoices.Find(candidateData => ReferenceEquals(candidateData, choiceData));
             if (selectedChoiceData == null)
             {
-                Debug.LogWarning("[Dialogue] 요청한 선택지는 현재 노드에 속하지 않습니다.");
                 return false;
             }
 
@@ -173,11 +171,11 @@ namespace UniversalGraph
             blockKind = BlockKind.None;
 
             //선택지 Action 실행
-            if (!string.IsNullOrWhiteSpace(selectedChoiceData.SelectionAction.Key) && !DialogueMethodInvoker.TryExecuteAction(selectedChoiceData.SelectionAction, currentExecutionContext))
+            if (!string.IsNullOrWhiteSpace(selectedChoiceData.SelectionAction.Key) && !DialogueMethodInvoker.TryInvokeMethod(selectedChoiceData.SelectionAction, currentExecutionContext, MethodKind.Action, out _))
             {
                 if (IsCurrentConversation(conversationId, nodeData))
                 {
-                    FailConversation($"[Dialogue] 노드 '{nodeData.Guid}'에서 선택지 Action " + $"'{selectedChoiceData.SelectionAction.Key}' 실행에 실패했습니다.");
+                    FinishConversation(DialogueEndReason.Faulted);
                 }
                 return true;
             }
@@ -191,7 +189,6 @@ namespace UniversalGraph
         {
             if (string.IsNullOrWhiteSpace(signalKey))
             {
-                Debug.LogWarning("[Dialogue] 빈 Signal 키는 무시했습니다.");
                 return false;
             }
 

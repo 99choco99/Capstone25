@@ -59,7 +59,7 @@ namespace UniversalGraph.Dialogue.Editor
             root.Add(CreateSpeakerField(editHandler));
             root.Add(CreateDialogueField(editHandler));
 
-            root.Add(MethodCallInspector.Create(editHandler, "진입 시 실행할 Action", NodeData.EnterAction, DialogueMethodCatalog.GetMethodList(MethodKind.Action)));
+            root.Add(MethodBindingInspector.Create(editHandler, "진입 시 실행할 Action", NodeData.EnterAction, DialogueMethodCatalog.GetMethodList(MethodKind.Action)));
             return root;
         }
 

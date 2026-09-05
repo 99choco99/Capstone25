@@ -140,11 +140,10 @@ namespace UniversalGraph.Quest.Editor
 
         private static void FinalizeCandidates(
             IReadOnlyDictionary<string, List<QuestMethodDescriptor>> candidatesByKey,
-            ICollection<QuestMethodDescriptor> published,
-            IDictionary<string, QuestMethodDescriptor> publishedByKey,
+            List<QuestMethodDescriptor> list,
+            IDictionary<string, QuestMethodDescriptor> listByKey,
             string kind)
         {
-            var sorted = new List<QuestMethodDescriptor>();
             foreach (KeyValuePair<string, List<QuestMethodDescriptor>> pair in candidatesByKey)
             {
                 if (pair.Value.Count != 1)
@@ -155,15 +154,11 @@ namespace UniversalGraph.Quest.Editor
                 }
 
                 QuestMethodDescriptor descriptor = pair.Value[0];
-                sorted.Add(descriptor);
-                publishedByKey.Add(descriptor.Key, descriptor);
+                list.Add(descriptor);
+                listByKey.Add(descriptor.Key, descriptor);
             }
 
-            sorted.Sort((left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
-            foreach (QuestMethodDescriptor descriptor in sorted)
-            {
-                published.Add(descriptor);
-            }
+            list.Sort((left, right) => string.CompareOrdinal(left.Key, right.Key));
         }
     }
 }

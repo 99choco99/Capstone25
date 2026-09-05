@@ -105,11 +105,6 @@ namespace UniversalGraph.Editor
             string guid,
             NodeLinkData link)
         {
-            if (string.IsNullOrWhiteSpace(guid))
-            {
-                return;
-            }
-
             if (!index.TryGetValue(guid, out List<NodeLinkData> links))
             {
                 links = new List<NodeLinkData>();
