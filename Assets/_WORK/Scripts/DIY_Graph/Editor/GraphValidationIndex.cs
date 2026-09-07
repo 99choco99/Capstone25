@@ -1,117 +1,113 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 
 namespace UniversalGraph.Editor
 {
     /// <summary>
-    /// 도메인 검증기에 제공하는 읽기 전용 그래프 인덱스입니다. 잘못된 항목은 원본 목록에는 남기되
-    /// 인덱스에서는 제외하여, 한 번의 검사로 여러 문제를 함께 보고할 수 있게 합니다.
+    /// 검증할 때 사용할 노드와 링크의 정보들을 조회하기 위해 미리 정리해둔 클래스
     /// </summary>
     public sealed class GraphValidationIndex
     {
-        private readonly Dictionary<string, NodeBaseData> nodesByGuid = new();
-        private readonly Dictionary<string, List<NodeLinkData>> outgoingByGuid = new();
-        private readonly Dictionary<string, List<NodeLinkData>> incomingByGuid = new();
-
-        public GraphValidationIndex(GraphContainer container)
-        {
-            Container = container ?? throw new ArgumentNullException(nameof(container), "검증할 GraphContainer가 필요합니다.");
-            Nodes = container.Nodes ?? new List<NodeBaseData>();
-            Links = container.NodeLinks ?? new List<NodeLinkData>();
-
-            foreach (NodeBaseData node in Nodes)
-            {
-                if (node != null && !string.IsNullOrWhiteSpace(node.Guid))
-                {
-                    nodesByGuid.TryAdd(node.Guid, node);
-                }
-            }
-
-            foreach (NodeLinkData link in Links)
-            {
-                if (link == null
-                    || !nodesByGuid.ContainsKey(link.StartNodeGuid ?? string.Empty)
-                    || !nodesByGuid.ContainsKey(link.TargetNodeGuid ?? string.Empty))
-                {
-                    continue;
-                }
-
-                AddLink(outgoingByGuid, link.StartNodeGuid, link);
-                AddLink(incomingByGuid, link.TargetNodeGuid, link);
-            }
-        }
-
         public GraphContainer Container { get; }
         public IReadOnlyList<NodeBaseData> Nodes { get; }
         public IReadOnlyList<NodeLinkData> Links { get; }
 
-        /// <summary>고정 GUID로 유효한 노드 데이터를 찾습니다.</summary>
-        public bool TryGetNode(string guid, out NodeBaseData node)
+        private readonly Dictionary<string, NodeBaseData> nodesByGuid = new();
+        private readonly Dictionary<string, List<NodeLinkData>> startLinksByGuid = new();
+        private readonly Dictionary<string, List<NodeLinkData>> targetLinksByGuid = new();
+
+
+        /// <summary>구조 검사를 통과한 그래프의 노드와 링크로 dictionary 제작</summary>
+        public GraphValidationIndex(GraphContainer container)
+        {
+            Container = container != null ? container : throw new ArgumentNullException(nameof(container), "검증할 GraphContainer가 필요합니다.");
+            Nodes = container.Nodes;
+            Links = container.NodeLinks;
+
+            foreach (NodeBaseData node in Nodes)
+            {
+                nodesByGuid.Add(node.Guid, node);
+            }
+
+            foreach (NodeLinkData link in Links)
+            {
+                if (!startLinksByGuid.TryGetValue(link.StartNodeGuid, out List<NodeLinkData> Startlinks))
+                {
+                    Startlinks = new List<NodeLinkData>();
+                    startLinksByGuid.Add(link.StartNodeGuid, Startlinks);
+                }
+                Startlinks.Add(link);
+
+                if (!targetLinksByGuid.TryGetValue(link.TargetNodeGuid, out List<NodeLinkData> targetLinks))
+                {
+                    targetLinks = new List<NodeLinkData>();
+                    targetLinksByGuid.Add(link.TargetNodeGuid, targetLinks);
+                }
+                targetLinks.Add(link);
+            }
+        }
+
+
+        /// <summary>guid로 노드 데이터 가져오기</summary>
+        public bool GetNodeData(string guid, out NodeBaseData node)
         {
             node = null;
             return !string.IsNullOrWhiteSpace(guid) && nodesByGuid.TryGetValue(guid, out node);
         }
 
-        /// <summary>출발 연결을 반환하며, 필요하면 특정 출력 포트로 제한합니다.</summary>
-        public IReadOnlyList<NodeLinkData> GetOutgoing(string nodeGuid, string portName = null)
+        /// <summary>출발 포트랑 연결된 링크 정보를 다 반환</summary>
+        public IReadOnlyList<NodeLinkData> GetLinkInStartPort(string nodeGuid, string portName = null)
         {
-            if (!outgoingByGuid.TryGetValue(nodeGuid ?? string.Empty, out List<NodeLinkData> links))
+            if (!startLinksByGuid.TryGetValue(nodeGuid ?? string.Empty, out List<NodeLinkData> links))
             {
                 return Array.Empty<NodeLinkData>();
             }
 
-            return string.IsNullOrWhiteSpace(portName)
-                ? links
-                : links.Where(link => link.StartPortName == portName).ToArray();
+            return string.IsNullOrWhiteSpace(portName) ? links : links.Where(link => link.StartPortName == portName).ToArray();
         }
 
-        /// <summary>주어진 노드로 들어오는 모든 연결을 반환합니다.</summary>
-        public IReadOnlyList<NodeLinkData> GetIncoming(string nodeGuid)
+        /// <summary>노드의 진입 포트와 연결된 링크 정보들 다 반환</summary>
+        public IReadOnlyList<NodeLinkData> GetLinkInTargetPorts(string nodeGuid)
         {
-            return incomingByGuid.TryGetValue(nodeGuid ?? string.Empty, out List<NodeLinkData> links)
-                ? links
-                : Array.Empty<NodeLinkData>();
+            return targetLinksByGuid.TryGetValue(nodeGuid ?? string.Empty, out List<NodeLinkData> links) ? links : Array.Empty<NodeLinkData>();
         }
 
-        /// <summary>주어진 시작 노드들에서 도달 가능한 모든 유효 노드를 찾습니다.</summary>
-        public HashSet<string> GetReachableNodeGuids(IEnumerable<string> rootGuids)
+        /// <summary>주어진 시작 노드들에서 도달 가능한 모든 유효 노드를 찾기 BFS 사용</summary>
+        public HashSet<string> GetReachableNode(IEnumerable<string> rootGuids)
         {
-            var reachable = new HashSet<string>();
-            var pending = new Queue<string>(rootGuids?.Where(guid => TryGetNode(guid, out _))
-                                            ?? Enumerable.Empty<string>());
-            while (pending.Count > 0)
+            HashSet<string> reachedNode = new ();
+
+            Queue<string> q = new();
+            if (rootGuids != null)
             {
-                string guid = pending.Dequeue();
-                if (!reachable.Add(guid))
+                foreach (string guid in rootGuids)
                 {
-                    continue;
-                }
-
-                foreach (NodeLinkData link in GetOutgoing(guid))
-                {
-                    if (TryGetNode(link.TargetNodeGuid, out _))
+                    if (GetNodeData(guid, out _))
                     {
-                        pending.Enqueue(link.TargetNodeGuid);
+                        q.Enqueue(guid);
                     }
                 }
             }
 
-            return reachable;
-        }
-
-        private static void AddLink(
-            IDictionary<string, List<NodeLinkData>> index,
-            string guid,
-            NodeLinkData link)
-        {
-            if (!index.TryGetValue(guid, out List<NodeLinkData> links))
+            while (q.Count > 0)
             {
-                links = new List<NodeLinkData>();
-                index.Add(guid, links);
+                string guid = q.Dequeue();
+                if (!reachedNode.Add(guid))
+                {
+                    continue;
+                }
+
+                foreach (NodeLinkData link in GetLinkInStartPort(guid))
+                {
+                    q.Enqueue(link.TargetNodeGuid);
+                }
             }
 
-            links.Add(link);
+            return reachedNode;
         }
+
+
     }
 }

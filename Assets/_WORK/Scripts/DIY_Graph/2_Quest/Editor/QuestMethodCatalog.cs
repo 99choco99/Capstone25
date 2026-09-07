@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.Compilation;
-using UnityEngine;
 
 namespace UniversalGraph.Quest.Editor
 {
@@ -45,23 +44,22 @@ namespace UniversalGraph.Quest.Editor
         /// <summary>플레이어 어셈블리를 검사하고 대상을 확정할 수 없는 중복 키를 제외합니다.</summary>
         private static void BuildRegistry()
         {
-            actions.Clear();
-            conditions.Clear();
-            actionByKey.Clear();
-            conditionByKey.Clear();
-
             var playerAssemblies = new HashSet<string>();
             foreach (UnityEditor.Compilation.Assembly assembly in
                      CompilationPipeline.GetAssemblies(AssembliesType.Player))
             {
                 playerAssemblies.Add(assembly.name);
+                foreach (string reference in assembly.compiledAssemblyReferences)
+                {
+                    playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
+                }
             }
 
             var actionCandidates = new Dictionary<string, List<QuestMethodDescriptor>>();
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<QuestActionAttribute>())
             {
                 QuestActionAttribute attribute = method.GetCustomAttribute<QuestActionAttribute>(false);
-                if (attribute != null && IsPlayerMethod(method, playerAssemblies, "action"))
+                if (attribute != null && IsPlayerMethod(method, playerAssemblies))
                 {
                     AddCandidate(
                         method,
@@ -76,7 +74,7 @@ namespace UniversalGraph.Quest.Editor
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<QuestConditionAttribute>())
             {
                 QuestConditionAttribute attribute = method.GetCustomAttribute<QuestConditionAttribute>(false);
-                if (attribute != null && IsPlayerMethod(method, playerAssemblies, "condition"))
+                if (attribute != null && IsPlayerMethod(method, playerAssemblies))
                 {
                     AddCandidate(
                         method,
@@ -87,25 +85,16 @@ namespace UniversalGraph.Quest.Editor
                 }
             }
 
-            FinalizeCandidates(actionCandidates, actions, actionByKey, "action");
-            FinalizeCandidates(conditionCandidates, conditions, conditionByKey, "condition");
+            FinalizeCandidates(actionCandidates, actions, actionByKey);
+            FinalizeCandidates(conditionCandidates, conditions, conditionByKey);
         }
 
         private static bool IsPlayerMethod(
             MethodInfo method,
-            ISet<string> playerAssemblies,
-            string kind)
+            ISet<string> playerAssemblies)
         {
             string assemblyName = method.DeclaringType?.Assembly.GetName().Name;
-            if (!string.IsNullOrWhiteSpace(assemblyName) && playerAssemblies.Contains(assemblyName))
-            {
-                return true;
-            }
-
-            Debug.LogWarning(
-                $"[Quest] Editor 전용 {kind} 메서드는 무시합니다: " +
-                $"{method.DeclaringType?.FullName}.{method.Name}");
-            return false;
+            return !string.IsNullOrWhiteSpace(assemblyName) && playerAssemblies.Contains(assemblyName);
         }
 
         private static void AddCandidate(
@@ -121,11 +110,8 @@ namespace UniversalGraph.Quest.Editor
                     key,
                     target,
                     out QuestMethodDescriptor descriptor,
-                    out string error))
+                    out _))
             {
-                Debug.LogError(
-                    $"[Quest] {kind}을 등록하지 못했습니다: " +
-                    $"'{method.DeclaringType?.FullName}.{method.Name}': {error}");
                 return;
             }
 
@@ -141,15 +127,12 @@ namespace UniversalGraph.Quest.Editor
         private static void FinalizeCandidates(
             IReadOnlyDictionary<string, List<QuestMethodDescriptor>> candidatesByKey,
             List<QuestMethodDescriptor> list,
-            IDictionary<string, QuestMethodDescriptor> listByKey,
-            string kind)
+            IDictionary<string, QuestMethodDescriptor> listByKey)
         {
             foreach (KeyValuePair<string, List<QuestMethodDescriptor>> pair in candidatesByKey)
             {
                 if (pair.Value.Count != 1)
                 {
-                    Debug.LogError(
-                        $"[Quest] 중복된 {kind} 키 '{pair.Key}'는 그래프 메뉴에서 제외합니다.");
                     continue;
                 }
 

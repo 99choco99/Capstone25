@@ -7,24 +7,10 @@ namespace UniversalGraph
 {
 	/// <summary>
 	/// Dialogue Attribute 메서드를 찾아 키 중복을 검증하고 메서드를 호출<para></para>
-	/// Generator가 만든 등록 정보를 우선 사용하고 Reflection은 안전한 대체 경로로 사용
+	/// Reflection으로 찾은 메서드 정보를 캐싱하여 사용
 	/// </summary>
 	public static class DialogueMethodInvoker
 	{
-		private sealed class GeneratedRegistrationCollector : IDialogueGeneratedMethodSink
-		{
-			public List<DialogueGeneratedMethodRegistration> Registrations { get; } = new List<DialogueGeneratedMethodRegistration>();
-
-			/// <summary>어셈블리를 초기화하면서 Generator가 만든 등록 정보 하나를 수집합니다.</summary>
-			public void Add(DialogueGeneratedMethodRegistration registration)
-			{
-				if (registration != null)
-				{
-					Registrations.Add(registration);
-				}
-			}
-		}
-
 		private static readonly Dictionary<string, DialogueMethodDescriptor> actionRegistry = new();
 
 		private static readonly Dictionary<string, DialogueMethodDescriptor> conditionRegistry = new();
@@ -60,13 +46,14 @@ namespace UniversalGraph
 			invalidConditionKeys.Clear();
 
 #if UNITY_EDITOR
-            // 테스트용 DialogueAction이 게임 메서드로 등록되지 않도록 에디터 전용 어셈블리를 선별
-            HashSet<string> editorAssemblies = new();
-			foreach (UnityEditor.Compilation.Assembly editorAssembly in UnityEditor.Compilation.CompilationPipeline.GetAssemblies(UnityEditor.Compilation.AssembliesType.Editor))
+            // 테스트용 DialogueAction이 게임 메서드로 등록되지 않도록 플레이어에 포함되는 어셈블리만 선별
+            HashSet<string> playerAssemblies = new();
+			foreach (UnityEditor.Compilation.Assembly playerAssembly in UnityEditor.Compilation.CompilationPipeline.GetAssemblies(UnityEditor.Compilation.AssembliesType.Player))
 			{
-				if ((editorAssembly.flags & UnityEditor.Compilation.AssemblyFlags.EditorAssembly) != 0)
+				playerAssemblies.Add(playerAssembly.name);
+				foreach (string reference in playerAssembly.compiledAssemblyReferences)
 				{
-					editorAssemblies.Add(editorAssembly.name);
+					playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
 				}
 			}
 #endif
@@ -74,7 +61,7 @@ namespace UniversalGraph
 			foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
 			{
 #if UNITY_EDITOR
-				if (editorAssemblies.Contains(assembly.GetName().Name))
+				if (!playerAssemblies.Contains(assembly.GetName().Name))
 				{
 					continue;
 				}
@@ -83,10 +70,7 @@ namespace UniversalGraph
 				{
 					continue;
 				}
-				if (!TryRegisterGeneratedAssembly(assembly))
-				{
-					ScanAssemblyByReflection(assembly);
-				}
+				ScanAssemblyByReflection(assembly);
 			}
 			isInitialized = true;
 		}
@@ -94,7 +78,7 @@ namespace UniversalGraph
 
         private static bool CanUseDialogueAttributes(Assembly assembly, string dialogueAssemblyName)
         {
-            if (assembly == null || assembly.IsDynamic)
+            if (assembly.IsDynamic)
             {
                 return false;
             }
@@ -121,77 +105,7 @@ namespace UniversalGraph
             return false;
         }
 
-        //=========================== 메서드를 가져오기 (generator or reflection)===============================================
-
-        private static bool TryRegisterGeneratedAssembly(Assembly assembly)
-		{
-			object[] customAttributes;
-			try
-			{
-				customAttributes = assembly.GetCustomAttributes(typeof(DialogueGeneratedProviderAttribute), inherit: false);
-			}
-			catch (Exception ex)
-			{
-				Debug.LogWarning($"[Dialogue] 어셈블리 '{assembly.GetName().Name}'에서 생성된 Provider를 읽지 못했습니다: {ex.Message}");
-				return false;
-			}
-			if (customAttributes.Length == 0)
-			{
-				return false;
-			}
-			var collector = new GeneratedRegistrationCollector();
-			bool hasErrors = false;
-			foreach (object customAttribute in customAttributes)
-			{
-				Type providerType = customAttribute is DialogueGeneratedProviderAttribute providerAttribute
-					? providerAttribute.ProviderType
-					: null;
-				if (providerType == null
-					|| providerType.Assembly != assembly
-					|| !typeof(IDialogueGeneratedMethodProvider).IsAssignableFrom(providerType))
-				{
-					Debug.LogError($"[Dialogue] 어셈블리 '{assembly.GetName().Name}'에 올바르지 않은 생성 Provider가 선언되어 있습니다.");
-					hasErrors = true;
-					continue;
-				}
-				try
-				{
-					var provider = (IDialogueGeneratedMethodProvider)Activator.CreateInstance(providerType, nonPublic: true);
-					provider.Collect(collector);
-				}
-				catch (Exception exception)
-				{
-					Debug.LogError($"[Dialogue] 생성 Provider '{providerType.FullName}'가 메서드를 수집하는 중 실패했습니다.\n{exception}");
-					hasErrors = true;
-				}
-			}
-			var descriptors = new List<DialogueMethodDescriptor>();
-			foreach (DialogueGeneratedMethodRegistration registration in collector.Registrations)
-			{
-				if (!DialogueMethodDescriptorFactory.TryCreateGenerated(
-						assembly,
-						registration,
-						out DialogueMethodDescriptor descriptor,
-						out string error))
-				{
-					Debug.LogError($"[Dialogue] 생성된 메서드를 등록하지 못했습니다: {error}");
-					hasErrors = true;
-				}
-				else
-				{
-					descriptors.Add(descriptor);
-				}
-			}
-			if (hasErrors)
-			{
-				return false;
-			}
-			foreach (DialogueMethodDescriptor descriptor in descriptors)
-			{
-				RegisterDescriptor(descriptor);
-			}
-			return true;
-		}
+        //=========================== 메서드를 가져오기 (reflection)===============================================
 
 
 		/// <summary>
@@ -253,7 +167,7 @@ namespace UniversalGraph
 		{
 			if (!DialogueMethodDescriptorFactory.TryCreateFromReflection(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out string error))
 			{
-				Debug.LogError($"[Dialogue] {kind}을 등록하지 못했습니다: {error}");
+				Debug.LogError($"[Dialogue] {error}");
 				return;
 			}
 			RegisterDescriptor(descriptor);
@@ -310,7 +224,7 @@ namespace UniversalGraph
 			//argument 복원
 			if (!MethodArgumentCodec.TryCreateDialogueRuntimeArguments(binding.Arguments, descriptor, context, out object[] arguments, out string error))
 			{
-				Debug.LogError($"[Dialogue] {kind} '{key}'의 인수를 변환하지 못했습니다: {error}");
+				Debug.LogError($"[Dialogue] {error}");
 				return false;
 			}
 
@@ -323,15 +237,10 @@ namespace UniversalGraph
 			try
 			{
 				//메서드 실행 후 결과 반환
-				object methodResult = descriptor.GeneratedInvoker != null ? descriptor.GeneratedInvoker(target, arguments) : descriptor.MethodInfo.Invoke(target, arguments);
+				object methodResult = descriptor.MethodInfo.Invoke(target, arguments);
 				if (kind == MethodKind.Condition)
 				{
-					if (methodResult is not bool result)
-					{
-						Debug.LogError($"[Dialogue] 생성된 Condition '{binding.Key}'가 bool 값을 반환하지 않았습니다.");
-						return false;
-					}
-					conditionResult = result;
+					conditionResult = (bool)methodResult;
 				}
 				return true;
 			}

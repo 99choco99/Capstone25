@@ -1,5 +1,5 @@
 <linker>
-  <!-- The package runtime is intentionally small. Preserve its contracts so generated providers,
-       attribute metadata, and reflection fallbacks behave identically under managed stripping. -->
+  <!-- Reflection 호출과 그래프 데이터 복원에 필요한 Runtime 타입·메타데이터를 보존합니다.
+       게임의 메서드는 Dialogue/Quest Attribute의 Preserve 상속으로 보존합니다. -->
   <assembly fullname="UniversalGraph.Runtime" preserve="all" />
 </linker>

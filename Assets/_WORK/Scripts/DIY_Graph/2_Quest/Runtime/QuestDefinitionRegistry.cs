@@ -75,7 +75,7 @@ namespace UniversalGraph
 
             if (!QuestGraphIndex.TryCreate(definition, out QuestGraphIndex index, out string indexError))
             {
-                throw new InvalidOperationException($"Quest '{definition.name}'을 등록하지 못했습니다: {indexError}");
+                throw new InvalidOperationException(indexError);
             }
 
             registry.definitionsById.Add(definition.QuestId, definition);

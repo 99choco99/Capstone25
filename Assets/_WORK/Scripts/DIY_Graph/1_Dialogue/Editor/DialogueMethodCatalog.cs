@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.Compilation;
-using UnityEngine;
 
 namespace UniversalGraph.Dialogue.Editor
 {
@@ -47,15 +46,14 @@ namespace UniversalGraph.Dialogue.Editor
         /// </summary>
         private static void BuildCatalog()
         {
-            actions.Clear();
-            conditions.Clear();
-            actionByKey.Clear();
-            conditionByKey.Clear();
-
             HashSet<string> playerAssemblyNames = new();
             foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player))
             {
                 playerAssemblyNames.Add(assembly.name);
+                foreach (string reference in assembly.compiledAssemblyReferences)
+                {
+                    playerAssemblyNames.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
+                }
             }
 
             //action 함수들
@@ -63,7 +61,7 @@ namespace UniversalGraph.Dialogue.Editor
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<DialogueActionAttribute>())
             {
                 var attribute = method.GetCustomAttribute<DialogueActionAttribute>(inherit: false);
-                if (attribute != null && IsPlayerMethod(method, playerAssemblyNames, "action"))
+                if (attribute != null && IsPlayerMethod(method, playerAssemblyNames))
                 {
                     AddCandidate(method, MethodKind.Action, attribute.Key, attribute.Owner, actionCandidates);
                 }
@@ -74,29 +72,23 @@ namespace UniversalGraph.Dialogue.Editor
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<DialogueConditionAttribute>())
             {
                 var attribute = method.GetCustomAttribute<DialogueConditionAttribute>(inherit: false);
-                if (attribute != null && IsPlayerMethod(method, playerAssemblyNames, "condition"))
+                if (attribute != null && IsPlayerMethod(method, playerAssemblyNames))
                 {
                     AddCandidate(method, MethodKind.Condition, attribute.Key, attribute.Owner, conditionCandidates);
                 }
             }
 
-            FinalizeCandidates(actionCandidates, actions, actionByKey, "action");
-            FinalizeCandidates(conditionCandidates, conditions, conditionByKey, "condition");
+            FinalizeCandidates(actionCandidates, actions, actionByKey);
+            FinalizeCandidates(conditionCandidates, conditions, conditionByKey);
         }
 
         /// <summary>
         /// 플레이어 어셈블리인지 ?
         /// </summary>
-        private static bool IsPlayerMethod(MethodInfo method, HashSet<string> playerAssemblyNames, string kind)
+        private static bool IsPlayerMethod(MethodInfo method, HashSet<string> playerAssemblyNames)
         {
             string assemblyName = method.DeclaringType?.Assembly.GetName().Name;
-            if (!string.IsNullOrEmpty(assemblyName) && playerAssemblyNames.Contains(assemblyName))
-            {
-                return true;
-            }
-
-            Debug.LogWarning($"[Dialogue] Editor 전용 {kind} 메서드는 무시합니다: {method.DeclaringType?.FullName}.{method.Name}");
-            return false;
+            return !string.IsNullOrEmpty(assemblyName) && playerAssemblyNames.Contains(assemblyName);
         }
 
         /// <summary>
@@ -104,9 +96,8 @@ namespace UniversalGraph.Dialogue.Editor
         /// </summary>
         private static void AddCandidate(MethodInfo method, MethodKind kind, string key, DialogueMethodOwner owner, Dictionary<string, List<DialogueMethodDescriptor>> candidatesByKey)
         {
-            if (!DialogueMethodDescriptorFactory.TryCreateFromReflection(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out string error))
+            if (!DialogueMethodDescriptorFactory.TryCreateFromReflection(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out _))
             {
-                Debug.LogError($"[Dialogue] {kind} '{method.DeclaringType?.FullName}.{method.Name}'을 등록하지 못했습니다: {error}");
                 return;
             }
 
@@ -125,14 +116,12 @@ namespace UniversalGraph.Dialogue.Editor
         private static void FinalizeCandidates(
             Dictionary<string, List<DialogueMethodDescriptor>> candidatesByKey,
             List<DialogueMethodDescriptor> list,
-            Dictionary<string, DialogueMethodDescriptor> listByKey,
-            string kind)
+            Dictionary<string, DialogueMethodDescriptor> listByKey)
         {
             foreach (KeyValuePair<string, List<DialogueMethodDescriptor>> pair in candidatesByKey)
             {
                 if (pair.Value.Count != 1)
                 {
-                    Debug.LogError($"[Dialogue] 중복된 {kind} 키 '{pair.Key}'는 그래프 메뉴에서 제외합니다.");
                     continue;
                 }
                 //유일한것만 담기

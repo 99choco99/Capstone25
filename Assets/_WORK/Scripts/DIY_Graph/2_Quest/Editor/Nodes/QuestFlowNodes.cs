@@ -186,9 +186,8 @@ namespace UniversalGraph.Quest.Editor
                 .Distinct()
                 .Count();
             root.Add(new HelpBox(
-                $"서로 다른 입력 분기 {connectedSources}개가 모두 도착할 때까지 기다립니다. " +
-                "필요한 분기 수는 연결 상태에서 자동으로 계산합니다.",
-                connectedSources >= 2 ? HelpBoxMessageType.Info : HelpBoxMessageType.Warning));
+                $"서로 다른 입력 {connectedSources}개가 모두 도착하면 진행합니다.",
+                HelpBoxMessageType.Info));
             return root;
         }
     }

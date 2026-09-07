@@ -34,7 +34,7 @@ Graph Asset
 9. `2_Quest/Runtime/QuestDefinitionRegistry.cs` — Quest 정의 등록과 ID 조회
 10. `2_Quest/Runtime/QuestRunner.cs` — Quest 진행 상태와 노드 실행
 
-처음 분석할 때 `Binding`, `Generator`, `Validation`, `Save`, `Tests`는 건너뛰어도 됩니다.
+처음 분석할 때 `Binding`, `Validation`, `Save`, `Tests`는 건너뛰어도 됩니다.
 이 폴더들은 기본 실행 흐름을 이해한 뒤 필요한 기능을 추적할 때 읽습니다.
 
 ## Editor 저장·불러오기 흐름
@@ -134,14 +134,14 @@ Interaction Entry부터 다시 평가하고 같은 Offer에 도달할 때만 시
 ```text
 [DialogueAction] / [QuestAction]
           │
-          ├─ Source Generator가 직접 호출 코드 생성
-          └─ Registry가 생성 정보 또는 Reflection 결과 등록
+          ├─ Editor: TypeCache → Factory → Catalog → Inspector에서 선택
+          └─ Runtime: Reflection → Factory → Invoker에 등록
                     │
                     └─ 저장된 인수를 복원해 메서드 실행
 ```
 
-각 도메인 Binding 폴더의 `Attribute → DescriptorFactory → Descriptor → Registry`가 한 묶음입니다.
-공통 `Runtime/Binding`은 두 도메인이 함께 사용하는 `MethodDescriptor`, 생성 호출자,
+각 도메인 Binding 폴더의 `Attribute → DescriptorFactory → Descriptor → Invoker`가 한 묶음입니다.
+공통 `Runtime/Binding`은 두 도메인이 함께 사용하는 `MethodDescriptor`,
 인수 데이터, Parameter Descriptor와 Codec을 가집니다. Dialogue와 Quest Descriptor는 대상 종류와 표시 이름만 추가합니다.
 Editor의 `MethodCatalog`와 `MethodBindingInspector`는 같은 Descriptor를 이용해 드롭다운과 인수 필드를 만듭니다.
 
@@ -172,12 +172,13 @@ GraphAssetMigrator
 새 버전으로 가는 단계만 추가합니다. 이미 배포한 이전 단계는 구형 에셋의 결과가 달라지므로 수정하지 않습니다.
 등록부는 중간 버전 누락과 같은 컨테이너 타입의 중복 등록을 시작 시 오류로 막습니다.
 
-## Generator 소스와 Unity 플러그인
+## Reflection 등록과 빌드 검증
 
-Generator 구현과 테스트는 저장소의 `Tools/UniversalGraph.Generator`와
-`Tools/UniversalGraph.Generator.Tests`에 있습니다. 빌드된 `UniversalGraph.Generator.dll`만
-`DIY_Graph/Generator`에 Roslyn Analyzer로 포함합니다. Dialogue와 Quest가 같은 DLL을 사용하며,
-생성 결과는 각 도메인의 `UniversalGraph.Dialogue.Generated`와 `UniversalGraph.Quest.Generated`에 배치됩니다.
+Invoker는 관련 어셈블리를 최초 초기화 때만 탐색합니다. Attribute의 Key로 Descriptor를 보관하고,
+호출할 때는 Codec으로 저장된 인수를 복원한 뒤 Context를 추가하여 `MethodInfo.Invoke`에 전달합니다.
+MethodInfo와 Descriptor는 런타임 캐시이며 그래프 에셋에는 Key와 인수 데이터만 저장됩니다.
 
-현재 계획했던 공통 Binding, 도메인별 마이그레이션, 대형 실행 파일 분리와 Generator 이름 통일은 완료됐습니다.
-다음 단계는 구조 변경보다 깨끗한 프로젝트 패키지 Import, EditMode Test Runner와 대상 플랫폼 IL2CPP Smoke Build 검증입니다.
+`GraphMethodBuildValidator`는 같은 Factory 규칙으로 작성 오류와 중복 키를 검사하며,
+스크립트 reload 후 진단하고 Mono·IL2CPP 빌드 전에 오류를 차단합니다.
+Attribute의 Preserve 상속과 `link.xml`은 빌드에서 Reflection에 필요한 코드를 보존합니다.
+에디터 검사만으로 코드 보존까지 보장하지 않으므로 대상 플랫폼 IL2CPP Smoke Build 검증이 필요합니다.

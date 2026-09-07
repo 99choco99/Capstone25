@@ -10,18 +10,14 @@ namespace UniversalGraph
         protected MethodDescriptor(
             string key,
             MethodKind kind,
-            Type declaringType,
-            string methodName,
-            bool isStatic,
             MethodInfo method,
-            MethodParameterDescriptor[] parameters,
-            GeneratedMethodInvoker generatedInvoker)
+            MethodParameterDescriptor[] parameters)
         {
             Key = key;
             Kind = kind;
-            DeclaringType = declaringType;
-            MethodName = methodName;
-            IsStatic = isStatic;
+            DeclaringType = method.DeclaringType;
+            MethodName = method.Name;
+            IsStatic = method.IsStatic;
             MethodInfo = method;
             Parameters = parameters ?? Array.Empty<MethodParameterDescriptor>();
 
@@ -35,7 +31,6 @@ namespace UniversalGraph
             }
             SerializedParameters = serializedParameters;
 
-            GeneratedInvoker = generatedInvoker;
             DisplayName = $"{Key}  {DeclaringType?.Name}.{MethodName}";
         }
 
@@ -71,9 +66,6 @@ namespace UniversalGraph
 
         /// <summary>Reflection 으로 호출</summary>
         public MethodInfo MethodInfo { get; }
-
-        /// <summary>Generator가 미리 만든 직접 호출 함수</summary>
-        internal GeneratedMethodInvoker GeneratedInvoker { get; }
 
 
         //================================ 에디터 표시용 =====================================

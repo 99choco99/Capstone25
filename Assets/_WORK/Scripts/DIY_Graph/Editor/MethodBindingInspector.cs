@@ -54,7 +54,7 @@ namespace UniversalGraph.Editor
                 {
                     MethodDescriptor descriptor = FindDescriptor(selectedKey);
                     data.Key = selectedKey;
-                    data.Arguments = descriptor != null ? MethodArgumentCodec.CreateDefaultArgumentData(descriptor) : new List<MethodArgumentData>();
+                    data.Arguments = MethodArgumentCodec.CreateDefaultArgumentData(descriptor);
                     onMethodChanged?.Invoke();
                     RefreshArgumentFields();
                 });
@@ -96,7 +96,7 @@ namespace UniversalGraph.Editor
 
                 if (!MethodArgumentCodec.TryDecodeAllArgumentData(data.Arguments, descriptor, out object[] values, out string error))
                 {
-                    argumentsRoot.Add(new HelpBox($"저장된 인수가 현재 메서드 시그니처와 일치하지 않습니다.\n{error}", HelpBoxMessageType.Error));
+                    argumentsRoot.Add(new HelpBox(error, HelpBoxMessageType.Error));
                     argumentsRoot.Add(new Button(() =>
                     {
                         editHandler.ApplyDataEdit("Repair method arguments", () =>
@@ -108,12 +108,6 @@ namespace UniversalGraph.Editor
                     {
                         text = "인수 다시 만들기 (호환되는 값 유지)"
                     });
-                    return;
-                }
-
-                if (descriptor.SerializedParameters.Count == 0)
-                {
-                    argumentsRoot.Add(new HelpBox("이 메서드는 그래프에서 입력할 인수가 없습니다.", HelpBoxMessageType.Info));
                     return;
                 }
 

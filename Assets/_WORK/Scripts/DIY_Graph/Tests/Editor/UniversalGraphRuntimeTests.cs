@@ -17,6 +17,8 @@ namespace UniversalGraph.Tests
         private static Action<QuestExecutionContext> questRunAction;
         private static Func<QuestExecutionContext, bool> questRunCondition;
         private static int overloadedActionAmount;
+        private static object[] invokedArgumentValues;
+        private static DialogueExecutionContext invokedDialogueContext;
 
         [OneTimeSetUp]
         public void RegisterTestMethods()
@@ -27,13 +29,8 @@ namespace UniversalGraph.Tests
                 invoker.GetMethod("ResetStaticState", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
                 invoker.GetMethod("Initialize").Invoke(null, null);
                 object[] arguments = { typeof(UniversalGraphRuntimeTests).Assembly };
-                bool registered = (bool)invoker.GetMethod("TryRegisterGeneratedAssembly", BindingFlags.Static | BindingFlags.NonPublic)
-                    .Invoke(null, arguments);
-                if (!registered)
-                {
-                    string scanMethod = invoker == typeof(DialogueMethodInvoker) ? "ScanAssemblyByReflection" : "ScanAssembly";
-                    invoker.GetMethod(scanMethod, BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, arguments);
-                }
+                string scanMethod = invoker == typeof(DialogueMethodInvoker) ? "ScanAssemblyByReflection" : "ScanAssembly";
+                invoker.GetMethod(scanMethod, BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, arguments);
             }
         }
 
@@ -51,6 +48,8 @@ namespace UniversalGraph.Tests
         {
             questRunAction = null;
             questRunCondition = null;
+            invokedArgumentValues = null;
+            invokedDialogueContext = null;
             if (DialogueManager.Instance.IsConversationActive)
             {
                 DialogueManager.Instance.CancelConversation();
@@ -120,38 +119,174 @@ namespace UniversalGraph.Tests
 
         [TestCase(false)]
         [TestCase(true)]
-        public void MethodDescriptorFactories_ResolveNonGenericOverload(bool quest)
+        public void MethodDescriptorFactories_AcceptNonGenericOverloadAndRejectGenericDeclaration(bool quest)
         {
-            var parameters = new[]
+            Type factory = quest ? typeof(QuestMethodDescriptorFactory) : typeof(DialogueMethodDescriptorFactory);
+            object owner = quest ? (object)QuestMethodTarget.Global : DialogueMethodOwner.Global;
+            MethodInfo create = factory.GetMethod("TryCreateFromReflection");
+            foreach (MethodInfo method in typeof(UniversalGraphRuntimeTests)
+                         .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+                         .Where(method => method.Name == nameof(RecordOverloadedAction)))
             {
-                new GeneratedParameterRegistration("arg0", "amount", typeof(int).FullName, typeof(int).Assembly.GetName().Name)
-            };
-            object registration;
-            Type factory;
-            if (quest)
-            {
-                registration = new QuestGeneratedMethodRegistration(
-                    MethodKind.Action, "tests.overload", QuestMethodTarget.Global,
-                    typeof(UniversalGraphRuntimeTests).FullName, nameof(RecordOverloadedAction), true, parameters, null);
-                factory = typeof(QuestMethodDescriptorFactory);
-            }
-            else
-            {
-                registration = new DialogueGeneratedMethodRegistration(
-                    MethodKind.Action, "tests.overload", DialogueMethodOwner.Global,
-                    typeof(UniversalGraphRuntimeTests).FullName, nameof(RecordOverloadedAction), true, parameters, null);
-                factory = typeof(DialogueMethodDescriptorFactory);
-            }
+                object[] arguments = { method, MethodKind.Action, "tests.overload", owner, null, null };
+                bool created = (bool)create.Invoke(null, arguments);
+                Assert.That(created, Is.EqualTo(!method.IsGenericMethod), arguments[5] as string);
+                if (!created)
+                {
+                    Assert.That(arguments[5], Is.Not.Null.And.Not.Empty);
+                    continue;
+                }
 
-            object[] arguments = { typeof(UniversalGraphRuntimeTests).Assembly, registration, null, null };
-            bool created = (bool)factory.GetMethod("TryCreateGenerated", BindingFlags.Static | BindingFlags.NonPublic)
-                .Invoke(null, arguments);
-            Assert.That(created, Is.True, arguments[3] as string);
-            var descriptor = (MethodDescriptor)arguments[2];
-            Assert.That(descriptor.MethodInfo.IsGenericMethod, Is.False);
-            overloadedActionAmount = 0;
-            descriptor.MethodInfo.Invoke(null, new object[] { 23 });
-            Assert.That(overloadedActionAmount, Is.EqualTo(23));
+                var descriptor = (MethodDescriptor)arguments[4];
+                Assert.That(descriptor.MethodInfo, Is.SameAs(method));
+                overloadedActionAmount = 0;
+                descriptor.MethodInfo.Invoke(null, new object[] { 23 });
+                Assert.That(overloadedActionAmount, Is.EqualTo(23));
+            }
+        }
+
+        [TestCase(false, MethodKind.Action, nameof(IsDialogueChoiceVisible))]
+        [TestCase(true, MethodKind.Action, nameof(IsDialogueChoiceVisible))]
+        [TestCase(false, MethodKind.Condition, nameof(RecordInvokerAction))]
+        [TestCase(true, MethodKind.Condition, nameof(RecordInvokerAction))]
+        public void MethodDescriptorFactories_RejectReturnTypeThatDoesNotMatchKind(bool quest, MethodKind kind, string methodName)
+        {
+            Type factory = quest ? typeof(QuestMethodDescriptorFactory) : typeof(DialogueMethodDescriptorFactory);
+            object owner = quest ? (object)QuestMethodTarget.Global : DialogueMethodOwner.Global;
+            MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+            object[] arguments = { method, kind, "tests.invalid-return", owner, null, null };
+
+            Assert.That((bool)factory.GetMethod("TryCreateFromReflection").Invoke(null, arguments), Is.False);
+            Assert.That(arguments[4], Is.Null);
+            Assert.That(arguments[5], Is.Not.Null.And.Not.Empty);
+        }
+
+        [TestCase(typeof(DialogueMethodInvoker))]
+        [TestCase(typeof(QuestMethodInvoker))]
+        public void MethodInvokers_ReflectPrivateStaticMethodWithAllSupportedValues(Type invoker)
+        {
+            DialogueContainer asset = CreateAsset<DialogueContainer>();
+            var binding = new MethodBindingData
+            {
+                Key = "tests.invoker.all-types",
+                Arguments = CreateDialogueArguments(
+                    nameof(AcceptAllSupportedArgumentTypes), MethodKind.Action,
+                    ("arg0", "text"), ("arg1", true), ("arg2", 42),
+                    ("arg3", 1.25f), ("arg4", QuestState.InProgress), ("arg5", asset))
+            };
+
+            object[] arguments = { binding, null, MethodKind.Action, false };
+            Assert.That((bool)invoker.GetMethod("TryInvokeMethod").Invoke(null, arguments), Is.True);
+            Assert.That(invokedArgumentValues,
+                Is.EqualTo(new object[] { "text", true, 42, 1.25f, QuestState.InProgress, asset }));
+        }
+
+        [Test]
+        public void DialogueMethodInvoker_InjectsContextWithoutSavedArgument()
+        {
+            var context = new DialogueExecutionContext(CreateGameObject("speaker"), CreateGameObject("interactor"));
+            var binding = new MethodBindingData { Key = "tests.dialogue.context" };
+
+            Assert.That(DialogueMethodInvoker.TryInvokeMethod(binding, context, MethodKind.Action, out _), Is.True);
+            Assert.That(binding.Arguments, Is.Empty);
+            Assert.That(invokedDialogueContext, Is.SameAs(context));
+        }
+
+        [TestCase(DialogueMethodOwner.Speaker)]
+        [TestCase(DialogueMethodOwner.Interactor)]
+        public void DialogueMethodInvoker_UsesRequestedComponentInstance(DialogueMethodOwner owner)
+        {
+            GameObject parent = CreateGameObject("parent");
+            GameObject speaker = CreateGameObject("speaker");
+            GameObject interactor = CreateGameObject("interactor");
+            speaker.transform.SetParent(parent.transform);
+            interactor.transform.SetParent(parent.transform);
+            GameObject target = owner == DialogueMethodOwner.Speaker ? speaker : interactor;
+            target.transform.SetSiblingIndex(1);
+
+            MethodInfo method = typeof(Transform).GetMethod(nameof(Transform.SetSiblingIndex), new[] { typeof(int) });
+            Assert.That(DialogueMethodDescriptorFactory.TryCreateFromReflection(
+                method, MethodKind.Action, "tests.dialogue.instance", owner,
+                out DialogueMethodDescriptor descriptor, out string error), Is.True, error);
+            typeof(DialogueMethodInvoker).GetMethod("RegisterDescriptor", BindingFlags.Static | BindingFlags.NonPublic)
+                .Invoke(null, new object[] { descriptor });
+            var binding = new MethodBindingData
+            {
+                Key = descriptor.Key,
+                Arguments = MethodArgumentCodec.CreateDefaultArgumentData(descriptor)
+            };
+            WriteArguments(binding.Arguments, descriptor.SerializedParameters, new[] { ("arg0", (object)0) });
+
+            try
+            {
+                Assert.That(DialogueMethodInvoker.TryInvokeMethod(
+                    binding, new DialogueExecutionContext(speaker, interactor), MethodKind.Action, out _), Is.True);
+                Assert.That(target.transform.GetSiblingIndex(), Is.Zero);
+            }
+            finally
+            {
+                RegisterTestMethods();
+            }
+        }
+
+        [Test]
+        public void QuestMethodInvoker_UsesControllerInstanceAndInjectsContext()
+        {
+            var controller = new FakeQuestController();
+            QuestContainer graph = CreateAsset<QuestContainer>();
+            var context = new QuestExecutionContext(controller, graph, null, new QuestActionNodeData());
+            MethodInfo method = typeof(FakeQuestController).GetMethod("RecordContext", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(QuestMethodDescriptorFactory.TryCreateFromReflection(
+                method, MethodKind.Action, "tests.quest.instance", QuestMethodTarget.Controller,
+                out QuestMethodDescriptor descriptor, out string error), Is.True, error);
+            var binding = new MethodBindingData
+            {
+                Key = descriptor.Key,
+                Arguments = MethodArgumentCodec.CreateDefaultArgumentData(descriptor)
+            };
+            WriteArguments(binding.Arguments, descriptor.SerializedParameters, new[] { ("arg0", (object)17) });
+
+            Assert.That(binding.Arguments, Has.Count.EqualTo(1));
+            Assert.That(QuestMethodInvoker.TryInvokeMethod(binding, context, MethodKind.Action, out _), Is.True);
+            Assert.That(controller.InvokedContext, Is.SameAs(context));
+            Assert.That(controller.InvokedAmount, Is.EqualTo(17));
+        }
+
+        [TestCase(typeof(DialogueMethodInvoker))]
+        [TestCase(typeof(QuestMethodInvoker))]
+        public void MethodInvokers_ReportOriginalReflectionExceptionAndReturnFalse(Type invoker)
+        {
+            var binding = new MethodBindingData { Key = "tests.invoker.throw" };
+            object[] arguments = { binding, null, MethodKind.Action, true };
+            LogAssert.Expect(LogType.Error,
+                new System.Text.RegularExpressions.Regex("tests\\.invoker\\.throw[\\s\\S]*InvalidOperationException: reflection invocation test"));
+
+            Assert.That((bool)invoker.GetMethod("TryInvokeMethod").Invoke(null, arguments), Is.False);
+            Assert.That(arguments[3], Is.False);
+        }
+
+        [TestCase(typeof(DialogueMethodInvoker), "actionRegistry")]
+        [TestCase(typeof(QuestMethodInvoker), "Actions")]
+        public void MethodInvokers_RejectDuplicateKeyInsteadOfChoosingFirstMethod(Type invoker, string registryName)
+        {
+            const string key = "tests.invoker.duplicate";
+            object owner = invoker == typeof(DialogueMethodInvoker)
+                ? (object)DialogueMethodOwner.Global : QuestMethodTarget.Global;
+            MethodInfo register = invoker.GetMethod("RegisterMethod", BindingFlags.Static | BindingFlags.NonPublic);
+            string[] methodNames = { nameof(RecordInvokerAction), nameof(RecordDialogueChoiceAction), nameof(EndCurrentDialogue) };
+            for (int i = 0; i < methodNames.Length; i++)
+            {
+                if (i == 1)
+                {
+                    LogAssert.Expect(LogType.Error,
+                        new System.Text.RegularExpressions.Regex("중복된 Action 키 'tests\\.invoker\\.duplicate'"));
+                }
+
+                MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(methodNames[i], BindingFlags.Static | BindingFlags.NonPublic);
+                register.Invoke(null, new object[] { method, MethodKind.Action, key, owner });
+                var registry = (System.Collections.IDictionary)invoker.GetField(registryName, BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+                Assert.That(registry.Contains(key), Is.EqualTo(i == 0));
+            }
         }
 
         [Test]
@@ -1258,6 +1393,51 @@ namespace UniversalGraph.Tests
             Assert.That(target.QuestProgress.ContainsKey(999), Is.True);
         }
 
+        [TestCase("negative-count")]
+        [TestCase("unknown-state")]
+        [TestCase("duplicate-active-node")]
+        public void QuestSaveData_CaptureRejectsDataThatCannotBeRestored(string invalidData)
+        {
+            QuestContainer quest = CreateAsset<QuestContainer>();
+            quest.QuestId = 84;
+            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            quest.Nodes.Add(new QuestObjectiveNodeData { Guid = "objective", RequiredAmount = 3 });
+            quest.NodeLinks.Add(Link("start", QuestPortNames.Next, "objective"));
+            QuestDefinitionRegistry.Initialize(new[] { quest });
+            var progress = new QuestProgress(quest)
+            {
+                state = QuestState.InProgress,
+                activeNodeGuids = new List<string> { "objective" }
+            };
+            if (invalidData == "negative-count")
+            {
+                progress.nodeProgressCounts["objective"] = -1;
+            }
+            else if (invalidData == "unknown-state")
+            {
+                progress.state = (QuestState)999;
+                progress.activeNodeGuids.Clear();
+            }
+            else
+            {
+                progress.activeNodeGuids.Add("objective");
+            }
+
+            var saved = new QuestProgressSaveData
+            {
+                questId = quest.QuestId,
+                definitionSchemaVersion = quest.SchemaVersion,
+                state = progress.state,
+                activeNodeGuids = new List<string>(progress.activeNodeGuids),
+                nodeProgressCounts = progress.nodeProgressCounts.Select(pair =>
+                    new QuestNodeProgressSaveData { nodeGuid = pair.Key, count = pair.Value }).ToList()
+            };
+
+            Assert.That(saved.TryRestore(out _, out string error), Is.False);
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => QuestProgressSaveData.Capture(progress));
+            Assert.That(exception.Message, Is.EqualTo(error));
+        }
+
         [Test]
         public void QuestSaveData_RejectsRequiredCountForActiveObjective()
         {
@@ -1527,6 +1707,34 @@ namespace UniversalGraph.Tests
                 error);
             Assert.That(migrated.schemaVersion, Is.EqualTo(QuestSaveData.CurrentSchemaVersion));
             Assert.That(migrated.quests.Single().state, Is.EqualTo(QuestState.NotStarted));
+            QuestContainer quest = CreateAsset<QuestContainer>();
+            quest.QuestId = 92;
+            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            QuestDefinitionRegistry.Initialize(new[] { quest });
+
+            var controller = new FakeQuestController();
+            Assert.That(migrated.TryApplyTo(controller, replaceExisting: true, out error), Is.True, error);
+            Assert.That(controller.QuestProgress[92].state, Is.EqualTo(QuestState.NotStarted));
+            Assert.That(migrated.quests.Single().definitionSchemaVersion, Is.EqualTo(quest.SchemaVersion));
+        }
+
+        [Test]
+        public void QuestSaveData_MigrationDoesNotOverwriteFutureDefinitionVersion()
+        {
+            int futureVersion = GraphAssetMigrator.CurrentVersion + 1;
+            var saved = new QuestSaveData
+            {
+                schemaVersion = 2,
+                quests = new List<QuestProgressSaveData>
+                {
+                    new() { questId = 93, definitionSchemaVersion = futureVersion, state = QuestState.NotStarted }
+                }
+            };
+
+            Assert.That(QuestSaveMigrator.TryMigrate(saved, out _, out string error), Is.True, error);
+            Assert.That(saved.quests.Single().definitionSchemaVersion, Is.EqualTo(futureVersion));
+            Assert.That(saved.quests.Single().TryRestore(out _, out error), Is.False);
+            Assert.That(error, Does.Contain("지원하지 않는"));
         }
 
         [Test]
@@ -2679,6 +2887,19 @@ namespace UniversalGraph.Tests
             dialogueChoiceActionCount++;
         }
 
+        [DialogueAction("tests.dialogue.context", Owner = DialogueMethodOwner.Global)]
+        private static void RecordDialogueContext(DialogueExecutionContext context)
+        {
+            invokedDialogueContext = context;
+        }
+
+        [DialogueAction("tests.invoker.throw", Owner = DialogueMethodOwner.Global)]
+        [QuestAction("tests.invoker.throw", Target = QuestMethodTarget.Global)]
+        private static void ThrowInvokerException()
+        {
+            throw new InvalidOperationException("reflection invocation test");
+        }
+
         private static void RecordOverloadedAction(int amount)
         {
             overloadedActionAmount = amount;
@@ -2689,6 +2910,8 @@ namespace UniversalGraph.Tests
             throw new InvalidOperationException("제네릭 오버로드가 선택되면 안 됩니다.");
         }
 
+        [DialogueAction("tests.invoker.all-types", Owner = DialogueMethodOwner.Global)]
+        [QuestAction("tests.invoker.all-types", Target = QuestMethodTarget.Global)]
         private static void AcceptAllSupportedArgumentTypes(
             string text,
             bool flag,
@@ -2697,6 +2920,7 @@ namespace UniversalGraph.Tests
             QuestState state,
             DialogueContainer asset)
         {
+            invokedArgumentValues = new object[] { text, flag, count, ratio, state, asset };
         }
 
         private T CreateAsset<T>() where T : ScriptableObject
@@ -2802,6 +3026,15 @@ namespace UniversalGraph.Tests
         {
             public IDictionary<int, QuestProgress> QuestProgress { get; } = new Dictionary<int, QuestProgress>();
             public List<int> StatusChangedQuestIds { get; } = new();
+            public QuestExecutionContext InvokedContext { get; private set; }
+            public int InvokedAmount { get; private set; }
+
+            [QuestAction("tests.quest.instance", Target = QuestMethodTarget.Controller)]
+            private void RecordContext(QuestExecutionContext context, int amount)
+            {
+                InvokedContext = context;
+                InvokedAmount = amount;
+            }
 
             public void InvokeStatusChanged(QuestContainer container, QuestProgress progress)
             {

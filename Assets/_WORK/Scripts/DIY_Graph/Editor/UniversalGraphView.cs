@@ -400,8 +400,7 @@ namespace UniversalGraph.Editor
         /// </summary>
         private static Port FindPort(VisualElement container, string portName)
         {
-            return container.Children().OfType<Port>()
-                .FirstOrDefault(port => port.portName == portName);
+            return container.Children().OfType<Port>().FirstOrDefault(port => port.portName == portName);
         }
 
 

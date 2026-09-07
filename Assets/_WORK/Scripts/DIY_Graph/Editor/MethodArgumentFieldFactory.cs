@@ -94,16 +94,10 @@ namespace UniversalGraph.Editor
             MethodParameterDescriptor descriptor, object initialValue)
         {
             Enum currentEnum = (Enum)initialValue;
-			if (descriptor.ParameterType.IsDefined(typeof(FlagsAttribute), inherit: false))
-			{
-                EnumFlagsField field = new (descriptor.DisplayName, currentEnum);
-				RegisterValueChange(field, editHandler, argument, descriptor);
-				return field;
-			}
-
-            EnumField enumField = new (descriptor.DisplayName, currentEnum);
-			RegisterValueChange(enumField, editHandler, argument, descriptor);
-			return enumField;
+            BaseField<Enum> field = descriptor.ParameterType.IsDefined(typeof(FlagsAttribute), inherit: false)
+                ? new EnumFlagsField(descriptor.DisplayName, currentEnum) : new EnumField(descriptor.DisplayName, currentEnum);
+			RegisterValueChange(field, editHandler, argument, descriptor);
+			return field;
         }
 
         /// <summary>Unity 객체 인수 타입에 에셋만 선택할 수 있는 객체 선택기를 만들기</summary>

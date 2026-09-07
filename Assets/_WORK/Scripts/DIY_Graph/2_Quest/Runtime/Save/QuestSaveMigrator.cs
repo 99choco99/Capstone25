@@ -109,7 +109,7 @@ namespace UniversalGraph
             {
                 if (progress != null && progress.definitionSchemaVersion <= 0)
                 {
-                    progress.definitionSchemaVersion = GraphAssetMigrator.CurrentVersion;
+                    progress.definitionSchemaVersion = 1;
                 }
             }
             return null;
@@ -121,9 +121,20 @@ namespace UniversalGraph
             NormalizeCollections(saveData);
             foreach (QuestProgressSaveData progress in saveData.quests)
             {
-                if (progress != null && ((int)progress.state == 0 || (int)progress.state == 1))
+                if (progress == null)
+                {
+                    continue;
+                }
+
+                if ((int)progress.state == 0 || (int)progress.state == 1)
                 {
                     progress.state = QuestState.NotStarted;
+                }
+
+                // 같은 상태 통합이 적용된 그래프 정의 1 -> 2와 저장 기록의 버전을 맞춥니다.
+                if (progress.definitionSchemaVersion == 1)
+                {
+                    progress.definitionSchemaVersion = 2;
                 }
             }
 

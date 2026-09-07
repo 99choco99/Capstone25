@@ -65,12 +65,13 @@ namespace UniversalGraph
                 completedGateInputs = new List<string>(progress.completedGateInputs)
             };
 
-            if (!QuestSaveData.TryValidateAgainstDefinition(
+            if (!saveData.TryValidateData(out _, out string error)
+                || !QuestSaveData.TryValidateAgainstDefinition(
                     saveData,
                     progress,
                     definition,
                     graphIndex,
-                    out string error))
+                    out error))
             {
                 throw new InvalidOperationException(error);
             }
@@ -82,6 +83,27 @@ namespace UniversalGraph
         public bool TryRestore(out QuestProgress progress, out string error)
         {
             progress = null;
+            if (!TryValidateData(out Dictionary<string, int> counters, out error))
+            {
+                return false;
+            }
+
+            progress = new QuestProgress
+            {
+                questId = questId,
+                state = state,
+                activeNodeGuids = new List<string>(activeNodeGuids ?? Enumerable.Empty<string>()),
+                nodeProgressCounts = counters,
+                completedNodeGuids = new List<string>(completedNodeGuids ?? Enumerable.Empty<string>()),
+                completedGateInputs = new List<string>(completedGateInputs ?? Enumerable.Empty<string>())
+            };
+            return true;
+        }
+
+        /// <summary>저장과 복원의 기본 값을 같은 기준으로 검사하고, 복원용 진행량 Dictionary를 만듭니다.</summary>
+        private bool TryValidateData(out Dictionary<string, int> counters, out string error)
+        {
+            counters = null;
             if (questId <= 0)
             {
                 error = $"Quest 저장 데이터에 올바르지 않은 Quest ID {questId}가 있습니다.";
@@ -110,7 +132,7 @@ namespace UniversalGraph
                 return false;
             }
 
-            var counters = new Dictionary<string, int>();
+            counters = new Dictionary<string, int>();
             foreach (QuestNodeProgressSaveData entry in nodeProgressCounts
                          ?? Enumerable.Empty<QuestNodeProgressSaveData>())
             {
@@ -133,15 +155,6 @@ namespace UniversalGraph
                 }
             }
 
-            progress = new QuestProgress
-            {
-                questId = questId,
-                state = state,
-                activeNodeGuids = new List<string>(activeNodeGuids ?? Enumerable.Empty<string>()),
-                nodeProgressCounts = counters,
-                completedNodeGuids = new List<string>(completedNodeGuids ?? Enumerable.Empty<string>()),
-                completedGateInputs = new List<string>(completedGateInputs ?? Enumerable.Empty<string>())
-            };
             error = null;
             return true;
         }
@@ -406,7 +419,6 @@ namespace UniversalGraph
                 string sourceGuid = gateInput.Substring(separatorIndex + 1);
                 if (!graphIndex.Nodes.TryGetValue(gateGuid, out NodeBaseData gateData)
                     || gateData is not QuestAndGateNodeData
-                    || !graphIndex.Nodes.ContainsKey(sourceGuid)
                     || !graphIndex.OutgoingLinks.TryGetValue(sourceGuid, out List<NodeLinkData> sourceLinks)
                     || !sourceLinks.Any(link => link.TargetNodeGuid == gateGuid))
                 {

@@ -29,9 +29,7 @@ namespace UniversalGraph.Quest.Editor
                 "Entry ID",
                 GetEntryChoices(entryPoint.GraphAsset, entryPoint.EntryId),
                 0);
-            string selectedEntryId = entryField.choices.FirstOrDefault(choice => choice == entryPoint.EntryId)
-                                     ?? entryField.choices[0];
-            entryField.SetValueWithoutNotify(selectedEntryId);
+            entryField.SetValueWithoutNotify(entryPoint.EntryId);
             entryField.SetEnabled(entryPoint.GraphAsset != null);
 
             var openGraphButton = new Button(() =>
@@ -97,12 +95,7 @@ namespace UniversalGraph.Quest.Editor
                 ids.Add(currentQuestId);
                 ids.Sort();
             }
-            if (ids.Count == 0)
-            {
-                ids.Add(0);
-            }
-
-            int selectedIndex = Math.Max(0, ids.IndexOf(currentQuestId));
+            int selectedIndex = ids.IndexOf(currentQuestId);
             var field = new PopupField<int>(label, ids, selectedIndex, FormatQuest, FormatQuest);
             field.RegisterValueChangedCallback(change =>
                 editHandler.ApplyDataEdit(undoName, () => apply(change.newValue)));
@@ -120,11 +113,7 @@ namespace UniversalGraph.Quest.Editor
                 .ToList()
                 ?? new List<string>();
 
-            if (entries.Count == 0)
-            {
-                entries.Add(currentEntryId);
-            }
-            else if (!entries.Contains(currentEntryId))
+            if (!entries.Contains(currentEntryId))
             {
                 entries.Add(currentEntryId);
             }

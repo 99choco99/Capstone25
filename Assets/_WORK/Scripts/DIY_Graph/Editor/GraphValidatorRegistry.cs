@@ -57,6 +57,11 @@ namespace UniversalGraph.Editor
             EnsureInitialized();
             var issues = new List<GraphValidationIssue>();
             GraphStructureValidator.Validate(container, issues);
+            if (issues.Any(issue => issue.Severity == GraphValidationSeverity.Error))
+            {
+                return issues;
+            }
+
             var index = new GraphValidationIndex(container);
 
             Type containerType = container.GetType();
@@ -79,7 +84,7 @@ namespace UniversalGraph.Editor
             return issues
                 .OrderByDescending(issue => issue.Severity)
                 .ThenBy(issue => issue.NodeGuid ?? string.Empty, StringComparer.Ordinal)
-                .ThenBy(issue => issue.Code, StringComparer.Ordinal)
+                .ThenBy(issue => issue.IssueKind, StringComparer.Ordinal)
                 .ToArray();
         }
 
@@ -87,7 +92,7 @@ namespace UniversalGraph.Editor
         /// 노드 타입별 규칙은 제외하고, 모든 그래프에 공통인 직렬화 구조만 검사합니다.
         /// Serializer처럼 손상된 데이터를 읽기 전에 확인해야 하는 에디터 코드에서 사용합니다.
         /// </summary>
-        internal static IReadOnlyList<GraphValidationIssue> ValidateStructure(GraphContainer container)
+        public static IReadOnlyList<GraphValidationIssue> ValidateStructure(GraphContainer container)
         {
             if (container == null)
             {
@@ -109,7 +114,7 @@ namespace UniversalGraph.Editor
             var stack = new List<string>();
             var cycleNodes = new HashSet<string>();
 
-            foreach (NodeBaseData node in index.Nodes.Where(node => node != null && includeNode(node)))
+            foreach (NodeBaseData node in index.Nodes.Where(includeNode))
             {
                 Visit(node.Guid);
             }
@@ -121,10 +126,7 @@ namespace UniversalGraph.Editor
                 if (active.Contains(guid))
                 {
                     int cycleStart = stack.FindIndex(item => item == guid);
-                    if (cycleStart >= 0)
-                    {
-                        cycleNodes.UnionWith(stack.Skip(cycleStart));
-                    }
+                    cycleNodes.UnionWith(stack.Skip(cycleStart));
                     return;
                 }
 
@@ -135,9 +137,9 @@ namespace UniversalGraph.Editor
 
                 active.Add(guid);
                 stack.Add(guid);
-                foreach (NodeLinkData link in index.GetOutgoing(guid))
+                foreach (NodeLinkData link in index.GetLinkInStartPort(guid))
                 {
-                    if (index.TryGetNode(link.TargetNodeGuid, out NodeBaseData target)
+                    if (index.GetNodeData(link.TargetNodeGuid, out NodeBaseData target)
                         && includeNode(target))
                     {
                         Visit(target.Guid);

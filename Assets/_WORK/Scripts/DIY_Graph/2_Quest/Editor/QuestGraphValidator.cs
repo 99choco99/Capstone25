@@ -62,8 +62,8 @@ namespace UniversalGraph.Quest.Editor
 
             QuestStartNodeData[] starts = index.Nodes.OfType<QuestStartNodeData>().ToArray();
             QuestInteractionEntryNodeData[] interactionEntries = index.Nodes.OfType<QuestInteractionEntryNodeData>().ToArray();
-            HashSet<string> progressionReachable = index.GetReachableNodeGuids(starts.Select(node => node.Guid));
-            HashSet<string> interactionReachable = index.GetReachableNodeGuids(interactionEntries.Select(node => node.Guid));
+            HashSet<string> progressionReachable = index.GetReachableNode(starts.Select(node => node.Guid));
+            HashSet<string> interactionReachable = index.GetReachableNode(interactionEntries.Select(node => node.Guid));
 
             if (starts.Length != 1)
             {
@@ -72,7 +72,7 @@ namespace UniversalGraph.Quest.Editor
                     $"Quest 그래프에는 Quest Start 노드가 정확히 하나 필요하지만 {starts.Length}개 발견되었습니다.");
             }
 
-            foreach (NodeBaseData node in index.Nodes.Where(node => node != null))
+            foreach (NodeBaseData node in index.Nodes)
             {
                 bool inProgression = progressionReachable.Contains(node.Guid);
                 bool inInteraction = interactionReachable.Contains(node.Guid);
@@ -88,14 +88,11 @@ namespace UniversalGraph.Quest.Editor
                 switch (node)
                 {
                     case QuestStartNodeData start:
-                        RequireAtLeastOneOutput(start.Guid, QuestPortNames.Next, "Quest Start는 첫 번째 진행 노드에 연결되어야 합니다.");
+                        RequireAtLeastOneOutput(start.Guid, QuestPortNames.Next);
                         break;
 
                     case QuestInteractionEntryNodeData entry:
-                        RequireExactlyOneOutput(
-                            entry.Guid,
-                            QuestPortNames.Next,
-                            "Interaction Entry는 경로 노드 하나에 정확히 연결되어야 합니다.");
+                        RequireExactlyOneOutput(entry.Guid, QuestPortNames.Next);
                         break;
 
                     case QuestObjectiveNodeData objective:
@@ -112,7 +109,7 @@ namespace UniversalGraph.Quest.Editor
                         }
                         if (inProgression)
                         {
-                            RequireAtLeastOneOutput(objective.Guid, QuestPortNames.Next, "완료된 Objective는 다른 노드로 이어져야 합니다.");
+                            RequireAtLeastOneOutput(objective.Guid, QuestPortNames.Next);
                         }
                         break;
 
@@ -132,7 +129,7 @@ namespace UniversalGraph.Quest.Editor
                         break;
 
                     case QuestAndGateNodeData gate:
-                        int connectedSources = index.GetIncoming(gate.Guid)
+                        int connectedSources = index.GetLinkInTargetPorts(gate.Guid)
                             .Select(link => link.StartNodeGuid)
                             .Distinct()
                             .Count();
@@ -140,12 +137,12 @@ namespace UniversalGraph.Quest.Editor
                         {
                             AddWarning(
                                 "QUEST_REDUNDANT_AND",
-                                $"AND Gate에 서로 다른 입력 Branch가 {connectedSources}개 있습니다. 두 개 이상 연결하거나 Gate를 제거하세요.",
+                                $"AND Gate: 서로 다른 입력이 2개 미만입니다 (현재 {connectedSources}개).",
                                 gate.Guid);
                         }
                         if (inProgression)
                         {
-                            RequireAtLeastOneOutput(gate.Guid, QuestPortNames.Next, "AND Gate는 연결된 모든 Branch가 도착한 뒤 다음 노드로 이어져야 합니다.");
+                            RequireAtLeastOneOutput(gate.Guid, QuestPortNames.Next);
                         }
                         break;
 
@@ -158,7 +155,7 @@ namespace UniversalGraph.Quest.Editor
                             required: true);
                         if (inProgression)
                         {
-                            RequireAtLeastOneOutput(action.Guid, QuestPortNames.Next, "Quest Action은 다른 노드로 이어져야 합니다.");
+                            RequireAtLeastOneOutput(action.Guid, QuestPortNames.Next);
                         }
                         break;
 
@@ -174,7 +171,7 @@ namespace UniversalGraph.Quest.Editor
                                 stateChange.Guid);
                         }
 
-                        int stateOutputCount = index.GetOutgoing(
+                        int stateOutputCount = index.GetLinkInStartPort(
                             stateChange.Guid,
                             QuestPortNames.Next).Count;
                         if (stateChange.NewState != QuestState.InProgress && stateOutputCount > 0)
@@ -203,12 +200,12 @@ namespace UniversalGraph.Quest.Editor
                             "Reward Action");
                         if (inProgression)
                         {
-                            RequireAtLeastOneOutput(reward.Guid, QuestPortNames.Next, "Reward는 다음 노드로 이어져야 합니다.");
+                            RequireAtLeastOneOutput(reward.Guid, QuestPortNames.Next);
                         }
                         break;
 
                     case QuestFailNodeData fail:
-                        if (index.GetOutgoing(fail.Guid).Count > 0)
+                        if (index.GetLinkInStartPort(fail.Guid).Count > 0)
                         {
                             AddError("QUEST_FAIL_OUTPUT", "Fail은 종점이므로 나가는 연결선을 가질 수 없습니다.", fail.Guid);
                         }
@@ -218,7 +215,7 @@ namespace UniversalGraph.Quest.Editor
                         ValidateQuestReference(waitForQuest.TargetQuestId, "대기할 Quest", waitForQuest.Guid);
                         if (waitForQuest.TargetQuestId == container.QuestId)
                         {
-                            AddError("QUEST_SELF_DEPENDENCY", "Quest는 자신의 상태를 기다릴 수 없습니다.", waitForQuest.Guid);
+                            AddWarning("QUEST_SELF_DEPENDENCY", "자기 Quest 대기: 지정한 상태에 도달할 수 있는지 확인하세요.", waitForQuest.Guid);
                         }
                         else if (inProgression)
                         {
@@ -226,7 +223,7 @@ namespace UniversalGraph.Quest.Editor
                         }
                         if (inProgression)
                         {
-                            RequireAtLeastOneOutput(waitForQuest.Guid, QuestPortNames.Next, "대기 중인 Quest가 지정 상태가 되면 다음 노드로 이어져야 합니다.");
+                            RequireAtLeastOneOutput(waitForQuest.Guid, QuestPortNames.Next);
                         }
                         break;
 
@@ -263,12 +260,15 @@ namespace UniversalGraph.Quest.Editor
 
             HashSet<string> reachable = new(progressionReachable);
             reachable.UnionWith(interactionReachable);
-            foreach (NodeBaseData node in index.Nodes.Where(node => node != null && !reachable.Contains(node.Guid)))
+            if (progressionReachable.Count > 0)
             {
-                AddWarning(
-                    "QUEST_UNREACHABLE",
-                    "Quest Start 또는 Interaction Entry에서 이 노드에 도달할 수 없습니다.",
-                    node.Guid);
+                foreach (NodeBaseData node in index.Nodes.Where(node => !reachable.Contains(node.Guid)))
+                {
+                    AddWarning(
+                        "QUEST_UNREACHABLE",
+                        "Start 또는 Interaction Entry에서 도달할 수 없는 노드입니다.",
+                        node.Guid);
+                }
             }
 
             foreach (string nodeGuid in GraphValidatorRegistry.FindCycleNodes(index, _ => true))
@@ -286,11 +286,6 @@ namespace UniversalGraph.Quest.Editor
                     AddError(
                         "QUEST_ID",
                         "양수인 고정 Quest ID를 지정하세요.");
-                }
-
-                if (string.IsNullOrWhiteSpace(container.questName))
-                {
-                    AddWarning("QUEST_NAME", "Quest 이름이 비어 있습니다.");
                 }
 
                 QuestContainer[] duplicates = QuestAssetIndex.Quests
@@ -311,16 +306,16 @@ namespace UniversalGraph.Quest.Editor
 
                 void ValidateConditionalPort(string portName)
                 {
-                    int count = index.GetOutgoing(nodeGuid, portName).Count;
+                    int count = index.GetLinkInStartPort(nodeGuid, portName).Count;
                     if (count > 1)
                     {
-                        AddError("QUEST_CONDITION_OUTPUT", $"{portName}에는 연결선 하나만 허용되지만 {count}개 발견되었습니다.", nodeGuid);
+                        AddError("QUEST_CONDITION_OUTPUT", $"{portName}: 최대 1개 연결 가능 (현재 {count}개)", nodeGuid);
                     }
                     else if (requiredForProgression && count == 0)
                     {
                         AddError(
                             "QUEST_CONDITION_DEAD_END",
-                            $"진행 경로가 이 Condition에 도달할 수 있으므로 {portName}을 연결해야 합니다.",
+                            $"{portName}: 연결 1개 필요 (현재 0개)",
                             nodeGuid);
                     }
                 }
@@ -341,9 +336,9 @@ namespace UniversalGraph.Quest.Editor
                     return;
                 }
 
-                AddError(
+                AddWarning(
                     "QUEST_WAIT_DEPENDENCY_CYCLE",
-                    $"Quest {container.QuestId}와 Quest {targetQuestId} 사이의 대기 의존성이 순환합니다.",
+                    $"Quest {container.QuestId} ↔ {targetQuestId}: 서로 기다리며 멈추지 않는지 확인하세요.",
                     nodeGuid);
 
                 bool CanReachQuest(int currentQuestId, int destinationQuestId, ISet<int> visitedQuestIds)
@@ -365,11 +360,19 @@ namespace UniversalGraph.Quest.Editor
                         return false;
                     }
 
+                    GraphValidationIssue structureError = GraphValidatorRegistry.ValidateStructure(definition)
+                        .FirstOrDefault(issue => issue.Severity == GraphValidationSeverity.Error);
+                    if (structureError != null)
+                    {
+                        AddError("QUEST_REFERENCE_STRUCTURE", $"Quest {currentQuestId}: {structureError.Message}", nodeGuid);
+                        return false;
+                    }
+
                     var definitionContext = new GraphValidationIndex(definition);
                     IEnumerable<string> startGuids = definitionContext.Nodes
                         .OfType<QuestStartNodeData>()
                         .Select(start => start.Guid);
-                    HashSet<string> reachableGuids = definitionContext.GetReachableNodeGuids(startGuids);
+                    HashSet<string> reachableGuids = definitionContext.GetReachableNode(startGuids);
                     foreach (QuestWaitForQuestNodeData dependency in definitionContext.Nodes
                                  .OfType<QuestWaitForQuestNodeData>()
                                  .Where(wait => reachableGuids.Contains(wait.Guid)))
@@ -393,12 +396,12 @@ namespace UniversalGraph.Quest.Editor
             {
                 if (binding == null)
                 {
-                    string code = "QUEST_REWARD_DATA";
+                    string issueKind = "QUEST_REWARD_DATA";
                     if (required)
                     {
-                        code = kind == MethodKind.Action ? "QUEST_ACTION_DATA" : "QUEST_CONDITION_DATA";
+                        issueKind = kind == MethodKind.Action ? "QUEST_ACTION_DATA" : "QUEST_CONDITION_DATA";
                     }
-                    AddError(code, $"{label} 호출 정보가 없습니다.", nodeGuid);
+                    AddError(issueKind, $"{label} 호출 정보가 없습니다.", nodeGuid);
                     return;
                 }
 
@@ -406,8 +409,8 @@ namespace UniversalGraph.Quest.Editor
                 {
                     if (required)
                     {
-                        string code = kind == MethodKind.Action ? "QUEST_ACTION_KEY" : "QUEST_CONDITION_KEY";
-                        AddError(code, $"{label} Key가 필요합니다.", nodeGuid);
+                        string issueKind = kind == MethodKind.Action ? "QUEST_ACTION_KEY" : "QUEST_CONDITION_KEY";
+                        AddError(issueKind, $"{label} Key가 필요합니다.", nodeGuid);
                     }
                     return;
                 }
@@ -428,7 +431,7 @@ namespace UniversalGraph.Quest.Editor
 
                 AddError(
                     "QUEST_METHOD_ARGUMENTS",
-                    $"Attribute {kind} '{binding.Key}'의 인수가 올바르지 않습니다: {error}",
+                    $"{label} '{binding.Key}': {error}",
                     nodeGuid);
             }
 
@@ -436,16 +439,7 @@ namespace UniversalGraph.Quest.Editor
             {
                 ValidateDialogueEntryPoint(candidate.EntryPoint, candidate.Guid, "Dialogue Candidate");
 
-                if (string.IsNullOrWhiteSpace(candidate.DisplayName))
-                {
-                    issues.Add(new GraphValidationIssue(
-                        GraphValidationSeverity.Warning,
-                        "QUEST_DIALOGUE_DISPLAY_NAME",
-                        "Dialogue Candidate의 Display Name이 비어 있습니다.",
-                        candidate.Guid));
-                }
-
-                if (index.GetOutgoing(candidate.Guid).Count > 0)
+                if (index.GetLinkInStartPort(candidate.Guid).Count > 0)
                 {
                     AddError(
                         "QUEST_DIALOGUE_OUTPUT",
@@ -461,15 +455,7 @@ namespace UniversalGraph.Quest.Editor
                     ValidateDialogueEntryPoint(offer.DialogueEntryPoint, offer.Guid, "Quest Offer");
                 }
 
-                if (!offer.IsAvailable && string.IsNullOrWhiteSpace(offer.BlockReason))
-                {
-                    AddWarning(
-                        "QUEST_OFFER_BLOCK_REASON",
-                        "선택할 수 없는 Quest Offer에는 UI에 표시할 차단 이유를 적는 편이 좋습니다.",
-                        offer.Guid);
-                }
-
-                if (index.GetOutgoing(offer.Guid).Count > 0)
+                if (index.GetLinkInStartPort(offer.Guid).Count > 0)
                 {
                     AddError(
                         "QUEST_OFFER_OUTPUT",
@@ -490,68 +476,65 @@ namespace UniversalGraph.Quest.Editor
                     return;
                 }
 
+                GraphValidationIssue structureError = GraphValidatorRegistry.ValidateStructure(graph)
+                    .FirstOrDefault(issue => issue.Severity == GraphValidationSeverity.Error);
+                if (structureError != null)
+                {
+                    AddError("QUEST_DIALOGUE_GRAPH", $"{label} '{graph.name}': {structureError.Message}", nodeGuid);
+                    return;
+                }
+
                 if (!graph.FindEntryNode(
                         entryPoint.EntryId,
                         out DialogueEntryNodeData entry,
                         out string error))
                 {
-                    AddError("QUEST_DIALOGUE_ENTRY", $"{label}가 올바르지 않습니다: {error}", nodeGuid);
+                    AddError("QUEST_DIALOGUE_ENTRY", $"{label}: {error}", nodeGuid);
                     return;
                 }
 
-                var dialogueIndex = new GraphValidationIndex(graph);
-                IReadOnlyList<NodeLinkData> entryLinks = dialogueIndex.GetOutgoing(
-                    entry.Guid,
-                    DialoguePortNames.Next);
-                if (entryLinks.Count != 1)
-                {
-                    AddError(
-                        "QUEST_DIALOGUE_ENTRY",
-                        $"{label}의 Entry '{entry.EntryId}'는 Next 연결이 정확히 하나여야 하지만 " +
-                        $"{entryLinks.Count}개 발견되었습니다.",
-                        nodeGuid);
-                }
-                else if (!dialogueIndex.TryGetNode(entryLinks[0].TargetNodeGuid, out _))
-                {
-                    AddError(
-                        "QUEST_DIALOGUE_ENTRY",
-                        $"{label}의 Entry '{entry.EntryId}'가 존재하지 않는 첫 노드를 참조합니다.",
-                        nodeGuid);
-                }
-            }
-
-            void RequireAtLeastOneOutput(string nodeGuid, string portName, string message)
-            {
-                if (index.GetOutgoing(nodeGuid, portName).Count == 0)
-                {
-                    AddError("QUEST_MISSING_OUTPUT", message, nodeGuid);
-                }
-            }
-
-            void RequireExactlyOneOutput(string nodeGuid, string portName, string message)
-            {
-                int count = index.GetOutgoing(nodeGuid, portName).Count;
+                int count = graph.NodeLinks.Count(link => link.StartNodeGuid == entry.Guid && link.StartPortName == DialoguePortNames.Next);
                 if (count != 1)
                 {
-                    AddError("QUEST_OUTPUT_COUNT", $"{message} {count}개 발견되었습니다.", nodeGuid);
+                    AddError(
+                        "QUEST_DIALOGUE_ENTRY",
+                        $"{label} Entry '{entry.EntryId}' Next: 연결 1개 필요 (현재 {count}개)",
+                        nodeGuid);
+                }
+            }
+
+            void RequireAtLeastOneOutput(string nodeGuid, string portName)
+            {
+                if (index.GetLinkInStartPort(nodeGuid, portName).Count == 0)
+                {
+                    AddError("QUEST_MISSING_OUTPUT", $"{portName}: 연결 필요", nodeGuid);
+                }
+            }
+
+            void RequireExactlyOneOutput(string nodeGuid, string portName)
+            {
+                int count = index.GetLinkInStartPort(nodeGuid, portName).Count;
+                if (count != 1)
+                {
+                    AddError("QUEST_OUTPUT_COUNT", $"{portName}: 연결 1개 필요 (현재 {count}개)", nodeGuid);
                 }
             }
 
             void AddError(
-                string code,
+                string issueKind,
                 string message,
                 string nodeGuid = null)
             {
                 issues.Add(new GraphValidationIssue(
                     GraphValidationSeverity.Error,
-                    code,
+                    issueKind,
                     message,
                     nodeGuid));
             }
 
-            void AddWarning(string code, string message, string nodeGuid = null)
+            void AddWarning(string issueKind, string message, string nodeGuid = null)
             {
-                issues.Add(new GraphValidationIssue(GraphValidationSeverity.Warning, code, message, nodeGuid));
+                issues.Add(new GraphValidationIssue(GraphValidationSeverity.Warning, issueKind, message, nodeGuid));
             }
         }
 

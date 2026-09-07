@@ -240,7 +240,7 @@ namespace UniversalGraph.Editor
 
         //========================= 그래프 불러오기 및 되돌리기 함수 =================================
 
-        /// <summary>캔버스에서 노드를 선택하면 해당 노드의 Inspector를 표시합니다.</summary>
+        /// <summary>캔버스에서 노드를 선택하면 해당 노드의 Inspector를 표시</summary>
         private void OnNodeSelected(GraphNode selectedNode)
         {
             inspectorPanel?.UpdateInspector(selectedNode);
@@ -281,7 +281,6 @@ namespace UniversalGraph.Editor
 
             graphView.ClearSelection();
             graphView.AddToSelection(node);
-            inspectorPanel?.UpdateInspector(node);
         }
 
 
@@ -413,7 +412,6 @@ namespace UniversalGraph.Editor
             graphView.ClearSelection();
             graphView.AddToSelection(node);
             graphView.FrameSelection();
-            inspectorPanel?.UpdateInspector(node);
         }
 
 
@@ -443,7 +441,6 @@ namespace UniversalGraph.Editor
             graphView.ClearSelection();
             graphView.AddToSelection(node);
             graphView.FrameSelection();
-            inspectorPanel?.UpdateInspector(node);
         }
 
     }

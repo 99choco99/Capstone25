@@ -1,4 +1,3 @@
-using System;
 using System.Reflection;
 
 namespace UniversalGraph
@@ -12,38 +11,11 @@ namespace UniversalGraph
             QuestMethodTarget target,
             MethodInfo method,
             MethodParameterDescriptor[] parameters)
-            : this(
-                key,
-                kind,
-                target,
-                method?.DeclaringType,
-                method?.Name,
-                method?.IsStatic ?? false,
-                method,
-                parameters,
-                null)
-        {
-        }
-
-        internal QuestMethodDescriptor(
-            string key,
-            MethodKind kind,
-            QuestMethodTarget target,
-            Type declaringType,
-            string methodName,
-            bool isStatic,
-            MethodInfo method,
-            MethodParameterDescriptor[] parameters,
-            GeneratedMethodInvoker generatedInvoker)
             : base(
                 key,
                 kind,
-                declaringType,
-                methodName,
-                isStatic,
                 method,
-                parameters,
-                generatedInvoker)
+                parameters)
         {
             Target = target;
             DisplayName = $"{Key}  [{Target}]  {DeclaringType?.Name}.{MethodName}";

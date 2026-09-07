@@ -39,7 +39,7 @@ namespace UniversalGraph.Editor
             //노드 검사
             foreach (GraphNode node in nodes)
             {
-                if (node?.Data == null)
+                if (node.Data == null)
                 {
                     throw new InvalidOperationException("노드에 연결된 데이터가 없습니다.");
                 }

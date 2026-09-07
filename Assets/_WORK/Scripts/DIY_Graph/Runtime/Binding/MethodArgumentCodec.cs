@@ -239,7 +239,7 @@ namespace UniversalGraph
                         break;
                     }
                 case MethodArgumentKind.Integer:
-                    if (parameterType == typeof(int) && int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int integerValue))
+                    if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int integerValue))
                     {
                         value = integerValue;
                         error = null;
@@ -248,7 +248,7 @@ namespace UniversalGraph
                     break;
                 case MethodArgumentKind.FloatingPoint:
                     {
-                        if (parameterType == typeof(float) && float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float floatValue) && !float.IsNaN(floatValue) && !float.IsInfinity(floatValue))
+                        if (float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float floatValue) && !float.IsNaN(floatValue) && !float.IsInfinity(floatValue))
                         {
                             value = floatValue;
                             error = null;

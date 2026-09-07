@@ -6,11 +6,11 @@ UniversalGraph는 Dialogue와 Quest Runtime을 제공하는 이식 가능한 Uni
 
 전체 파일을 순서대로 읽지 말고 먼저 [`ARCHITECTURE.md`](ARCHITECTURE.md)를 확인합니다.
 공통 Data → Editor 저장·복원 → Dialogue Runtime → Quest Runtime 순서와 처음 읽을 핵심 파일 10개를 정리했습니다.
-`Binding`, `Generator`, `Validation`, `Save`, `Tests`는 기본 흐름을 이해한 뒤 필요한 기능만 추적하면 됩니다.
+`Binding`, `Validation`, `Save`, `Tests`는 기본 흐름을 이해한 뒤 필요한 기능만 추적하면 됩니다.
 
 ## 어셈블리 경계
 
-- `UniversalGraph.Runtime`: 공통 그래프 데이터, Dialogue·Quest Runtime, Attribute 호출, Source Generator 규약
+- `UniversalGraph.Runtime`: 공통 그래프 데이터, Dialogue·Quest Runtime, Reflection 기반 Attribute 호출
 - `UniversalGraph.Editor`: 공통 GraphView, 노드 등록부, Inspector, Serializer, Undo, 에셋 창
 - `UniversalGraph.Dialogue.Editor`: Dialogue 노드 화면과 메서드 인수 입력 필드
 - `UniversalGraph.Quest.Editor`: Quest 진행 및 대화 경로 노드 화면
@@ -25,16 +25,15 @@ DIY_Graph
 |-- Data                     공통 그래프 에셋과 연결 데이터
 |   `-- Migrations           공통 마이그레이션 등록부와 버전별 공통 단계
 |-- Runtime
-|   `-- Binding              공통 메서드 설명자, 생성 호출자, 인수와 직렬화 Codec
+|   `-- Binding              공통 메서드 설명자, 인수와 직렬화 Codec
 |-- Editor                   공통 그래프 창, Serializer, Inspector, 검증
 |   `-- Styles               공통 USS 디자인과 상태 클래스
-|-- Generator                Dialogue·Quest 공통 Roslyn Source Generator 플러그인
 |-- 1_Dialogue
 |   |-- Data                 Dialogue 컨테이너와 직렬화 데이터
 |   |   |-- Nodes            Dialogue 노드 데이터
 |   |   `-- Migrations       DialogueContainer 전용 스키마 단계
 |   |-- Runtime              Dialogue 재생과 씬 연결 API
-|   |   `-- Binding          Dialogue Attribute와 생성 메서드 등록부
+|   |   `-- Binding          Dialogue Attribute와 메서드 호출기
 |   `-- Editor
 |       `-- Nodes            Dialogue 노드 화면
 |-- 2_Quest
@@ -42,7 +41,7 @@ DIY_Graph
 |   |   |-- Nodes            Quest 노드 데이터
 |   |   `-- Migrations       QuestContainer 전용 스키마 단계
 |   |-- Runtime              Quest 정의 등록부, Runner, 조회 API
-|   |   |-- Binding          Attribute와 생성 메서드 등록부
+|   |   |-- Binding          Quest Attribute와 메서드 호출기
 |   |   `-- Save             저장 DTO와 순차 마이그레이션
 |   `-- Editor
 |       `-- Nodes            Quest 노드 화면
@@ -65,7 +64,7 @@ public void GiveItem(ItemData item, int amount, bool showPopup)
 
 `ItemData`는 `ScriptableObject` 또는 다른 `UnityEngine.Object`일 수 있습니다. 현재 그래프에서 편집할 수 있는 인수는 string, bool, int, float, enum, Unity 객체와 자동 주입되는 `DialogueExecutionContext` 하나입니다. `ref`, `out`, `in`, 선택적 인수, `params`, 제네릭, 비동기, 임의 관리 객체 인수는 진단 오류로 거부합니다.
 
-Roslyn Source Generator는 가능하면 직접 등록·호출 코드를 만들고, 접근할 수 없는 메서드만 검증된 Reflection 경로를 사용합니다. 그래프에 저장되는 인수 ID는 편집 가능한 파라미터 순서로 자동 생성되므로 파라미터 이름은 자유롭게 바꿀 수 있습니다. 단, 기존 그래프가 사용 중일 때 파라미터 순서를 바꾸거나 중간 파라미터를 삭제하면 호출 계약이 달라집니다.
+런타임은 관련 어셈블리의 Attribute 메서드를 최초 초기화 때 Reflection으로 찾아 캐시하고, 이후에는 저장된 MethodInfo로 호출합니다. 에디터는 TypeCache로 메서드를 찾아 같은 Factory 규칙으로 검증합니다. 별도 Generator DLL이나 생성 코드가 필요하지 않습니다. 그래프에 저장되는 인수 ID는 편집 가능한 파라미터 순서로 자동 생성되므로 파라미터 이름은 자유롭게 바꿀 수 있습니다. 단, 기존 그래프가 사용 중일 때 파라미터 순서를 바꾸거나 중간 파라미터를 삭제하면 호출 계약이 달라집니다.
 
 게임 코드는 `DialogueManager.StartConversation`에 `DialogueEntryPoint`와 선택적인 `DialogueExecutionContext`를 전달합니다. 텍스트 전용 또는 전역 메서드만 쓰는 대화는 실행 문맥 없이도 시작할 수 있습니다. UI는 `ShowLine`과 `ShowChoices`를 구독하고 `ContinueDialogue` 또는 `SelectChoice`를 호출합니다.
 
@@ -131,7 +130,9 @@ save.TryApplyTo(controller, replaceExisting: true, out error);
 
 `Tools/Universal Graph/Validate All Graph Assets`는 수동 배포 검사 전에 프로젝트 전체에서 같은 검증기를 실행합니다. 그래프 에셋은 각자 스키마 버전을 가지며 열거나 불러올 때 업그레이드됩니다. `Tools/Universal Graph/Migrate All Graph Assets`는 업그레이드를 검토 가능한 한 번의 작업으로 저장합니다.
 
-`Tools/Universal Graph/Validate IL2CPP Bindings`는 플레이어에 포함되는 모든 Dialogue·Quest Attribute 메서드에 Source Generator 정보가 있는지 확인합니다. IL2CPP 빌드는 같은 검사를 자동 실행하며 등록이 없거나 오래되었으면 빌드 전에 중단합니다. public/internal 메서드는 생성된 직접 호출을 사용하고, 접근할 수 없는 메서드는 정확한 시그니처를 보존한 Reflection 대체 경로를 사용합니다.
+`Tools/Universal Graph/Validate Method Bindings`는 플레이어에 포함되는 Dialogue·Quest Attribute 메서드의 선언과 중복 키를 검사합니다. 스크립트 reload 후 자동 진단하며, Mono·IL2CPP 빌드 모두 오류가 있으면 빌드 전에 중단합니다. 이는 C# 컴파일러 오류가 아니라 도구의 작성 단계 검사입니다. 에디터에 없는 `#if !UNITY_EDITOR` 등 플랫폼 전용 선언은 이 검사로 확인할 수 없으므로 대상 플레이어에서 검증해야 합니다.
+
+네 Dialogue·Quest Attribute의 `PreserveAttribute` 상속은 Reflection으로 호출하는 게임 메서드가 제거되지 않도록 유지합니다. `link.xml`은 공통 Runtime 타입과 메타데이터를 보존합니다. 다른 코드에서 전혀 참조하지 않는 별도 어셈블리에 메서드만 넣었다면 해당 어셈블리가 빌드와 링커 처리에 포함되도록 `AlwaysLinkAssembly` 또는 게임의 `link.xml` 설정도 확인해야 합니다. 이 설정들은 대상 플랫폼의 실제 호출 테스트를 대신하지 않습니다.
 
 ## 현재 한계
 
@@ -143,8 +144,16 @@ save.TryApplyTo(controller, replaceExisting: true, out error);
 - 진행 중인 Dialogue의 저장·재개는 의도적으로 현재 범위에서 제외했습니다. 게임 체크포인트에서 저장하고 긴 대화는 게임의 Skip·기록 정책을 사용합니다. 지속적인 Quest 진행은 `QuestSaveData`가 저장합니다.
 - 프로젝트 전체 검증 메뉴는 있지만 실패 코드로 빌드를 종료하는 Headless CI 진입점은 없습니다.
 - 에디터는 `UnityEditor.Experimental.GraphView`를 사용하므로 상용 패키지의 장기 유지보수 위험이 있습니다.
-- 배포 전 지원할 Unity·플랫폼 조합마다 내보낸 패키지의 IL2CPP 플레이어 Smoke Test가 필요합니다. 빌드 전 검증기는 누락된 생성 바인딩을 찾지만 플랫폼 QA를 대신할 수 없습니다.
+- 배포 전 지원할 Unity·플랫폼 조합마다 내보낸 패키지의 IL2CPP 플레이어 Smoke Test가 필요합니다. 빌드 전 검증기는 잘못된 메서드 선언과 중복 키를 찾지만 코드 보존과 플랫폼 QA를 대신할 수 없습니다.
+
+## Reflection 단일 경로 검증 (2026-09-06)
+
+- Unity 6000.3.9f1의 별도 최소 프로젝트에 DIY_Graph만 복사하여 EditMode 테스트 102개를 모두 통과했습니다.
+- Windows x64 IL2CPP + Managed Stripping Level High로 실제 플레이어를 빌드하고 실행하여 호출 검사를 통과했습니다.
+- private static/instance, Speaker/Interactor/Quest Controller, 지원 인수 6종, 중간 위치 Context 주입, Condition false, JSON 기본형 인수 복원을 확인했습니다.
+- 실행기가 타입을 직접 참조하지 않는 별도 asmdef의 private Global 메서드도 Dialogue/Quest Attribute만으로 보존·호출됐습니다.
+- 이는 위 Unity·Windows 조합의 검증 결과이며 모바일·WebGL·콘솔이나 실제 게임 전체의 회귀 검증을 대신하지 않습니다.
 
 ## 현재 완성도
 
-공통 그래프 에디터, Dialogue Runtime, 로컬 Quest Runtime은 실제로 사용할 수 있는 Alpha 기반입니다. 두 도메인의 타입 기반 Attribute 호출, 조건부 선택지, 그래프 기반 Quest Offer와 수락 직전 재검증, 독립적인 다중 Quest 진행, 포기·재시작, 이식 가능한 대화 경로, 순차 그래프·저장 마이그레이션, 범용 보상 Action, 실시간 검증, IL2CPP 빌드 전 검사와 핵심 EditMode·Generator 테스트를 제공합니다. 실제 배포 단계로 가려면 깨끗한 프로젝트에서의 장시간 연동 테스트, 플랫폼별 플레이어 Smoke Build와 다국어 및 미래 Dialogue 진행 저장 정책 결정이 추가로 필요합니다.
+공통 그래프 에디터, Dialogue Runtime, 로컬 Quest Runtime은 실제로 사용할 수 있는 Alpha 기반입니다. 두 도메인의 타입 기반 Attribute 호출, 조건부 선택지, 그래프 기반 Quest Offer와 수락 직전 재검증, 독립적인 다중 Quest 진행, 포기·재시작, 이식 가능한 대화 경로, 순차 그래프·저장 마이그레이션, 범용 보상 Action, 실시간 검증, 빌드 전 메서드 검사와 핵심 EditMode 테스트를 제공합니다. 실제 배포 단계로 가려면 깨끗한 프로젝트에서의 장시간 연동 테스트, 플랫폼별 플레이어 Smoke Build와 다국어 및 미래 Dialogue 진행 저장 정책 결정이 추가로 필요합니다.

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -70,16 +69,6 @@ namespace UniversalGraph
             ICollection<DialogueCandidate> candidates,
             ICollection<QuestOffer> offers)
         {
-            if (controller == null)
-            {
-                throw new ArgumentNullException(nameof(controller), "상호작용 경로를 조회할 Quest Controller가 필요합니다.");
-            }
-
-            if (registry == null)
-            {
-                return;
-            }
-
             var targetSet = new HashSet<string>(
                 targetIds?.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value.Trim())
                 ?? Enumerable.Empty<string>());

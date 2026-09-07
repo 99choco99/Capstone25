@@ -8,20 +8,6 @@ namespace UniversalGraph
     /// <summary>Attribute가 붙은 Quest Action과 Condition을 찾아 등록하고 호출합니다.</summary>
     public static class QuestMethodInvoker
     {
-        private sealed class GeneratedRegistrationCollector : IQuestGeneratedMethodSink
-        {
-            public List<QuestGeneratedMethodRegistration> Registrations { get; } = new();
-
-            /// <summary>어셈블리를 초기화하면서 Generator가 만든 등록 정보 하나를 수집합니다.</summary>
-            public void Add(QuestGeneratedMethodRegistration registration)
-            {
-                if (registration != null)
-                {
-                    Registrations.Add(registration);
-                }
-            }
-        }
-
         private static readonly Dictionary<string, QuestMethodDescriptor> Actions = new();
         private static readonly Dictionary<string, QuestMethodDescriptor> Conditions = new();
         private static readonly HashSet<string> InvalidActionKeys = new();
@@ -53,12 +39,13 @@ namespace UniversalGraph
             InvalidConditionKeys.Clear();
 #if UNITY_EDITOR
             // Editor 전용 어셈블리는 게임 메서드 검색에서 제외합니다.
-            HashSet<string> editorAssemblies = new();
-            foreach (UnityEditor.Compilation.Assembly editorAssembly in UnityEditor.Compilation.CompilationPipeline.GetAssemblies(UnityEditor.Compilation.AssembliesType.Editor))
+            HashSet<string> playerAssemblies = new();
+            foreach (UnityEditor.Compilation.Assembly playerAssembly in UnityEditor.Compilation.CompilationPipeline.GetAssemblies(UnityEditor.Compilation.AssembliesType.Player))
             {
-                if ((editorAssembly.flags & UnityEditor.Compilation.AssemblyFlags.EditorAssembly) != 0)
+                playerAssemblies.Add(playerAssembly.name);
+                foreach (string reference in playerAssembly.compiledAssemblyReferences)
                 {
-                    editorAssemblies.Add(editorAssembly.name);
+                    playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
                 }
             }
 #endif
@@ -66,7 +53,7 @@ namespace UniversalGraph
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
 #if UNITY_EDITOR
-                if (editorAssemblies.Contains(assembly.GetName().Name))
+                if (!playerAssemblies.Contains(assembly.GetName().Name))
                 {
                     continue;
                 }
@@ -76,10 +63,7 @@ namespace UniversalGraph
                     continue;
                 }
 
-                if (!TryRegisterGeneratedAssembly(assembly))
-                {
-                    ScanAssembly(assembly);
-                }
+                ScanAssembly(assembly);
             }
 
             isInitialized = true;
@@ -123,7 +107,7 @@ namespace UniversalGraph
                     out object[] arguments,
                     out string error))
             {
-                Debug.LogError($"[Quest] '{descriptor.Key}'의 인수를 변환하지 못했습니다: {error}");
+                Debug.LogError($"[Quest] {error}");
                 return false;
             }
 
@@ -135,19 +119,11 @@ namespace UniversalGraph
 
             try
             {
-                object methodResult = descriptor.GeneratedInvoker != null
-                    ? descriptor.GeneratedInvoker(target, arguments)
-                    : descriptor.MethodInfo.Invoke(target, arguments);
+                object methodResult = descriptor.MethodInfo.Invoke(target, arguments);
 
                 if (kind == MethodKind.Condition)
                 {
-                    if (methodResult is not bool value)
-                    {
-                        Debug.LogError($"[Quest] Condition '{binding.Key}'가 bool 값을 반환하지 않았습니다.");
-                        return false;
-                    }
-
-                    conditionResult = value;
+                    conditionResult = (bool)methodResult;
                 }
 
                 return true;
@@ -162,83 +138,6 @@ namespace UniversalGraph
                 Debug.LogError($"[Quest] 메서드 '{descriptor.Key}'를 호출하지 못했습니다.\n{exception}");
                 return false;
             }
-        }
-
-        private static bool TryRegisterGeneratedAssembly(Assembly assembly)
-        {
-            object[] attributes;
-            try
-            {
-                attributes = assembly.GetCustomAttributes(typeof(QuestGeneratedProviderAttribute), false);
-            }
-            catch (Exception exception)
-            {
-                Debug.LogWarning(
-                    $"[Quest] 어셈블리 '{assembly.GetName().Name}'에서 생성된 Provider를 읽지 못했습니다: " +
-                    exception.Message);
-                return false;
-            }
-
-            if (attributes.Length == 0)
-            {
-                return false;
-            }
-
-            var collector = new GeneratedRegistrationCollector();
-            bool failed = false;
-            foreach (object value in attributes)
-            {
-                Type providerType = (value as QuestGeneratedProviderAttribute)?.ProviderType;
-                if (providerType == null
-                    || providerType.Assembly != assembly
-                    || !typeof(IQuestGeneratedMethodProvider).IsAssignableFrom(providerType))
-                {
-                    Debug.LogError(
-                        $"[Quest] 어셈블리 '{assembly.GetName().Name}'에 올바르지 않은 생성 Provider가 선언되어 있습니다.");
-                    failed = true;
-                    continue;
-                }
-
-                try
-                {
-                    var provider = (IQuestGeneratedMethodProvider)Activator.CreateInstance(providerType, true);
-                    provider.Collect(collector);
-                }
-                catch (Exception exception)
-                {
-                    Debug.LogError($"[Quest] 생성 Provider '{providerType.FullName}' 실행에 실패했습니다.\n{exception}");
-                    failed = true;
-                }
-            }
-
-            var descriptors = new List<QuestMethodDescriptor>();
-            foreach (QuestGeneratedMethodRegistration registration in collector.Registrations)
-            {
-                if (QuestMethodDescriptorFactory.TryCreateGenerated(
-                        assembly,
-                        registration,
-                        out QuestMethodDescriptor descriptor,
-                        out string error))
-                {
-                    descriptors.Add(descriptor);
-                }
-                else
-                {
-                    Debug.LogError($"[Quest] 생성된 메서드를 등록하지 못했습니다: {error}");
-                    failed = true;
-                }
-            }
-
-            if (failed)
-            {
-                return false;
-            }
-
-            foreach (QuestMethodDescriptor descriptor in descriptors)
-            {
-                RegisterDescriptor(descriptor);
-            }
-            return true;
         }
 
         private static void ScanAssembly(Assembly assembly)
@@ -293,7 +192,7 @@ namespace UniversalGraph
         {
             if (!QuestMethodDescriptorFactory.TryCreateFromReflection(method, kind, key, target, out QuestMethodDescriptor descriptor, out string error))
             {
-                Debug.LogError($"[Quest] '{method.DeclaringType?.FullName}.{method.Name}'을 등록하지 못했습니다: {error}");
+                Debug.LogError($"[Quest] {error}");
                 return;
             }
 
@@ -349,7 +248,7 @@ namespace UniversalGraph
 
         private static bool CanContainQuestHandlers(Assembly assembly, string runtimeAssemblyName)
         {
-            if (assembly == null || assembly.IsDynamic)
+            if (assembly.IsDynamic)
             {
                 return false;
             }

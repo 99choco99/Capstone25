@@ -40,7 +40,7 @@ namespace UniversalGraph
 				return;
 			}
 
-			var driverObject = new GameObject(DriverObjectName)
+            GameObject driverObject = new (DriverObjectName)
 			{
 				hideFlags = HideFlags.HideInHierarchy
 			};
