@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Experimental.GraphView;
 using UnityEditor.UIElements;
@@ -21,13 +22,13 @@ namespace UniversalGraph.Quest.Editor
             RefreshTitle();
 
             Port input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(float));
-            input.portName = "Input";
+            input.portName = QuestPortNames.Input;
             inputContainer.Add(input);
 
             if (HasOutput)
             {
                 Port next = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(float));
-                next.portName = "Next";
+                next.portName = QuestPortNames.Next;
                 outputContainer.Add(next);
             }
 
@@ -47,7 +48,7 @@ namespace UniversalGraph.Quest.Editor
     public sealed class QuestObjectiveNode : QuestFlowNode<QuestObjectiveNodeData>
     {
         protected override string NodeTitle =>
-            $"OBJECTIVE: {(string.IsNullOrWhiteSpace(NodeData.ObjectiveType) ? "Unassigned" : NodeData.ObjectiveType)} " +
+            $"OBJECTIVE: {(string.IsNullOrWhiteSpace(NodeData.EventKey) ? "Unassigned" : NodeData.EventKey)} " +
             $"x{Math.Max(1, NodeData.RequiredAmount)}";
 
         /// <summary>목표 이벤트, 대상, 수량, 참조와 설명 필드를 만듭니다.</summary>
@@ -56,11 +57,19 @@ namespace UniversalGraph.Quest.Editor
             var root = new VisualElement();
             root.Add(new Label("Objective"));
 
-            root.Add(CreateTextField("Event Type", NodeData.ObjectiveType, "Change objective event", value =>
+            var eventKeyField = new TextField("Event Key")
             {
-                NodeData.ObjectiveType = value.Trim();
-                RefreshTitle();
-            }, editHandler));
+                value = NodeData.EventKey ?? string.Empty,
+                isDelayed = true
+            };
+            eventKeyField.RegisterValueChangedCallback(change =>
+                editHandler.ApplyDataEdit("Change objective event key", () =>
+                {
+                    NodeData.EventKey = (change.newValue ?? string.Empty).Trim();
+                    eventKeyField.SetValueWithoutNotify(NodeData.EventKey);
+                    RefreshTitle();
+                }));
+            root.Add(eventKeyField);
 
             var targetId = new IntegerField("Target ID") { value = NodeData.TargetId, isDelayed = true };
             targetId.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit("Change objective target", () =>
@@ -70,16 +79,16 @@ namespace UniversalGraph.Quest.Editor
             }));
             root.Add(targetId);
 
-            var targetPrefab = new ObjectField("Authoring Reference")
+            var targetReferenceField = new ObjectField("Authoring Reference")
             {
                 objectType = typeof(UnityEngine.Object),
                 allowSceneObjects = false,
-                value = NodeData.TargetPrefab
+                value = NodeData.TargetReference
             };
-            targetPrefab.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit(
+            targetReferenceField.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit(
                 "Change objective reference",
-                () => NodeData.TargetPrefab = change.newValue));
-            root.Add(targetPrefab);
+                () => NodeData.TargetReference = change.newValue));
+            root.Add(targetReferenceField);
 
             var required = new IntegerField("Required Amount")
             {
@@ -89,6 +98,7 @@ namespace UniversalGraph.Quest.Editor
             required.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit("Change objective amount", () =>
             {
                 NodeData.RequiredAmount = Math.Max(1, change.newValue);
+                required.SetValueWithoutNotify(NodeData.RequiredAmount);
                 RefreshTitle();
             }));
             root.Add(required);
@@ -106,22 +116,11 @@ namespace UniversalGraph.Quest.Editor
             return root;
         }
 
-        private static TextField CreateTextField(
-            string label,
-            string value,
-            string undoName,
-            Action<string> apply,
-            NodeInspectorEditHandler editHandler)
-        {
-            var field = new TextField(label) { value = value ?? string.Empty, isDelayed = true };
-            field.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit(undoName, () => apply(change.newValue ?? string.Empty)));
-            return field;
-        }
     }
 
     /// <summary>게임이 제공하는 Condition 결과를 통해 Quest 흐름을 분기합니다.</summary>
     [GraphNodeEditor(typeof(QuestContainer), "Quest/Condition/Custom")]
-    public sealed class QuestConditionBranchNode : GraphNode<QuestConditionBranchNodeData>
+    public sealed class QuestConditionNode : GraphNode<QuestConditionNodeData>
     {
         public override Vector2 DefaultSize => new(210f, 120f);
 
@@ -130,11 +129,11 @@ namespace UniversalGraph.Quest.Editor
         {
             RefreshTitle();
             Port input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(float));
-            input.portName = "Input";
+            input.portName = QuestPortNames.Input;
             inputContainer.Add(input);
 
-            AddOutput("True");
-            AddOutput("False");
+            AddOutput(QuestPortNames.True);
+            AddOutput(QuestPortNames.False);
             AddToClassList("condition-node");
             RefreshPorts();
             RefreshExpandedState();
@@ -152,38 +151,22 @@ namespace UniversalGraph.Quest.Editor
             title = $"IF: {(string.IsNullOrWhiteSpace(NodeData.Condition.Key) ? "Unassigned" : NodeData.Condition.Key)}";
         }
 
-        /// <summary>Attribute Condition 선택기와 구형 Resolver 인수 필드를 만듭니다.</summary>
+        /// <summary>Attribute Condition 선택기와 인수 필드를 만듭니다.</summary>
         public override VisualElement CreateInspector(NodeInspectorEditHandler editHandler)
         {
             var root = new VisualElement();
             root.Add(new HelpBox(
-                "코드 작성 없이 그래프에 연결하려면 Attribute가 붙은 메서드를 선택하세요. " +
-                "등록되지 않은 키도 IQuestConditionResolver와 호환됩니다.",
+                "코드 작성 없이 그래프에 연결하려면 Attribute가 붙은 메서드를 선택하세요.",
                 HelpBoxMessageType.Info));
 
-            root.Add(MethodCallEditor.Create(
+            root.Add(MethodBindingInspector.Create(
                 editHandler,
                 "Quest Condition",
                 NodeData.Condition,
-                QuestMethodCatalog.GetMethods(MethodKind.Condition),
+                QuestMethodCatalog.GetMethodList(MethodKind.Condition),
                 RefreshTitle));
 
-            root.Add(new Label("Legacy Resolver Parameters"));
-            root.Add(CreateIntegerField("Target ID", NodeData.TargetId, "Change condition target", value => NodeData.TargetId = value, editHandler));
-            root.Add(CreateIntegerField("Required Value", NodeData.RequiredValue, "Change condition value", value => NodeData.RequiredValue = value, editHandler));
             return root;
-        }
-
-        private static IntegerField CreateIntegerField(
-            string label,
-            int value,
-            string undoName,
-            Action<int> apply,
-            NodeInspectorEditHandler editHandler)
-        {
-            var field = new IntegerField(label) { value = value, isDelayed = true };
-            field.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit(undoName, () => apply(change.newValue)));
-            return field;
         }
     }
 
@@ -205,16 +188,15 @@ namespace UniversalGraph.Quest.Editor
                 .Distinct()
                 .Count();
             root.Add(new HelpBox(
-                $"서로 다른 입력 분기 {connectedSources}개가 모두 도착할 때까지 기다립니다. " +
-                "필요한 분기 수는 연결 상태에서 자동으로 계산합니다.",
-                connectedSources >= 2 ? HelpBoxMessageType.Info : HelpBoxMessageType.Warning));
+                $"서로 다른 입력 {connectedSources}개가 모두 도착하면 진행합니다.",
+                HelpBoxMessageType.Info));
             return root;
         }
     }
 
     /// <summary>노드에 도달하면 프로젝트에서 정의한 Action을 실행합니다.</summary>
     [GraphNodeEditor(typeof(QuestContainer), "Quest/Flow/Action")]
-    public sealed class QuestActionTriggerNode : QuestFlowNode<QuestActionTriggerNodeData>
+    public sealed class QuestActionNode : QuestFlowNode<QuestActionNodeData>
     {
         protected override string NodeTitle =>
             $"ACTION: {(string.IsNullOrWhiteSpace(NodeData.Action.Key) ? "Unassigned" : NodeData.Action.Key)}";
@@ -224,14 +206,13 @@ namespace UniversalGraph.Quest.Editor
         {
             var root = new VisualElement();
             root.Add(new HelpBox(
-                "코드 작성 없이 그래프에 연결하려면 Attribute가 붙은 메서드를 선택하세요. " +
-                "등록되지 않은 키도 IQuestActionReceiver 및 QuestEventManager와 호환됩니다.",
+                "코드 작성 없이 그래프에 연결하려면 Attribute가 붙은 메서드를 선택하세요.",
                 HelpBoxMessageType.Info));
-            root.Add(MethodCallEditor.Create(
+            root.Add(MethodBindingInspector.Create(
                 editHandler,
                 "Quest Action",
                 NodeData.Action,
-                QuestMethodCatalog.GetMethods(MethodKind.Action),
+                QuestMethodCatalog.GetMethodList(MethodKind.Action),
                 RefreshTitle));
             return root;
         }
@@ -242,41 +223,71 @@ namespace UniversalGraph.Quest.Editor
     public sealed class QuestStateChangeNode : QuestFlowNode<QuestStateChangeNodeData>
     {
         protected override string NodeTitle => $"STATE: {NodeData.NewState}";
+        protected override bool HasOutput => NodeData.NewState == QuestState.InProgress;
 
-        /// <summary>진행 단계 선택기를 만들고 수정 후 노드 제목을 갱신합니다.</summary>
+        /// <summary>진행 단계 선택기를 만들고 수정 후 노드 제목과 출력 포트를 갱신합니다.</summary>
         public override VisualElement CreateInspector(NodeInspectorEditHandler editHandler)
         {
-            var field = new EnumField("New State", NodeData.NewState);
-            field.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit("Change quest state", () =>
+            var allowedStates = new List<QuestState>
             {
-                NodeData.NewState = (QuestState)change.newValue;
+                QuestState.InProgress,
+                QuestState.CanComplete,
+                QuestState.TurnedIn
+            };
+            int selectedIndex = Math.Max(0, allowedStates.IndexOf(NodeData.NewState));
+            var field = new PopupField<QuestState>("New State", allowedStates, selectedIndex);
+            field.RegisterValueChangedCallback(change => editHandler.ApplyStructureEdit("Change quest state", () =>
+            {
+                NodeData.NewState = change.newValue;
+
+                // 종료 상태로 바꿀 때 사라지는 출력의 연결도 같은 Undo에 포함합니다.
+                GraphView graphView = GetFirstAncestorOfType<GraphView>();
+                foreach (Port port in outputContainer.Children().OfType<Port>().ToList())
+                {
+                    foreach (Edge edge in port.connections.ToList())
+                    {
+                        edge.input?.Disconnect(edge);
+                        edge.output?.Disconnect(edge);
+                        graphView?.RemoveElement(edge);
+                    }
+                }
+                outputContainer.Clear();
+
+                if (HasOutput)
+                {
+                    Port next = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(float));
+                    next.portName = QuestPortNames.Next;
+                    outputContainer.Add(next);
+                }
+
                 RefreshTitle();
+                RefreshPorts();
+                RefreshExpandedState();
             }));
             return field;
         }
     }
 
-    /// <summary>게임 Controller에 보상 지급과 현재 Quest 완료 처리를 요청합니다.</summary>
+    /// <summary>선택적인 보상 Action을 실행하고 다음 노드로 진행합니다.</summary>
     [GraphNodeEditor(typeof(QuestContainer), "Quest/Completion/Reward")]
     public sealed class QuestRewardNode : QuestFlowNode<QuestRewardNodeData>
     {
         protected override string NodeTitle => string.IsNullOrWhiteSpace(NodeData.RewardAction.Key)
-            ? "REWARD / TURN IN"
+            ? "REWARD"
             : $"REWARD: {NodeData.RewardAction.Key}";
 
-        /// <summary>Quest 완료 처리 전에 실행할 선택적인 타입 기반 보상 Action을 만듭니다.</summary>
+        /// <summary>실행할 선택적인 타입 기반 보상 Action을 만듭니다.</summary>
         public override VisualElement CreateInspector(NodeInspectorEditHandler editHandler)
         {
             var root = new VisualElement();
             root.Add(new HelpBox(
-                "Quest 상태를 CanComplete로 바꾼 뒤 IQuestController.TurnInQuest를 호출합니다. " +
-                "선택한 보상 Action은 아이템·재화·업적·연출 처리를 위해 그보다 먼저 실행됩니다.",
+                "보상 Action만 실행합니다. Quest 상태 변경이 필요하면 State Change 노드를 연결하세요.",
                 HelpBoxMessageType.Info));
-            root.Add(MethodCallEditor.Create(
+            root.Add(MethodBindingInspector.Create(
                 editHandler,
                 "Optional Reward Action",
                 NodeData.RewardAction,
-                QuestMethodCatalog.GetMethods(MethodKind.Action),
+                QuestMethodCatalog.GetMethodList(MethodKind.Action),
                 RefreshTitle));
             return root;
         }
@@ -289,19 +300,12 @@ namespace UniversalGraph.Quest.Editor
         protected override string NodeTitle => "FAIL QUEST";
         protected override bool HasOutput => false;
 
-        /// <summary>실패 종료 노드에 저장할 실패 이유 필드를 만듭니다.</summary>
+        /// <summary>이 노드가 현재 Quest를 즉시 실패 상태로 종료함을 설명합니다.</summary>
         public override VisualElement CreateInspector(NodeInspectorEditHandler editHandler)
         {
-            var reason = new TextField("Failure Reason")
-            {
-                value = NodeData.FailReason ?? string.Empty,
-                multiline = true,
-                isDelayed = true
-            };
-            reason.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit(
-                "Change failure reason",
-                () => NodeData.FailReason = change.newValue));
-            return reason;
+            return new HelpBox(
+                "이 노드에 도달하면 현재 Quest를 실패 상태로 종료합니다.",
+                HelpBoxMessageType.Info);
         }
     }
 }

@@ -49,7 +49,7 @@ namespace UniversalGraph.Editor
 			foreach (GraphValidationIssue issue in selectedGraphNode.ValidationIssues)
 			{
 				validationRoot.Add(
-					new HelpBox($"[{issue.Code}] {issue.Message}",
+					new HelpBox($"[{issue.IssueKind}] {issue.Message}",
 					issue.Severity == GraphValidationSeverity.Error ? HelpBoxMessageType.Error : HelpBoxMessageType.Warning));
 			}
 		}

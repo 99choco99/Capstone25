@@ -26,7 +26,7 @@ namespace UniversalGraph.Editor
 		public abstract void BindNodeData(NodeBaseData data);
 
 		/// <summary>새로 작성하는 노드에 필요한 초기 직렬화 데이터를 생성</summary>
-		public abstract NodeBaseData CreateNewData(GraphNodeDataCreationContext context);
+		public abstract NodeBaseData CreateNewData(GraphNodeCreationContext creationContext);
 
 		/// <summary>노드를 선택했을 때 표시할 인스펙터를 생성</summary>
 		public virtual VisualElement CreateInspector(NodeInspectorEditHandler editHandler)
@@ -123,17 +123,17 @@ namespace UniversalGraph.Editor
 		/// <summary>
 		/// 노드 데이터를 새로 생성할 때 호출하는 함수
 		/// </summary>
-		public sealed override NodeBaseData CreateNewData(GraphNodeDataCreationContext context)
+		public sealed override NodeBaseData CreateNewData(GraphNodeCreationContext creationContext)
 		{
 			T newData = new();
-			InitializeNewData(newData, context);
+			InitializeNewData(newData, creationContext);
 			newData.Guid = Guid.NewGuid().ToString();
-			newData.Position = context.Position;
+			newData.Position = creationContext.Position;
 			return newData;
 		}
 
 		/// <summary>새 노드 데이터를 화면에 연결하기 전에 기본값을 적용</summary>
-		protected virtual void InitializeNewData(T data, GraphNodeDataCreationContext context) { }
+		protected virtual void InitializeNewData(T data, GraphNodeCreationContext creationContext) { }
 
         //========================= 공용 ====================
 
@@ -145,6 +145,14 @@ namespace UniversalGraph.Editor
 		{
 			base.OnSelected();
 			GetFirstAncestorOfType<UniversalGraphView>()?.OnNodeSelected(this);
+		}
+
+		/// <summary>선택이 해제되면 인스펙터가 제거된 데이터를 계속 참조하지 않도록 알림</summary>
+		public override void OnUnselected()
+		{
+			UniversalGraphView graphView = GetFirstAncestorOfType<UniversalGraphView>();
+			base.OnUnselected();
+			graphView?.OnNodeUnselected(this);
 		}
 	}
 }

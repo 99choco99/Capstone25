@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
 using UnityEditor.Compilation;
-using UnityEngine;
 
 namespace UniversalGraph.Quest.Editor
 {
@@ -17,17 +16,17 @@ namespace UniversalGraph.Quest.Editor
 
         static QuestMethodCatalog()
         {
-            BuildRegistry();
+            BuildCatalog();
         }
 
         /// <summary>특정 바인딩 종류의 유효하고 중복되지 않는 메서드를 반환합니다.</summary>
-        public static IReadOnlyList<QuestMethodDescriptor> GetMethods(MethodKind kind)
+        public static IReadOnlyList<QuestMethodDescriptor> GetMethodList(MethodKind kind)
         {
             return kind == MethodKind.Action ? actions : conditions;
         }
 
         /// <summary>고정 키로 유효한 메서드 하나를 찾습니다.</summary>
-        public static bool TryGetMethod(
+        public static bool GetMethodDescriptor(
             MethodKind kind,
             string key,
             out QuestMethodDescriptor descriptor)
@@ -39,17 +38,12 @@ namespace UniversalGraph.Quest.Editor
             }
 
             return (kind == MethodKind.Action ? actionByKey : conditionByKey)
-                .TryGetValue(key, out descriptor);
+                .TryGetValue(key.Trim(), out descriptor);
         }
 
         /// <summary>플레이어 어셈블리를 검사하고 대상을 확정할 수 없는 중복 키를 제외합니다.</summary>
-        private static void BuildRegistry()
+        private static void BuildCatalog()
         {
-            actions.Clear();
-            conditions.Clear();
-            actionByKey.Clear();
-            conditionByKey.Clear();
-
             var playerAssemblies = new HashSet<string>();
             foreach (UnityEditor.Compilation.Assembly assembly in
                      CompilationPipeline.GetAssemblies(AssembliesType.Player))
@@ -61,13 +55,13 @@ namespace UniversalGraph.Quest.Editor
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<QuestActionAttribute>())
             {
                 QuestActionAttribute attribute = method.GetCustomAttribute<QuestActionAttribute>(false);
-                if (attribute != null && IsPlayerMethod(method, playerAssemblies, "action"))
+                if (attribute != null && IsPlayerMethod(method, playerAssemblies))
                 {
                     AddCandidate(
                         method,
                         MethodKind.Action,
                         attribute.Key,
-                        attribute.Target,
+                        attribute.Owner,
                         actionCandidates);
                 }
             }
@@ -76,56 +70,44 @@ namespace UniversalGraph.Quest.Editor
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<QuestConditionAttribute>())
             {
                 QuestConditionAttribute attribute = method.GetCustomAttribute<QuestConditionAttribute>(false);
-                if (attribute != null && IsPlayerMethod(method, playerAssemblies, "condition"))
+                if (attribute != null && IsPlayerMethod(method, playerAssemblies))
                 {
                     AddCandidate(
                         method,
                         MethodKind.Condition,
                         attribute.Key,
-                        attribute.Target,
+                        attribute.Owner,
                         conditionCandidates);
                 }
             }
 
-            PublishUnique(actionCandidates, actions, actionByKey, "action");
-            PublishUnique(conditionCandidates, conditions, conditionByKey, "condition");
+            FinalizeCandidates(actionCandidates, actions, actionByKey);
+            FinalizeCandidates(conditionCandidates, conditions, conditionByKey);
         }
 
         private static bool IsPlayerMethod(
             MethodInfo method,
-            ISet<string> playerAssemblies,
-            string kind)
+            ISet<string> playerAssemblies)
         {
             string assemblyName = method.DeclaringType?.Assembly.GetName().Name;
-            if (!string.IsNullOrWhiteSpace(assemblyName) && playerAssemblies.Contains(assemblyName))
-            {
-                return true;
-            }
-
-            Debug.LogWarning(
-                $"[Quest] Editor 전용 {kind} 메서드는 무시합니다: " +
-                $"{method.DeclaringType?.FullName}.{method.Name}");
-            return false;
+            return !string.IsNullOrWhiteSpace(assemblyName) && playerAssemblies.Contains(assemblyName);
         }
 
         private static void AddCandidate(
             MethodInfo method,
             MethodKind kind,
             string key,
-            QuestMethodTarget target,
+            QuestMethodOwner owner,
             IDictionary<string, List<QuestMethodDescriptor>> candidatesByKey)
         {
-            if (!QuestMethodDescriptorFactory.TryCreate(
+            if (!QuestMethodDescriptorFactory.TryCreateDescriptor(
                     method,
                     kind,
                     key,
-                    target,
+                    owner,
                     out QuestMethodDescriptor descriptor,
-                    out string error))
+                    out _))
             {
-                Debug.LogError(
-                    $"[Quest] {kind}을 등록하지 못했습니다: " +
-                    $"'{method.DeclaringType?.FullName}.{method.Name}': {error}");
                 return;
             }
 
@@ -138,32 +120,24 @@ namespace UniversalGraph.Quest.Editor
             candidates.Add(descriptor);
         }
 
-        private static void PublishUnique(
+        private static void FinalizeCandidates(
             IReadOnlyDictionary<string, List<QuestMethodDescriptor>> candidatesByKey,
-            ICollection<QuestMethodDescriptor> published,
-            IDictionary<string, QuestMethodDescriptor> publishedByKey,
-            string kind)
+            List<QuestMethodDescriptor> list,
+            IDictionary<string, QuestMethodDescriptor> listByKey)
         {
-            var sorted = new List<QuestMethodDescriptor>();
             foreach (KeyValuePair<string, List<QuestMethodDescriptor>> pair in candidatesByKey)
             {
                 if (pair.Value.Count != 1)
                 {
-                    Debug.LogError(
-                        $"[Quest] 중복된 {kind} 키 '{pair.Key}'는 그래프 메뉴에서 제외합니다.");
                     continue;
                 }
 
                 QuestMethodDescriptor descriptor = pair.Value[0];
-                sorted.Add(descriptor);
-                publishedByKey.Add(descriptor.Key, descriptor);
+                list.Add(descriptor);
+                listByKey.Add(descriptor.Key, descriptor);
             }
 
-            sorted.Sort((left, right) => string.Compare(left.Key, right.Key, StringComparison.Ordinal));
-            foreach (QuestMethodDescriptor descriptor in sorted)
-            {
-                published.Add(descriptor);
-            }
+            list.Sort((left, right) => string.CompareOrdinal(left.Key, right.Key));
         }
     }
 }

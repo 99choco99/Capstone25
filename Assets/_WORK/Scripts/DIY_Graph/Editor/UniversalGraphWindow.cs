@@ -214,7 +214,7 @@ namespace UniversalGraph.Editor
         /// <summary>현재 GraphView 상태를 Container에 쓰고 변경 상태와 검증 결과를 갱신</summary>
         private void SyncGraphViewToContainer()
         {
-            GraphSerializer.WriteGraphViewToContainer(graphView, currentContainer);
+            GraphViewSerializer.WriteGraphViewToContainer(graphView, currentContainer);
             EditorUtility.SetDirty(currentContainer);
             ValidateCurrentGraph();
         }
@@ -240,7 +240,7 @@ namespace UniversalGraph.Editor
 
         //========================= 그래프 불러오기 및 되돌리기 함수 =================================
 
-        /// <summary>캔버스에서 노드를 선택하면 해당 노드의 Inspector를 표시합니다.</summary>
+        /// <summary>캔버스에서 노드를 선택하면 해당 노드의 Inspector를 표시</summary>
         private void OnNodeSelected(GraphNode selectedNode)
         {
             inspectorPanel?.UpdateInspector(selectedNode);
@@ -281,7 +281,6 @@ namespace UniversalGraph.Editor
 
             graphView.ClearSelection();
             graphView.AddToSelection(node);
-            inspectorPanel?.UpdateInspector(node);
         }
 
 
@@ -310,7 +309,7 @@ namespace UniversalGraph.Editor
             try
             {
                 MigrateGraphAssetIfNeeded(container);
-                graphView.ApplyWithoutSaveRequest(() => GraphSerializer.LoadGraph(graphView, container));
+                graphView.ApplyWithoutSaveRequest(() => GraphViewSerializer.LoadGraph(graphView, container));
 
                 currentContainer = container;
                 loadedContainer = container;
@@ -325,7 +324,10 @@ namespace UniversalGraph.Editor
                 loadedContainer = null;
                 graphView.SetContainer(null);
                 inspectorPanel?.UpdateInspector(null);
-                Debug.LogError($"[Flow Graph] '{container.name}'을 불러오지 못했습니다. 에셋은 변경하지 않았습니다.\n{exception}", container);
+                Debug.LogError(
+                    $"[Flow Graph] '{container.name}'의 화면을 불러오지 못했습니다. " +
+                    $"마이그레이션이 실행된 경우 에셋에는 이미 반영되어 있을 수 있습니다.\n{exception}",
+                    container);
             }
             finally
             {
@@ -339,10 +341,7 @@ namespace UniversalGraph.Editor
         /// <summary>에디터 화면을 만들기 전에 안전한 순차 스키마 업그레이드를 저장합니다.</summary>
         private static void MigrateGraphAssetIfNeeded(GraphContainer container)
         {
-            if (!GraphAssetMigrator.TryMigrate(container, out GraphAssetMigrationResult result, out string error))
-            {
-                throw new InvalidOperationException(error);
-            }
+            GraphAssetMigrationResult result = GraphAssetMigrator.Migrate(container);
 
             if (!result.Changed)
             {
@@ -352,8 +351,8 @@ namespace UniversalGraph.Editor
             EditorUtility.SetDirty(container);
             AssetDatabase.SaveAssetIfDirty(container);
             Debug.Log(
-                $"[Flow Graph] '{container.name}'을 스키마 {result.FromVersion}에서 " +
-                $"{result.ToVersion}(으)로 마이그레이션했습니다.",
+                $"[Flow Graph] '{container.name}'을 스키마 {result.BeforeVersion}에서 " +
+                $"{result.AfterVersion}(으)로 마이그레이션했습니다.",
                 container);
         }
 
@@ -369,7 +368,7 @@ namespace UniversalGraph.Editor
                 return;
             }
 
-            validationIssues = GraphValidatorRegistry.Validate(currentContainer);
+            validationIssues = GraphValidator.Validate(currentContainer);
             var issuesByNode = validationIssues
                 .Where(issue => !string.IsNullOrWhiteSpace(issue.NodeGuid))
                 .GroupBy(issue => issue.NodeGuid)
@@ -410,7 +409,6 @@ namespace UniversalGraph.Editor
             graphView.ClearSelection();
             graphView.AddToSelection(node);
             graphView.FrameSelection();
-            inspectorPanel?.UpdateInspector(node);
         }
 
 
@@ -440,7 +438,6 @@ namespace UniversalGraph.Editor
             graphView.ClearSelection();
             graphView.AddToSelection(node);
             graphView.FrameSelection();
-            inspectorPanel?.UpdateInspector(node);
         }
 
     }

@@ -22,12 +22,12 @@ namespace UniversalGraph.Dialogue.Editor
             }
 
             var container = ScriptableObject.CreateInstance<DialogueContainer>();
-            GraphAssetMigrator.EnsureCurrent(container);
-            container.Nodes.Add(new DialogueStartNodeData
+            GraphAssetMigrator.Migrate(container);
+            container.Nodes.Add(new DialogueEntryNodeData
             {
                 Guid = Guid.NewGuid().ToString(),
                 Position = new Vector2(100f, 100f),
-                EntryId = DialogueStartNodeData.DefaultEntryId
+                EntryId = DialogueEntryNodeData.DefaultEntryId
             });
             AssetDatabase.CreateAsset(container, path);
             AssetDatabase.SaveAssets();

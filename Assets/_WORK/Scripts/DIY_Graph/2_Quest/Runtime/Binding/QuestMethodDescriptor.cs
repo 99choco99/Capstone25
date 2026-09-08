@@ -1,4 +1,3 @@
-using System;
 using System.Reflection;
 
 namespace UniversalGraph
@@ -9,50 +8,19 @@ namespace UniversalGraph
         internal QuestMethodDescriptor(
             string key,
             MethodKind kind,
-            QuestMethodTarget target,
+            QuestMethodOwner owner,
             MethodInfo method,
-            MethodParameterDescriptor[] parameters,
-            MethodParameterDescriptor[] serializedParameters)
-            : this(
-                key,
-                kind,
-                target,
-                method?.DeclaringType,
-                method?.Name,
-                method?.IsStatic ?? false,
-                method,
-                parameters,
-                serializedParameters,
-                null)
-        {
-        }
-
-        internal QuestMethodDescriptor(
-            string key,
-            MethodKind kind,
-            QuestMethodTarget target,
-            Type declaringType,
-            string methodName,
-            bool isStatic,
-            MethodInfo method,
-            MethodParameterDescriptor[] parameters,
-            MethodParameterDescriptor[] serializedParameters,
-            GeneratedMethodInvoker generatedInvoker)
+            MethodParameterDescriptor[] parameters)
             : base(
                 key,
                 kind,
-                declaringType,
-                methodName,
-                isStatic,
                 method,
-                parameters,
-                serializedParameters,
-                generatedInvoker)
+                parameters)
         {
-            Target = target;
-            DisplayName = $"{Key}  [{Target}]  {DeclaringType?.Name}.{MethodName}";
+            Owner = owner;
+            DisplayName = $"{Key}  [{Owner}]  {DeclaringType?.Name}.{MethodName}";
         }
 
-        public QuestMethodTarget Target { get; }
+        public QuestMethodOwner Owner { get; }
     }
 }

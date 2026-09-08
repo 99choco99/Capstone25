@@ -1,22 +1,31 @@
-using System;
 using System.Reflection;
 
 namespace UniversalGraph
 {
+	/// <summary>
+	/// Dialogue에서 Attribute가 붙은 메소드의 정보의 정의를 담는 클래스(읽기전용)
+	/// </summary>
 	public sealed class DialogueMethodDescriptor : MethodDescriptor
 	{
-		public DialogueTarget Target { get; }
+		public DialogueMethodOwner Owner { get; }
 
-		internal DialogueMethodDescriptor(string key, MethodKind kind, DialogueTarget target, MethodInfo method, MethodParameterDescriptor[] parameters, MethodParameterDescriptor[] serializedParameters, GeneratedMethodInvoker generatedInvoker = null)
-			: this(key, kind, target, method?.DeclaringType, method?.Name, method?.IsStatic ?? false, method, parameters, serializedParameters, generatedInvoker)
+		/// <summary>
+		/// Reflection으로 얻은 MethodInfo와 파라미터 설명서로 구성
+		/// </summary>
+		internal DialogueMethodDescriptor(
+			string key,
+			MethodKind kind,
+			DialogueMethodOwner owner,
+			MethodInfo methodInfo,
+			MethodParameterDescriptor[] parameters)
+			: base(
+				key,
+				kind,
+				methodInfo,
+				parameters)
 		{
-		}
-
-		internal DialogueMethodDescriptor(string key, MethodKind kind, DialogueTarget target, Type declaringType, string methodName, bool isStatic, MethodInfo method, MethodParameterDescriptor[] parameters, MethodParameterDescriptor[] serializedParameters, GeneratedMethodInvoker generatedInvoker)
-			: base(key, kind, declaringType, methodName, isStatic, method, parameters, serializedParameters, generatedInvoker)
-		{
-			Target = target;
-			DisplayName = $"{Key}  [{Target}]  {DeclaringType?.Name}.{MethodName}";
+			Owner = owner;
+			DisplayName = $"{Key}  [{Owner}]  {DeclaringType?.Name}.{MethodName}";
 		}
 	}
 }

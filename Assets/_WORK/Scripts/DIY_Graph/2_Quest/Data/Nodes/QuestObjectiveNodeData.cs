@@ -7,13 +7,13 @@ namespace UniversalGraph
     [Serializable]
     public class QuestObjectiveNodeData : NodeBaseData
     {
-        public string ObjectiveType;
+        public string EventKey;
 
         [Tooltip("게임 플레이 이벤트와 비교할 프로젝트 정의 대상 ID입니다.")]
         public int TargetId;
 
         [Tooltip("선택적인 제작용 참조입니다. 현재 런타임 비교에는 TargetId를 사용합니다.")]
-        public UnityEngine.Object TargetPrefab;
+        public UnityEngine.Object TargetReference;
 
         [Min(1)]
         public int RequiredAmount = 1;

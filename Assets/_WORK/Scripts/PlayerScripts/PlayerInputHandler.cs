@@ -21,7 +21,7 @@ public class PlayerInputHandler : MonoBehaviour
     public event Action<bool> OnCursorStateChanged;
     public event Action OnTargetPressed;
 
-    //UI Event
+    //UI EnterAction
     public event Action OnEscapePressed;
     public event Action OnInventoryPressed;
     public event Action OnProfilePressed;

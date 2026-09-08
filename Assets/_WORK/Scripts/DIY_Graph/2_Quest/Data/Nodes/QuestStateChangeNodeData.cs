@@ -5,6 +5,6 @@ namespace UniversalGraph
 	[Serializable]
 	public class QuestStateChangeNodeData : NodeBaseData
 	{
-		public QuestState NewState;
+		public QuestState NewState = QuestState.InProgress;
 	}
 }

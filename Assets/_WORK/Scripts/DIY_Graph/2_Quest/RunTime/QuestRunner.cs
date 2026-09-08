@@ -11,24 +11,26 @@ namespace UniversalGraph
     public static partial class QuestRunner
     {
         /// <summary>게임 이벤트 하나를 조건이 일치하는 모든 활성 목표에 적용합니다.</summary>
-        public static void ProcessEvent(IQuestController controller, string type, int targetId, int amount)
+        public static void ReportObjectiveProgress(IQuestController controller, string eventKey, int targetId, int amount)
         {
             if (controller == null)
             {
                 throw new ArgumentNullException(nameof(controller), "QuestRunner를 만들려면 Quest Controller가 필요합니다.");
             }
 
-            QuestManager manager = QuestManager.Instance;
-            if (string.IsNullOrWhiteSpace(type) || amount <= 0 || manager == null)
+            QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
+            if (string.IsNullOrWhiteSpace(eventKey) || amount <= 0 || registry == null)
             {
                 return;
             }
+
+            eventKey = eventKey.Trim();
 
             foreach (QuestProgress progress in controller.QuestProgress.Values
                          .Where(item => item != null && item.state == QuestState.InProgress)
                          .ToArray())
             {
-                if (!manager.TryBuildQuestIndex(
+                if (!registry.TryGetQuestIndex(
                         progress.questId,
                         out QuestContainer container,
                         out QuestGraphIndex flowIndex))
@@ -37,104 +39,390 @@ namespace UniversalGraph
                 }
 
                 progress.EnsureCollections();
+                int runVersion = progress.runVersion;
                 bool changed = false;
                 foreach (string activeGuid in progress.activeNodeGuids.ToArray())
                 {
+                    if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
+                    {
+                        break;
+                    }
+
+                    if (!progress.activeNodeGuids.Contains(activeGuid))
+                    {
+                        continue;
+                    }
+
                     if (!flowIndex.Nodes.TryGetValue(activeGuid, out NodeBaseData activeNode)
                         || activeNode is not QuestObjectiveNodeData objective
-                        || objective.ObjectiveType != type
+                        || objective.EventKey != eventKey
                         || objective.TargetId != targetId)
                     {
                         continue;
                     }
 
-                    int requiredAmount = Math.Max(1, objective.RequiredAmount);
-                    progress.nodeProgressCounts.TryGetValue(activeGuid, out int currentAmount);
-                    long increased = (long)currentAmount + amount;
-                    progress.nodeProgressCounts[activeGuid] = (int)Math.Min(requiredAmount, increased);
-                    changed = true;
+                    changed |= ApplyObjectiveProgress(
+                        controller,
+                        container,
+                        progress,
+                        flowIndex,
+                        objective,
+                        amount,
+                        out bool executionSucceeded);
 
-                    if (increased < requiredAmount)
+                    if (!executionSucceeded
+                        || progress.state != QuestState.InProgress)
                     {
-                        continue;
+                        break;
                     }
-
-                    progress.activeNodeGuids.Remove(activeGuid);
-                    MarkCompleted(progress, activeGuid);
-                    RunFromOutputs(controller, container, progress, flowIndex, objective.Guid, null);
                 }
 
-                if (changed)
+                if (changed && IsCurrentRun(controller, progress, runVersion))
                 {
                     controller.InvokeStatusChanged(container, progress);
                 }
             }
         }
 
-        /// <summary>Quest 하나를 초기화하고 명시적인 Quest Start 노드에서 시작합니다.</summary>
-        public static void StartQuestGraph(IQuestController controller, int questId)
+        /// <summary>현재 활성화된 목표 하나를 GUID로 지정해 진행시킵니다.</summary>
+        public static bool AdvanceObjective(
+            IQuestController controller,
+            int questId,
+            string objectiveNodeGuid,
+            int amount = 1)
+        {
+            if (controller == null)
+            {
+                throw new ArgumentNullException(nameof(controller), "Quest 목표를 진행할 Controller가 필요합니다.");
+            }
+
+            if (string.IsNullOrWhiteSpace(objectiveNodeGuid) || amount <= 0)
+            {
+                return false;
+            }
+
+            QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
+            controller.QuestProgress.TryGetValue(questId, out QuestProgress progress);
+            if (registry == null
+                || progress == null
+                || progress.state != QuestState.InProgress
+                || !registry.TryGetQuestIndex(
+                    questId,
+                    out QuestContainer container,
+                    out QuestGraphIndex flowIndex))
+            {
+                return false;
+            }
+
+            progress.EnsureCollections();
+            if (!progress.activeNodeGuids.Contains(objectiveNodeGuid)
+                || !flowIndex.Nodes.TryGetValue(objectiveNodeGuid, out NodeBaseData nodeData)
+                || nodeData is not QuestObjectiveNodeData objective)
+            {
+                return false;
+            }
+
+            int runVersion = progress.runVersion;
+            bool changed = ApplyObjectiveProgress(
+                controller,
+                container,
+                progress,
+                flowIndex,
+                objective,
+                amount,
+                out bool executionSucceeded);
+            if (changed && IsCurrentRun(controller, progress, runVersion))
+            {
+                controller.InvokeStatusChanged(container, progress);
+            }
+
+            return changed && executionSucceeded;
+        }
+
+        /// <summary>그래프에서 제공된 Quest가 여전히 수락 가능한지 확인하고 시작합니다.</summary>
+        public static bool TryAcceptQuest(IQuestController controller, QuestOffer offer)
         {
             if (controller == null)
             {
                 throw new ArgumentNullException(nameof(controller), "Quest를 시작할 Controller가 필요합니다.");
             }
 
-            QuestProgress progress = controller.GetQuestStatus(questId);
-            QuestManager manager = QuestManager.Instance;
+            if (offer == null)
+            {
+                throw new ArgumentNullException(nameof(offer), "시작할 Quest Offer가 필요합니다.");
+            }
+
+            QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
+            if (registry == null
+                || !registry.TryGetDefinition(offer.QuestId, out QuestContainer definition)
+                || definition != offer.Definition
+                || !QuestInteractionQuery.TryRefreshOffer(registry, controller, offer, out QuestOffer refreshed)
+                || !refreshed.IsAvailable)
+            {
+                return false;
+            }
+
+            return StartQuestFlow(controller, refreshed.QuestId);
+        }
+
+        /// <summary>
+        /// Offer 조건을 거치지 않고 Quest를 명시적으로 시작합니다.
+        /// 컷신, 튜토리얼과 다른 Quest처럼 게임 흐름이 시작을 이미 결정한 경우에 사용합니다.
+        /// </summary>
+        public static bool StartQuest(IQuestController controller, int questId)
+        {
+            if (controller == null)
+            {
+                throw new ArgumentNullException(nameof(controller), "Quest를 시작할 Controller가 필요합니다.");
+            }
+
+            return StartQuestFlow(controller, questId);
+        }
+
+        /// <summary>Quest 상태와 모든 노드 진행 기록을 시작 전 상태로 초기화합니다.</summary>
+        public static bool ResetQuest(IQuestController controller, int questId)
+        {
+            if (controller == null)
+            {
+                throw new ArgumentNullException(nameof(controller), "Quest를 초기화할 Controller가 필요합니다.");
+            }
+
+            controller.QuestProgress.TryGetValue(questId, out QuestProgress progress);
+            QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
+            if (progress == null || registry == null || !registry.TryGetDefinition(questId, out QuestContainer container))
+            {
+                return false;
+            }
+
+            ResetProgress(progress);
+            progress.state = QuestState.NotStarted;
+            controller.InvokeStatusChanged(container, progress);
+            ResumeWaitingQuests(controller, questId);
+            return true;
+        }
+
+        /// <summary>누적 진행 기록은 유지하고 상태를 변경하며, 진행이 끝나는 상태에서는 활성 노드를 정리합니다.</summary>
+        public static bool SetQuestState(IQuestController controller, int questId, QuestState state)
+        {
+            if (controller == null)
+            {
+                throw new ArgumentNullException(nameof(controller), "Quest 상태를 변경할 Controller가 필요합니다.");
+            }
+
+            if (!Enum.IsDefined(typeof(QuestState), state))
+            {
+                return false;
+            }
+
+            if (state == QuestState.NotStarted)
+            {
+                return ResetQuest(controller, questId);
+            }
+
+            controller.QuestProgress.TryGetValue(questId, out QuestProgress progress);
+            QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
             if (progress == null
-                || manager == null
-                || !manager.TryBuildQuestIndex(
+                || registry == null
+                || !registry.TryGetDefinition(questId, out QuestContainer container))
+            {
+                return false;
+            }
+
+            progress.EnsureCollections();
+            if (state == QuestState.InProgress && progress.activeNodeGuids.Count == 0)
+            {
+                return false;
+            }
+
+            progress.state = state;
+            if (state != QuestState.InProgress)
+            {
+                progress.activeNodeGuids.Clear();
+            }
+
+            controller.InvokeStatusChanged(container, progress);
+            ResumeWaitingQuests(controller, questId);
+            return true;
+        }
+
+        /// <summary>게임 데이터 복원 후 Quest 간 대기를 재평가하고 활성 Quest의 상태를 알립니다.</summary>
+        public static void ResumeRestoredQuests(IQuestController controller)
+        {
+            if (controller == null)
+            {
+                throw new ArgumentNullException(nameof(controller), "Quest 진행 데이터를 복원할 Controller가 필요합니다.");
+            }
+
+            QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
+            if (registry == null)
+            {
+                throw new InvalidOperationException(
+                    "Quest 복원 알림을 보내기 전에 QuestDefinitionRegistry.Initialize를 호출해야 합니다.");
+            }
+
+            foreach (int questId in controller.QuestProgress.Keys.ToArray())
+            {
+                // 앞선 알림이 진행 기록을 교체했을 수 있으므로 현재 데이터를 읽습니다.
+                if (!controller.QuestProgress.TryGetValue(questId, out QuestProgress progress)
+                    || progress == null
+                    || (progress.state != QuestState.InProgress && progress.state != QuestState.CanComplete))
+                {
+                    continue;
+                }
+
+                progress.EnsureCollections();
+                QuestContainer definition = registry.GetDefinition(progress.questId);
+                if (definition == null)
+                {
+                    Debug.LogWarning($"[Quest] 저장 데이터가 알 수 없는 Quest ID {progress.questId}를 참조합니다.");
+                    continue;
+                }
+
+                controller.InvokeStatusChanged(definition, progress);
+            }
+
+            // 복원된 상태를 먼저 표시한 뒤 정상 진행을 재개합니다. 다른 게임 데이터도 복원된 뒤여야 합니다.
+            foreach (int questId in registry.Definitions.Select(definition => definition.QuestId).ToArray())
+            {
+                ResumeWaitingQuests(controller, questId);
+            }
+        }
+
+        /// <summary>Quest 실행 상태를 초기화하고 명시적인 Quest Start 노드에서 흐름을 시작합니다.</summary>
+        private static bool StartQuestFlow(IQuestController controller, int questId)
+        {
+            if (questId <= 0)
+            {
+                return false;
+            }
+
+            QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
+            if (registry == null
+                || !registry.TryGetQuestIndex(
                     questId,
                     out QuestContainer container,
                     out QuestGraphIndex flowIndex))
             {
-                return;
+                return false;
             }
 
-            progress.EnsureCollections();
-            if (progress.state == QuestState.InProgress
-                || progress.state == QuestState.CanComplete
-                || progress.state == QuestState.TurnedIn)
+            QuestStartNodeData[] starts = flowIndex.Nodes.Values.OfType<QuestStartNodeData>().ToArray();
+            if (starts.Length != 1)
             {
-                return;
+                Debug.LogError(
+                    $"[Quest] '{container.name}'에는 Quest Start 노드가 정확히 하나 필요하지만 {starts.Length}개 있습니다.",
+                    container);
+                return false;
             }
 
-            NodeBaseData entry = ResolveStartNode(container, flowIndex);
-            if (entry == null)
+            QuestStartNodeData startData = starts[0];
+            QuestProgress progress = GetOrCreateProgress(controller, container);
+            if (progress.state == QuestState.InProgress || progress.state == QuestState.CanComplete)
             {
-                Debug.LogError($"[Quest] '{container.name}'에 Quest Start 노드가 없습니다.", container);
-                return;
+                return false;
             }
 
+            ResetProgress(progress);
             progress.state = QuestState.InProgress;
-            progress.currentNodeGuid = entry.Guid;
+            int runVersion = progress.runVersion;
+            ResumeWaitingQuests(controller, questId);
+
+            // 다른 Quest의 Action이 방금 시작한 Quest를 중단하거나 다시 시작했을 수 있습니다.
+            if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
+            {
+                return true;
+            }
+
+            bool executionSucceeded = RunFromOutputs(
+                controller,
+                container,
+                progress,
+                flowIndex,
+                startData.Guid,
+                null);
+
+            if (IsCurrentRun(controller, progress, runVersion))
+            {
+                controller.InvokeStatusChanged(container, progress);
+            }
+            return executionSucceeded;
+        }
+
+        /// <summary>필요할 때 Quest 진행 기록을 만들어 게임 코드의 사전 초기화 부담을 없앱니다.</summary>
+        private static QuestProgress GetOrCreateProgress(IQuestController controller, QuestContainer container)
+        {
+            controller.QuestProgress.TryGetValue(container.QuestId, out QuestProgress progress);
+            if (progress != null)
+            {
+                progress.EnsureCollections();
+                return progress;
+            }
+
+            progress = new QuestProgress(container);
+            controller.QuestProgress[container.QuestId] = progress;
+            return progress;
+        }
+
+        private static void ResetProgress(QuestProgress progress)
+        {
+            progress.runVersion++;
+            progress.EnsureCollections();
             progress.activeNodeGuids.Clear();
             progress.nodeProgressCounts.Clear();
             progress.completedNodeGuids.Clear();
             progress.completedGateInputs.Clear();
-
-            if (entry is QuestObjectiveNodeData objective)
-            {
-                ActivateObjective(progress, objective);
-            }
-            else
-            {
-                RunFromOutputs(controller, container, progress, flowIndex, entry.Guid, null);
-            }
-
-            controller.InvokeStatusChanged(container, progress);
         }
 
-        /// <summary>완료된 하위 Quest를 기다리던 상위 Quest 그래프를 다시 진행합니다.</summary>
-        public static void NotifyQuestCompleted(IQuestController controller, int completedQuestId)
+        /// <summary>외부 코드 실행 후 초기화되거나 저장 데이터로 교체된 진행 기록인지 확인합니다.</summary>
+        private static bool IsCurrentRun(IQuestController controller, QuestProgress progress, int runVersion)
         {
-            if (controller == null)
+            return progress.runVersion == runVersion
+                   && controller.QuestProgress.TryGetValue(progress.questId, out QuestProgress current)
+                   && ReferenceEquals(current, progress);
+        }
+
+        /// <summary>목표 진행량을 반영하고 완료되면 연결된 Quest 흐름을 계속 실행합니다.</summary>
+        private static bool ApplyObjectiveProgress(
+            IQuestController controller,
+            QuestContainer container,
+            QuestProgress progress,
+            QuestGraphIndex flowIndex,
+            QuestObjectiveNodeData objective,
+            int amount,
+            out bool executionSucceeded)
+        {
+            executionSucceeded = true;
+            int requiredAmount = Math.Max(1, objective.RequiredAmount);
+            progress.nodeProgressCounts.TryGetValue(objective.Guid, out int currentAmount);
+            int nextAmount = (int)Math.Min(requiredAmount, (long)currentAmount + amount);
+            if (nextAmount == currentAmount)
             {
-                throw new ArgumentNullException(nameof(controller), "Quest를 재개할 Controller가 필요합니다.");
+                return false;
             }
 
-            QuestManager manager = QuestManager.Instance;
-            if (manager == null)
+            progress.nodeProgressCounts[objective.Guid] = nextAmount;
+            if (nextAmount < requiredAmount)
+            {
+                return true;
+            }
+
+            progress.activeNodeGuids.Remove(objective.Guid);
+            MarkCompleted(progress, objective.Guid);
+            executionSucceeded = RunFromOutputs(
+                controller,
+                container,
+                progress,
+                flowIndex,
+                objective.Guid,
+                null);
+            return true;
+        }
+
+        /// <summary>상태가 바뀐 Quest를 기다리던 진행 그래프를 다시 확인합니다.</summary>
+        private static void ResumeWaitingQuests(IQuestController controller, int changedQuestId)
+        {
+            QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
+            if (registry == null)
             {
                 return;
             }
@@ -143,7 +431,7 @@ namespace UniversalGraph
                          .Where(item => item != null && item.state == QuestState.InProgress)
                          .ToArray())
             {
-                if (!manager.TryBuildQuestIndex(
+                if (!registry.TryGetQuestIndex(
                         progress.questId,
                         out QuestContainer container,
                         out QuestGraphIndex flowIndex))
@@ -152,23 +440,47 @@ namespace UniversalGraph
                 }
 
                 progress.EnsureCollections();
+                int runVersion = progress.runVersion;
                 bool changed = false;
                 foreach (string activeGuid in progress.activeNodeGuids.ToArray())
                 {
-                    if (!flowIndex.Nodes.TryGetValue(activeGuid, out NodeBaseData node)
-                        || node is not QuestSubGraphNodeData subGraph
-                        || subGraph.SubQuestId != completedQuestId)
+                    if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
+                    {
+                        break;
+                    }
+
+                    if (!progress.activeNodeGuids.Contains(activeGuid)
+                        || !flowIndex.Nodes.TryGetValue(activeGuid, out NodeBaseData nodeData)
+                        || nodeData is not QuestWaitForQuestNodeData waitForQuest
+                        || waitForQuest.TargetQuestId != changedQuestId)
+                    {
+                        continue;
+                    }
+
+                    // 앞선 노드의 Action이 대상 진행 기록을 교체했을 수 있으므로 현재 상태를 다시 읽습니다.
+                    controller.QuestProgress.TryGetValue(changedQuestId, out QuestProgress changedProgress);
+                    if ((changedProgress?.state ?? QuestState.NotStarted) != waitForQuest.RequiredState)
                     {
                         continue;
                     }
 
                     progress.activeNodeGuids.Remove(activeGuid);
                     MarkCompleted(progress, activeGuid);
-                    RunFromOutputs(controller, container, progress, flowIndex, node.Guid, null);
+                    bool executionSucceeded = RunFromOutputs(
+                        controller,
+                        container,
+                        progress,
+                        flowIndex,
+                        nodeData.Guid,
+                        null);
                     changed = true;
+                    if (!executionSucceeded)
+                    {
+                        break;
+                    }
                 }
 
-                if (changed)
+                if (changed && IsCurrentRun(controller, progress, runVersion))
                 {
                     controller.InvokeStatusChanged(container, progress);
                 }

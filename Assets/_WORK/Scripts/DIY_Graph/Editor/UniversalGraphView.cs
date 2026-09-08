@@ -21,6 +21,7 @@ namespace UniversalGraph.Editor
         private int silentDepth;
         private bool changeQueued;
         private int pasteCount;
+        private GraphNode lastSelectedNode;
 
         public event Action SaveRequest;
         public event Action<GraphNode> Selected;
@@ -48,7 +49,21 @@ namespace UniversalGraph.Editor
         /// <summary>매개변수로 받은 그래프 노드가 선택됐음을 알리는 함수</summary>
         internal void OnNodeSelected(GraphNode node)
         {
+            lastSelectedNode = node;
             Selected?.Invoke(node);
+        }
+
+        /// <summary>인스펙터가 제거된 노드 데이터를 계속 표시하지 않도록 선택 해제를 알립니다.</summary>
+        internal void OnNodeUnselected(GraphNode node)
+        {
+            if (!ReferenceEquals(lastSelectedNode, node))
+            {
+                return;
+            }
+
+            lastSelectedNode = selection.OfType<GraphNode>()
+                .FirstOrDefault(candidate => !ReferenceEquals(candidate, node));
+            Selected?.Invoke(lastSelectedNode);
         }
 
         /// <summary>현재 그래프 뷰의 컨테이너를 설정</summary>
@@ -62,6 +77,13 @@ namespace UniversalGraph.Editor
 
         private GraphViewChange HandleChange(GraphViewChange change)
         {
+            if (lastSelectedNode != null && change.elementsToRemove?.Contains(lastSelectedNode) == true)
+            {
+                lastSelectedNode = selection.OfType<GraphNode>()
+                    .FirstOrDefault(node => !change.elementsToRemove.Contains(node));
+                Selected?.Invoke(lastSelectedNode);
+            }
+
             //없어지거나, 생기거나, 이동했을 때
             bool hasChange = change.elementsToRemove != null || change.edgesToCreate != null || change.movedElements != null;
             if (silentDepth == 0 && hasChange)
@@ -180,7 +202,7 @@ namespace UniversalGraph.Editor
 
 
         /// <summary>지정한 캔버스 위치에 등록된 노드 하나를 만들어 추가</summary>
-        public GraphNode CreateNode(Vector2 position, GraphNodeEditorRegistry.NodeDefinition definition)
+        public GraphNode CreateNode(Vector2 position, GraphNodeCatalog.NodeDefinition definition)
         {
             try
             {
@@ -193,8 +215,8 @@ namespace UniversalGraph.Editor
                     .Where(node => node.Data != null)
                     .Select(node => node.Data)
                     .ToList();
-                GraphNodeDataCreationContext context = new(position, existingNodes);
-                GraphNode node = GraphNodeEditorRegistry.CreateNewNode(container, definition, context);
+                GraphNodeCreationContext context = new(position, existingNodes);
+                GraphNode node = GraphNodeCatalog.CreateNewNode(container, definition, context);
                 AddElement(node);
                 ScheduleSave();
                 return node;
@@ -284,7 +306,7 @@ namespace UniversalGraph.Editor
                 Dictionary<string, string> newIds = new();
                 Dictionary<string, GraphNode> pasted = new();
                 
-                Vector2 offset = Vector2.one * (30f * (++pasteCount % 10 + 1));
+                Vector2 offset = Vector2.one * (30f * (pasteCount++ % 10 + 1));
 
 
                 //복사된 노드를 돌면서 데이터를 채워넣음
@@ -306,7 +328,7 @@ namespace UniversalGraph.Editor
                     nodeData.Guid = newId;
                     nodeData.Position += offset;
 
-                    GraphNode node = GraphNodeEditorRegistry.CreateNode(container, nodeData);
+                    GraphNode node = GraphNodeCatalog.CreateNode(container, nodeData);
 
                     Rect rect = node.GetPosition();
                     rect.position = nodeData.Position;
@@ -378,8 +400,7 @@ namespace UniversalGraph.Editor
         /// </summary>
         private static Port FindPort(VisualElement container, string portName)
         {
-            return container.Children().OfType<Port>()
-                .FirstOrDefault(port => port.portName == portName);
+            return container.Children().OfType<Port>().FirstOrDefault(port => port.portName == portName);
         }
 
 
@@ -398,7 +419,7 @@ namespace UniversalGraph.Editor
             Vector2 canvasPos = contentViewContainer.WorldToLocal(worldPos);
 
             //우클릭시 노드 생성 을 추가
-            foreach (GraphNodeEditorRegistry.NodeDefinition definition in GraphNodeEditorRegistry.GetNodeCatalog(container))
+            foreach (GraphNodeCatalog.NodeDefinition definition in GraphNodeCatalog.GetNodeCatalog(container))
             {
                 evt.menu.AppendAction(
                     definition.MenuPath,
@@ -413,7 +434,15 @@ namespace UniversalGraph.Editor
             List<Port> compatible = new();
             foreach(Port port in ports)
             {
-                if (startPort.direction != port.direction && startPort.node != port.node)
+                bool isAlreadyConnected = startPort.connections.Any(edge =>
+                    edge != null
+                    && (edge.output == startPort && edge.input == port
+                        || edge.output == port && edge.input == startPort));
+
+                if (startPort.direction != port.direction
+                    && startPort.node != port.node
+                    && startPort.portType == port.portType
+                    && !isAlreadyConnected)
                 {
                     compatible.Add(port);
                 }

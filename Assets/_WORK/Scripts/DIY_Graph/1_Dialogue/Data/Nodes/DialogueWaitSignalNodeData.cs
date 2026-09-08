@@ -11,7 +11,7 @@ namespace UniversalGraph
 
 		public string SignalKey
 		{
-			get => signalKey;
+			get => signalKey?.Trim() ?? string.Empty;
 			set => signalKey = value?.Trim() ?? string.Empty;
 		}
 	}

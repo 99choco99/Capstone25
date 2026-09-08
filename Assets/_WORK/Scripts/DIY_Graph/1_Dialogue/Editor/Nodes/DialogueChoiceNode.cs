@@ -22,7 +22,7 @@ namespace UniversalGraph.Dialogue.Editor
             inputContainer.Add(input);
 
             Port defaultPort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(float));
-            defaultPort.portName = DialogueChoiceNodeData.DefaultPortName;
+            defaultPort.portName = DialoguePortNames.Default;
             outputContainer.Add(defaultPort);
 
             foreach (DialogueChoiceData choice in NodeData.Choices)
@@ -105,7 +105,7 @@ namespace UniversalGraph.Dialogue.Editor
                 throw new InvalidOperationException("선택지 목록이 null입니다.");
             }
 
-            HashSet<string> portIds = new() { DialogueChoiceNodeData.DefaultPortName };
+            HashSet<string> portIds = new() { DialoguePortNames.Default };
             foreach (DialogueChoiceData choice in data.Choices)
             {
                 if (choice == null)

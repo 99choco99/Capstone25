@@ -9,7 +9,7 @@ namespace UniversalGraph
     public abstract class GraphContainer : ScriptableObject
     {
         [SerializeField, HideInInspector]
-        private int schemaVersion;
+        private int schemaVersion = GraphAssetMigrator.CurrentVersion;
 
         /// <summary>순차 마이그레이션에서 사용하는 그래프 데이터 스키마 버전</summary>
         public int SchemaVersion => schemaVersion;
