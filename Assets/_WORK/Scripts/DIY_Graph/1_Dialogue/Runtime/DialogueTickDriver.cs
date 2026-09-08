@@ -3,8 +3,7 @@ using UnityEngine;
 namespace UniversalGraph
 {
 	/// <summary>
-	/// Unity 프레임 루프에서 시간 기반 대화 노드를 갱신합니다.
-	/// <see cref="DialogueWaitNodeData"/>가 필요할 때만 객체를 생성합니다.
+	/// Unity 프레임 루프에서 DialogueWait 노드를 갱신하기 위함
 	/// </summary>
 	internal sealed class DialogueTickDriver : MonoBehaviour
 	{

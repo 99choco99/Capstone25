@@ -22,7 +22,7 @@ namespace UniversalGraph.Dialogue.Editor
             }
 
             var container = ScriptableObject.CreateInstance<DialogueContainer>();
-            GraphAssetMigrator.EnsureCurrent(container);
+            GraphAssetMigrator.Migrate(container);
             container.Nodes.Add(new DialogueEntryNodeData
             {
                 Guid = Guid.NewGuid().ToString(),

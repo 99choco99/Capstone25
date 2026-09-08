@@ -66,7 +66,7 @@ namespace UniversalGraph.Tests
         }
 
         [TestCase(typeof(DialogueMethodInvoker), "actionRegistry")]
-        [TestCase(typeof(QuestMethodInvoker), "Actions")]
+        [TestCase(typeof(QuestMethodInvoker), "actionRegistry")]
         public void MethodInvokers_InitializeExcludesEditorOnlyTestAssembly(Type invoker, string registryName)
         {
             try
@@ -122,8 +122,8 @@ namespace UniversalGraph.Tests
         public void MethodDescriptorFactories_AcceptNonGenericOverloadAndRejectGenericDeclaration(bool quest)
         {
             Type factory = quest ? typeof(QuestMethodDescriptorFactory) : typeof(DialogueMethodDescriptorFactory);
-            object owner = quest ? (object)QuestMethodTarget.Global : DialogueMethodOwner.Global;
-            MethodInfo create = factory.GetMethod("TryCreateFromReflection");
+            object owner = quest ? (object)QuestMethodOwner.Global : DialogueMethodOwner.Global;
+            MethodInfo create = factory.GetMethod("TryCreateDescriptor");
             foreach (MethodInfo method in typeof(UniversalGraphRuntimeTests)
                          .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
                          .Where(method => method.Name == nameof(RecordOverloadedAction)))
@@ -152,11 +152,11 @@ namespace UniversalGraph.Tests
         public void MethodDescriptorFactories_RejectReturnTypeThatDoesNotMatchKind(bool quest, MethodKind kind, string methodName)
         {
             Type factory = quest ? typeof(QuestMethodDescriptorFactory) : typeof(DialogueMethodDescriptorFactory);
-            object owner = quest ? (object)QuestMethodTarget.Global : DialogueMethodOwner.Global;
+            object owner = quest ? (object)QuestMethodOwner.Global : DialogueMethodOwner.Global;
             MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
             object[] arguments = { method, kind, "tests.invalid-return", owner, null, null };
 
-            Assert.That((bool)factory.GetMethod("TryCreateFromReflection").Invoke(null, arguments), Is.False);
+            Assert.That((bool)factory.GetMethod("TryCreateDescriptor").Invoke(null, arguments), Is.False);
             Assert.That(arguments[4], Is.Null);
             Assert.That(arguments[5], Is.Not.Null.And.Not.Empty);
         }
@@ -205,7 +205,7 @@ namespace UniversalGraph.Tests
             target.transform.SetSiblingIndex(1);
 
             MethodInfo method = typeof(Transform).GetMethod(nameof(Transform.SetSiblingIndex), new[] { typeof(int) });
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateFromReflection(
+            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
                 method, MethodKind.Action, "tests.dialogue.instance", owner,
                 out DialogueMethodDescriptor descriptor, out string error), Is.True, error);
             typeof(DialogueMethodInvoker).GetMethod("RegisterDescriptor", BindingFlags.Static | BindingFlags.NonPublic)
@@ -236,8 +236,8 @@ namespace UniversalGraph.Tests
             QuestContainer graph = CreateAsset<QuestContainer>();
             var context = new QuestExecutionContext(controller, graph, null, new QuestActionNodeData());
             MethodInfo method = typeof(FakeQuestController).GetMethod("RecordContext", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(QuestMethodDescriptorFactory.TryCreateFromReflection(
-                method, MethodKind.Action, "tests.quest.instance", QuestMethodTarget.Controller,
+            Assert.That(QuestMethodDescriptorFactory.TryCreateDescriptor(
+                method, MethodKind.Action, "tests.quest.instance", QuestMethodOwner.Controller,
                 out QuestMethodDescriptor descriptor, out string error), Is.True, error);
             var binding = new MethodBindingData
             {
@@ -266,12 +266,12 @@ namespace UniversalGraph.Tests
         }
 
         [TestCase(typeof(DialogueMethodInvoker), "actionRegistry")]
-        [TestCase(typeof(QuestMethodInvoker), "Actions")]
+        [TestCase(typeof(QuestMethodInvoker), "actionRegistry")]
         public void MethodInvokers_RejectDuplicateKeyInsteadOfChoosingFirstMethod(Type invoker, string registryName)
         {
             const string key = "tests.invoker.duplicate";
             object owner = invoker == typeof(DialogueMethodInvoker)
-                ? (object)DialogueMethodOwner.Global : QuestMethodTarget.Global;
+                ? (object)DialogueMethodOwner.Global : QuestMethodOwner.Global;
             MethodInfo register = invoker.GetMethod("RegisterMethod", BindingFlags.Static | BindingFlags.NonPublic);
             string[] methodNames = { nameof(RecordInvokerAction), nameof(RecordDialogueChoiceAction), nameof(EndCurrentDialogue) };
             for (int i = 0; i < methodNames.Length; i++)
@@ -378,6 +378,43 @@ namespace UniversalGraph.Tests
             Assert.That(DialogueManager.Instance.CurrentLine, Is.SameAs(line));
         }
 
+        [TestCase(0)]
+        [TestCase(GraphAssetMigrator.CurrentVersion + 1)]
+        public void DialogueManager_RejectsUnsupportedSchemaWithoutStartingConversation(int version)
+        {
+            DialogueContainer graph = CreateAsset<DialogueContainer>();
+            graph.name = "Unsupported Dialogue";
+            graph.Nodes.Add(new DialogueEntryNodeData { Guid = "entry" });
+            var line = new DialogueLineNodeData { Guid = "line", DialogueText = "Hello" };
+            graph.Nodes.Add(line);
+            graph.NodeLinks.Add(Link("entry", DialoguePortNames.Next, "line"));
+
+            FieldInfo schemaField = typeof(GraphContainer).GetField("schemaVersion", BindingFlags.Instance | BindingFlags.NonPublic);
+            schemaField.SetValue(graph, version);
+            int startCount = 0;
+            Action onStart = () => startCount++;
+            DialogueManager.Instance.ConversationStart += onStart;
+            try
+            {
+                LogAssert.Expect(LogType.Error,
+                    $"[Dialogue] 대화를 시작하지 못했습니다. 그래프 'Unsupported Dialogue'의 스키마 버전 {version}은 지원하지 않습니다.");
+                var entryPoint = new DialogueEntryPoint(graph, DialogueEntryNodeData.DefaultEntryId);
+                Assert.That(DialogueManager.Instance.StartConversation(entryPoint), Is.False);
+                Assert.That(DialogueManager.Instance.IsConversationActive, Is.False);
+                Assert.That(graph.SchemaVersion, Is.EqualTo(version));
+                Assert.That(startCount, Is.Zero);
+
+                schemaField.SetValue(graph, GraphAssetMigrator.CurrentVersion);
+                Assert.That(DialogueManager.Instance.StartConversation(entryPoint), Is.True);
+                Assert.That(DialogueManager.Instance.CurrentLine, Is.SameAs(line));
+                Assert.That(startCount, Is.EqualTo(1));
+            }
+            finally
+            {
+                DialogueManager.Instance.ConversationStart -= onStart;
+            }
+        }
+
         [Test]
         public void MethodArgumentCodec_SupportsOnlyTheChosenGraphValueTypes()
         {
@@ -396,7 +433,7 @@ namespace UniversalGraph.Tests
             MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(
                 nameof(AcceptAllSupportedArgumentTypes),
                 BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateFromReflection(
+            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
                     method,
                     MethodKind.Action,
                     "tests.dialogue.all-argument-types",
@@ -464,7 +501,7 @@ namespace UniversalGraph.Tests
             MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(
                 nameof(IsDialogueChoiceVisible),
                 BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateFromReflection(
+            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
                     method,
                     MethodKind.Condition,
                     "tests.dialogue.invalid-argument",
@@ -519,7 +556,7 @@ namespace UniversalGraph.Tests
                 nameof(IsAttributedQuestReady),
                 BindingFlags.Static | BindingFlags.NonPublic);
 
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateFromReflection(
+            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
                     dialogueMethod,
                     MethodKind.Condition,
                     "tests.dialogue.choice-visible",
@@ -528,11 +565,11 @@ namespace UniversalGraph.Tests
                     out string dialogueError),
                 Is.True,
                 dialogueError);
-            Assert.That(QuestMethodDescriptorFactory.TryCreateFromReflection(
+            Assert.That(QuestMethodDescriptorFactory.TryCreateDescriptor(
                     questMethod,
                     MethodKind.Condition,
                     "tests.quest.is-ready",
-                    QuestMethodTarget.Global,
+                    QuestMethodOwner.Global,
                     out QuestMethodDescriptor questDescriptor,
                     out string questError),
                 Is.True,
@@ -558,32 +595,32 @@ namespace UniversalGraph.Tests
                 nameof(IsAttributedQuestReady),
                 BindingFlags.Static | BindingFlags.NonPublic);
 
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateFromReflection(
+            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
                 dialogueMethod,
                 (MethodKind)999,
                 "tests.dialogue.invalid-kind",
                 DialogueMethodOwner.Global,
                 out _,
                 out _), Is.False);
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateFromReflection(
+            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
                 dialogueMethod,
                 MethodKind.Condition,
                 "tests.dialogue.invalid-owner",
                 (DialogueMethodOwner)999,
                 out _,
                 out _), Is.False);
-            Assert.That(QuestMethodDescriptorFactory.TryCreateFromReflection(
+            Assert.That(QuestMethodDescriptorFactory.TryCreateDescriptor(
                 questMethod,
                 (MethodKind)999,
                 "tests.quest.invalid-kind",
-                QuestMethodTarget.Global,
+                QuestMethodOwner.Global,
                 out _,
                 out _), Is.False);
-            Assert.That(QuestMethodDescriptorFactory.TryCreateFromReflection(
+            Assert.That(QuestMethodDescriptorFactory.TryCreateDescriptor(
                 questMethod,
                 MethodKind.Condition,
                 "tests.quest.invalid-target",
-                (QuestMethodTarget)999,
+                (QuestMethodOwner)999,
                 out _,
                 out _), Is.False);
         }
@@ -640,7 +677,7 @@ namespace UniversalGraph.Tests
             var objective = new QuestObjectiveNodeData
             {
                 Guid = "objective",
-                ObjectiveType = "Talk",
+                EventKey = "Talk",
                 TargetId = 1,
                 RequiredAmount = 1
             };
@@ -693,13 +730,13 @@ namespace UniversalGraph.Tests
             Assert.That(staleOffer.IsAvailable, Is.True);
 
             prerequisiteProgress.state = QuestState.InProgress;
-            Assert.That(QuestRunner.TryStartQuest(controller, staleOffer), Is.False);
+            Assert.That(QuestRunner.TryAcceptQuest(controller, staleOffer), Is.False);
             Assert.That(controller.QuestProgress.ContainsKey(quest.QuestId), Is.False);
 
             prerequisiteProgress.state = QuestState.TurnedIn;
             QuestOffer refreshedOffer = QuestQueries.GetQuestOffers(controller, "NPC").Single();
             Assert.That(refreshedOffer.IsAvailable, Is.True);
-            Assert.That(QuestRunner.TryStartQuest(controller, refreshedOffer), Is.True);
+            Assert.That(QuestRunner.TryAcceptQuest(controller, refreshedOffer), Is.True);
 
             QuestProgress createdProgress = controller.QuestProgress[quest.QuestId];
             Assert.That(createdProgress, Is.Not.Null);
@@ -716,7 +753,7 @@ namespace UniversalGraph.Tests
             var firstObjective = new QuestObjectiveNodeData
             {
                 Guid = "first-objective",
-                ObjectiveType = "Talk",
+                EventKey = "Talk",
                 TargetId = 1,
                 RequiredAmount = 1
             };
@@ -743,7 +780,7 @@ namespace UniversalGraph.Tests
             var secondObjective = new QuestObjectiveNodeData
             {
                 Guid = "second-objective",
-                ObjectiveType = "Talk",
+                EventKey = "Talk",
                 TargetId = 2,
                 RequiredAmount = 1
             };
@@ -790,7 +827,7 @@ namespace UniversalGraph.Tests
             var objective = new QuestObjectiveNodeData
             {
                 Guid = "objective",
-                ObjectiveType = "Kill",
+                EventKey = "Kill",
                 TargetId = 3,
                 RequiredAmount = 3
             };
@@ -810,7 +847,7 @@ namespace UniversalGraph.Tests
             var progress = new QuestProgress(quest) { state = QuestState.NotStarted };
             controller.QuestProgress.Add(quest.QuestId, progress);
 
-            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
             Assert.That(progress.activeNodeGuids, Does.Contain("objective"));
 
             Assert.That(QuestRunner.AdvanceObjective(controller, quest.QuestId, "objective", 2), Is.True);
@@ -819,7 +856,7 @@ namespace UniversalGraph.Tests
             QuestObjectiveProgress currentObjective = QuestQueries.GetCurrentObjectives(controller, quest.QuestId).Single();
             Assert.That(currentObjective.QuestId, Is.EqualTo(quest.QuestId));
             Assert.That(currentObjective.NodeGuid, Is.EqualTo("objective"));
-            Assert.That(currentObjective.ObjectiveType, Is.EqualTo("Kill"));
+            Assert.That(currentObjective.EventKey, Is.EqualTo("Kill"));
             Assert.That(currentObjective.TargetId, Is.EqualTo(3));
             Assert.That(currentObjective.CurrentAmount, Is.EqualTo(2));
             Assert.That(currentObjective.RequiredAmount, Is.EqualTo(3));
@@ -840,7 +877,7 @@ namespace UniversalGraph.Tests
             quest.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "objective",
-                ObjectiveType = "Continue",
+                EventKey = "Continue",
                 RequiredAmount = 1
             });
             quest.NodeLinks.Add(Link("start", "Next", "reward"));
@@ -849,7 +886,7 @@ namespace UniversalGraph.Tests
             QuestDefinitionRegistry.Initialize(new[] { quest });
             var controller = new FakeQuestController();
 
-            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
 
             QuestProgress progress = controller.QuestProgress[quest.QuestId];
             Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
@@ -858,7 +895,7 @@ namespace UniversalGraph.Tests
         }
 
         [Test]
-        public void QuestRunner_FailsQuestWhenActionCannotExecute()
+        public void QuestRunner_StopsWithExecutionErrorWhenActionCannotExecute()
         {
             QuestContainer quest = CreateAsset<QuestContainer>();
             quest.QuestId = 24;
@@ -873,11 +910,11 @@ namespace UniversalGraph.Tests
             var controller = new FakeQuestController();
             LogAssert.Expect(LogType.Error, "[Quest] Action 'tests.quest.missing-action'이 등록되지 않았습니다.");
 
-            bool started = QuestRunner.ForceStartQuest(controller, quest.QuestId);
+            bool started = QuestRunner.StartQuest(controller, quest.QuestId);
 
             QuestProgress progress = controller.QuestProgress[quest.QuestId];
             Assert.That(started, Is.False);
-            Assert.That(progress.state, Is.EqualTo(QuestState.Failed));
+            Assert.That(progress.state, Is.EqualTo(QuestState.ExecutionError));
             Assert.That(progress.activeNodeGuids, Is.Empty);
         }
 
@@ -907,7 +944,7 @@ namespace UniversalGraph.Tests
             QuestDefinitionRegistry.Initialize(new[] { quest });
             var controller = new FakeQuestController();
 
-            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
 
             QuestProgress progress = controller.QuestProgress[quest.QuestId];
             Assert.That(progress.state, Is.EqualTo(state));
@@ -936,12 +973,12 @@ namespace UniversalGraph.Tests
             {
                 restarted = true;
                 Assert.That(QuestRunner.ResetQuest(context.Controller, quest.QuestId), Is.True);
-                Assert.That(QuestRunner.ForceStartQuest(context.Controller, quest.QuestId), Is.True);
+                Assert.That(QuestRunner.StartQuest(context.Controller, quest.QuestId), Is.True);
             };
             QuestDefinitionRegistry.Initialize(new[] { quest });
             var controller = new FakeQuestController();
 
-            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
 
             QuestProgress progress = controller.QuestProgress[quest.QuestId];
             Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
@@ -972,9 +1009,9 @@ namespace UniversalGraph.Tests
             questRunAction = context => Assert.That(QuestRunner.SetQuestState(context.Controller, quest.QuestId, QuestState.Failed), Is.True);
             QuestDefinitionRegistry.Initialize(new[] { quest, waiting });
             var controller = new FakeQuestController();
-            Assert.That(QuestRunner.ForceStartQuest(controller, waiting.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, waiting.QuestId), Is.True);
 
-            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
 
             Assert.That(controller.QuestProgress[quest.QuestId].state, Is.EqualTo(QuestState.Failed));
             Assert.That(controller.QuestProgress[quest.QuestId].activeNodeGuids, Is.Empty);
@@ -1016,7 +1053,7 @@ namespace UniversalGraph.Tests
             quest.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "old-objective",
-                ObjectiveType = "Old"
+                EventKey = "Old"
             });
             quest.NodeLinks.Add(Link("old-start", "Next", "old-objective"));
             QuestDefinitionRegistry.Initialize(new[] { quest });
@@ -1039,7 +1076,7 @@ namespace UniversalGraph.Tests
             var progress = new QuestProgress(quest) { state = QuestState.NotStarted };
             controller.QuestProgress.Add(quest.QuestId, progress);
 
-            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
             Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
             Assert.That(progress.activeNodeGuids, Does.Contain("old-objective"));
 
@@ -1048,7 +1085,7 @@ namespace UniversalGraph.Tests
             var refreshedProgress = new QuestProgress(quest) { state = QuestState.NotStarted };
             refreshedController.QuestProgress.Add(quest.QuestId, refreshedProgress);
 
-            Assert.That(QuestRunner.ForceStartQuest(refreshedController, quest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(refreshedController, quest.QuestId), Is.True);
             Assert.That(refreshedProgress.state, Is.EqualTo(QuestState.CanComplete));
         }
 
@@ -1061,14 +1098,14 @@ namespace UniversalGraph.Tests
             var first = new QuestObjectiveNodeData
             {
                 Guid = "first",
-                ObjectiveType = "Collect",
+                EventKey = "Collect",
                 TargetId = 1,
                 RequiredAmount = 1
             };
             var second = new QuestObjectiveNodeData
             {
                 Guid = "second",
-                ObjectiveType = "Collect",
+                EventKey = "Collect",
                 TargetId = 2,
                 RequiredAmount = 1
             };
@@ -1096,7 +1133,7 @@ namespace UniversalGraph.Tests
             var progress = new QuestProgress(quest) { state = QuestState.NotStarted };
             controller.QuestProgress.Add(quest.QuestId, progress);
 
-            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
             QuestRunner.ReportObjectiveProgress(controller, "Collect", 1, 1);
             Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
 
@@ -1113,14 +1150,14 @@ namespace UniversalGraph.Tests
             var first = new QuestObjectiveNodeData
             {
                 Guid = "first",
-                ObjectiveType = "Collect",
+                EventKey = "Collect",
                 TargetId = 1,
                 RequiredAmount = 1
             };
             var second = new QuestObjectiveNodeData
             {
                 Guid = "second",
-                ObjectiveType = "Collect",
+                EventKey = "Collect",
                 TargetId = 1,
                 RequiredAmount = 1
             };
@@ -1144,7 +1181,7 @@ namespace UniversalGraph.Tests
             QuestDefinitionRegistry.Initialize(new[] { quest });
             var controller = new FakeQuestController();
 
-            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
             QuestRunner.ReportObjectiveProgress(controller, "Collect", 1, 1);
 
             QuestProgress progress = controller.QuestProgress[quest.QuestId];
@@ -1162,7 +1199,7 @@ namespace UniversalGraph.Tests
             firstQuest.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "first-objective",
-                ObjectiveType = "Kill",
+                EventKey = "Kill",
                 TargetId = 101,
                 RequiredAmount = 1
             });
@@ -1180,7 +1217,7 @@ namespace UniversalGraph.Tests
             secondQuest.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "second-objective",
-                ObjectiveType = "Kill",
+                EventKey = "Kill",
                 TargetId = 202,
                 RequiredAmount = 1
             });
@@ -1195,8 +1232,8 @@ namespace UniversalGraph.Tests
             QuestDefinitionRegistry.Initialize(new[] { firstQuest, secondQuest });
             var controller = new FakeQuestController();
 
-            Assert.That(QuestRunner.ForceStartQuest(controller, firstQuest.QuestId), Is.True);
-            Assert.That(QuestRunner.ForceStartQuest(controller, secondQuest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, firstQuest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, secondQuest.QuestId), Is.True);
 
             QuestProgress firstProgress = controller.QuestProgress[firstQuest.QuestId];
             QuestProgress secondProgress = controller.QuestProgress[secondQuest.QuestId];
@@ -1220,7 +1257,7 @@ namespace UniversalGraph.Tests
             quest.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "objective",
-                ObjectiveType = "Collect",
+                EventKey = "Collect",
                 TargetId = 7,
                 RequiredAmount = 3
             });
@@ -1228,7 +1265,7 @@ namespace UniversalGraph.Tests
 
             QuestDefinitionRegistry.Initialize(new[] { quest });
             var controller = new FakeQuestController();
-            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
 
             QuestProgress progress = controller.QuestProgress[quest.QuestId];
             QuestRunner.ReportObjectiveProgress(controller, "Collect", 7, 1);
@@ -1242,7 +1279,7 @@ namespace UniversalGraph.Tests
             Assert.That(progress.completedNodeGuids, Is.Empty);
             Assert.That(progress.completedGateInputs, Is.Empty);
 
-            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
             Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
             Assert.That(progress.activeNodeGuids, Is.EquivalentTo(new[] { "objective" }));
             Assert.That(progress.nodeProgressCounts["objective"], Is.Zero);
@@ -1261,7 +1298,7 @@ namespace UniversalGraph.Tests
             childQuest.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "child-objective",
-                ObjectiveType = "Talk",
+                EventKey = "Talk",
                 TargetId = 10,
                 RequiredAmount = 1
             });
@@ -1293,9 +1330,9 @@ namespace UniversalGraph.Tests
             QuestDefinitionRegistry.Initialize(new[] { parentQuest, childQuest });
             var controller = new FakeQuestController();
 
-            Assert.That(QuestRunner.ForceStartQuest(controller, parentQuest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, parentQuest.QuestId), Is.True);
             Assert.That(controller.QuestProgress.ContainsKey(childQuest.QuestId), Is.False);
-            Assert.That(QuestRunner.ForceStartQuest(controller, childQuest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, childQuest.QuestId), Is.True);
             Assert.That(QuestRunner.AdvanceObjective(controller, childQuest.QuestId, "child-objective"), Is.True);
             Assert.That(controller.QuestProgress[childQuest.QuestId].state, Is.EqualTo(QuestState.CanComplete));
             Assert.That(controller.QuestProgress[parentQuest.QuestId].state, Is.EqualTo(QuestState.TurnedIn));
@@ -1310,13 +1347,13 @@ namespace UniversalGraph.Tests
             quest.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "objective-a",
-                ObjectiveType = "Collect",
+                EventKey = "Collect",
                 RequiredAmount = 10
             });
             quest.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "objective-c",
-                ObjectiveType = "Visit",
+                EventKey = "Visit",
                 RequiredAmount = 2
             });
             quest.Nodes.Add(new QuestActionNodeData { Guid = "action-1" });
@@ -1340,7 +1377,6 @@ namespace UniversalGraph.Tests
             });
 
             string json = QuestSaveData.Capture(source).ToJson();
-            Assert.That(json, Does.Not.Contain("currentObjectiveCount"));
             Assert.That(QuestSaveData.TryFromJson(json, out QuestSaveData parsed, out string parseError),
                 Is.True,
                 parseError);
@@ -1480,7 +1516,7 @@ namespace UniversalGraph.Tests
         }
 
         [Test]
-        public void QuestRunner_NotifyRestoredQuestsNotifiesOnlyActiveStates()
+        public void QuestRunner_ResumeRestoredQuestsNotifiesOnlyActiveStates()
         {
             QuestContainer inProgressQuest = CreateAsset<QuestContainer>();
             inProgressQuest.QuestId = 78;
@@ -1516,140 +1552,59 @@ namespace UniversalGraph.Tests
             controller.QuestProgress.Add(turnedInQuest.QuestId,
                 new QuestProgress(turnedInQuest) { state = QuestState.TurnedIn });
 
-            QuestRunner.NotifyRestoredQuests(controller);
+            QuestRunner.ResumeRestoredQuests(controller);
 
             Assert.That(controller.StatusChangedQuestIds,
                 Is.EquivalentTo(new[] { inProgressQuest.QuestId, canCompleteQuest.QuestId }));
         }
 
         [Test]
-        public void GraphAssetMigrator_UpgradesLegacySerializationAndIsIdempotent()
+        public void GraphAssetMigrator_NewGraphsStartAtCurrentVersionAndNeedNoMigration()
         {
-            DialogueContainer graph = CreateAsset<DialogueContainer>();
-            var choice = new DialogueChoiceData
+            GraphContainer[] graphs = { CreateAsset<DialogueContainer>(), CreateAsset<QuestContainer>() };
+            foreach (GraphContainer graph in graphs)
             {
-                PortName = string.Empty,
-                SelectionAction = null,
-                VisibilityCondition = null
-            };
-            var line = new DialogueLineNodeData
-            {
-                Guid = "line",
-                EnterAction = null
-            };
-            var choiceNode = new DialogueChoiceNodeData
-            {
-                Guid = "choice",
-                Choices = new List<DialogueChoiceData> { choice }
-            };
-            graph.Nodes.Add(line);
-            graph.Nodes.Add(choiceNode);
-            graph.NodeLinks.Add(new NodeLinkData
-            {
-                StartNodeGuid = "line",
-                StartPortName = "Next",
-                TargetNodeGuid = "target",
-                TargetPortName = string.Empty
-            });
+                Assert.That(graph.SchemaVersion, Is.EqualTo(GraphAssetMigrator.CurrentVersion));
+                string before = JsonUtility.ToJson(graph);
 
-            Assert.That(GraphAssetMigrator.TryMigrate(
-                    graph,
-                    out GraphAssetMigrationResult first,
-                    out string firstError),
-                Is.True,
-                firstError);
-            Assert.That(first.FromVersion, Is.Zero);
-            Assert.That(first.ToVersion, Is.EqualTo(GraphAssetMigrator.CurrentVersion));
-            Assert.That(first.Changed, Is.True);
-            Assert.That(line.EnterAction, Is.Not.Null);
-            Assert.That(line.EnterAction.Arguments, Is.Not.Null);
-            Assert.That(choice.SelectionAction, Is.Not.Null);
-            Assert.That(choice.SelectionAction.Arguments, Is.Not.Null);
-            Assert.That(choice.VisibilityCondition, Is.Not.Null);
-            Assert.That(choice.VisibilityCondition.Arguments, Is.Not.Null);
-            Assert.That(choice.PortName, Is.Not.Empty);
-            Assert.That(graph.NodeLinks[0].TargetPortName, Is.EqualTo("Input"));
-
-            Assert.That(GraphAssetMigrator.TryMigrate(
-                    graph,
-                    out GraphAssetMigrationResult second,
-                    out string secondError),
-                Is.True,
-                secondError);
-            Assert.That(second.Changed, Is.False);
+                for (int i = 0; i < 2; i++)
+                {
+                    GraphAssetMigrationResult result = GraphAssetMigrator.Migrate(graph);
+                    Assert.That(result.BeforeVersion, Is.EqualTo(GraphAssetMigrator.CurrentVersion));
+                    Assert.That(result.AfterVersion, Is.EqualTo(GraphAssetMigrator.CurrentVersion));
+                    Assert.That(result.Changed, Is.False);
+                    Assert.That(JsonUtility.ToJson(graph), Is.EqualTo(before));
+                }
+            }
         }
 
         [Test]
-        public void GraphAssetMigrator_AppliesCommonAndQuestMigrationsToQuestContainer()
-        {
-            QuestContainer graph = CreateAsset<QuestContainer>();
-            var action = new QuestActionNodeData { Action = null };
-            var condition = new QuestConditionNodeData { Condition = null };
-            var reward = new QuestRewardNodeData { RewardAction = null };
-            graph.Nodes.Add(action);
-            graph.Nodes.Add(condition);
-            graph.Nodes.Add(reward);
-            graph.NodeLinks.Add(new NodeLinkData { TargetPortName = string.Empty });
-
-            Assert.That(GraphAssetMigrator.TryMigrate(
-                    graph,
-                    out GraphAssetMigrationResult result,
-                    out string error),
-                Is.True,
-                error);
-
-            Assert.That(result.Changed, Is.True);
-            Assert.That(action.Action, Is.Not.Null);
-            Assert.That(action.Action.Arguments, Is.Not.Null);
-            Assert.That(condition.Condition, Is.Not.Null);
-            Assert.That(condition.Condition.Arguments, Is.Not.Null);
-            Assert.That(reward.RewardAction, Is.Not.Null);
-            Assert.That(reward.RewardAction.Arguments, Is.Not.Null);
-            Assert.That(graph.NodeLinks[0].TargetPortName, Is.EqualTo("Input"));
-        }
-
-        [Test]
-        public void GraphAssetMigrator_ConvertsLegacyReadyStateToNotStarted()
-        {
-            QuestContainer graph = CreateAsset<QuestContainer>();
-            var condition = new QuestStateConditionNodeData
-            {
-                TargetState = (QuestState)1
-            };
-            var stateChange = new QuestStateChangeNodeData
-            {
-                NewState = (QuestState)1
-            };
-            graph.Nodes.Add(condition);
-            graph.Nodes.Add(stateChange);
-
-            FieldInfo schemaField = typeof(GraphContainer).GetField(
-                "schemaVersion",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-            schemaField.SetValue(graph, 1);
-
-            Assert.That(GraphAssetMigrator.TryMigrate(
-                    graph,
-                    out GraphAssetMigrationResult result,
-                    out string error),
-                Is.True,
-                error);
-            Assert.That(result.FromVersion, Is.EqualTo(1));
-            Assert.That(result.ToVersion, Is.EqualTo(GraphAssetMigrator.CurrentVersion));
-            Assert.That(condition.TargetState, Is.EqualTo(QuestState.NotStarted));
-            Assert.That(stateChange.NewState, Is.EqualTo(QuestState.NotStarted));
-        }
-
-        [Test]
-        public void GraphAssetMigrator_RunsCommonMigrationBeforeDomainMigration()
+        public void GraphAssetMigrator_DoesNotRepairCurrentGraphData()
         {
             DialogueContainer graph = CreateAsset<DialogueContainer>();
             graph.Nodes = null;
             graph.NodeLinks = null;
 
-            Assert.That(GraphAssetMigrator.TryMigrate(graph, out _, out string error), Is.True, error);
-            Assert.That(graph.Nodes, Is.Not.Null);
-            Assert.That(graph.NodeLinks, Is.Not.Null);
+            GraphAssetMigrationResult result = GraphAssetMigrator.Migrate(graph);
+            Assert.That(result.Changed, Is.False);
+            Assert.That(graph.Nodes, Is.Null);
+            Assert.That(graph.NodeLinks, Is.Null);
+        }
+
+        [TestCase(-1)]
+        [TestCase(0)]
+        public void GraphAssetMigrator_RejectsPreBaselineSchemaWithoutChangingIt(int version)
+        {
+            QuestContainer graph = CreateAsset<QuestContainer>();
+            FieldInfo schemaField = typeof(GraphContainer).GetField(
+                "schemaVersion",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            schemaField.SetValue(graph, version);
+            string before = JsonUtility.ToJson(graph);
+
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => GraphAssetMigrator.Migrate(graph));
+            Assert.That(exception.Message, Does.Contain("지원하지 않습니다"));
+            Assert.That(JsonUtility.ToJson(graph), Is.EqualTo(before));
         }
 
         [Test]
@@ -1662,79 +1617,121 @@ namespace UniversalGraph.Tests
             int futureVersion = GraphAssetMigrator.CurrentVersion + 1;
             schemaField.SetValue(graph, futureVersion);
 
-            Assert.That(GraphAssetMigrator.TryMigrate(graph, out _, out string error), Is.False);
-            Assert.That(error, Does.Contain("미래 스키마"));
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => GraphAssetMigrator.Migrate(graph));
+            Assert.That(exception.Message, Does.Contain("지원하지 않습니다"));
             Assert.That(graph.SchemaVersion, Is.EqualTo(futureVersion));
         }
 
         [Test]
-        public void QuestSaveData_MigratesVersionOneAndRejectsFutureVersions()
+        public void GraphAssetMigrator_ThrowsForMissingGraph()
         {
-            const string versionOneJson =
-                "{\"schemaVersion\":1,\"quests\":[{\"questId\":91,\"state\":2," +
-                "\"currentNodeGuid\":\"objective\",\"currentObjectiveCount\":3," +
-                "\"activeNodeGuids\":[\"objective\"],\"nodeProgressCounts\":[]," +
-                "\"completedNodeGuids\":[],\"completedGateInputs\":[]}]}";
-
-            Assert.That(QuestSaveData.TryFromJson(
-                    versionOneJson,
-                    out QuestSaveData migrated,
-                    out string migrationError),
-                Is.True,
-                migrationError);
-            Assert.That(migrated.schemaVersion, Is.EqualTo(QuestSaveData.CurrentSchemaVersion));
-            Assert.That(migrated.quests.Single().definitionSchemaVersion,
-                Is.EqualTo(GraphAssetMigrator.CurrentVersion));
-
-            string futureJson = $"{{\"schemaVersion\":{QuestSaveData.CurrentSchemaVersion + 1},\"quests\":[]}}";
-            Assert.That(QuestSaveData.TryFromJson(futureJson, out _, out string futureError), Is.False);
-            Assert.That(futureError, Does.Contain("지원 버전"));
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => GraphAssetMigrator.Migrate(null));
+            Assert.That(exception.Message, Is.EqualTo("그래프 에셋이 필요합니다."));
         }
 
         [Test]
-        public void QuestSaveData_MigratesVersionTwoReadyStateToNotStarted()
+        public void QuestState_UsesConsecutiveValuesFromZero()
         {
-            const string versionTwoJson =
-                "{\"schemaVersion\":2,\"quests\":[{\"questId\":92,\"definitionSchemaVersion\":1," +
-                "\"state\":1,\"currentNodeGuid\":\"\",\"activeNodeGuids\":[]," +
-                "\"nodeProgressCounts\":[],\"completedNodeGuids\":[],\"completedGateInputs\":[]}]}";
-
-            Assert.That(QuestSaveData.TryFromJson(
-                    versionTwoJson,
-                    out QuestSaveData migrated,
-                    out string error),
-                Is.True,
-                error);
-            Assert.That(migrated.schemaVersion, Is.EqualTo(QuestSaveData.CurrentSchemaVersion));
-            Assert.That(migrated.quests.Single().state, Is.EqualTo(QuestState.NotStarted));
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 92;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            QuestDefinitionRegistry.Initialize(new[] { quest });
-
-            var controller = new FakeQuestController();
-            Assert.That(migrated.TryApplyTo(controller, replaceExisting: true, out error), Is.True, error);
-            Assert.That(controller.QuestProgress[92].state, Is.EqualTo(QuestState.NotStarted));
-            Assert.That(migrated.quests.Single().definitionSchemaVersion, Is.EqualTo(quest.SchemaVersion));
+            Assert.That(Enum.GetValues(typeof(QuestState)).Cast<QuestState>().Select(state => (int)state),
+                Is.EqualTo(Enumerable.Range(0, 6)));
         }
 
         [Test]
-        public void QuestSaveData_MigrationDoesNotOverwriteFutureDefinitionVersion()
+        public void QuestSaveData_RoundTripsCurrentVersionWithoutMigration()
         {
-            int futureVersion = GraphAssetMigrator.CurrentVersion + 1;
-            var saved = new QuestSaveData
+            var original = new QuestSaveData
             {
-                schemaVersion = 2,
                 quests = new List<QuestProgressSaveData>
                 {
-                    new() { questId = 93, definitionSchemaVersion = futureVersion, state = QuestState.NotStarted }
+                    new()
+                    {
+                        questId = 91,
+                        definitionSchemaVersion = GraphAssetMigrator.CurrentVersion,
+                        state = QuestState.InProgress,
+                        activeNodeGuids = new List<string> { "objective" },
+                        nodeProgressCounts = new List<QuestNodeProgressSaveData>
+                        {
+                            new() { nodeGuid = "objective", count = 3 }
+                        }
+                    }
                 }
             };
 
-            Assert.That(QuestSaveMigrator.TryMigrate(saved, out _, out string error), Is.True, error);
-            Assert.That(saved.quests.Single().definitionSchemaVersion, Is.EqualTo(futureVersion));
-            Assert.That(saved.quests.Single().TryRestore(out _, out error), Is.False);
+            Assert.That(QuestSaveData.CurrentSchemaVersion, Is.EqualTo(1));
+            Assert.That(QuestSaveData.TryFromJson(original.ToJson(), out QuestSaveData restored, out string error),
+                Is.True, error);
+            Assert.That(restored.schemaVersion, Is.EqualTo(1));
+            Assert.That(restored.quests.Single().definitionSchemaVersion,
+                Is.EqualTo(GraphAssetMigrator.CurrentVersion));
+            Assert.That(restored.quests.Single().nodeProgressCounts.Single().count, Is.EqualTo(3));
+        }
+
+        [TestCase(QuestState.Failed)]
+        [TestCase(QuestState.ExecutionError)]
+        public void QuestSaveData_PreservesStoppedStateAndAllowsExplicitRestart(QuestState state)
+        {
+            QuestContainer graph = CreateAsset<QuestContainer>();
+            graph.QuestId = 94;
+            graph.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            graph.Nodes.Add(new QuestObjectiveNodeData { Guid = "goal", EventKey = "Test" });
+            graph.NodeLinks.Add(Link("start", QuestPortNames.Next, "goal"));
+            QuestDefinitionRegistry.Initialize(new[] { graph });
+            var source = new FakeQuestController();
+            source.QuestProgress.Add(graph.QuestId, new QuestProgress(graph) { state = state });
+
+            string json = QuestSaveData.Capture(source).ToJson();
+            Assert.That(QuestSaveData.TryFromJson(json, out QuestSaveData saved, out string error), Is.True, error);
+            var restored = new FakeQuestController();
+            Assert.That(saved.TryApplyTo(restored, replaceExisting: true, out error), Is.True, error);
+            Assert.That(restored.QuestProgress[graph.QuestId].state, Is.EqualTo(state));
+            Assert.That(QuestRunner.ResetQuest(restored, graph.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(restored, graph.QuestId), Is.True);
+            Assert.That(restored.QuestProgress[graph.QuestId].activeNodeGuids, Is.EqualTo(new[] { "goal" }));
+        }
+
+        [TestCase(-1)]
+        [TestCase(0)]
+        [TestCase(2)]
+        [TestCase(3)]
+        public void QuestSaveData_RejectsUnsupportedSchemaWithoutChangingController(int version)
+        {
+            var saved = new QuestSaveData { schemaVersion = version };
+            var controller = new FakeQuestController();
+            var previous = new QuestProgress { questId = 93, state = QuestState.TurnedIn };
+            controller.QuestProgress.Add(93, previous);
+
+            Assert.That(QuestSaveData.TryFromJson(saved.ToJson(), out QuestSaveData parsed, out string error), Is.False);
+            Assert.That(parsed, Is.Null);
+            Assert.That(error, Does.Contain("지원하지 않습니다"));
+            Assert.That(saved.TryApplyTo(controller, replaceExisting: true, out error), Is.False);
+            Assert.That(controller.QuestProgress[93], Is.SameAs(previous));
+            Assert.That(saved.schemaVersion, Is.EqualTo(version));
+        }
+
+        [TestCase("{}")]
+        [TestCase("{\"quests\":[]}")]
+        [TestCase("not JSON")]
+        public void QuestSaveData_RejectsMissingSchemaOrInvalidJson(string json)
+        {
+            Assert.That(QuestSaveData.TryFromJson(json, out QuestSaveData parsed, out string error), Is.False);
+            Assert.That(parsed, Is.Null);
+            Assert.That(error, Is.Not.Empty);
+        }
+
+        [Test]
+        public void QuestSaveData_DoesNotOverwriteFutureDefinitionVersion()
+        {
+            int futureVersion = GraphAssetMigrator.CurrentVersion + 1;
+            var saved = new QuestProgressSaveData
+            {
+                questId = 93,
+                definitionSchemaVersion = futureVersion,
+                state = QuestState.NotStarted
+            };
+
+            Assert.That(saved.TryRestore(out _, out string error), Is.False);
             Assert.That(error, Does.Contain("지원하지 않는"));
+            Assert.That(saved.definitionSchemaVersion, Is.EqualTo(futureVersion));
         }
 
         [Test]
@@ -1790,7 +1787,7 @@ namespace UniversalGraph.Tests
             var progress = new QuestProgress(quest) { state = QuestState.NotStarted };
             controller.QuestProgress.Add(quest.QuestId, progress);
 
-            Assert.That(QuestRunner.ForceStartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
 
             Assert.That(attributedQuestActionAmount, Is.EqualTo(7));
             Assert.That(attributedQuestActionFlag, Is.True);
@@ -2831,19 +2828,19 @@ namespace UniversalGraph.Tests
             Assert.That(DialogueManager.Instance.CurrentLine, Is.SameAs(activeLine));
         }
 
-        [QuestAction("tests.quest.change-run", Target = QuestMethodTarget.Global)]
+        [QuestAction("tests.quest.change-run", Owner = QuestMethodOwner.Global)]
         internal static void ChangeQuestRun(QuestExecutionContext context)
         {
             questRunAction?.Invoke(context);
         }
 
-        [QuestCondition("tests.quest.run-condition", Target = QuestMethodTarget.Global)]
+        [QuestCondition("tests.quest.run-condition", Owner = QuestMethodOwner.Global)]
         internal static bool EvaluateQuestRunCondition(QuestExecutionContext context)
         {
             return questRunCondition?.Invoke(context) ?? true;
         }
 
-        [QuestCondition("tests.quest.is-ready", Target = QuestMethodTarget.Global)]
+        [QuestCondition("tests.quest.is-ready", Owner = QuestMethodOwner.Global)]
         internal static bool IsAttributedQuestReady(
             QuestExecutionContext context,
             int required)
@@ -2851,7 +2848,7 @@ namespace UniversalGraph.Tests
             return context.Progress?.state == QuestState.InProgress && required == 42;
         }
 
-        [QuestAction("tests.quest.record-action", Target = QuestMethodTarget.Global)]
+        [QuestAction("tests.quest.record-action", Owner = QuestMethodOwner.Global)]
         internal static void RecordAttributedQuestAction(
             QuestExecutionContext context,
             int amount,
@@ -2862,7 +2859,7 @@ namespace UniversalGraph.Tests
         }
 
         [DialogueCondition("tests.dialogue.choice-visible", Owner = DialogueMethodOwner.Global)]
-        [QuestCondition("tests.quest.choice-visible", Target = QuestMethodTarget.Global)]
+        [QuestCondition("tests.quest.choice-visible", Owner = QuestMethodOwner.Global)]
         private static bool IsDialogueChoiceVisible(bool visible)
         {
             return visible;
@@ -2881,7 +2878,7 @@ namespace UniversalGraph.Tests
         }
 
         [DialogueAction("tests.invoker.action", Owner = DialogueMethodOwner.Global)]
-        [QuestAction("tests.invoker.action", Target = QuestMethodTarget.Global)]
+        [QuestAction("tests.invoker.action", Owner = QuestMethodOwner.Global)]
         private static void RecordInvokerAction()
         {
             dialogueChoiceActionCount++;
@@ -2894,7 +2891,7 @@ namespace UniversalGraph.Tests
         }
 
         [DialogueAction("tests.invoker.throw", Owner = DialogueMethodOwner.Global)]
-        [QuestAction("tests.invoker.throw", Target = QuestMethodTarget.Global)]
+        [QuestAction("tests.invoker.throw", Owner = QuestMethodOwner.Global)]
         private static void ThrowInvokerException()
         {
             throw new InvalidOperationException("reflection invocation test");
@@ -2911,7 +2908,7 @@ namespace UniversalGraph.Tests
         }
 
         [DialogueAction("tests.invoker.all-types", Owner = DialogueMethodOwner.Global)]
-        [QuestAction("tests.invoker.all-types", Target = QuestMethodTarget.Global)]
+        [QuestAction("tests.invoker.all-types", Owner = QuestMethodOwner.Global)]
         private static void AcceptAllSupportedArgumentTypes(
             string text,
             bool flag,
@@ -2954,13 +2951,13 @@ namespace UniversalGraph.Tests
             MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(
                 methodName,
                 BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(QuestMethodDescriptorFactory.TryCreateFromReflection(
+            Assert.That(QuestMethodDescriptorFactory.TryCreateDescriptor(
                     method,
                     kind,
                     kind == MethodKind.Action
                         ? "tests.quest.record-action"
                         : "tests.quest.is-ready",
-                    QuestMethodTarget.Global,
+                    QuestMethodOwner.Global,
                     out QuestMethodDescriptor descriptor,
                     out string error),
                 Is.True,
@@ -2978,7 +2975,7 @@ namespace UniversalGraph.Tests
             MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(
                 methodName,
                 BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateFromReflection(
+            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
                     method,
                     kind,
                     "tests.dialogue.choice-visible",
@@ -3029,7 +3026,7 @@ namespace UniversalGraph.Tests
             public QuestExecutionContext InvokedContext { get; private set; }
             public int InvokedAmount { get; private set; }
 
-            [QuestAction("tests.quest.instance", Target = QuestMethodTarget.Controller)]
+            [QuestAction("tests.quest.instance", Owner = QuestMethodOwner.Controller)]
             private void RecordContext(QuestExecutionContext context, int amount)
             {
                 InvokedContext = context;

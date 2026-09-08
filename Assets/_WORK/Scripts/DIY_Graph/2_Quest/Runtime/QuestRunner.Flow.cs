@@ -43,6 +43,14 @@ namespace UniversalGraph
                     return true;
                 }
 
+                FlowStep step = queue.Dequeue();
+                NodeBaseData nodeData = step.NodeData;
+                // 완료된 일회성 노드는 합류해도 출력을 다시 전파하지 않습니다. Condition은 완료 기록을 남기지 않습니다.
+                if (progress.completedNodeGuids.Contains(nodeData.Guid))
+                {
+                    continue;
+                }
+
                 if (++stepCount > MaxImmediateNodeSteps)
                 {
                     Debug.LogError(
@@ -52,22 +60,13 @@ namespace UniversalGraph
                     return StopAfterExecutionError(controller, progress);
                 }
 
-                FlowStep step = queue.Dequeue();
-                NodeBaseData nodeData = step.NodeData;
                 if (nodeData is QuestStartNodeData || nodeData is QuestInteractionEntryNodeData)
                 {
                     EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
                 }
                 else if (nodeData is QuestObjectiveNodeData objective)
                 {
-                    if (IsCompleted(progress, nodeData.Guid))
-                    {
-                        EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
-                    }
-                    else
-                    {
-                        ActivateObjective(progress, objective);
-                    }
+                    ActivateObjective(progress, objective);
                 }
                 else if (nodeData is QuestConditionNodeData condition)
                 {
@@ -117,16 +116,14 @@ namespace UniversalGraph
                         return StopAfterExecutionError(controller, progress);
                     }
 
-                    if (MarkCompleted(progress, nodeData.Guid))
+                    MarkCompleted(progress, nodeData.Guid);
+                    progress.state = stateChange.NewState;
+                    if (stateChange.NewState != QuestState.InProgress)
                     {
-                        progress.state = stateChange.NewState;
-                        if (stateChange.NewState != QuestState.InProgress)
-                        {
-                            progress.activeNodeGuids.Clear();
-                        }
-
-                        ResumeWaitingQuests(controller, progress.questId);
+                        progress.activeNodeGuids.Clear();
                     }
+
+                    ResumeWaitingQuests(controller, progress.questId);
 
                     if (stateChange.NewState != QuestState.InProgress)
                     {
@@ -135,30 +132,23 @@ namespace UniversalGraph
 
                     EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
                 }
-                else if (nodeData is QuestActionNodeData action)
+                else if (nodeData is QuestActionNodeData || nodeData is QuestRewardNodeData)
                 {
-                    if (!IsCompleted(progress, nodeData.Guid))
+                    MethodBindingData binding = nodeData is QuestActionNodeData action
+                        ? action.Action
+                        : ((QuestRewardNodeData)nodeData).RewardAction;
+                    bool executed = ExecuteAction(controller, container, progress, nodeData, binding);
+                    if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
                     {
-                        bool executed = ExecuteAction(
-                                controller,
-                                container,
-                                progress,
-                                action,
-                                action.Action,
-                                "Action");
-                        if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
-                        {
-                            return true;
-                        }
-
-                        if (!executed)
-                        {
-                            return StopAfterExecutionError(controller, progress);
-                        }
-
-                        MarkCompleted(progress, nodeData.Guid);
+                        return true;
                     }
 
+                    if (!executed)
+                    {
+                        return StopAfterExecutionError(controller, progress);
+                    }
+
+                    MarkCompleted(progress, nodeData.Guid);
                     EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
                 }
                 else if (nodeData is QuestFailNodeData)
@@ -169,40 +159,8 @@ namespace UniversalGraph
                     ResumeWaitingQuests(controller, progress.questId);
                     return true;
                 }
-                else if (nodeData is QuestRewardNodeData reward)
-                {
-                    if (!IsCompleted(progress, nodeData.Guid))
-                    {
-                        bool executed = ExecuteAction(
-                                controller,
-                                container,
-                                progress,
-                                reward,
-                                reward.RewardAction,
-                                "Reward Action");
-                        if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
-                        {
-                            return true;
-                        }
-
-                        if (!executed)
-                        {
-                            return StopAfterExecutionError(controller, progress);
-                        }
-
-                        MarkCompleted(progress, nodeData.Guid);
-                    }
-
-                    EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
-                }
                 else if (nodeData is QuestWaitForQuestNodeData waitForQuest)
                 {
-                    if (IsCompleted(progress, nodeData.Guid))
-                    {
-                        EnqueueOutputs(flowIndex, queue, nodeData.Guid, null);
-                        continue;
-                    }
-
                     controller.QuestProgress.TryGetValue(waitForQuest.TargetQuestId, out QuestProgress targetProgress);
                     QuestState targetState = targetProgress?.state ?? QuestState.NotStarted;
                     if (targetState == waitForQuest.RequiredState)
@@ -247,10 +205,32 @@ namespace UniversalGraph
 
         private static bool StopAfterExecutionError(IQuestController controller, QuestProgress progress)
         {
-            progress.state = QuestState.Failed;
+            progress.state = QuestState.ExecutionError;
             progress.activeNodeGuids.Clear();
             ResumeWaitingQuests(controller, progress.questId);
             return false;
+        }
+
+        private static bool ExecuteAction(
+            IQuestController controller,
+            QuestContainer container,
+            QuestProgress progress,
+            NodeBaseData nodeData,
+            MethodBindingData binding)
+        {
+            if (binding == null || string.IsNullOrWhiteSpace(binding.Key))
+            {
+                if (nodeData is QuestRewardNodeData)
+                {
+                    return true;
+                }
+
+                Debug.LogError("[Quest] Action 키가 비어 있습니다.", container);
+                return false;
+            }
+
+            var executionContext = new QuestExecutionContext(controller, container, progress, nodeData);
+            return QuestMethodInvoker.TryInvokeMethod(binding, executionContext, MethodKind.Action, out _);
         }
 
         private static void ProcessAndGate(
@@ -260,12 +240,6 @@ namespace UniversalGraph
             QuestAndGateNodeData gate,
             string sourceNodeGuid)
         {
-            if (IsCompleted(progress, gate.Guid))
-            {
-                EnqueueOutputs(flowIndex, queue, gate.Guid, null);
-                return;
-            }
-
             string arrivalKey = $"{gate.Guid}|{sourceNodeGuid}";
             if (!progress.completedGateInputs.Contains(arrivalKey))
             {
@@ -292,22 +266,17 @@ namespace UniversalGraph
             string sourceGuid,
             string sourcePort)
         {
-            List<NodeLinkData> links;
-            if (string.IsNullOrWhiteSpace(sourcePort))
-            {
-                if (!flowIndex.OutgoingLinks.TryGetValue(sourceGuid, out links))
-                {
-                    return;
-                }
-            }
-            else if (!flowIndex.OutgoingByPort.TryGetValue((sourceGuid, sourcePort), out links))
+            if (!flowIndex.OutgoingLinks.TryGetValue(sourceGuid, out List<NodeLinkData> links))
             {
                 return;
             }
 
             foreach (NodeLinkData link in links)
             {
-                queue.Enqueue(new FlowStep(flowIndex.Nodes[link.TargetNodeGuid], sourceGuid));
+                if (string.IsNullOrWhiteSpace(sourcePort) || link.StartPortName == sourcePort)
+                {
+                    queue.Enqueue(new FlowStep(flowIndex.Nodes[link.TargetNodeGuid], sourceGuid));
+                }
             }
         }
 
@@ -321,20 +290,15 @@ namespace UniversalGraph
             progress.nodeProgressCounts.TryAdd(objective.Guid, 0);
         }
 
-        private static bool MarkCompleted(QuestProgress progress, string nodeGuid)
+        private static void MarkCompleted(QuestProgress progress, string nodeGuid)
         {
             if (progress.completedNodeGuids.Contains(nodeGuid))
             {
-                return false;
+                return;
             }
 
             progress.completedNodeGuids.Add(nodeGuid);
-            return true;
         }
 
-        private static bool IsCompleted(QuestProgress progress, string nodeGuid)
-        {
-            return progress.completedNodeGuids.Contains(nodeGuid);
-        }
     }
 }

@@ -192,12 +192,13 @@ namespace UniversalGraph
     [Serializable]
     public sealed class QuestSaveData
     {
-        public const int CurrentSchemaVersion = 3;
+        public const int CurrentSchemaVersion = 1;
 
         public int schemaVersion = CurrentSchemaVersion;
         public List<QuestProgressSaveData> quests = new();
 
         /// <summary>모든 진행 기록을 Quest ID 순서로 저장합니다.</summary>
+        /// <remarks>Runner의 진행 처리가 끝난 뒤 호출합니다. Action 안에서는 저장 요청만 남겨야 합니다.</remarks>
         public static QuestSaveData Capture(IQuestController controller)
         {
             if (controller == null)
@@ -224,6 +225,7 @@ namespace UniversalGraph
         /// <summary>
         /// Controller를 변경하기 전에 모든 기록을 검증하고, 성공하면 한 번에 교체하거나 병합합니다.
         /// </summary>
+        /// <remarks>다른 게임 데이터까지 복원한 뒤 QuestRunner.ResumeRestoredQuests를 호출해 대기를 재개합니다.</remarks>
         public bool TryApplyTo(IQuestController controller, bool replaceExisting, out string error)
         {
             if (controller == null)
@@ -238,7 +240,7 @@ namespace UniversalGraph
                 return false;
             }
 
-            if (!QuestSaveMigrator.TryMigrate(this, out _, out error))
+            if (!TryValidateSchema(out error))
             {
                 return false;
             }
@@ -460,27 +462,18 @@ namespace UniversalGraph
 
             try
             {
-                QuestSaveVersionProbe versionProbe = JsonUtility.FromJson<QuestSaveVersionProbe>(json);
-                saveData = JsonUtility.FromJson<QuestSaveData>(json);
-                if (saveData != null)
-                {
-                    // JsonUtility는 필드가 없어도 초기값을 유지할 수 있으므로 버전을 별도로 확인합니다.
-                    saveData.schemaVersion = versionProbe?.schemaVersion ?? 0;
-                }
+                // 버전 없는 JSON이 현재 버전으로 통과하지 않도록 0에서 덮어씁니다.
+                saveData = new QuestSaveData { schemaVersion = 0 };
+                JsonUtility.FromJsonOverwrite(json, saveData);
             }
             catch (Exception exception)
             {
+                saveData = null;
                 error = $"Quest 저장 JSON을 파싱하지 못했습니다: {exception.Message}";
                 return false;
             }
 
-            if (saveData == null)
-            {
-                error = "Quest 저장 JSON에서 데이터를 생성하지 못했습니다.";
-                return false;
-            }
-
-            if (!QuestSaveMigrator.TryMigrate(saveData, out _, out error))
+            if (!saveData.TryValidateSchema(out error))
             {
                 saveData = null;
                 return false;
@@ -491,15 +484,17 @@ namespace UniversalGraph
             return true;
         }
 
-        [Serializable]
-        private sealed class QuestSaveVersionProbe
+        /// <summary>현재 형식을 최초 버전으로 사용합니다. 다음 형식 변경부터 변환 단계를 추가합니다.</summary>
+        private bool TryValidateSchema(out string error)
         {
-            public int schemaVersion;
-
-            public QuestSaveVersionProbe()
+            if (schemaVersion != CurrentSchemaVersion)
             {
-                schemaVersion = 0;
+                error = $"Quest 저장 데이터의 스키마 버전 {schemaVersion}은 지원하지 않습니다.";
+                return false;
             }
+
+            error = null;
+            return true;
         }
     }
 }

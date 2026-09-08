@@ -341,10 +341,7 @@ namespace UniversalGraph.Editor
         /// <summary>에디터 화면을 만들기 전에 안전한 순차 스키마 업그레이드를 저장합니다.</summary>
         private static void MigrateGraphAssetIfNeeded(GraphContainer container)
         {
-            if (!GraphAssetMigrator.TryMigrate(container, out GraphAssetMigrationResult result, out string error))
-            {
-                throw new InvalidOperationException(error);
-            }
+            GraphAssetMigrationResult result = GraphAssetMigrator.Migrate(container);
 
             if (!result.Changed)
             {
@@ -354,8 +351,8 @@ namespace UniversalGraph.Editor
             EditorUtility.SetDirty(container);
             AssetDatabase.SaveAssetIfDirty(container);
             Debug.Log(
-                $"[Flow Graph] '{container.name}'을 스키마 {result.FromVersion}에서 " +
-                $"{result.ToVersion}(으)로 마이그레이션했습니다.",
+                $"[Flow Graph] '{container.name}'을 스키마 {result.BeforeVersion}에서 " +
+                $"{result.AfterVersion}(으)로 마이그레이션했습니다.",
                 container);
         }
 
@@ -371,7 +368,7 @@ namespace UniversalGraph.Editor
                 return;
             }
 
-            validationIssues = GraphValidatorRegistry.Validate(currentContainer);
+            validationIssues = GraphValidator.Validate(currentContainer);
             var issuesByNode = validationIssues
                 .Where(issue => !string.IsNullOrWhiteSpace(issue.NodeGuid))
                 .GroupBy(issue => issue.NodeGuid)

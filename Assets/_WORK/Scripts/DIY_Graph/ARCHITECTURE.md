@@ -91,11 +91,14 @@ NPC 또는 오브젝트 상호작용
   └─ QuestQueries.GetQuestOffers
        └─ Interaction Entry부터 조건 경로 평가
             ├─ QuestOffer 목록을 UI에 제공
-            └─ QuestRunner.TryStartQuest가 수락 직전 같은 조건을 다시 검사
+            └─ QuestRunner.TryAcceptQuest가 수락 직전 같은 조건을 다시 검사
+
+게임 흐름에서 직접 시작
+  └─ QuestRunner.StartQuest                Offer 조건 없이 지정한 Quest 시작
 
 게임 이벤트
   ├─ QuestRunner.AdvanceObjective          목표 하나를 직접 진행
-  └─ QuestRunner.ReportObjectiveProgress   타입·대상이 같은 목표를 일괄 진행
+  └─ QuestRunner.ReportObjectiveProgress   EventKey·TargetId가 같은 목표를 일괄 진행
        ├─ 목표 수치 갱신
        ├─ 조건·Action·보상 노드 실행
        └─ IQuestController.InvokeStatusChanged
@@ -114,12 +117,28 @@ NPC 또는 오브젝트 상호작용
 
 Quest 진행 기록이 아직 없는 ID는 조건 평가에서 `NotStarted`로 취급합니다. 여러 Quest는 서로 다른
 `QuestProgress`로 동시에 진행되며, 동시에 진행할 수 없는 조합은 Offer 앞의 Quest 상태 또는 Attribute
-Condition으로 작성합니다. UI가 받은 Offer는 표시 중 상태가 바뀔 수 있으므로 `TryStartQuest`가 원래
+Condition으로 작성합니다. UI가 받은 Offer는 표시 중 상태가 바뀔 수 있으므로 `TryAcceptQuest`가 원래
 Interaction Entry부터 다시 평가하고 같은 Offer에 도달할 때만 시작합니다.
 
-`QuestRunner`의 공개 진입점은 `QuestRunner.cs`에만 있습니다. 내부 구현은 즉시 흐름을 처리하는
-`QuestRunner.Flow.cs`, Attribute 메서드를 호출하는 `QuestRunner.Bindings.cs`로 구분합니다.
+`QuestRunner`의 공개 진입점은 `QuestRunner.cs`에 있습니다. `QuestRunner.Flow.cs`는 즉시 노드 흐름과
+그 안에서 필요한 Attribute 메서드 호출을 처리합니다. 기존 `QuestRunner.Bindings.cs`는 이 파일로 통합했습니다.
 별도 클래스 `QuestGraphIndex.cs`는 정의를 등록할 때 노드·연결 조회용 인덱스를 만듭니다.
+
+Objective의 `EventKey`는 게임이 보고한 이벤트 종류, `TargetId`는 그 대상의 고정 ID입니다.
+`TargetReference`는 제작·UI에서 이용할 선택적 Unity 객체 참조이며 이벤트 일치 판정에는 참여하지 않습니다.
+게임이 정한 목표 실패는 `Failed`, 그래프·메서드 실행 오류로 중단된 경우는 `ExecutionError`로 구분합니다.
+
+## Quest 저장·복원 흐름
+
+1. `QuestRunner`의 공개 진행 API 호출이 끝난 뒤 `QuestSaveData.Capture`로 진행 기록을 복사합니다.
+2. `ToJson` 또는 게임의 Serializer로 저장하고, 불러올 때 `TryFromJson`으로 현재 저장 버전을 확인합니다.
+3. `TryApplyTo`는 모든 기록을 검증한 뒤 Controller의 데이터를 교체하거나 병합합니다. 아직 노드를 실행하거나 알림을 보내지 않습니다.
+4. 인벤토리 등 다른 게임 데이터까지 모두 복원한 뒤 `QuestRunner.ResumeRestoredQuests`를 호출합니다. Quest 간 대기를 재평가하여 흐름을 재개하고 변경 알림을 보냅니다.
+
+Action 내부에서 즉시 저장하지 않습니다. 저장 요청 플래그만 남기고 게임 코드가 노드 실행이 끝난 뒤 저장해야 합니다.
+복원 후 재개 시에도 Action이 실행될 수 있으므로 다른 게임 데이터보다 먼저 재개하지 않습니다.
+`QuestProgressSaveData`는 Quest 하나의 진행 기록, `QuestSaveData`는 그 목록과 저장 스키마 버전을 보관합니다.
+현재 저장 형식은 최초 버전 1이며 이전 테스트 세이브는 지원하지 않습니다. 변환 규칙이 없어 `QuestSaveMigrator`는 제거했습니다.
 
 ## Editor 검증 코드 구성
 
@@ -159,18 +178,21 @@ Data와 Editor Node를 분리하는 것은 중복이 아니라 플레이어 빌�
 
 ## 그래프 스키마 마이그레이션 흐름
 
-```text
-GraphAssetMigrator
-  └─ GraphAssetMigrationRegistry
-       ├─ GraphContainer 공통 단계
-       ├─ DialogueContainer 전용 단계
-       └─ QuestContainer 전용 단계
-```
+현재 저장 형식을 최초 버전 1로 사용합니다. 새 `GraphContainer`는 생성할 때
+`GraphAssetMigrator.CurrentVersion`으로 시작하고, 저장된 에셋은 자신의 `SchemaVersion`을 유지합니다.
+이 기준 이전의 테스트 그래프는 호환하지 않으며 다시 생성해야 합니다. 현재는 변환 단계가 없습니다.
 
-공통 단계가 먼저 노드·연결 컬렉션을 복구하고, 실제 컨테이너 타입에 맞는 도메인 단계가 이어서 실행됩니다.
-새 스키마를 추가할 때는 `CurrentVersion`을 올리고 각 `Migrations` 폴더의 `Register`에 이전 버전에서
-새 버전으로 가는 단계만 추가합니다. 이미 배포한 이전 단계는 구형 에셋의 결과가 달라지므로 수정하지 않습니다.
-등록부는 중간 버전 누락과 같은 컨테이너 타입의 중복 등록을 시작 시 오류로 막습니다.
+호출은 `GraphAssetMigrator.Migrate(container)` 하나로 통일합니다. 성공하면 변환 결과를 반환하고,
+실패하면 `InvalidOperationException`을 던집니다. 에디터는 결과의 `Changed`로 저장 여부를 결정하며,
+대화 시작 API는 예외를 받아 로그와 `false`로 처리합니다.
+
+다음 저장 형식 변경 시 `CurrentVersion`을 2로 올리고 `GraphAssetMigrator.Migrate`에
+`MigrateVersion1To2` 변환과 성공 후 `SetSchemaVersion(2)` 호출을 추가합니다.
+이후에는 `MigrateVersion2To3`처럼 단계를 보존하고, 에셋 버전부터 현재 버전까지 순서대로 실행하도록 합니다.
+버전 숫자만 올리고 변환을 구현하지 않으면 구버전 에셋은 거부됩니다.
+이미 사용 중인 데이터를 보존하기 시작한 이후에는 배포한 변환 규칙을 수정하지 않습니다.
+
+Quest 진행 저장 파일의 버전은 그래프 에셋과 별개로 `QuestSaveData.CurrentSchemaVersion`에서 관리합니다.
 
 ## Reflection 등록과 빌드 검증
 
@@ -178,7 +200,9 @@ Invoker는 관련 어셈블리를 최초 초기화 때만 탐색합니다. Attri
 호출할 때는 Codec으로 저장된 인수를 복원한 뒤 Context를 추가하여 `MethodInfo.Invoke`에 전달합니다.
 MethodInfo와 Descriptor는 런타임 캐시이며 그래프 에셋에는 Key와 인수 데이터만 저장됩니다.
 
-`GraphMethodBuildValidator`는 같은 Factory 규칙으로 작성 오류와 중복 키를 검사하며,
-스크립트 reload 후 진단하고 Mono·IL2CPP 빌드 전에 오류를 차단합니다.
+`GraphMethodBuildValidator`는 같은 Factory 규칙으로 작성 오류와 중복 키를 검사합니다.
+`GraphValidatorRegistry`는 처음 사용할 때 검증기를 등록하고, 그래프의 공통 구조 검사 후 도메인 규칙을 검사합니다.
+`GraphBuildValidator`는 에셋 임포트까지 완료된 스크립트 reload 후와 Mono·IL2CPP 빌드 전에
+메서드와 모든 그래프를 자동 검사합니다. Error는 빌드를 차단하고 Warning은 허용하며 에셋은 수정하지 않습니다.
 Attribute의 Preserve 상속과 `link.xml`은 빌드에서 Reflection에 필요한 코드를 보존합니다.
 에디터 검사만으로 코드 보존까지 보장하지 않으므로 대상 플랫폼 IL2CPP Smoke Build 검증이 필요합니다.

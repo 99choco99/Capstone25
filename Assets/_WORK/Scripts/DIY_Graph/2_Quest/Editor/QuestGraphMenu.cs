@@ -28,7 +28,7 @@ namespace UniversalGraph.Quest.Editor
                 .DefaultIfEmpty(0)
                 .Max() + 1;
             var container = ScriptableObject.CreateInstance<QuestContainer>();
-            GraphAssetMigrator.EnsureCurrent(container);
+            GraphAssetMigrator.Migrate(container);
             container.QuestId = nextQuestId;
             container.questName = System.IO.Path.GetFileNameWithoutExtension(path);
             container.Nodes.Add(new QuestStartNodeData

@@ -51,10 +51,6 @@ namespace UniversalGraph
 			foreach (UnityEditor.Compilation.Assembly playerAssembly in UnityEditor.Compilation.CompilationPipeline.GetAssemblies(UnityEditor.Compilation.AssembliesType.Player))
 			{
 				playerAssemblies.Add(playerAssembly.name);
-				foreach (string reference in playerAssembly.compiledAssemblyReferences)
-				{
-					playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
-				}
 			}
 #endif
 			//로드된 어셈블리 하나씩 꺼내서 분류
@@ -165,7 +161,7 @@ namespace UniversalGraph
 		/// <summary>Reflection으로 찾은 메서드의 설명서를 만들고 등록</summary>
 		private static void RegisterMethod(MethodInfo method, MethodKind kind, string key, DialogueMethodOwner owner)
 		{
-			if (!DialogueMethodDescriptorFactory.TryCreateFromReflection(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out string error))
+			if (!DialogueMethodDescriptorFactory.TryCreateDescriptor(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out string error))
 			{
 				Debug.LogError($"[Dialogue] {error}");
 				return;

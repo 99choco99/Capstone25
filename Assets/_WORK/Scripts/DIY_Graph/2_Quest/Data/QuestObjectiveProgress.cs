@@ -12,9 +12,9 @@ namespace UniversalGraph
 		{
 			QuestId = questId;
 			NodeGuid = definition.Guid;
-			ObjectiveType = definition.ObjectiveType;
+			EventKey = definition.EventKey;
 			TargetId = definition.TargetId;
-			TargetPrefab = definition.TargetPrefab;
+			TargetReference = definition.TargetReference;
 			Description = definition.ObjectiveDescription;
 			CurrentAmount = currentAmount;
 			RequiredAmount = Math.Max(1, definition.RequiredAmount);
@@ -22,9 +22,9 @@ namespace UniversalGraph
 
 		public int QuestId { get; }
 		public string NodeGuid { get; }
-		public string ObjectiveType { get; }
+		public string EventKey { get; }
 		public int TargetId { get; }
-		public UnityEngine.Object TargetPrefab { get; }
+		public UnityEngine.Object TargetReference { get; }
 		public string Description { get; }
 		public int CurrentAmount { get; }
 		public int RequiredAmount { get; }

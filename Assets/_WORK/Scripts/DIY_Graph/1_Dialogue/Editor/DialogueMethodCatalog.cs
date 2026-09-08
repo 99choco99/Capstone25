@@ -28,8 +28,8 @@ namespace UniversalGraph.Dialogue.Editor
             return kind == MethodKind.Action ? actions : conditions;
         }
 
-        /// <summary>kind랑 key로 메서드 가져오기</summary>
-        public static bool GetMethod(MethodKind kind, string key, out DialogueMethodDescriptor descriptor)
+        /// <summary>kind랑 key로 메서드 설명서 가져오기</summary>
+        public static bool GetMethodDescriptor(MethodKind kind, string key, out DialogueMethodDescriptor descriptor)
         {
             descriptor = null;
             if (string.IsNullOrWhiteSpace(key))
@@ -50,10 +50,6 @@ namespace UniversalGraph.Dialogue.Editor
             foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player))
             {
                 playerAssemblyNames.Add(assembly.name);
-                foreach (string reference in assembly.compiledAssemblyReferences)
-                {
-                    playerAssemblyNames.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
-                }
             }
 
             //action 함수들
@@ -96,7 +92,7 @@ namespace UniversalGraph.Dialogue.Editor
         /// </summary>
         private static void AddCandidate(MethodInfo method, MethodKind kind, string key, DialogueMethodOwner owner, Dictionary<string, List<DialogueMethodDescriptor>> candidatesByKey)
         {
-            if (!DialogueMethodDescriptorFactory.TryCreateFromReflection(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out _))
+            if (!DialogueMethodDescriptorFactory.TryCreateDescriptor(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out _))
             {
                 return;
             }

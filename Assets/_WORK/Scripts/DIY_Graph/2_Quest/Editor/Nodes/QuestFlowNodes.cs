@@ -48,7 +48,7 @@ namespace UniversalGraph.Quest.Editor
     public sealed class QuestObjectiveNode : QuestFlowNode<QuestObjectiveNodeData>
     {
         protected override string NodeTitle =>
-            $"OBJECTIVE: {(string.IsNullOrWhiteSpace(NodeData.ObjectiveType) ? "Unassigned" : NodeData.ObjectiveType)} " +
+            $"OBJECTIVE: {(string.IsNullOrWhiteSpace(NodeData.EventKey) ? "Unassigned" : NodeData.EventKey)} " +
             $"x{Math.Max(1, NodeData.RequiredAmount)}";
 
         /// <summary>목표 이벤트, 대상, 수량, 참조와 설명 필드를 만듭니다.</summary>
@@ -57,18 +57,19 @@ namespace UniversalGraph.Quest.Editor
             var root = new VisualElement();
             root.Add(new Label("Objective"));
 
-            var objectiveType = new TextField("Objective Type")
+            var eventKeyField = new TextField("Event Key")
             {
-                value = NodeData.ObjectiveType ?? string.Empty,
+                value = NodeData.EventKey ?? string.Empty,
                 isDelayed = true
             };
-            objectiveType.RegisterValueChangedCallback(change =>
-                editHandler.ApplyDataEdit("Change objective type", () =>
+            eventKeyField.RegisterValueChangedCallback(change =>
+                editHandler.ApplyDataEdit("Change objective event key", () =>
                 {
-                    NodeData.ObjectiveType = (change.newValue ?? string.Empty).Trim();
+                    NodeData.EventKey = (change.newValue ?? string.Empty).Trim();
+                    eventKeyField.SetValueWithoutNotify(NodeData.EventKey);
                     RefreshTitle();
                 }));
-            root.Add(objectiveType);
+            root.Add(eventKeyField);
 
             var targetId = new IntegerField("Target ID") { value = NodeData.TargetId, isDelayed = true };
             targetId.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit("Change objective target", () =>
@@ -78,16 +79,16 @@ namespace UniversalGraph.Quest.Editor
             }));
             root.Add(targetId);
 
-            var targetPrefab = new ObjectField("Authoring Reference")
+            var targetReferenceField = new ObjectField("Authoring Reference")
             {
                 objectType = typeof(UnityEngine.Object),
                 allowSceneObjects = false,
-                value = NodeData.TargetPrefab
+                value = NodeData.TargetReference
             };
-            targetPrefab.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit(
+            targetReferenceField.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit(
                 "Change objective reference",
-                () => NodeData.TargetPrefab = change.newValue));
-            root.Add(targetPrefab);
+                () => NodeData.TargetReference = change.newValue));
+            root.Add(targetReferenceField);
 
             var required = new IntegerField("Required Amount")
             {
@@ -97,6 +98,7 @@ namespace UniversalGraph.Quest.Editor
             required.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit("Change objective amount", () =>
             {
                 NodeData.RequiredAmount = Math.Max(1, change.newValue);
+                required.SetValueWithoutNotify(NodeData.RequiredAmount);
                 RefreshTitle();
             }));
             root.Add(required);
@@ -221,8 +223,9 @@ namespace UniversalGraph.Quest.Editor
     public sealed class QuestStateChangeNode : QuestFlowNode<QuestStateChangeNodeData>
     {
         protected override string NodeTitle => $"STATE: {NodeData.NewState}";
+        protected override bool HasOutput => NodeData.NewState == QuestState.InProgress;
 
-        /// <summary>진행 단계 선택기를 만들고 수정 후 노드 제목을 갱신합니다.</summary>
+        /// <summary>진행 단계 선택기를 만들고 수정 후 노드 제목과 출력 포트를 갱신합니다.</summary>
         public override VisualElement CreateInspector(NodeInspectorEditHandler editHandler)
         {
             var allowedStates = new List<QuestState>
@@ -233,10 +236,33 @@ namespace UniversalGraph.Quest.Editor
             };
             int selectedIndex = Math.Max(0, allowedStates.IndexOf(NodeData.NewState));
             var field = new PopupField<QuestState>("New State", allowedStates, selectedIndex);
-            field.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit("Change quest state", () =>
+            field.RegisterValueChangedCallback(change => editHandler.ApplyStructureEdit("Change quest state", () =>
             {
                 NodeData.NewState = change.newValue;
+
+                // 종료 상태로 바꿀 때 사라지는 출력의 연결도 같은 Undo에 포함합니다.
+                GraphView graphView = GetFirstAncestorOfType<GraphView>();
+                foreach (Port port in outputContainer.Children().OfType<Port>().ToList())
+                {
+                    foreach (Edge edge in port.connections.ToList())
+                    {
+                        edge.input?.Disconnect(edge);
+                        edge.output?.Disconnect(edge);
+                        graphView?.RemoveElement(edge);
+                    }
+                }
+                outputContainer.Clear();
+
+                if (HasOutput)
+                {
+                    Port next = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(float));
+                    next.portName = QuestPortNames.Next;
+                    outputContainer.Add(next);
+                }
+
                 RefreshTitle();
+                RefreshPorts();
+                RefreshExpandedState();
             }));
             return field;
         }

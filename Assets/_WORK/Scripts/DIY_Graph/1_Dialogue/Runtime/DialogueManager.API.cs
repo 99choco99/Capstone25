@@ -70,14 +70,18 @@ namespace UniversalGraph
                 return false;
             }
 
-            if (!GraphAssetMigrator.TryMigrate(container, out _, out string error))
+            try
             {
-                Debug.LogError($"[Dialogue] 대화를 시작하지 못했습니다. {error}", container);
+                GraphAssetMigrator.Migrate(container);
+            }
+            catch (InvalidOperationException exception)
+            {
+                Debug.LogError($"[Dialogue] 대화를 시작하지 못했습니다. {exception.Message}", container);
                 return false;
             }
 
             //데이터 캐싱
-            if (!BuildGraphIndex(container, out error))
+            if (!BuildGraphIndex(container, out string error))
             {
                 Debug.LogError($"[Dialogue] 대화를 시작하지 못했습니다. {error}", container);
                 return false;

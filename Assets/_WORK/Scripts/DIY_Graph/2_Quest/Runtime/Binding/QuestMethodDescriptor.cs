@@ -8,7 +8,7 @@ namespace UniversalGraph
         internal QuestMethodDescriptor(
             string key,
             MethodKind kind,
-            QuestMethodTarget target,
+            QuestMethodOwner owner,
             MethodInfo method,
             MethodParameterDescriptor[] parameters)
             : base(
@@ -17,10 +17,10 @@ namespace UniversalGraph
                 method,
                 parameters)
         {
-            Target = target;
-            DisplayName = $"{Key}  [{Target}]  {DeclaringType?.Name}.{MethodName}";
+            Owner = owner;
+            DisplayName = $"{Key}  [{Owner}]  {DeclaringType?.Name}.{MethodName}";
         }
 
-        public QuestMethodTarget Target { get; }
+        public QuestMethodOwner Owner { get; }
     }
 }

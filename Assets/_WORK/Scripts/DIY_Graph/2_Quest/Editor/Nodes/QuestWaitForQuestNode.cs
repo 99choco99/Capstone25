@@ -6,7 +6,7 @@ using UniversalGraph.Editor;
 
 namespace UniversalGraph.Quest.Editor
 {
-    /// <summary>참조한 Quest를 시작하고 지정 상태가 될 때까지 현재 흐름을 기다립니다.</summary>
+    /// <summary>참조한 Quest를 시작하지 않고, 지정 상태가 될 때까지 현재 흐름을 기다립니다.</summary>
     [GraphNodeEditor(typeof(QuestContainer), "Quest/Flow/Wait For Quest")]
     public sealed class QuestWaitForQuestNode : GraphNode<QuestWaitForQuestNodeData>
     {

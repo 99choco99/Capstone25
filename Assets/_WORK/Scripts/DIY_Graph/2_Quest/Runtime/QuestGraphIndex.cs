@@ -9,12 +9,10 @@ namespace UniversalGraph
     {
         private readonly Dictionary<string, NodeBaseData> nodes = new();
         private readonly Dictionary<string, List<NodeLinkData>> outgoingLinks = new();
-        private readonly Dictionary<(string SourceGuid, string PortName), List<NodeLinkData>> outgoingByPort = new();
         private readonly Dictionary<string, int> distinctIncomingSourceCounts = new();
 
         public IReadOnlyDictionary<string, NodeBaseData> Nodes => nodes;
         public IReadOnlyDictionary<string, List<NodeLinkData>> OutgoingLinks => outgoingLinks;
-        public IReadOnlyDictionary<(string SourceGuid, string PortName), List<NodeLinkData>> OutgoingByPort => outgoingByPort;
         public IReadOnlyDictionary<string, int> DistinctIncomingSourceCounts => distinctIncomingSourceCounts;
 
         /// <summary>그래프 구조를 검사하면서 모든 런타임 조회 인덱스를 한 번에 만듭니다.</summary>
@@ -132,8 +130,12 @@ namespace UniversalGraph
                     return false;
                 }
 
-                AddLink(created.outgoingLinks, link.StartNodeGuid, link);
-                AddLink(created.outgoingByPort, (link.StartNodeGuid, link.StartPortName), link);
+                if (!created.outgoingLinks.TryGetValue(link.StartNodeGuid, out List<NodeLinkData> links))
+                {
+                    links = new List<NodeLinkData>();
+                    created.outgoingLinks.Add(link.StartNodeGuid, links);
+                }
+                links.Add(link);
 
                 if (!incomingSources.TryGetValue(link.TargetNodeGuid, out HashSet<string> sources))
                 {
@@ -154,18 +156,5 @@ namespace UniversalGraph
             return true;
         }
 
-        private static void AddLink<TKey>(
-            IDictionary<TKey, List<NodeLinkData>> linksByKey,
-            TKey key,
-            NodeLinkData link)
-        {
-            if (!linksByKey.TryGetValue(key, out List<NodeLinkData> links))
-            {
-                links = new List<NodeLinkData>();
-                linksByKey.Add(key, links);
-            }
-
-            links.Add(link);
-        }
     }
 }

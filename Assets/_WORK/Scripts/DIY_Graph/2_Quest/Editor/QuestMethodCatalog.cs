@@ -16,7 +16,7 @@ namespace UniversalGraph.Quest.Editor
 
         static QuestMethodCatalog()
         {
-            BuildRegistry();
+            BuildCatalog();
         }
 
         /// <summary>특정 바인딩 종류의 유효하고 중복되지 않는 메서드를 반환합니다.</summary>
@@ -26,7 +26,7 @@ namespace UniversalGraph.Quest.Editor
         }
 
         /// <summary>고정 키로 유효한 메서드 하나를 찾습니다.</summary>
-        public static bool GetMethod(
+        public static bool GetMethodDescriptor(
             MethodKind kind,
             string key,
             out QuestMethodDescriptor descriptor)
@@ -42,17 +42,13 @@ namespace UniversalGraph.Quest.Editor
         }
 
         /// <summary>플레이어 어셈블리를 검사하고 대상을 확정할 수 없는 중복 키를 제외합니다.</summary>
-        private static void BuildRegistry()
+        private static void BuildCatalog()
         {
             var playerAssemblies = new HashSet<string>();
             foreach (UnityEditor.Compilation.Assembly assembly in
                      CompilationPipeline.GetAssemblies(AssembliesType.Player))
             {
                 playerAssemblies.Add(assembly.name);
-                foreach (string reference in assembly.compiledAssemblyReferences)
-                {
-                    playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
-                }
             }
 
             var actionCandidates = new Dictionary<string, List<QuestMethodDescriptor>>();
@@ -65,7 +61,7 @@ namespace UniversalGraph.Quest.Editor
                         method,
                         MethodKind.Action,
                         attribute.Key,
-                        attribute.Target,
+                        attribute.Owner,
                         actionCandidates);
                 }
             }
@@ -80,7 +76,7 @@ namespace UniversalGraph.Quest.Editor
                         method,
                         MethodKind.Condition,
                         attribute.Key,
-                        attribute.Target,
+                        attribute.Owner,
                         conditionCandidates);
                 }
             }
@@ -101,14 +97,14 @@ namespace UniversalGraph.Quest.Editor
             MethodInfo method,
             MethodKind kind,
             string key,
-            QuestMethodTarget target,
+            QuestMethodOwner owner,
             IDictionary<string, List<QuestMethodDescriptor>> candidatesByKey)
         {
-            if (!QuestMethodDescriptorFactory.TryCreateFromReflection(
+            if (!QuestMethodDescriptorFactory.TryCreateDescriptor(
                     method,
                     kind,
                     key,
-                    target,
+                    owner,
                     out QuestMethodDescriptor descriptor,
                     out _))
             {

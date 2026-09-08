@@ -11,7 +11,7 @@ namespace UniversalGraph.Editor
     /// [GraphNodeEditor]가 붙은 시각 노드 에디터를 찾아서
     /// 각 NodeBaseData 실제 타입을 연결
     /// </summary>
-    public static class GraphNodeEditorRegistry
+    public static class GraphNodeCatalog
     {
         /// <summary>노드 하나를 설명하는 읽기 전용 정보</summary>
         public sealed class NodeDefinition
@@ -71,16 +71,20 @@ namespace UniversalGraph.Editor
                 }
             }
 
-            //중복검사
-            HashSet<NodeDefinition> invalid = new();
-            CheckDuplicateDataTypes(candidates, invalid);
-            CheckDuplicateMenuPaths(candidates, invalid);
-
-            //등록
-            foreach (NodeDefinition nodeDef in candidates
-                         .Where(candidate => !invalid.Contains(candidate))
-                         .OrderBy(candidate => candidate.MenuPath, StringComparer.OrdinalIgnoreCase))
+            foreach (IGrouping<Type, NodeDefinition> group in candidates
+                         .OrderBy(candidate => candidate.MenuPath, StringComparer.OrdinalIgnoreCase)
+                         .GroupBy(candidate => candidate.DataType))
             {
+                //중복검사
+                if (group.Count() > 1)
+                {
+                    Debug.LogError($"[Flow Graph] 데이터 타입 '{group.Key.FullName}'에 여러 GraphNode 화면이 등록되어 있습니다: "
+                        + string.Join(", ", group.Select(nodeDef => nodeDef.ViewType.FullName)));
+                    continue;
+                }
+
+                //등록
+                NodeDefinition nodeDef = group.First();
                 NodeCatalog.Add(nodeDef);
                 NodeDefinitionByDataType.Add(nodeDef.DataType, nodeDef);
             }
@@ -213,8 +217,7 @@ namespace UniversalGraph.Editor
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException(
-                    $"GraphNode 화면 '{nodeDef.ViewType.FullName}'의 인스턴스를 생성하지 못했습니다.", exception);
+                throw new InvalidOperationException($"GraphNode 화면 '{nodeDef.ViewType.FullName}'의 인스턴스를 생성하지 못했습니다.", exception);
             }
         }
 
@@ -268,67 +271,6 @@ namespace UniversalGraph.Editor
 
 
         //========================= 노드 유효성 검사 함수 ============================
-        /// <summary>
-        /// 데이터 타입이 중복으로 설정된 노드들이 있는지 검사
-        /// </summary>
-        private static void CheckDuplicateDataTypes(IEnumerable<NodeDefinition> candidates, ISet<NodeDefinition> invalid)
-        {
-            foreach (IGrouping<Type, NodeDefinition> group in candidates.GroupBy(candidate => candidate.DataType).Where(group => group.Count() > 1))
-            {
-                foreach (NodeDefinition duplicate in group)
-                {
-                    invalid.Add(duplicate);
-                }
-
-                Debug.LogError(
-                    $"[Flow Graph] 데이터 타입 '{group.Key.FullName}'에 여러 GraphNode 화면이 등록되어 있습니다: " + FormatViewNames(group));
-            }
-        }
-
-        /// <summary>
-        /// 생성 경로가 중복으로 설정되어 있는 노드들이 있는지 검사
-        /// </summary>
-        private static void CheckDuplicateMenuPaths(IEnumerable<NodeDefinition> candidates, ISet<NodeDefinition> invalid)
-        {
-            foreach (IGrouping<string, NodeDefinition> group in candidates
-                         .GroupBy(candidate => candidate.MenuPath, StringComparer.OrdinalIgnoreCase))
-            {
-                NodeDefinition[] samePath = group.ToArray();
-                var conflicts = new HashSet<NodeDefinition>();
-                for (int firstIndex = 0; firstIndex < samePath.Length; firstIndex++)
-                {
-                    for (int secondIndex = firstIndex + 1; secondIndex < samePath.Length; secondIndex++)
-                    {
-                        NodeDefinition first = samePath[firstIndex];
-                        NodeDefinition second = samePath[secondIndex];
-                        bool sharesContainerScope = first.ContainerType.IsAssignableFrom(second.ContainerType)
-                                                   || second.ContainerType.IsAssignableFrom(first.ContainerType);
-                        if (!sharesContainerScope)
-                        {
-                            continue;
-                        }
-
-                        conflicts.Add(first);
-                        conflicts.Add(second);
-                    }
-                }
-
-                if (conflicts.Count == 0)
-                {
-                    continue;
-                }
-
-                foreach (NodeDefinition duplicate in conflicts)
-                {
-                    invalid.Add(duplicate);
-                }
-
-                Debug.LogError(
-                    $"[Flow Graph] 같은 컨테이너에서 메뉴 경로 '{group.Key}'가 두 번 이상 등록되어 있습니다: " +
-                    FormatViewNames(conflicts));
-            }
-        }
-
         private static void EnsureContainerCompatibility(GraphContainer container, NodeDefinition definition)
         {
             if (!definition.ContainerType.IsAssignableFrom(container.GetType()))
@@ -349,12 +291,5 @@ namespace UniversalGraph.Editor
                    && menuPath.Split('/').All(segment => !string.IsNullOrWhiteSpace(segment));
         }
 
-        /// <summary>
-        /// View Node 의 이름을 열거할 때 쓰는 함수
-        /// </summary>
-        private static string FormatViewNames(IEnumerable<NodeDefinition> nodeDefs)
-        {
-            return string.Join(", ", nodeDefs.Select(item => item.ViewType.FullName));
-        }
     }
 }

@@ -26,7 +26,7 @@ namespace UniversalGraph.Editor
                 throw new ArgumentNullException(nameof(container), "GraphView 상태를 기록할 GraphContainer가 필요합니다.");
             }
 
-            GraphAssetMigrator.EnsureCurrent(container);
+            GraphAssetMigrator.Migrate(container);
 
             List<GraphNode> nodes = view.nodes.OfType<GraphNode>().ToList();
             List<NodeLinkData> links = new();
@@ -127,7 +127,7 @@ namespace UniversalGraph.Editor
                 throw new ArgumentNullException(nameof(container), "불러올 GraphContainer가 필요합니다.");
             }
 
-            GraphAssetMigrator.EnsureCurrent(container);
+            GraphAssetMigrator.Migrate(container);
             ValidateContainerData(container);
 
             List<GraphNode> nodes = LoadNodes(container);
@@ -165,7 +165,7 @@ namespace UniversalGraph.Editor
             List<GraphNode> nodes = new();
             foreach (NodeBaseData data in container.Nodes)
             {
-                GraphNode node = GraphNodeEditorRegistry.CreateNode(container, data);
+                GraphNode node = GraphNodeCatalog.CreateNode(container, data);
 
                 Rect position = node.GetPosition();
                 position.position = data.Position;
@@ -254,7 +254,7 @@ namespace UniversalGraph.Editor
         /// <summary>에디터 화면 노드를 만들지 않고 확인할 수 있는 컨테이너 데이터를 검증합니다.</summary>
         private static void ValidateContainerData(GraphContainer container)
         {
-            GraphValidationIssue[] errors = GraphValidatorRegistry.ValidateStructure(container)
+            GraphValidationIssue[] errors = GraphValidator.ValidateStructure(container)
                 .Where(issue => issue.Severity == GraphValidationSeverity.Error)
                 .ToArray();
             if (errors.Length == 0)

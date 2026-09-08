@@ -14,6 +14,6 @@ namespace UniversalGraph
         }
 
         public string Key { get; }
-        public QuestMethodTarget Target { get; set; } = QuestMethodTarget.Controller;
+        public QuestMethodOwner Owner { get; set; } = QuestMethodOwner.Controller;
     }
 }

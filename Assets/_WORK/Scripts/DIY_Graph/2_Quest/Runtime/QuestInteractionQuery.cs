@@ -11,8 +11,6 @@ namespace UniversalGraph
     /// </summary>
     internal static class QuestInteractionQuery
     {
-        private const int MaxInteractionSteps = 128;
-
         /// <summary>
         /// 상호작용 시작점이 주어진 대상 ID 중 하나와 일치하는 모든 유효한 대화 후보를 반환합니다.
         /// 비어 있는 ID는 모든 대상과 일치합니다.
@@ -102,17 +100,8 @@ namespace UniversalGraph
             EnqueueTargets(index, pending, entry.Guid, QuestPortNames.Next);
             var visited = new HashSet<string>();
 
-            int steps = 0;
             while (pending.Count > 0)
             {
-                if (++steps > MaxInteractionSteps)
-                {
-                    Debug.LogError(
-                        $"[Quest Interaction] '{graph.name}'의 경로 탐색이 {MaxInteractionSteps}단계를 초과했습니다.",
-                        graph);
-                    return;
-                }
-
                 NodeBaseData nodeData = pending.Dequeue();
                 if (!visited.Add(nodeData.Guid))
                 {
@@ -188,14 +177,17 @@ namespace UniversalGraph
             string guid,
             string port)
         {
-            if (!index.OutgoingByPort.TryGetValue((guid, port), out List<NodeLinkData> outgoing))
+            if (!index.OutgoingLinks.TryGetValue(guid, out List<NodeLinkData> outgoing))
             {
                 return;
             }
 
             foreach (NodeLinkData link in outgoing)
             {
-                pending.Enqueue(index.Nodes[link.TargetNodeGuid]);
+                if (link.StartPortName == port)
+                {
+                    pending.Enqueue(index.Nodes[link.TargetNodeGuid]);
+                }
             }
         }
 

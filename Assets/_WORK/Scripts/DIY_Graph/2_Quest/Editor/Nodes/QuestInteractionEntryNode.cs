@@ -27,6 +27,7 @@ namespace UniversalGraph.Quest.Editor
         protected override void Draw()
         {
             title = "QUEST START";
+            capabilities &= ~Capabilities.Copiable;
             Port next = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(float));
             next.portName = QuestPortNames.Next;
             outputContainer.Add(next);
@@ -87,6 +88,7 @@ namespace UniversalGraph.Quest.Editor
                 editHandler.ApplyDataEdit("Change interaction target", () =>
                 {
                     NodeData.TargetId = change.newValue?.Trim() ?? string.Empty;
+                    targetField.SetValueWithoutNotify(NodeData.TargetId);
                     RefreshTitle();
                 });
             });

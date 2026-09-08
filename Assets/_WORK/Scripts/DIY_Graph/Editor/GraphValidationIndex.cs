@@ -108,6 +108,53 @@ namespace UniversalGraph.Editor
             return reachedNode;
         }
 
+        /// <summary>선택한 노드 집합 안에서 단방향 순환에 포함된 노드를 찾습니다.</summary>
+        public HashSet<string> FindCycleNodes(Func<NodeBaseData, bool> includeNode)
+        {
+            HashSet<string> includedGuids = new(Nodes.Where(includeNode).Select(node => node.Guid));
+            HashSet<string> cycleNodes = new();
+
+            foreach (string startGuid in includedGuids)
+            {
+                HashSet<string> reachedNode = new();
+                Queue<string> q = new();
+
+                // 시작 노드 자체는 순환의 증거가 아니므로 연결된 다음 노드부터 탐색
+                foreach (NodeLinkData link in GetLinkInStartPort(startGuid))
+                {
+                    if (includedGuids.Contains(link.TargetNodeGuid))
+                    {
+                        q.Enqueue(link.TargetNodeGuid);
+                    }
+                }
+
+                while (q.Count > 0)
+                {
+                    string guid = q.Dequeue();
+                    if (guid == startGuid)
+                    {
+                        cycleNodes.Add(startGuid);
+                        break;
+                    }
+
+                    if (!reachedNode.Add(guid))
+                    {
+                        continue;
+                    }
+
+                    foreach (NodeLinkData link in GetLinkInStartPort(guid))
+                    {
+                        if (includedGuids.Contains(link.TargetNodeGuid))
+                        {
+                            q.Enqueue(link.TargetNodeGuid);
+                        }
+                    }
+                }
+            }
+
+            return cycleNodes;
+        }
+
 
     }
 }

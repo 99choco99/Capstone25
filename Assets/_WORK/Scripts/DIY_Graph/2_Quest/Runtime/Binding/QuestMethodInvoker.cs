@@ -8,19 +8,19 @@ namespace UniversalGraph
     /// <summary>Attribute가 붙은 Quest Action과 Condition을 찾아 등록하고 호출합니다.</summary>
     public static class QuestMethodInvoker
     {
-        private static readonly Dictionary<string, QuestMethodDescriptor> Actions = new();
-        private static readonly Dictionary<string, QuestMethodDescriptor> Conditions = new();
-        private static readonly HashSet<string> InvalidActionKeys = new();
-        private static readonly HashSet<string> InvalidConditionKeys = new();
+        private static readonly Dictionary<string, QuestMethodDescriptor> actionRegistry = new();
+        private static readonly Dictionary<string, QuestMethodDescriptor> conditionRegistry = new();
+        private static readonly HashSet<string> invalidActionKeys = new();
+        private static readonly HashSet<string> invalidConditionKeys = new();
         private static bool isInitialized;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticState()
         {
-            Actions.Clear();
-            Conditions.Clear();
-            InvalidActionKeys.Clear();
-            InvalidConditionKeys.Clear();
+            actionRegistry.Clear();
+            conditionRegistry.Clear();
+            invalidActionKeys.Clear();
+            invalidConditionKeys.Clear();
             isInitialized = false;
         }
 
@@ -33,20 +33,16 @@ namespace UniversalGraph
                 return;
             }
 
-            Actions.Clear();
-            Conditions.Clear();
-            InvalidActionKeys.Clear();
-            InvalidConditionKeys.Clear();
+            actionRegistry.Clear();
+            conditionRegistry.Clear();
+            invalidActionKeys.Clear();
+            invalidConditionKeys.Clear();
 #if UNITY_EDITOR
             // Editor 전용 어셈블리는 게임 메서드 검색에서 제외합니다.
             HashSet<string> playerAssemblies = new();
             foreach (UnityEditor.Compilation.Assembly playerAssembly in UnityEditor.Compilation.CompilationPipeline.GetAssemblies(UnityEditor.Compilation.AssembliesType.Player))
             {
                 playerAssemblies.Add(playerAssembly.name);
-                foreach (string reference in playerAssembly.compiledAssemblyReferences)
-                {
-                    playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
-                }
             }
 #endif
             string runtimeAssemblyName = typeof(QuestMethodInvoker).Assembly.GetName().Name;
@@ -93,8 +89,8 @@ namespace UniversalGraph
                 return false;
             }
 
-            Dictionary<string, QuestMethodDescriptor> methods = kind == MethodKind.Action ? Actions : Conditions;
-            if (!methods.TryGetValue(key, out QuestMethodDescriptor descriptor))
+            Dictionary<string, QuestMethodDescriptor> registry = kind == MethodKind.Action ? actionRegistry : conditionRegistry;
+            if (!registry.TryGetValue(key, out QuestMethodDescriptor descriptor))
             {
                 Debug.LogError($"[Quest] {kind} '{key}'이 등록되지 않았습니다.");
                 return false;
@@ -111,7 +107,7 @@ namespace UniversalGraph
                 return false;
             }
 
-            object target = ResolveTarget(descriptor, context?.Controller);
+            object target = GetTargetInstance(descriptor, context?.Controller);
             if (!descriptor.IsStatic && target == null)
             {
                 return false;
@@ -171,13 +167,13 @@ namespace UniversalGraph
                     QuestActionAttribute action = method.GetCustomAttribute<QuestActionAttribute>(false);
                     if (action != null)
                     {
-                        RegisterMethod(method, MethodKind.Action, action.Key, action.Target);
+                        RegisterMethod(method, MethodKind.Action, action.Key, action.Owner);
                     }
 
                     QuestConditionAttribute condition = method.GetCustomAttribute<QuestConditionAttribute>(false);
                     if (condition != null)
                     {
-                        RegisterMethod(method, MethodKind.Condition, condition.Key, condition.Target);
+                        RegisterMethod(method, MethodKind.Condition, condition.Key, condition.Owner);
                     }
                 }
             }
@@ -188,9 +184,9 @@ namespace UniversalGraph
             MethodInfo method,
             MethodKind kind,
             string key,
-            QuestMethodTarget target)
+            QuestMethodOwner owner)
         {
-            if (!QuestMethodDescriptorFactory.TryCreateFromReflection(method, kind, key, target, out QuestMethodDescriptor descriptor, out string error))
+            if (!QuestMethodDescriptorFactory.TryCreateDescriptor(method, kind, key, owner, out QuestMethodDescriptor descriptor, out string error))
             {
                 Debug.LogError($"[Quest] {error}");
                 return;
@@ -201,21 +197,21 @@ namespace UniversalGraph
 
         private static void RegisterDescriptor(QuestMethodDescriptor descriptor)
         {
-            IDictionary<string, QuestMethodDescriptor> methodsByKey = descriptor.Kind == MethodKind.Action
-                ? Actions
-                : Conditions;
+            IDictionary<string, QuestMethodDescriptor> registry = descriptor.Kind == MethodKind.Action
+                ? actionRegistry
+                : conditionRegistry;
             ISet<string> invalidKeys = descriptor.Kind == MethodKind.Action
-                ? InvalidActionKeys
-                : InvalidConditionKeys;
+                ? invalidActionKeys
+                : invalidConditionKeys;
 
             if (invalidKeys.Contains(descriptor.Key))
             {
                 return;
             }
 
-            if (methodsByKey.TryGetValue(descriptor.Key, out QuestMethodDescriptor duplicate))
+            if (registry.TryGetValue(descriptor.Key, out QuestMethodDescriptor duplicate))
             {
-                methodsByKey.Remove(descriptor.Key);
+                registry.Remove(descriptor.Key);
                 invalidKeys.Add(descriptor.Key);
                 Debug.LogError(
                     $"[Quest] 중복된 {descriptor.Kind} 키 '{descriptor.Key}': " +
@@ -224,12 +220,12 @@ namespace UniversalGraph
                 return;
             }
 
-            methodsByKey.Add(descriptor.Key, descriptor);
+            registry.Add(descriptor.Key, descriptor);
         }
 
-        private static object ResolveTarget(QuestMethodDescriptor descriptor, IQuestController controller)
+        private static object GetTargetInstance(QuestMethodDescriptor descriptor, IQuestController controller)
         {
-            if (descriptor.Target == QuestMethodTarget.Global)
+            if (descriptor.Owner == QuestMethodOwner.Global)
             {
                 return null;
             }

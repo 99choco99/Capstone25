@@ -76,7 +76,7 @@ namespace UniversalGraph.Quest.Editor
             return root;
         }
 
-        /// <summary>프로젝트 에셋 기반 Quest 선택기를 만들며, 누락된 구형 ID는 복구할 수 있도록 유지합니다.</summary>
+        /// <summary>프로젝트 에셋 기반 Quest 선택기를 만들며, 누락된 ID는 복구할 수 있도록 유지합니다.</summary>
         public static PopupField<int> CreateQuestIdField(
             string label,
             int currentQuestId,

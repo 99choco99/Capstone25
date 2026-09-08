@@ -202,7 +202,7 @@ namespace UniversalGraph.Editor
 
 
         /// <summary>지정한 캔버스 위치에 등록된 노드 하나를 만들어 추가</summary>
-        public GraphNode CreateNode(Vector2 position, GraphNodeEditorRegistry.NodeDefinition definition)
+        public GraphNode CreateNode(Vector2 position, GraphNodeCatalog.NodeDefinition definition)
         {
             try
             {
@@ -216,7 +216,7 @@ namespace UniversalGraph.Editor
                     .Select(node => node.Data)
                     .ToList();
                 GraphNodeCreationContext context = new(position, existingNodes);
-                GraphNode node = GraphNodeEditorRegistry.CreateNewNode(container, definition, context);
+                GraphNode node = GraphNodeCatalog.CreateNewNode(container, definition, context);
                 AddElement(node);
                 ScheduleSave();
                 return node;
@@ -328,7 +328,7 @@ namespace UniversalGraph.Editor
                     nodeData.Guid = newId;
                     nodeData.Position += offset;
 
-                    GraphNode node = GraphNodeEditorRegistry.CreateNode(container, nodeData);
+                    GraphNode node = GraphNodeCatalog.CreateNode(container, nodeData);
 
                     Rect rect = node.GetPosition();
                     rect.position = nodeData.Position;
@@ -419,7 +419,7 @@ namespace UniversalGraph.Editor
             Vector2 canvasPos = contentViewContainer.WorldToLocal(worldPos);
 
             //우클릭시 노드 생성 을 추가
-            foreach (GraphNodeEditorRegistry.NodeDefinition definition in GraphNodeEditorRegistry.GetNodeCatalog(container))
+            foreach (GraphNodeCatalog.NodeDefinition definition in GraphNodeCatalog.GetNodeCatalog(container))
             {
                 evt.menu.AppendAction(
                     definition.MenuPath,

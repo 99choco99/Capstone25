@@ -62,10 +62,7 @@ namespace UniversalGraph
                     $"Quest '{definition.name}'의 ID {definition.QuestId}은 올바르지 않습니다. 양수를 사용하세요.");
             }
 
-            if (!GraphAssetMigrator.TryMigrate(definition, out _, out string migrationError))
-            {
-                throw new InvalidOperationException(migrationError);
-            }
+            GraphAssetMigrator.Migrate(definition);
 
             if (registry.definitionsById.TryGetValue(definition.QuestId, out QuestContainer duplicate))
             {

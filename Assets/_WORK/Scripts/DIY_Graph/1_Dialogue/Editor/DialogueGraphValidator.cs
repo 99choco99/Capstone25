@@ -5,7 +5,7 @@ using UniversalGraph.Editor;
 namespace UniversalGraph.Dialogue.Editor
 {
     /// <summary>대화를 실행하기 전에 Dialogue 그래프 작성 문제를 찾아 보고하는 클래스</summary>
-    public sealed class DialogueGraphValidator : GraphValidator<DialogueContainer>
+    public sealed class DialogueGraphValidator : GraphValidatorBase<DialogueContainer>
     {
         /// <summary>시작점, 분기, 바인딩, 도달 가능 여부와 즉시 실행 순환을 검사</summary>
         protected override void Validate(DialogueContainer container, GraphValidationIndex index, ICollection<GraphValidationIssue> issues)
@@ -98,7 +98,7 @@ namespace UniversalGraph.Dialogue.Editor
                 }
             }
 
-            HashSet<string> immediateCycleNodes = GraphValidatorRegistry.FindCycleNodes(index, node => node is DialogueActionNodeData || node is DialogueConditionNodeData || node is DialogueWaitNodeData wait && wait.DurationSeconds <= 0f);
+            HashSet<string> immediateCycleNodes = index.FindCycleNodes(node => node is DialogueActionNodeData || node is DialogueConditionNodeData || node is DialogueWaitNodeData wait && wait.DurationSeconds <= 0f);
             foreach (string nodeGuid in immediateCycleNodes)
             {
                 AddError("DIALOGUE_IMMEDIATE_CYCLE", "이 노드는 실행을 멈출 대사, Signal 또는 양수 Wait가 없는 순환에 포함되어 있습니다.", nodeGuid);
@@ -107,7 +107,7 @@ namespace UniversalGraph.Dialogue.Editor
 
             //===========================내부 함수 ================================
 
-
+            //선택지 노드가 유효한지 검사
             void ValidateChoiceNode(DialogueChoiceNodeData choiceNode)
             {
                 if (choiceNode.Choices == null)
@@ -122,6 +122,7 @@ namespace UniversalGraph.Dialogue.Editor
                     return;
                 }
 
+                //포트(선택지) 하나씩 꺼내서 검사
                 HashSet<string> portIds = new () { DialoguePortNames.Default };
                 for (int i = 0; i < choiceNode.Choices.Count; i++)
                 {
@@ -149,6 +150,7 @@ namespace UniversalGraph.Dialogue.Editor
                     OutputValidation(choiceNode.Guid, choice.PortName, label);
                 }
 
+                //혹시 선택지가 없어서 default 포트를 사용하는 경우 default가 연결되어 있는지 확인
                 bool needsDefault = choiceNode.Choices.All(choice => !string.IsNullOrWhiteSpace(choice?.VisibilityCondition?.Key));
 
                 if (needsDefault)
@@ -162,23 +164,20 @@ namespace UniversalGraph.Dialogue.Editor
                     {
                         AddError("DIALOGUE_OUTPUT_COUNT", $"{DialoguePortNames.Default}: 최대 1개 연결 가능 (현재 {defaultCount}개)", choiceNode.Guid);
                     }
-                    else if (defaultCount == 1)
-                    {
-                        AddWarning("DIALOGUE_UNUSED_DEFAULT", "조건 없는 선택지가 있으므로 Default는 사용되지 않습니다.", choiceNode.Guid);
-                    }
                 }
 
             }
 
-            void ValidateMethodBinding(string nodeGuid, MethodKind kind, MethodBindingData binding, string label, bool required = false)
+            //메서드가 유효하고 인수가 메서드에 맞는지
+            void ValidateMethodBinding(string nodeGuid, MethodKind kind, MethodBindingData bindingData, string label, bool required = false)
             {
-                if (binding == null)
+                if (bindingData == null)
                 {
                     AddError("DIALOGUE_BINDING_DATA", $"{label}: 바인딩 데이터가 없습니다.", nodeGuid);
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(binding.Key))
+                if (string.IsNullOrWhiteSpace(bindingData.Key))
                 {
                     if (required)
                     {
@@ -187,13 +186,15 @@ namespace UniversalGraph.Dialogue.Editor
                     return;
                 }
 
-                if (!DialogueMethodCatalog.GetMethod(kind, binding.Key, out DialogueMethodDescriptor descriptor))
+                //editor영역의 메서드 설명서를 가져오기
+                if (!DialogueMethodCatalog.GetMethodDescriptor(kind, bindingData.Key, out DialogueMethodDescriptor descriptor))
                 {
-                    AddError("DIALOGUE_MISSING_METHOD", $"{label}: 메서드 '{binding.Key}'가 없습니다.", nodeGuid);
+                    AddError("DIALOGUE_MISSING_METHOD", $"{label}: 메서드 '{bindingData.Key}'가 없습니다.", nodeGuid);
                     return;
                 }
 
-                if (!MethodArgumentCodec.TryDecodeAllArgumentData(binding.Arguments, descriptor, out _, out string error))
+                //설명서를 통해 arguments 가져오기
+                if (!MethodArgumentCodec.TryDecodeAllArgumentData(bindingData.Arguments, descriptor, out _, out string error))
                 {
                     AddError("DIALOGUE_ARGUMENTS", $"{label}: {error}", nodeGuid);
                 }

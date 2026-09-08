@@ -11,7 +11,7 @@ namespace UniversalGraph
     public static partial class QuestRunner
     {
         /// <summary>게임 이벤트 하나를 조건이 일치하는 모든 활성 목표에 적용합니다.</summary>
-        public static void ReportObjectiveProgress(IQuestController controller, string type, int targetId, int amount)
+        public static void ReportObjectiveProgress(IQuestController controller, string eventKey, int targetId, int amount)
         {
             if (controller == null)
             {
@@ -19,12 +19,12 @@ namespace UniversalGraph
             }
 
             QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
-            if (string.IsNullOrWhiteSpace(type) || amount <= 0 || registry == null)
+            if (string.IsNullOrWhiteSpace(eventKey) || amount <= 0 || registry == null)
             {
                 return;
             }
 
-            type = type.Trim();
+            eventKey = eventKey.Trim();
 
             foreach (QuestProgress progress in controller.QuestProgress.Values
                          .Where(item => item != null && item.state == QuestState.InProgress)
@@ -55,7 +55,7 @@ namespace UniversalGraph
 
                     if (!flowIndex.Nodes.TryGetValue(activeGuid, out NodeBaseData activeNode)
                         || activeNode is not QuestObjectiveNodeData objective
-                        || objective.ObjectiveType != type
+                        || objective.EventKey != eventKey
                         || objective.TargetId != targetId)
                     {
                         continue;
@@ -140,7 +140,7 @@ namespace UniversalGraph
         }
 
         /// <summary>그래프에서 제공된 Quest가 여전히 수락 가능한지 확인하고 시작합니다.</summary>
-        public static bool TryStartQuest(IQuestController controller, QuestOffer offer)
+        public static bool TryAcceptQuest(IQuestController controller, QuestOffer offer)
         {
             if (controller == null)
             {
@@ -169,7 +169,7 @@ namespace UniversalGraph
         /// Offer 조건을 거치지 않고 Quest를 명시적으로 시작합니다.
         /// 컷신, 튜토리얼과 다른 Quest처럼 게임 흐름이 시작을 이미 결정한 경우에 사용합니다.
         /// </summary>
-        public static bool ForceStartQuest(IQuestController controller, int questId)
+        public static bool StartQuest(IQuestController controller, int questId)
         {
             if (controller == null)
             {
@@ -245,8 +245,8 @@ namespace UniversalGraph
             return true;
         }
 
-        /// <summary>저장 데이터 적용 뒤 활성 Quest의 상태 변경 알림을 다시 보냅니다.</summary>
-        public static void NotifyRestoredQuests(IQuestController controller)
+        /// <summary>게임 데이터 복원 후 Quest 간 대기를 재평가하고 활성 Quest의 상태를 알립니다.</summary>
+        public static void ResumeRestoredQuests(IQuestController controller)
         {
             if (controller == null)
             {
@@ -260,12 +260,16 @@ namespace UniversalGraph
                     "Quest 복원 알림을 보내기 전에 QuestDefinitionRegistry.Initialize를 호출해야 합니다.");
             }
 
-            foreach (QuestProgress progress in controller.QuestProgress.Values
-                         .Where(item => item != null
-                                        && (item.state == QuestState.InProgress
-                                            || item.state == QuestState.CanComplete))
-                         .ToArray())
+            foreach (int questId in controller.QuestProgress.Keys.ToArray())
             {
+                // 앞선 알림이 진행 기록을 교체했을 수 있으므로 현재 데이터를 읽습니다.
+                if (!controller.QuestProgress.TryGetValue(questId, out QuestProgress progress)
+                    || progress == null
+                    || (progress.state != QuestState.InProgress && progress.state != QuestState.CanComplete))
+                {
+                    continue;
+                }
+
                 progress.EnsureCollections();
                 QuestContainer definition = registry.GetDefinition(progress.questId);
                 if (definition == null)
@@ -275,6 +279,12 @@ namespace UniversalGraph
                 }
 
                 controller.InvokeStatusChanged(definition, progress);
+            }
+
+            // 복원된 상태를 먼저 표시한 뒤 정상 진행을 재개합니다. 다른 게임 데이터도 복원된 뒤여야 합니다.
+            foreach (int questId in registry.Definitions.Select(definition => definition.QuestId).ToArray())
+            {
+                ResumeWaitingQuests(controller, questId);
             }
         }
 
@@ -417,12 +427,6 @@ namespace UniversalGraph
                 return;
             }
 
-            controller.QuestProgress.TryGetValue(changedQuestId, out QuestProgress changedProgress);
-            if (changedProgress == null)
-            {
-                return;
-            }
-
             foreach (QuestProgress progress in controller.QuestProgress.Values
                          .Where(item => item != null && item.state == QuestState.InProgress)
                          .ToArray())
@@ -438,46 +442,43 @@ namespace UniversalGraph
                 progress.EnsureCollections();
                 int runVersion = progress.runVersion;
                 bool changed = false;
-                int resumedNodeCount = 0;
-                bool resumeAnotherNode;
-                do
+                foreach (string activeGuid in progress.activeNodeGuids.ToArray())
                 {
-                    resumeAnotherNode = false;
-                    foreach (string activeGuid in progress.activeNodeGuids.ToArray())
+                    if (progress.state != QuestState.InProgress || !IsCurrentRun(controller, progress, runVersion))
                     {
-                        if (progress.state != QuestState.InProgress
-                            || !IsCurrentRun(controller, progress, runVersion)
-                            || !progress.activeNodeGuids.Contains(activeGuid))
-                        {
-                            break;
-                        }
-
-                        if (!flowIndex.Nodes.TryGetValue(activeGuid, out NodeBaseData nodeData)
-                            || nodeData is not QuestWaitForQuestNodeData waitForQuest
-                            || waitForQuest.TargetQuestId != changedQuestId
-                            || changedProgress.state != waitForQuest.RequiredState)
-                        {
-                            continue;
-                        }
-
-                        progress.activeNodeGuids.Remove(activeGuid);
-                        MarkCompleted(progress, activeGuid);
-                        bool executionSucceeded = RunFromOutputs(
-                            controller,
-                            container,
-                            progress,
-                            flowIndex,
-                            nodeData.Guid,
-                            null);
-                        changed = true;
-                        resumeAnotherNode = executionSucceeded && progress.state == QuestState.InProgress
-                                            && IsCurrentRun(controller, progress, runVersion);
                         break;
                     }
 
-                    resumedNodeCount++;
+                    if (!progress.activeNodeGuids.Contains(activeGuid)
+                        || !flowIndex.Nodes.TryGetValue(activeGuid, out NodeBaseData nodeData)
+                        || nodeData is not QuestWaitForQuestNodeData waitForQuest
+                        || waitForQuest.TargetQuestId != changedQuestId)
+                    {
+                        continue;
+                    }
+
+                    // 앞선 노드의 Action이 대상 진행 기록을 교체했을 수 있으므로 현재 상태를 다시 읽습니다.
+                    controller.QuestProgress.TryGetValue(changedQuestId, out QuestProgress changedProgress);
+                    if ((changedProgress?.state ?? QuestState.NotStarted) != waitForQuest.RequiredState)
+                    {
+                        continue;
+                    }
+
+                    progress.activeNodeGuids.Remove(activeGuid);
+                    MarkCompleted(progress, activeGuid);
+                    bool executionSucceeded = RunFromOutputs(
+                        controller,
+                        container,
+                        progress,
+                        flowIndex,
+                        nodeData.Guid,
+                        null);
+                    changed = true;
+                    if (!executionSucceeded)
+                    {
+                        break;
+                    }
                 }
-                while (resumeAnotherNode && resumedNodeCount <= MaxImmediateNodeSteps);
 
                 if (changed && IsCurrentRun(controller, progress, runVersion))
                 {

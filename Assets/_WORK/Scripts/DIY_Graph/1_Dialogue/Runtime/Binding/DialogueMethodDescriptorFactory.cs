@@ -9,8 +9,8 @@ namespace UniversalGraph
 	/// </para> DialogueMethodDescriptor로 변환하는 클래스</summary>
     public static class DialogueMethodDescriptorFactory
 	{
-        /// <summary>Reflection으로 찾은 Attribute 메서드 하나에 대해서 Descriptor 제작</summary>
-        public static bool TryCreateFromReflection(MethodInfo method, MethodKind kind, string key, DialogueMethodOwner owner, out DialogueMethodDescriptor descriptor, out string error)
+        /// <summary>Reflection으로 찾은 Attribute 메서드 하나에 대해서 Descriptor하나 제작</summary>
+        public static bool TryCreateDescriptor(MethodInfo method, MethodKind kind, string key, DialogueMethodOwner owner, out DialogueMethodDescriptor descriptor, out string error)
 		{
 			descriptor = null;
 			if (method == null)

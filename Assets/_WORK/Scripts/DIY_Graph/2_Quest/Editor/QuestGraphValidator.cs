@@ -42,7 +42,7 @@ namespace UniversalGraph.Quest.Editor
     }
 
     /// <summary>Play Mode에 들어가기 전에 Quest 진행과 대화 경로 문제를 보고합니다.</summary>
-    public sealed class QuestGraphValidator : GraphValidator<QuestContainer>
+    public sealed class QuestGraphValidator : GraphValidatorBase<QuestContainer>
     {
         /// <summary>Quest 흐름, 참조, 바인딩, 도달 가능 여부와 완료 경로를 검사합니다.</summary>
         protected override void Validate(
@@ -96,9 +96,9 @@ namespace UniversalGraph.Quest.Editor
                         break;
 
                     case QuestObjectiveNodeData objective:
-                        if (string.IsNullOrWhiteSpace(objective.ObjectiveType))
+                        if (string.IsNullOrWhiteSpace(objective.EventKey))
                         {
-                            AddError("QUEST_OBJECTIVE_KEY", "Objective Type이 필요합니다.", objective.Guid);
+                            AddError("QUEST_OBJECTIVE_KEY", "이벤트 키가 필요합니다.", objective.Guid);
                         }
                         if (objective.RequiredAmount < 1)
                         {
@@ -271,7 +271,7 @@ namespace UniversalGraph.Quest.Editor
                 }
             }
 
-            foreach (string nodeGuid in GraphValidatorRegistry.FindCycleNodes(index, _ => true))
+            foreach (string nodeGuid in index.FindCycleNodes(_ => true))
             {
                 AddError(
                     "QUEST_CYCLE",
@@ -360,7 +360,7 @@ namespace UniversalGraph.Quest.Editor
                         return false;
                     }
 
-                    GraphValidationIssue structureError = GraphValidatorRegistry.ValidateStructure(definition)
+                    GraphValidationIssue structureError = GraphValidator.ValidateStructure(definition)
                         .FirstOrDefault(issue => issue.Severity == GraphValidationSeverity.Error);
                     if (structureError != null)
                     {
@@ -415,7 +415,7 @@ namespace UniversalGraph.Quest.Editor
                     return;
                 }
 
-                if (!QuestMethodCatalog.GetMethod(kind, binding.Key, out QuestMethodDescriptor descriptor))
+                if (!QuestMethodCatalog.GetMethodDescriptor(kind, binding.Key, out QuestMethodDescriptor descriptor))
                 {
                     AddError(
                         "QUEST_METHOD_KEY",
@@ -476,7 +476,7 @@ namespace UniversalGraph.Quest.Editor
                     return;
                 }
 
-                GraphValidationIssue structureError = GraphValidatorRegistry.ValidateStructure(graph)
+                GraphValidationIssue structureError = GraphValidator.ValidateStructure(graph)
                     .FirstOrDefault(issue => issue.Severity == GraphValidationSeverity.Error);
                 if (structureError != null)
                 {

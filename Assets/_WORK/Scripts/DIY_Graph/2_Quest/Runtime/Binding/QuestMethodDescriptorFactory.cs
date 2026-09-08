@@ -8,11 +8,11 @@ namespace UniversalGraph
     public static class QuestMethodDescriptorFactory
     {
         /// <summary>Attribute가 붙은 Quest 메서드 하나를 검증하고 에디터·런타임 호출 정보를 만듭니다.</summary>
-        public static bool TryCreateFromReflection(
+        public static bool TryCreateDescriptor(
             MethodInfo method,
             MethodKind kind,
             string key,
-            QuestMethodTarget target,
+            QuestMethodOwner owner,
             out QuestMethodDescriptor descriptor,
             out string error)
         {
@@ -37,7 +37,7 @@ namespace UniversalGraph
                 return false;
             }
 
-            if (target != QuestMethodTarget.Controller && target != QuestMethodTarget.Global)
+            if (owner != QuestMethodOwner.Controller && owner != QuestMethodOwner.Global)
             {
                 error = $"'{key}'의 Quest 호출 대상이 올바르지 않습니다.";
                 return false;
@@ -69,13 +69,13 @@ namespace UniversalGraph
                 return false;
             }
 
-            if (target == QuestMethodTarget.Global && !method.IsStatic)
+            if (owner == QuestMethodOwner.Global && !method.IsStatic)
             {
                 error = $"Global Quest 메서드 '{key}'는 static이어야 합니다.";
                 return false;
             }
 
-            if (target == QuestMethodTarget.Controller
+            if (owner == QuestMethodOwner.Controller
                 && (method.IsStatic || !typeof(IQuestController).IsAssignableFrom(method.DeclaringType)))
             {
                 error = $"Controller Quest 메서드 '{key}'는 IQuestController의 인스턴스 메서드여야 합니다.";
@@ -144,7 +144,7 @@ namespace UniversalGraph
             descriptor = new QuestMethodDescriptor(
                 key,
                 kind,
-                target,
+                owner,
                 method,
                 parameters);
             error = null;
