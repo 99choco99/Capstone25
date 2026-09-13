@@ -8,7 +8,7 @@ namespace UniversalGraph
 	public abstract class NodeBaseData
 	{
 		/// <summary>고정 식별자</summary>
-		public string Guid;
+		public string Guid = System.Guid.NewGuid().ToString();
 
 		/// <summary>에디터 캔버스에서 사용하는 노드 위치</summary>
 		public Vector2 Position;

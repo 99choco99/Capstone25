@@ -11,7 +11,7 @@ namespace UniversalGraph.Quest.Editor
     {
         public override Vector2 DefaultSize => new(210f, 120f);
 
-        /// <summary>입력 하나와 서로 배타적인 True·False 출력 포트를 만듭니다.</summary>
+        /// <summary>입력 하나와 True, False 출력 포트를 만듭니다.</summary>
         protected override void Draw()
         {
             RefreshTitle();
@@ -20,11 +20,11 @@ namespace UniversalGraph.Quest.Editor
             input.portName = QuestPortNames.Input;
             inputContainer.Add(input);
 
-            Port truePort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(float));
+            Port truePort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(float));
             truePort.portName = QuestPortNames.True;
             outputContainer.Add(truePort);
 
-            Port falsePort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Single, typeof(float));
+            Port falsePort = InstantiatePort(Orientation.Horizontal, Direction.Output, Port.Capacity.Multi, typeof(float));
             falsePort.portName = QuestPortNames.False;
             outputContainer.Add(falsePort);
 
@@ -41,21 +41,17 @@ namespace UniversalGraph.Quest.Editor
         /// <summary>Quest ID와 예상 상태 입력 요소를 만듭니다.</summary>
         public override VisualElement CreateInspector(NodeInspectorEditHandler editHandler)
         {
-            var root = new VisualElement();
+            VisualElement root = new ();
             root.Add(new Label("Quest State Condition"));
 
-            root.Add(QuestEditorFields.CreateQuestIdField(
-                "Quest",
-                NodeData.QuestId,
-                "Change inspected quest",
-                editHandler,
+            root.Add(QuestEditorFields.CreateQuestIdField(NodeData.QuestId, "Change inspected quest", editHandler,
                 value =>
                 {
                     NodeData.QuestId = value;
                     RefreshTitle();
                 }));
 
-            var stateField = new EnumField("Expected State", NodeData.TargetState);
+            EnumField stateField = new ("Expected State", NodeData.TargetState);
             stateField.RegisterValueChangedCallback(change =>
             {
                 editHandler.ApplyDataEdit("Change expected quest state", () =>

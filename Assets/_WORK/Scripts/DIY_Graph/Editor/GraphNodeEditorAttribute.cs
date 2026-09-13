@@ -14,7 +14,7 @@ namespace UniversalGraph.Editor
 		public GraphNodeEditorAttribute(Type containerType, string menuPath)
 		{
 			ContainerType = containerType;
-			MenuPath = menuPath;
+			MenuPath = menuPath?.Trim() ?? string.Empty;
 		}
 	}
 }

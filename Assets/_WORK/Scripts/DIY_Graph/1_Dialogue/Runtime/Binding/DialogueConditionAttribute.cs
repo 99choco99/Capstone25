@@ -15,7 +15,7 @@ namespace UniversalGraph
 
 		public DialogueConditionAttribute(string key)
 		{
-			Key = key;
+			Key = key?.Trim() ?? string.Empty;
 		}
 	}
 }

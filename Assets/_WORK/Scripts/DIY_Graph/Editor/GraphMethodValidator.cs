@@ -16,6 +16,10 @@ namespace UniversalGraph.Editor
             foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player))
             {
                 playerAssemblies.Add(assembly.name);
+                foreach (string reference in assembly.compiledAssemblyReferences)
+                {
+                    playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
+                }
             }
 
             List<MethodInfo> methods = new ();
@@ -71,7 +75,7 @@ namespace UniversalGraph.Editor
             //dialogue전용 메서드 검증
             void ValidateDialogueMethod(MethodInfo method, MethodKind kind, string key, DialogueMethodOwner owner)
             {
-                if (!DialogueMethodDescriptorFactory.TryCreateDescriptor(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out string error))
+                if (!DialogueMethodDescriptorFactory.CreateDescriptor(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out string error))
                 {
                     errors.Add("[Dialogue] " + error);
                     return;
@@ -83,7 +87,7 @@ namespace UniversalGraph.Editor
             //Quest전용 메서드 검증
             void ValidateQuestMethod(MethodInfo method, MethodKind kind, string key, QuestMethodOwner owner)
             {
-                if (!QuestMethodDescriptorFactory.TryCreateDescriptor(method, kind, key, owner, out QuestMethodDescriptor descriptor, out string error))
+                if (!QuestMethodDescriptorFactory.CreateDescriptor(method, kind, key, owner, out QuestMethodDescriptor descriptor, out string error))
                 {
                     errors.Add("[Quest] " + error);
                     return;

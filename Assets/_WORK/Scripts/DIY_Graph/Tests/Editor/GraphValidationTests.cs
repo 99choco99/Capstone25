@@ -31,6 +31,16 @@ namespace UniversalGraph.Tests
             createdObjects.Clear();
         }
 
+        [TestCase("  Quest/Flow/Objective  ", "Quest/Flow/Objective")]
+        [TestCase("  Quest/Flow/Custom Node  ", "Quest/Flow/Custom Node")]
+        [TestCase(null, "")]
+        public void GraphNodeEditorAttribute_NormalizesStoredMenuPath(string menuPath, string expected)
+        {
+            var attribute = new GraphNodeEditorAttribute(typeof(QuestContainer), menuPath);
+            Assert.That(attribute.MenuPath, Is.EqualTo(expected));
+            Assert.That(attribute.ContainerType, Is.EqualTo(typeof(QuestContainer)));
+        }
+
         [Test]
         public void MethodBuildValidator_UsesReflectionAndValidatesEachAttributeOnce()
         {
@@ -64,22 +74,22 @@ namespace UniversalGraph.Tests
             int baselineErrors = ValidateProject(out _);
             string folder = CreateValidationFolder();
             DialogueContainer dialogue = CreateAsset<DialogueContainer>();
-            QuestContainer quest = CreateAsset<QuestContainer>();
+            QuestContainer container = CreateAsset<QuestContainer>();
             DialogueContainer hiddenDialogue = CreateAsset<DialogueContainer>();
             try
             {
                 var questIds = new HashSet<int>(AssetDatabase.FindAssets("t:QuestContainer")
                     .Select(AssetDatabase.GUIDToAssetPath).SelectMany(AssetDatabase.LoadAllAssetsAtPath)
                     .OfType<QuestContainer>().Select(existing => existing.QuestId));
-                quest.QuestId = 1;
-                while (questIds.Contains(quest.QuestId)) quest.QuestId++;
-                AssetDatabase.CreateAsset(quest, folder + "/Quest.asset");
+                container.QuestId = 1;
+                while (questIds.Contains(container.QuestId)) container.QuestId++;
+                AssetDatabase.CreateAsset(container, folder + "/Quest.asset");
                 AssetDatabase.CreateAsset(dialogue, folder + "/Dialogue.asset");
                 hiddenDialogue.name = "Hidden Dialogue";
                 hiddenDialogue.hideFlags = HideFlags.HideInHierarchy;
                 AssetDatabase.AddObjectToAsset(hiddenDialogue, dialogue);
                 AssetDatabase.SaveAssetIfDirty(dialogue);
-                GraphContainer[] graphs = { dialogue, hiddenDialogue, quest };
+                GraphContainer[] graphs = { dialogue, hiddenDialogue, container };
                 string[] expectedMessages = graphs.SelectMany(graph => GraphValidator.Validate(graph)
                     .Select(issue => $"[Universal Graph] '{AssetDatabase.GetAssetPath(graph)}' ({graph.name}) {issue}"))
                     .ToArray();
@@ -283,7 +293,7 @@ namespace UniversalGraph.Tests
             MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(
                 invalidValue ? "IsDialogueChoiceVisible" : "RecordInvokerAction", BindingFlags.Static | BindingFlags.NonPublic);
             MethodKind kind = invalidValue ? MethodKind.Condition : MethodKind.Action;
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(DialogueMethodDescriptorFactory.CreateDescriptor(
                 method, kind, "test.inspector", DialogueMethodOwner.Global, out DialogueMethodDescriptor descriptor, out string error),
                 Is.True, error);
             var binding = new MethodBindingData
@@ -331,13 +341,13 @@ namespace UniversalGraph.Tests
         {
             DialogueContainer graph = CreateAsset<DialogueContainer>();
             graph.Nodes.Add(new DialogueEntryNodeData { Guid = "entry" });
-            graph.Nodes.Add(new DialogueLineNodeData { Guid = "line", EnterAction = null });
-            graph.NodeLinks.Add(Link("entry", DialoguePortNames.Next, "line"));
+            graph.Nodes.Add(new DialogueActionNodeData { Guid = "action", Action = null });
+            graph.NodeLinks.Add(Link("entry", DialoguePortNames.Next, "action"));
 
             IReadOnlyList<GraphValidationIssue> issues = GraphValidator.Validate(graph);
 
             Assert.That(
-                issues.Any(issue => issue.IssueKind == "DIALOGUE_BINDING_DATA" && issue.NodeGuid == "line"),
+                issues.Any(issue => issue.IssueKind == "DIALOGUE_BINDING_DATA" && issue.NodeGuid == "action"),
                 Is.True);
             Assert.That(issues.Any(issue => issue.IssueKind == "VALIDATOR_EXCEPTION"), Is.False);
         }
@@ -683,13 +693,13 @@ namespace UniversalGraph.Tests
         [Test]
         public void QuestValidator_ReportsMissingStartWithoutUnreachableWarnings()
         {
-            QuestContainer graph = CreateAsset<QuestContainer>();
-            graph.QuestId = 990010;
-            graph.Nodes.Add(new QuestRewardNodeData { Guid = "reward" });
-            graph.Nodes.Add(new QuestObjectiveNodeData { Guid = "objective", RequiredAmount = -1 });
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 990010;
+            container.Nodes.Add(new QuestRewardNodeData { Guid = "reward" });
+            container.Nodes.Add(new QuestObjectiveNodeData { Guid = "objective", RequiredAmount = -1 });
             var issues = new List<GraphValidationIssue>();
 
-            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(graph), issues);
+            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
 
             Assert.That(issues.Any(issue => issue.IssueKind == "QUEST_START_COUNT"), Is.True);
             Assert.That(issues.Any(issue => issue.IssueKind == "QUEST_UNREACHABLE"), Is.False);
@@ -699,21 +709,135 @@ namespace UniversalGraph.Tests
         [Test]
         public void QuestValidator_AllowsMultipleProgressionOutputs()
         {
-            QuestContainer graph = CreateAsset<QuestContainer>();
-            graph.QuestId = 990013;
-            graph.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            graph.Nodes.Add(new QuestStateChangeNodeData { Guid = "end", NewState = QuestState.CanComplete });
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 990013;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "end", NewState = QuestState.CanComplete });
             foreach (string guid in new[] { "objective-a", "objective-b" })
             {
-                graph.Nodes.Add(new QuestObjectiveNodeData { Guid = guid, EventKey = "Collect", RequiredAmount = 1 });
-                graph.NodeLinks.Add(Link("start", QuestPortNames.Next, guid));
-                graph.NodeLinks.Add(Link(guid, QuestPortNames.Next, "end"));
+                container.Nodes.Add(new QuestObjectiveNodeData { Guid = guid, EventKey = "Collect", RequiredAmount = 1 });
+                container.NodeLinks.Add(Link("start", QuestPortNames.Next, guid));
+                container.NodeLinks.Add(Link(guid, QuestPortNames.Next, "end"));
             }
             var issues = new List<GraphValidationIssue>();
 
-            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(graph), issues);
+            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
 
             Assert.That(issues.Any(issue => issue.Severity == GraphValidationSeverity.Error), Is.False);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void QuestValidator_AllowsMultipleOutputsOnBothConditionPorts(bool customCondition)
+        {
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 990014;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            NodeBaseData data = customCondition
+                ? new QuestConditionNodeData()
+                : new QuestStateConditionNodeData { QuestId = container.QuestId };
+            data.Guid = "condition";
+            container.Nodes.Add(data);
+            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "first" });
+            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "second" });
+            container.NodeLinks.Add(Link("start", QuestPortNames.Next, "condition"));
+            foreach (string port in new[] { QuestPortNames.True, QuestPortNames.False })
+            {
+                container.NodeLinks.Add(Link("condition", port, "first"));
+                container.NodeLinks.Add(Link("condition", port, "second"));
+            }
+            var issues = new List<GraphValidationIssue>();
+
+            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
+
+            Assert.That(issues.Any(issue => issue.IssueKind == "QUEST_CONDITION_OUTPUT"
+                || issue.IssueKind == "QUEST_CONDITION_DEAD_END"), Is.False);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void QuestValidator_ConditionRequiresOutputsOnlyInProgressionFlow(bool progression)
+        {
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 990015;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestStateConditionNodeData { Guid = "condition", QuestId = container.QuestId });
+            if (progression)
+            {
+                container.NodeLinks.Add(Link("start", QuestPortNames.Next, "condition"));
+            }
+            else
+            {
+                container.Nodes.Add(new QuestStateChangeNodeData { Guid = "end" });
+                container.Nodes.Add(new QuestInteractionEntryNodeData { Guid = "interaction" });
+                container.NodeLinks.Add(Link("start", QuestPortNames.Next, "end"));
+                container.NodeLinks.Add(Link("interaction", QuestPortNames.Next, "condition"));
+            }
+            var issues = new List<GraphValidationIssue>();
+
+            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
+
+            Assert.That(issues.Count(issue => issue.IssueKind == "QUEST_CONDITION_DEAD_END"),
+                Is.EqualTo(progression ? 2 : 0));
+        }
+
+        [TestCase(QuestState.NotStarted)]
+        [TestCase(QuestState.InProgress)]
+        [TestCase(QuestState.ExecutionError)]
+        [TestCase((QuestState)999)]
+        public void QuestValidator_StateChangeRejectsInvalidTerminalStates(QuestState state)
+        {
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 990016;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "state", NewState = state });
+            container.NodeLinks.Add(Link("start", QuestPortNames.Next, "state"));
+            var issues = new List<GraphValidationIssue>();
+
+            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
+
+            Assert.That(issues.Any(issue => issue.NodeGuid == "state" && issue.IssueKind == "QUEST_STATE_CHANGE_TARGET"), Is.True);
+        }
+
+        [TestCase(QuestState.ExecutionError, true)]
+        [TestCase(QuestState.TurnedIn, false)]
+        public void QuestValidator_RejectsWaitingForExecutionError(QuestState state, bool hasError)
+        {
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 990018;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new WaitForQuestNodeData { Guid = "wait", TargetQuestId = container.QuestId, RequiredState = state });
+            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "end", NewState = QuestState.TurnedIn });
+            container.NodeLinks.Add(Link("start", QuestPortNames.Next, "wait"));
+            container.NodeLinks.Add(Link("wait", QuestPortNames.Next, "end"));
+            var issues = new List<GraphValidationIssue>();
+
+            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
+
+            Assert.That(issues.Any(issue => issue.NodeGuid == "wait" && issue.IssueKind == "QUEST_WAIT_EXECUTION_ERROR"), Is.EqualTo(hasError));
+        }
+
+        [TestCase(QuestState.CanComplete, QuestPortNames.Next)]
+        [TestCase(QuestState.TurnedIn, QuestPortNames.Next)]
+        [TestCase(QuestState.Failed, QuestPortNames.Next)]
+        [TestCase(QuestState.InProgress, QuestPortNames.Next)]
+        [TestCase(QuestState.CanComplete, "Unknown")]
+        public void QuestValidator_StateChangeRejectsEveryOutput(QuestState state, string portName)
+        {
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 990017;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "state", NewState = state });
+            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "after", NewState = QuestState.Failed });
+            container.NodeLinks.Add(Link("start", QuestPortNames.Next, "state"));
+            container.NodeLinks.Add(Link("state", portName, "after"));
+            var issues = new List<GraphValidationIssue>();
+
+            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
+
+            Assert.That(issues.Any(issue => issue.NodeGuid == "state" && issue.IssueKind == "QUEST_TERMINAL_STATE_OUTPUT"), Is.True);
+            Assert.That(issues.Any(issue => issue.NodeGuid == "state" && issue.IssueKind == "QUEST_STATE_CHANGE_TARGET"),
+                Is.EqualTo(state == QuestState.InProgress));
         }
 
         [Test]
@@ -726,7 +850,7 @@ namespace UniversalGraph.Tests
                 Choices = new List<DialogueChoiceData>
                 {
                     new() { PortName = "one", ChoiceText = "First" },
-                    new() { PortName = "two", ChoiceText = "Second", SelectionAction = null }
+                    new() { PortName = "two", ChoiceText = "Second", VisibilityCondition = null }
                 }
             });
             var issues = new List<GraphValidationIssue>();
@@ -734,7 +858,7 @@ namespace UniversalGraph.Tests
             ((IGraphValidator)new DialogueGraphValidator()).Validate(new GraphValidationIndex(graph), issues);
 
             GraphValidationIssue issue = issues.Single(item => item.IssueKind == "DIALOGUE_BINDING_DATA");
-            Assert.That(issue.Message, Does.StartWith("선택지 2 Action:"));
+            Assert.That(issue.Message, Does.StartWith("선택지 2 Condition:"));
             Assert.That(issue.NodeGuid, Is.EqualTo("choice"));
         }
 
@@ -743,36 +867,36 @@ namespace UniversalGraph.Tests
         [TestCase(false, true)]
         public void QuestValidator_ValidatesReferencedStructureBeforeCheckingWaitDeadlock(bool waitsForSelf, bool invalidReference)
         {
-            QuestContainer first = CreateAsset<QuestContainer>();
-            QuestContainer second = CreateAsset<QuestContainer>();
-            first.QuestId = 990011;
-            second.QuestId = 990012;
-            foreach (QuestContainer graph in new[] { first, second })
+            QuestContainer firstContainer = CreateAsset<QuestContainer>();
+            QuestContainer secondContainer = CreateAsset<QuestContainer>();
+            firstContainer.QuestId = 990011;
+            secondContainer.QuestId = 990012;
+            foreach (QuestContainer container in new[] { firstContainer, secondContainer })
             {
-                graph.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-                graph.Nodes.Add(new QuestWaitForQuestNodeData
+                container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+                container.Nodes.Add(new WaitForQuestNodeData
                 {
                     Guid = "wait",
-                    TargetQuestId = graph == first && !waitsForSelf ? second.QuestId : first.QuestId,
+                    TargetQuestId = container == firstContainer && !waitsForSelf ? secondContainer.QuestId : firstContainer.QuestId,
                     RequiredState = QuestState.InProgress
                 });
-                graph.Nodes.Add(new QuestStateChangeNodeData { Guid = "end", NewState = QuestState.TurnedIn });
-                graph.NodeLinks.Add(Link("start", QuestPortNames.Next, "wait"));
-                graph.NodeLinks.Add(Link("wait", QuestPortNames.Next, "end"));
+                container.Nodes.Add(new QuestStateChangeNodeData { Guid = "end", NewState = QuestState.TurnedIn });
+                container.NodeLinks.Add(Link("start", QuestPortNames.Next, "wait"));
+                container.NodeLinks.Add(Link("wait", QuestPortNames.Next, "end"));
             }
             if (invalidReference)
             {
-                second.Nodes.Add(null);
+                secondContainer.Nodes.Add(null);
             }
 
             // 실제 프로젝트 에셋을 만들지 않고, 검증기가 읽을 두 퀘스트만 제공한 뒤 원래 캐시를 복원합니다.
-            System.Type indexType = typeof(QuestGraphValidator).Assembly.GetType("UniversalGraph.Quest.Editor.QuestAssetIndex", true);
-            FieldInfo questsField = indexType.GetField("quests", BindingFlags.Static | BindingFlags.NonPublic);
-            object originalQuests = questsField.GetValue(null);
+            System.Type catalogType = typeof(QuestGraphValidator).Assembly.GetType("UniversalGraph.Quest.Editor.QuestAssetCatalog", true);
+            FieldInfo containersField = catalogType.GetField("containers", BindingFlags.Static | BindingFlags.NonPublic);
+            object originalContainers = containersField.GetValue(null);
             try
             {
-                questsField.SetValue(null, new[] { first, second });
-                IReadOnlyList<GraphValidationIssue> issues = GraphValidator.Validate(first);
+                containersField.SetValue(null, new[] { firstContainer, secondContainer });
+                IReadOnlyList<GraphValidationIssue> issues = GraphValidator.Validate(firstContainer);
                 if (invalidReference)
                 {
                     Assert.That(issues.Single().IssueKind, Is.EqualTo("QUEST_REFERENCE_STRUCTURE"));
@@ -787,18 +911,18 @@ namespace UniversalGraph.Tests
             }
             finally
             {
-                questsField.SetValue(null, originalQuests);
+                containersField.SetValue(null, originalContainers);
             }
         }
 
         [Test]
         public void QuestValidator_ReportsMetadataAndFlowIssuesForEmptyAsset()
         {
-            QuestContainer graph = CreateAsset<QuestContainer>();
-            graph.QuestId = -99999;
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = -99999;
 
             var issues = new List<GraphValidationIssue>();
-            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(graph), issues);
+            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
 
             Assert.That(issues.Select(issue => issue.IssueKind), Is.EquivalentTo(new[]
             {
@@ -813,18 +937,18 @@ namespace UniversalGraph.Tests
             DialogueContainer dialogue = CreateAsset<DialogueContainer>();
             dialogue.Nodes.Add(new DialogueEntryNodeData { Guid = "dialogue-entry" });
 
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = -99998;
-            quest.Nodes.Add(new QuestInteractionEntryNodeData { Guid = "interaction" });
-            quest.Nodes.Add(new DialogueCandidateNodeData
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = -99998;
+            container.Nodes.Add(new QuestInteractionEntryNodeData { Guid = "interaction" });
+            container.Nodes.Add(new DialogueCandidateNodeData
             {
                 Guid = "candidate",
                 EntryPoint = new DialogueEntryPoint(dialogue, DialogueEntryNodeData.DefaultEntryId)
             });
-            quest.NodeLinks.Add(Link("interaction", "Next", "candidate"));
+            container.NodeLinks.Add(Link("interaction", "Next", "candidate"));
 
             var issues = new List<GraphValidationIssue>();
-            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(quest), issues);
+            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
 
             Assert.That(
                 issues.Any(issue => issue.IssueKind == "QUEST_DIALOGUE_ENTRY"
@@ -847,89 +971,89 @@ namespace UniversalGraph.Tests
                 dialogue.Nodes.Add(new DialogueEndNodeData { Guid = "entry" });
             }
 
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 990014;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestStateChangeNodeData { Guid = "end", NewState = QuestState.TurnedIn });
-            quest.Nodes.Add(new QuestInteractionEntryNodeData { Guid = "interaction" });
-            quest.Nodes.Add(new DialogueCandidateNodeData
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 990014;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "end", NewState = QuestState.TurnedIn });
+            container.Nodes.Add(new QuestInteractionEntryNodeData { Guid = "interaction" });
+            container.Nodes.Add(new DialogueCandidateNodeData
             {
                 Guid = "candidate",
                 EntryPoint = new DialogueEntryPoint(dialogue, DialogueEntryNodeData.DefaultEntryId)
             });
-            quest.NodeLinks.Add(Link("start", QuestPortNames.Next, "end"));
-            quest.NodeLinks.Add(Link("interaction", QuestPortNames.Next, "candidate"));
+            container.NodeLinks.Add(Link("start", QuestPortNames.Next, "end"));
+            container.NodeLinks.Add(Link("interaction", QuestPortNames.Next, "candidate"));
 
-            IReadOnlyList<GraphValidationIssue> issues = GraphValidator.Validate(quest);
+            IReadOnlyList<GraphValidationIssue> issues = GraphValidator.Validate(container);
 
             Assert.That(issues.Single().IssueKind, Is.EqualTo("QUEST_DIALOGUE_GRAPH"));
             Assert.That(issues.Single().NodeGuid, Is.EqualTo("candidate"));
         }
 
         [Test]
-        public void QuestValidator_AcceptsAvailableOfferInInteractionRoute()
+        public void QuestValidator_AcceptsAvailableCandidateInInteractionRoute()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 990001;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestRewardNodeData { Guid = "reward" });
-            quest.Nodes.Add(new QuestInteractionEntryNodeData { Guid = "interaction" });
-            quest.Nodes.Add(new QuestOfferNodeData { Guid = "offer" });
-            quest.NodeLinks.Add(Link("start", "Next", "reward"));
-            quest.NodeLinks.Add(Link("interaction", "Next", "offer"));
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 990001;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestRewardNodeData { Guid = "reward" });
+            container.Nodes.Add(new QuestInteractionEntryNodeData { Guid = "interaction" });
+            container.Nodes.Add(new QuestSuggestionNodeData { Guid = "candidate" });
+            container.NodeLinks.Add(Link("start", "Next", "reward"));
+            container.NodeLinks.Add(Link("interaction", "Next", "candidate"));
 
             var issues = new List<GraphValidationIssue>();
-            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(quest), issues);
+            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
 
             Assert.That(
-                issues.Any(issue => issue.NodeGuid == "offer"
+                issues.Any(issue => issue.NodeGuid == "candidate"
                                     && (issue.IssueKind == "QUEST_UNSUPPORTED_NODE"
                                         || issue.IssueKind == "QUEST_ROUTE_UNSAFE_NODE")),
                 Is.False);
         }
 
         [Test]
-        public void QuestValidator_AllowsBlockedOfferWithoutDisplayReason()
+        public void QuestValidator_AllowsBlockedCandidateWithoutDisplayReason()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 990002;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestRewardNodeData { Guid = "reward" });
-            quest.Nodes.Add(new QuestInteractionEntryNodeData { Guid = "interaction" });
-            quest.Nodes.Add(new QuestOfferNodeData
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 990002;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestRewardNodeData { Guid = "reward" });
+            container.Nodes.Add(new QuestInteractionEntryNodeData { Guid = "interaction" });
+            container.Nodes.Add(new QuestSuggestionNodeData
             {
-                Guid = "offer",
+                Guid = "candidate",
                 IsAvailable = false,
                 BlockReason = string.Empty
             });
-            quest.NodeLinks.Add(Link("start", "Next", "reward"));
-            quest.NodeLinks.Add(Link("interaction", "Next", "offer"));
+            container.NodeLinks.Add(Link("start", "Next", "reward"));
+            container.NodeLinks.Add(Link("interaction", "Next", "candidate"));
 
             var issues = new List<GraphValidationIssue>();
-            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(quest), issues);
+            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
 
             Assert.That(
                 issues.Any(issue => issue.IssueKind == "QUEST_OFFER_BLOCK_REASON"
-                                    && issue.NodeGuid == "offer"
+                                    && issue.NodeGuid == "candidate"
                                     && issue.Severity == GraphValidationSeverity.Warning),
                 Is.False);
         }
 
         [Test]
-        public void QuestValidator_RejectsOfferInProgressionFlow()
+        public void QuestValidator_RejectsCandidateInProgressionFlow()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 990003;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestOfferNodeData { Guid = "offer" });
-            quest.NodeLinks.Add(Link("start", "Next", "offer"));
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 990003;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestSuggestionNodeData { Guid = "candidate" });
+            container.NodeLinks.Add(Link("start", "Next", "candidate"));
 
             var issues = new List<GraphValidationIssue>();
-            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(quest), issues);
+            ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
 
             Assert.That(
                 issues.Any(issue => issue.IssueKind == "QUEST_OFFER_IN_PROGRESS_FLOW"
-                                    && issue.NodeGuid == "offer"
+                                    && issue.NodeGuid == "candidate"
                                     && issue.Severity == GraphValidationSeverity.Error),
                 Is.True);
         }

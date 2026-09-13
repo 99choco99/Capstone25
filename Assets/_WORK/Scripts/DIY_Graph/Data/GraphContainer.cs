@@ -14,6 +14,14 @@ namespace UniversalGraph
         /// <summary>순차 마이그레이션에서 사용하는 그래프 데이터 스키마 버전</summary>
         public int SchemaVersion => schemaVersion;
 
+        /// <summary>한 단계의 마이그레이션이 성공한 뒤에 스키마 버전을 올림</summary>
+        internal void SetSchemaVersion(int value)
+        {
+            schemaVersion = value;
+        }
+
+        //============================= 실제 데이터 ==========================================
+
         /// <summary>노드 포트 사이의 직렬화된 단방향 연결 목록</summary>
         public List<NodeLinkData> NodeLinks = new();
 
@@ -21,10 +29,6 @@ namespace UniversalGraph
         [SerializeReference]
         public List<NodeBaseData> Nodes = new();
 
-        /// <summary>한 단계의 마이그레이션이 성공한 뒤에 스키마 버전을 올림</summary>
-        internal void SetSchemaVersion(int value)
-        {
-            schemaVersion = value;
-        }
+
     }
 }

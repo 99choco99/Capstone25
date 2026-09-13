@@ -50,6 +50,10 @@ namespace UniversalGraph.Dialogue.Editor
             foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player))
             {
                 playerAssemblyNames.Add(assembly.name);
+                foreach (string reference in assembly.compiledAssemblyReferences)
+                {
+                    playerAssemblyNames.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
+                }
             }
 
             //action 함수들
@@ -92,7 +96,7 @@ namespace UniversalGraph.Dialogue.Editor
         /// </summary>
         private static void AddCandidate(MethodInfo method, MethodKind kind, string key, DialogueMethodOwner owner, Dictionary<string, List<DialogueMethodDescriptor>> candidatesByKey)
         {
-            if (!DialogueMethodDescriptorFactory.TryCreateDescriptor(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out _))
+            if (!DialogueMethodDescriptorFactory.CreateDescriptor(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out _))
             {
                 return;
             }

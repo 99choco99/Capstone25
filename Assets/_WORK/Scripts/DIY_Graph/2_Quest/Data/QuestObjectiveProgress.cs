@@ -1,5 +1,3 @@
-using System;
-
 namespace UniversalGraph
 {
 	/// <summary>게임 코드와 UI가 그래프를 직접 탐색하지 않고 읽을 수 있는 현재 목표 정보입니다.</summary>
@@ -7,17 +5,17 @@ namespace UniversalGraph
 	{
 		internal QuestObjectiveProgress(
 			int questId,
-			QuestObjectiveNodeData definition,
+			QuestObjectiveNodeData nodeData,
 			int currentAmount)
 		{
 			QuestId = questId;
-			NodeGuid = definition.Guid;
-			EventKey = definition.EventKey;
-			TargetId = definition.TargetId;
-			TargetReference = definition.TargetReference;
-			Description = definition.ObjectiveDescription;
+			NodeGuid = nodeData.Guid;
+			EventKey = nodeData.EventKey;
+			TargetId = nodeData.TargetId;
+			TargetReference = nodeData.TargetReference;
+			Description = nodeData.ObjectiveDescription;
 			CurrentAmount = currentAmount;
-			RequiredAmount = Math.Max(1, definition.RequiredAmount);
+			RequiredAmount = nodeData.RequiredAmount;
 		}
 
 		public int QuestId { get; }

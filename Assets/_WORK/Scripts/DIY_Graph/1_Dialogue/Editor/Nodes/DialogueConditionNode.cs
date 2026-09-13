@@ -36,7 +36,7 @@ namespace UniversalGraph.Dialogue.Editor
         /// <summary> 조건이 업데이트 되면 갱신</summary>
         private void RefreshPreview()
         {
-            title = string.IsNullOrWhiteSpace(NodeData?.Condition?.Key)? "CONDITION: 선택 안 됨": $"CONDITION: {NodeData.Condition.Key}";
+            title = NodeData?.Condition?.HasKey != true? "CONDITION: 선택 안 됨": $"CONDITION: {NodeData.Condition.Key}";
         }
 
         /// <summary>Condition 키 선택기와 자동 생성된 인수 입력 요소를 생성</summary>

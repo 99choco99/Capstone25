@@ -5,196 +5,159 @@ using UnityEngine;
 namespace UniversalGraph
 {
     /// <summary>
-    /// Quest 그래프에 저장된 조회 전용 상호작용 경로를 평가합니다. 고정 상호작용 대상 문자열과
-    /// <see cref="IQuestController"/>에만 의존하며 프로젝트의 Player, NPC, UI나 씬 클래스는 참조하지 않습니다.
-    /// 이 경로에서 호출하는 Condition은 후보를 읽는 동안 게임 상태를 변경하지 않아야 합니다.
+    /// QuestIneteractionEntry에서 시작해서 정보를 긁어모으는 클래스
     /// </summary>
     internal static class QuestInteractionQuery
     {
         /// <summary>
-        /// 상호작용 시작점이 주어진 대상 ID 중 하나와 일치하는 모든 유효한 대화 후보를 반환합니다.
-        /// 비어 있는 ID는 모든 대상과 일치합니다.
+        /// ID 와 일치하는 모든 유효한 대화 후보를 반환
+        /// <para>비어 있는 ID는 모든 대상과 일치</para>
         /// </summary>
-        internal static List<DialogueCandidate> GetDialogueCandidates(
-            QuestDefinitionRegistry registry,
-            IQuestController controller,
-            IEnumerable<string> targetIds)
+        internal static List<DialogueCandidateNodeData> GetDialogueCandidates(QuestContainerRegistry registry, IQuestController controller, IEnumerable<string> interactionTargetIds)
         {
-            var candidates = new List<DialogueCandidate>();
-            CollectInteractionResults(registry, controller, targetIds, candidates, null);
-            return candidates;
+            List<DialogueCandidateNodeData> dialogueCandidates = new ();
+            CollectCandidates(registry, controller, interactionTargetIds, dialogueCandidates, null);
+            return dialogueCandidates;
         }
 
-        /// <summary>상호작용 시작점에서 도달 가능한 모든 Quest 수락 후보를 반환합니다.</summary>
-        internal static List<QuestOffer> GetQuestOffers(
-            QuestDefinitionRegistry registry,
-            IQuestController controller,
-            IEnumerable<string> targetIds)
+        /// <summary>모든 Quest 선택 항목을 반환</summary>
+        internal static List<QuestSuggestion> GetQuestSuggestions(QuestContainerRegistry registry, IQuestController controller, IEnumerable<string> interactionTargetIds)
         {
-            var offers = new List<QuestOffer>();
-            CollectInteractionResults(registry, controller, targetIds, null, offers);
-            return offers;
+            List<QuestSuggestion> questSuggestions = new ();
+            CollectCandidates(registry, controller, interactionTargetIds, null, questSuggestions);
+            return questSuggestions;
         }
 
-        /// <summary>후보를 만든 같은 시작점부터 조건을 다시 평가하고 현재 결과를 반환합니다.</summary>
-        internal static bool TryRefreshOffer(
-            QuestDefinitionRegistry registry,
-            IQuestController controller,
-            QuestOffer offer,
-            out QuestOffer refreshed)
+        /// <summary>
+        /// interaction 한 결과를 반환하는 클래스
+        /// </summary>
+        private static void CollectCandidates(QuestContainerRegistry registry, IQuestController controller, IEnumerable<string> interactionTargetIds, ICollection<DialogueCandidateNodeData> dialogueCandidates, ICollection<QuestSuggestion> questSuggestions)
         {
-            refreshed = null;
-            if (!registry.TryGetQuestIndex(
-                    offer.QuestId,
-                    out QuestContainer graph,
-                    out QuestGraphIndex index)
-                || !index.Nodes.TryGetValue(offer.SourceEntryGuid, out NodeBaseData entryData)
-                || entryData is not QuestInteractionEntryNodeData entry)
+            HashSet<string> interactionTargetIdsSet = new (interactionTargetIds?.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value.Trim()) ?? Enumerable.Empty<string>());
+
+            foreach (QuestContainer container in registry.Containers)
             {
-                return false;
-            }
+                QuestGraphIndex index = registry.GetQuestGraphIndex(container.QuestId);
 
-            var offers = new List<QuestOffer>();
-            TraverseInteraction(graph, controller, index, entry, null, offers);
-            refreshed = offers.FirstOrDefault(candidate => candidate.SourceNodeGuid == offer.SourceNodeGuid);
-            return refreshed != null;
-        }
-
-        private static void CollectInteractionResults(
-            QuestDefinitionRegistry registry,
-            IQuestController controller,
-            IEnumerable<string> targetIds,
-            ICollection<DialogueCandidate> candidates,
-            ICollection<QuestOffer> offers)
-        {
-            var targetSet = new HashSet<string>(
-                targetIds?.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value.Trim())
-                ?? Enumerable.Empty<string>());
-
-            foreach (QuestContainer graph in registry.Definitions)
-            {
-                if (!registry.TryGetQuestIndex(graph.QuestId, out _, out QuestGraphIndex index))
+                foreach (QuestInteractionEntryNodeData entryData in container.Nodes.OfType<QuestInteractionEntryNodeData>())
                 {
-                    continue;
-                }
-
-                foreach (QuestInteractionEntryNodeData entry in graph.Nodes.OfType<QuestInteractionEntryNodeData>())
-                {
-                    if (MatchesTarget(entry.TargetId, targetSet))
+                    string targetId = entryData.TargetId;
+                    if (targetId.Length == 0 || interactionTargetIdsSet.Contains(targetId))
                     {
-                        TraverseInteraction(graph, controller, index, entry, candidates, offers);
+                        CollectCandidatesFromEntry(container, controller, index, entryData, dialogueCandidates, questSuggestions);
                     }
                 }
             }
         }
 
-        private static void TraverseInteraction(
-            QuestContainer graph,
+
+        /// <summary>
+        /// Interaction Entry 부터 시작해서 
+        /// </summary>
+        private static void CollectCandidatesFromEntry(
+            QuestContainer container,
             IQuestController controller,
             QuestGraphIndex index,
-            QuestInteractionEntryNodeData entry,
-            ICollection<DialogueCandidate> candidates,
-            ICollection<QuestOffer> offers)
+            QuestInteractionEntryNodeData entryData,
+            ICollection<DialogueCandidateNodeData> dialogueCandidates,
+            ICollection<QuestSuggestion> questSuggestions)
         {
-            var pending = new Queue<NodeBaseData>();
-            EnqueueTargets(index, pending, entry.Guid, QuestPortNames.Next);
-            var visited = new HashSet<string>();
 
-            while (pending.Count > 0)
+            Queue<NodeBaseData> queue = new ();
+            HashSet<string> visited = new();
+            EnqueueNextNodes(index, queue, entryData.Guid, QuestPortNames.Next);
+
+            while (queue.Count > 0)
             {
-                NodeBaseData nodeData = pending.Dequeue();
+                NodeBaseData nodeData = queue.Dequeue();
                 if (!visited.Add(nodeData.Guid))
                 {
                     continue;
                 }
 
+                bool result;
                 switch (nodeData)
                 {
-                    case DialogueCandidateNodeData candidateNode when candidateNode.EntryPoint.GraphAsset != null:
-                        candidates?.Add(new DialogueCandidate(
-                            candidateNode.EntryPoint,
-                            candidateNode.DisplayName,
-                            candidateNode.Priority));
-                        break;
-
-                    case QuestOfferNodeData offerNode:
-                        offers?.Add(new QuestOffer(
-                            graph,
-                            offerNode.DialogueEntryPoint,
-                            offerNode.Priority,
-                            offerNode.IsAvailable,
-                            offerNode.BlockReason,
-                            entry.Guid,
-                            offerNode.Guid));
-                        break;
-
-                    case QuestStateConditionNodeData stateCondition:
-                        controller.QuestProgress.TryGetValue(stateCondition.QuestId, out QuestProgress progress);
-                        QuestState currentState = progress?.state ?? QuestState.NotStarted;
-                        bool stateMatches = currentState == stateCondition.TargetState;
-                        EnqueueTargets(
-                            index,
-                            pending,
-                            nodeData.Guid,
-                            stateMatches ? QuestPortNames.True : QuestPortNames.False);
-                        break;
-
-                    case QuestConditionNodeData customCondition:
-                        controller.QuestProgress.TryGetValue(graph.QuestId, out QuestProgress routeProgress);
-                        var executionContext = new QuestExecutionContext(
-                            controller,
-                            graph,
-                            routeProgress,
-                            customCondition);
-                        bool evaluated = QuestMethodInvoker.TryInvokeMethod(
-                            customCondition.Condition,
-                            executionContext,
-                            MethodKind.Condition,
-                            out bool result);
-
-                        if (evaluated)
+                    case DialogueCandidateNodeData dialogueCandidateData:
+                        if (dialogueCandidateData.EntryPoint.Container != null)
                         {
-                            EnqueueTargets(
-                                index,
-                                pending,
-                                nodeData.Guid,
-                                result ? QuestPortNames.True : QuestPortNames.False);
+                            dialogueCandidates?.Add(dialogueCandidateData);
+                        }
+                        continue;
+
+                    case QuestSuggestionNodeData suggestionNodeData:
+                        controller.QuestProgress.TryGetValue(container.QuestId, out QuestProgress suggestionProgress);
+                        bool canStart = (suggestionProgress?.state ?? QuestState.NotStarted) == QuestState.NotStarted;
+                        questSuggestions?.Add(new QuestSuggestion(
+                            container,
+                            suggestionNodeData.DialogueEntryPoint,
+                            suggestionNodeData.Priority,
+                            suggestionNodeData.IsAvailable && canStart,
+                            suggestionNodeData.BlockReason,
+                            entryData.Guid,
+                            suggestionNodeData.Guid));
+                        continue;
+
+                    case QuestStateConditionNodeData stateConditionData:
+                        controller.QuestProgress.TryGetValue(stateConditionData.QuestId, out QuestProgress targetProgress);
+                        QuestState state = targetProgress?.state ?? QuestState.NotStarted;
+                        result = state == stateConditionData.TargetState;
+                        break;
+
+                    case QuestConditionNodeData conditionData:
+                        controller.QuestProgress.TryGetValue(container.QuestId, out QuestProgress currentProgress);
+                        QuestExecutionContext executionContext = new (controller, container, currentProgress, conditionData);
+                        if (!QuestMethodInvoker.InvokeMethod(conditionData.Condition, executionContext, MethodKind.Condition, out result))
+                        {
+                            continue;
                         }
                         break;
 
                     default:
-                        Debug.LogWarning(
-                            $"[Quest Interaction] 노드 타입 '{nodeData.GetType().Name}'은 조회 전용 경로에서 안전하지 않아 탐색을 종료합니다.",
-                            graph);
-                        break;
+                        Debug.LogWarning($"[Quest Interaction] 노드 타입 '{nodeData.GetType().Name}'은 조회 전용 경로에서 안전하지 않아 탐색을 종료합니다.", container);
+                        continue;
                 }
+
+                EnqueueNextNodes(index, queue, nodeData.Guid, result ? QuestPortNames.True : QuestPortNames.False);
             }
         }
 
-        private static void EnqueueTargets(
-            QuestGraphIndex index,
-            Queue<NodeBaseData> pending,
-            string guid,
-            string port)
+        /// <summary>
+        /// 다음 노드를 queue에 넣기
+        /// </summary>
+        private static void EnqueueNextNodes(QuestGraphIndex index, Queue<NodeBaseData> queue, string guid, string port)
         {
-            if (!index.OutgoingLinks.TryGetValue(guid, out List<NodeLinkData> outgoing))
+            if (!index.OutputLinksByStartNode.TryGetValue(guid, out List<NodeLinkData> outputLinks))
             {
                 return;
             }
 
-            foreach (NodeLinkData link in outgoing)
+            foreach (NodeLinkData link in outputLinks)
             {
                 if (link.StartPortName == port)
                 {
-                    pending.Enqueue(index.Nodes[link.TargetNodeGuid]);
+                    queue.Enqueue(index.Nodes[link.TargetNodeGuid]);
                 }
             }
         }
 
-        private static bool MatchesTarget(string entryTargetId, ISet<string> targetIds)
+
+        /// <summary>선택 항목을 만든 같은 시작점부터 조건을 다시 평가하고 현재 결과를 반환합니다.</summary>
+        internal static bool TryRefreshQuestSuggestion(QuestContainerRegistry registry, IQuestController controller, QuestSuggestion suggestion, out QuestSuggestion refreshedSuggestion)
         {
-            return string.IsNullOrWhiteSpace(entryTargetId)
-                   || targetIds.Contains(entryTargetId.Trim());
+            refreshedSuggestion = null;
+            if (!registry.GetQuestGraphIndex(suggestion.QuestId, out QuestContainer container, out QuestGraphIndex index)
+                || container != suggestion.Container
+                || !index.Nodes.TryGetValue(suggestion.SourceQuestEntryGuid, out NodeBaseData nodeData)
+                || nodeData is not QuestInteractionEntryNodeData entryData)
+            {
+                return false;
+            }
+
+            List<QuestSuggestion> questSuggestions = new();
+            CollectCandidatesFromEntry(container, controller, index, entryData, null, questSuggestions);
+            refreshedSuggestion = questSuggestions.FirstOrDefault(current => current.SourceNodeGuid == suggestion.SourceNodeGuid);
+            return refreshedSuggestion != null;
         }
 
     }

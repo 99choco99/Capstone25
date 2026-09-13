@@ -51,27 +51,18 @@ namespace UniversalGraph.Dialogue.Editor
             }
         }
 
-        /// <summary>대화문, 화자와 진입 Action 편집 요소를 인스펙터에 그리기</summary>
+        /// <summary>대화문과 화자 편집 요소를 인스펙터에 그리기</summary>
         public override VisualElement CreateInspector(NodeInspectorEditHandler editHandler)
         {
             VisualElement root = new ();
 
-            root.Add(CreateSpeakerField(editHandler));
-            root.Add(CreateDialogueField(editHandler));
-
-            root.Add(MethodBindingInspector.Create(editHandler, "진입 시 실행할 Action", NodeData.EnterAction, DialogueMethodCatalog.GetMethodList(MethodKind.Action)));
-            return root;
-        }
-
-        /// <summary>인스펙터에 화자 이름을 넣는 필드 생성</summary>
-        private TextField CreateSpeakerField(NodeInspectorEditHandler editHandler)
-        {
-            TextField field = new ("Speaker")
+            //인스펙터에 화자 이름을 넣는 필드 생성
+            TextField speakerField = new ("Speaker")
             {
                 value = NodeData.SpeakerName ?? string.Empty
             };
 
-            field.RegisterValueChangedCallback(change =>
+            speakerField.RegisterValueChangedCallback(change =>
             {
                 editHandler.ApplyDataEdit("Change dialogue speaker", () =>
                 {
@@ -79,20 +70,17 @@ namespace UniversalGraph.Dialogue.Editor
                     RefreshPreview();
                 });
             });
-            return field;
-        }
+            root.Add(speakerField);
 
-        /// <summary>인스펙터에 대화 내용을 적는 필드 생성</summary>
-        private TextField CreateDialogueField(NodeInspectorEditHandler editHandler)
-        {
-            TextField field = new("Dialogue")
+            //인스펙터에 대화 내용을 적는 필드 생성
+            TextField dialogueField = new("Dialogue")
             {
                 value = NodeData.DialogueText ?? string.Empty,
                 multiline = true
             };
-            field.AddToClassList("dialogue-field");
+            dialogueField.AddToClassList("dialogue-field");
 
-            field.RegisterValueChangedCallback(change =>
+            dialogueField.RegisterValueChangedCallback(change =>
             {
                 editHandler.ApplyDataEdit("Change dialogue text", () =>
                 {
@@ -100,7 +88,8 @@ namespace UniversalGraph.Dialogue.Editor
                     RefreshPreview();
                 });
             });
-            return field;
+            root.Add(dialogueField);
+            return root;
         }
     }
 }

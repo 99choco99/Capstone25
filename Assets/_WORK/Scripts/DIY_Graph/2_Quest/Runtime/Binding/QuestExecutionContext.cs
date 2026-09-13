@@ -2,25 +2,35 @@ using System;
 
 namespace UniversalGraph
 {
-    /// <summary>노드에 직렬화하지 않고 Attribute 메서드에 주입하는 Quest 런타임 상태입니다.</summary>
+    /// <summary>어떤 퀘스트의 어떤 노드에서 이 메서드를 호출했는가? 를 알려주는 데이터 묶음</summary>
     public sealed class QuestExecutionContext
     {
-        public QuestExecutionContext(
-            IQuestController controller,
-            QuestContainer quest,
-            QuestProgress progress,
-            NodeBaseData nodeData)
+        public QuestExecutionContext(IQuestController controller, QuestContainer container, QuestProgress progress, NodeBaseData nodeData)
         {
-            Controller = controller ?? throw new ArgumentNullException(nameof(controller), "Quest 실행 Controller가 필요합니다.");
-            Quest = quest ?? throw new ArgumentNullException(nameof(quest), "실행 중인 Quest 정의가 필요합니다.");
+            Controller = controller ?? throw new ArgumentNullException(nameof(controller), "IQuestController를 구현한 객체를 controller에 전달하세요.");
+            Container = container != null ? container : throw new ArgumentNullException(nameof(container), "실행 중인 Quest 정의가 필요합니다.");
             Progress = progress;
             NodeData = nodeData ?? throw new ArgumentNullException(nameof(nodeData), "실행 중인 Quest 노드가 필요합니다.");
         }
 
+        /// <summary>
+        /// 퀘스트 진행 기록을 보관하는 객체
+        /// </summary>
         public IQuestController Controller { get; }
-        public QuestContainer Quest { get; }
-        /// <summary>현재 진행 기록입니다. 등록 전에 평가하는 조회 전용 경로에서는 null일 수 있습니다.</summary>
+
+        /// <summary>
+        /// 메서드를 호출한 퀘스트 그래프 에셋
+        /// </summary>
+        public QuestContainer Container { get; }
+
+        /// <summary>
+        /// 퀘스트의 현재 진행 기록
+        /// </summary>
         public QuestProgress Progress { get; }
+
+        /// <summary>
+        /// 메서드를 호출한 노드의 데이터
+        /// </summary>
         public NodeBaseData NodeData { get; }
     }
 }

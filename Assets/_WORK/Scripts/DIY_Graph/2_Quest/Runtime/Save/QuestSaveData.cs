@@ -34,26 +34,24 @@ namespace UniversalGraph
                 throw new ArgumentNullException(nameof(progress), "저장할 Quest 진행 기록이 필요합니다.");
             }
 
-            QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
-            if (registry == null
-                || !registry.TryGetQuestIndex(
+            QuestContainerRegistry registry = QuestContainerRegistry.Instance;
+            if (!registry.GetQuestGraphIndex(
                     progress.questId,
-                    out QuestContainer definition,
+                    out QuestContainer container,
                     out QuestGraphIndex graphIndex))
             {
                 throw new InvalidOperationException(
                     $"Quest {progress.questId} 진행 기록과 일치하는 등록 정의가 없거나 읽을 수 없습니다. " +
-                    "저장 전에 QuestDefinitionRegistry.Initialize를 호출하세요.");
+                    "저장 전에 QuestManager.Initialize를 호출하세요.");
             }
 
-            progress.EnsureCollections();
             var saveData = new QuestProgressSaveData
             {
                 questId = progress.questId,
-                definitionSchemaVersion = definition.SchemaVersion,
+                definitionSchemaVersion = container.SchemaVersion,
                 state = progress.state,
-                activeNodeGuids = new List<string>(progress.activeNodeGuids),
-                nodeProgressCounts = progress.nodeProgressCounts
+                activeNodeGuids = new List<string>(progress.ActiveNodeGuids),
+                nodeProgressCounts = progress.NodeProgressCounts
                     .OrderBy(pair => pair.Key, StringComparer.Ordinal)
                     .Select(pair => new QuestNodeProgressSaveData
                     {
@@ -61,15 +59,15 @@ namespace UniversalGraph
                         count = pair.Value
                     })
                     .ToList(),
-                completedNodeGuids = new List<string>(progress.completedNodeGuids),
-                completedGateInputs = new List<string>(progress.completedGateInputs)
+                completedNodeGuids = new List<string>(progress.CompletedNodeGuids),
+                completedGateInputs = new List<string>(progress.CompletedGateInputs)
             };
 
             if (!saveData.TryValidateData(out _, out string error)
-                || !QuestSaveData.TryValidateAgainstDefinition(
+                || !QuestSaveData.TryValidateAgainstContainer(
                     saveData,
                     progress,
-                    definition,
+                    container,
                     graphIndex,
                     out error))
             {
@@ -91,12 +89,15 @@ namespace UniversalGraph
             progress = new QuestProgress
             {
                 questId = questId,
-                state = state,
-                activeNodeGuids = new List<string>(activeNodeGuids ?? Enumerable.Empty<string>()),
-                nodeProgressCounts = counters,
-                completedNodeGuids = new List<string>(completedNodeGuids ?? Enumerable.Empty<string>()),
-                completedGateInputs = new List<string>(completedGateInputs ?? Enumerable.Empty<string>())
+                state = state
             };
+            progress.ActiveNodeGuids.AddRange(activeNodeGuids ?? Enumerable.Empty<string>());
+            progress.CompletedNodeGuids.AddRange(completedNodeGuids ?? Enumerable.Empty<string>());
+            progress.CompletedGateInputs.AddRange(completedGateInputs ?? Enumerable.Empty<string>());
+            foreach (KeyValuePair<string, int> counter in counters)
+            {
+                progress.NodeProgressCounts.Add(counter.Key, counter.Value);
+            }
             return true;
         }
 
@@ -198,12 +199,12 @@ namespace UniversalGraph
         public List<QuestProgressSaveData> quests = new();
 
         /// <summary>모든 진행 기록을 Quest ID 순서로 저장합니다.</summary>
-        /// <remarks>Runner의 진행 처리가 끝난 뒤 호출합니다. Action 안에서는 저장 요청만 남겨야 합니다.</remarks>
+        /// <remarks>QuestManager의 진행 처리가 끝난 뒤 호출합니다. Action 안에서는 저장 요청만 남겨야 합니다.</remarks>
         public static QuestSaveData Capture(IQuestController controller)
         {
             if (controller == null)
             {
-                throw new ArgumentNullException(nameof(controller), "Quest 저장 데이터를 만들 Controller가 필요합니다.");
+                throw new ArgumentNullException(nameof(controller), "IQuestController를 구현한 객체를 controller에 전달하세요.");
             }
 
             if (controller.QuestProgress == null)
@@ -225,12 +226,12 @@ namespace UniversalGraph
         /// <summary>
         /// Controller를 변경하기 전에 모든 기록을 검증하고, 성공하면 한 번에 교체하거나 병합합니다.
         /// </summary>
-        /// <remarks>다른 게임 데이터까지 복원한 뒤 QuestRunner.ResumeRestoredQuests를 호출해 대기를 재개합니다.</remarks>
+        /// <remarks>다른 게임 데이터까지 복원한 뒤 QuestManager.ResumeRestoredQuests를 호출해 대기를 재개합니다.</remarks>
         public bool TryApplyTo(IQuestController controller, bool replaceExisting, out string error)
         {
             if (controller == null)
             {
-                error = "대상 Quest Controller가 필요합니다.";
+                error = "IQuestController를 구현한 객체를 controller에 전달하세요.";
                 return false;
             }
 
@@ -245,15 +246,16 @@ namespace UniversalGraph
                 return false;
             }
 
-            QuestDefinitionRegistry registry = QuestDefinitionRegistry.Instance;
-            if (registry == null)
+            if (quests == null)
             {
-                error = "Quest 저장 데이터를 적용하기 전에 QuestDefinitionRegistry.Initialize를 호출해야 합니다.";
+                error = "Quest 저장 데이터에 quests 목록이 없습니다. 빈 저장은 빈 목록을 사용하세요.";
                 return false;
             }
 
+            QuestContainerRegistry registry = QuestContainerRegistry.Instance;
+
             var restored = new Dictionary<int, QuestProgress>();
-            foreach (QuestProgressSaveData saved in quests ?? Enumerable.Empty<QuestProgressSaveData>())
+            foreach (QuestProgressSaveData saved in quests)
             {
                 if (saved == null)
                 {
@@ -266,16 +268,16 @@ namespace UniversalGraph
                     return false;
                 }
 
-                if (!registry.TryGetQuestIndex(
+                if (!registry.GetQuestGraphIndex(
                         progress.questId,
-                        out QuestContainer definition,
+                        out QuestContainer container,
                         out QuestGraphIndex graphIndex))
                 {
                     error = $"Quest 저장 데이터가 등록되지 않았거나 읽을 수 없는 Quest ID {progress.questId}를 참조합니다.";
                     return false;
                 }
 
-                if (!TryValidateAgainstDefinition(saved, progress, definition, graphIndex, out error))
+                if (!TryValidateAgainstContainer(saved, progress, container, graphIndex, out error))
                 {
                     return false;
                 }
@@ -301,42 +303,42 @@ namespace UniversalGraph
             return true;
         }
 
-        internal static bool TryValidateAgainstDefinition(
+        internal static bool TryValidateAgainstContainer(
             QuestProgressSaveData saved,
             QuestProgress progress,
-            QuestContainer definition,
+            QuestContainer container,
             QuestGraphIndex graphIndex,
             out string error)
         {
-            if (saved.definitionSchemaVersion != definition.SchemaVersion)
+            if (saved.definitionSchemaVersion != container.SchemaVersion)
             {
                 error = $"Quest {progress.questId} 저장 데이터의 정의 스키마는 " +
-                        $"{saved.definitionSchemaVersion}이지만 등록된 정의는 {definition.SchemaVersion}입니다.";
+                        $"{saved.definitionSchemaVersion}이지만 등록된 정의는 {container.SchemaVersion}입니다.";
                 return false;
             }
 
-            if (progress.state == QuestState.InProgress && progress.activeNodeGuids.Count == 0)
+            if (progress.state == QuestState.InProgress && progress.ActiveNodeGuids.Count == 0)
             {
                 error = $"Quest {progress.questId}가 InProgress이지만 활성 목표나 대기 노드가 없습니다.";
                 return false;
             }
 
-            if (progress.state != QuestState.InProgress && progress.activeNodeGuids.Count > 0)
+            if (progress.state != QuestState.InProgress && progress.ActiveNodeGuids.Count > 0)
             {
                 error = $"Quest {progress.questId}의 상태는 {progress.state}이지만 활성 노드가 남아 있습니다.";
                 return false;
             }
 
             if (progress.state == QuestState.NotStarted
-                && (progress.nodeProgressCounts.Count > 0
-                    || progress.completedNodeGuids.Count > 0
-                    || progress.completedGateInputs.Count > 0))
+                && (progress.NodeProgressCounts.Count > 0
+                    || progress.CompletedNodeGuids.Count > 0
+                    || progress.CompletedGateInputs.Count > 0))
             {
                 error = $"Quest {progress.questId}가 NotStarted이지만 이전 진행 기록이 남아 있습니다.";
                 return false;
             }
 
-            foreach (string activeGuid in progress.activeNodeGuids)
+            foreach (string activeGuid in progress.ActiveNodeGuids)
             {
                 if (!graphIndex.Nodes.TryGetValue(activeGuid, out NodeBaseData nodeData))
                 {
@@ -345,21 +347,21 @@ namespace UniversalGraph
                 }
 
                 if (nodeData is not QuestObjectiveNodeData
-                    && nodeData is not QuestWaitForQuestNodeData)
+                    && nodeData is not WaitForQuestNodeData)
                 {
                     error = $"Quest {progress.questId}의 활성 노드 '{activeGuid}' 타입 " +
                             $"'{nodeData.GetType().Name}'은 대기 가능한 노드가 아닙니다.";
                     return false;
                 }
 
-                if (progress.completedNodeGuids.Contains(activeGuid))
+                if (progress.CompletedNodeGuids.Contains(activeGuid))
                 {
                     error = $"Quest {progress.questId}의 노드 '{activeGuid}'가 활성 목록과 완료 목록에 모두 있습니다.";
                     return false;
                 }
             }
 
-            foreach (string completedGuid in progress.completedNodeGuids)
+            foreach (string completedGuid in progress.CompletedNodeGuids)
             {
                 if (!graphIndex.Nodes.TryGetValue(completedGuid, out NodeBaseData completedNode))
                 {
@@ -375,7 +377,7 @@ namespace UniversalGraph
                 }
             }
 
-            foreach (KeyValuePair<string, int> counter in progress.nodeProgressCounts)
+            foreach (KeyValuePair<string, int> counter in progress.NodeProgressCounts)
             {
                 if (!graphIndex.Nodes.TryGetValue(counter.Key, out NodeBaseData nodeData)
                     || nodeData is not QuestObjectiveNodeData objective)
@@ -384,7 +386,7 @@ namespace UniversalGraph
                     return false;
                 }
 
-                int requiredAmount = Math.Max(1, objective.RequiredAmount);
+                int requiredAmount = objective.RequiredAmount;
                 if (counter.Value > requiredAmount)
                 {
                     error = $"Quest {progress.questId}의 Objective '{counter.Key}' 진행량 {counter.Value}가 " +
@@ -392,15 +394,17 @@ namespace UniversalGraph
                     return false;
                 }
 
-                if (progress.activeNodeGuids.Contains(counter.Key) && counter.Value >= requiredAmount)
+                if (progress.ActiveNodeGuids.Contains(counter.Key) && counter.Value >= requiredAmount)
                 {
                     error = $"Quest {progress.questId}의 활성 Objective '{counter.Key}' 진행량이 " +
                             $"이미 필요량 {requiredAmount}에 도달했습니다.";
                     return false;
                 }
 
-                if (!progress.activeNodeGuids.Contains(counter.Key)
-                    && !progress.completedNodeGuids.Contains(counter.Key))
+                // 종료된 Quest는 활성 목표를 비우지만, 미완료 목표의 진행량은 기록으로 보존합니다.
+                if (progress.state == QuestState.InProgress
+                    && !progress.ActiveNodeGuids.Contains(counter.Key)
+                    && !progress.CompletedNodeGuids.Contains(counter.Key))
                 {
                     error = $"Quest {progress.questId}의 Objective '{counter.Key}' 진행량이 " +
                             "활성 또는 완료 기록과 연결되어 있지 않습니다.";
@@ -408,7 +412,7 @@ namespace UniversalGraph
                 }
             }
 
-            foreach (string gateInput in progress.completedGateInputs)
+            foreach (string gateInput in progress.CompletedGateInputs)
             {
                 int separatorIndex = gateInput.IndexOf('|');
                 if (separatorIndex <= 0 || separatorIndex >= gateInput.Length - 1)
@@ -421,7 +425,7 @@ namespace UniversalGraph
                 string sourceGuid = gateInput.Substring(separatorIndex + 1);
                 if (!graphIndex.Nodes.TryGetValue(gateGuid, out NodeBaseData gateData)
                     || gateData is not QuestAndGateNodeData
-                    || !graphIndex.OutgoingLinks.TryGetValue(sourceGuid, out List<NodeLinkData> sourceLinks)
+                    || !graphIndex.OutputLinksByStartNode.TryGetValue(sourceGuid, out List<NodeLinkData> sourceLinks)
                     || !sourceLinks.Any(link => link.TargetNodeGuid == gateGuid))
                 {
                     error = $"Quest {progress.questId}의 완료 Gate 입력 '{gateInput}'이 현재 연결 구조와 일치하지 않습니다.";
@@ -439,9 +443,8 @@ namespace UniversalGraph
                    || nodeData is QuestAndGateNodeData
                    || nodeData is QuestStateChangeNodeData
                    || nodeData is QuestActionNodeData
-                   || nodeData is QuestFailNodeData
                    || nodeData is QuestRewardNodeData
-                   || nodeData is QuestWaitForQuestNodeData;
+                   || nodeData is WaitForQuestNodeData;
         }
 
         /// <summary>Unity 내장 JSON 형식으로 이 스냅샷을 직렬화합니다.</summary>
@@ -479,7 +482,6 @@ namespace UniversalGraph
                 return false;
             }
 
-            saveData.quests ??= new List<QuestProgressSaveData>();
             error = null;
             return true;
         }

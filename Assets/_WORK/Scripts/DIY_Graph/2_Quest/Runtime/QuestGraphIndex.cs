@@ -1,159 +1,134 @@
+using System;
 using System.Collections.Generic;
 
 namespace UniversalGraph
 {
     /// <summary>
-    /// Quest 그래프의 노드와 연결을 한 번 정리하여 실행 중 빠르게 찾기 위한 조회 데이터입니다.
+    /// Quest 그래프의 노드와 연결을 한 번 정리하여 실행 중 빠르게 찾기 위한 조회 데이터
     /// </summary>
     internal sealed class QuestGraphIndex
     {
-        private readonly Dictionary<string, NodeBaseData> nodes = new();
-        private readonly Dictionary<string, List<NodeLinkData>> outgoingLinks = new();
-        private readonly Dictionary<string, int> distinctIncomingSourceCounts = new();
+        public Dictionary<string, NodeBaseData> Nodes { get; } = new();
+        public Dictionary<string, List<NodeLinkData>> OutputLinksByStartNode { get; } = new();
+        public Dictionary<string, int> StartNodeCountByTargetNode { get; } = new();
 
-        public IReadOnlyDictionary<string, NodeBaseData> Nodes => nodes;
-        public IReadOnlyDictionary<string, List<NodeLinkData>> OutgoingLinks => outgoingLinks;
-        public IReadOnlyDictionary<string, int> DistinctIncomingSourceCounts => distinctIncomingSourceCounts;
-
-        /// <summary>그래프 구조를 검사하면서 모든 런타임 조회 인덱스를 한 번에 만듭니다.</summary>
-        public static bool TryCreate(
-            QuestContainer container,
-            out QuestGraphIndex index,
-            out string error)
+        /// <summary>그래프 구조를 검사하면서 모든 런타임 인덱스를 만들기</summary>
+        public QuestGraphIndex(QuestContainer container)
         {
-            index = null;
-            if (container == null)
-            {
-                error = "Quest 그래프가 null입니다.";
-                return false;
-            }
-
             if (container.Nodes == null)
             {
-                error = $"'{container.name}'의 노드 목록이 null입니다.";
-                return false;
+                throw new InvalidOperationException($"'{container.name}'의 노드 목록이 null입니다.");
             }
 
             if (container.NodeLinks == null)
             {
-                error = $"'{container.name}'의 연결선 목록이 null입니다.";
-                return false;
+                throw new InvalidOperationException($"'{container.name}'의 연결선 목록이 null입니다.");
             }
 
-            var created = new QuestGraphIndex();
+            //노드 하나씩 검사
             foreach (NodeBaseData nodeData in container.Nodes)
             {
                 if (nodeData == null)
                 {
-                    error = $"'{container.name}'에 null 노드가 있습니다.";
-                    return false;
+                    throw new InvalidOperationException($"'{container.name}'에 null 노드가 있습니다.");
                 }
 
                 if (string.IsNullOrWhiteSpace(nodeData.Guid))
                 {
-                    error = $"'{container.name}'의 {nodeData.GetType().Name} 노드에 GUID가 없습니다.";
-                    return false;
+                    throw new InvalidOperationException($"'{container.name}'의 {nodeData.GetType().Name} 노드에 GUID가 없습니다.");
                 }
 
-                if (!created.nodes.TryAdd(nodeData.Guid, nodeData))
+                if (!Nodes.TryAdd(nodeData.Guid, nodeData))
                 {
-                    error = $"'{container.name}'에 중복된 노드 GUID '{nodeData.Guid}'가 있습니다.";
-                    return false;
+                    throw new InvalidOperationException($"'{container.name}'에 중복된 노드 GUID '{nodeData.Guid}'가 있습니다.");
+                }
+
+                if (nodeData is QuestObjectiveNodeData objective && objective.RequiredAmount < 1)
+                {
+                    throw new InvalidOperationException($"'{container.name}'의 목표 노드 '{nodeData.Guid}' 수량은 1 이상이어야 합니다.");
+                }
+
+                if (nodeData is WaitForQuestNodeData waitForQuest && waitForQuest.RequiredState == QuestState.ExecutionError)
+                {
+                    throw new InvalidOperationException($"'{container.name}'의 대기 노드 '{nodeData.Guid}'는 ExecutionError를 기다릴 수 없습니다.");
                 }
 
                 if (nodeData is QuestActionNodeData action && action.Action == null)
                 {
-                    error = $"'{container.name}'의 Action 노드 '{nodeData.Guid}'에 호출 정보가 없습니다.";
-                    return false;
+                    throw new InvalidOperationException($"'{container.name}'의 Action 노드 '{nodeData.Guid}'에 호출 정보가 없습니다.");
                 }
 
                 if (nodeData is QuestConditionNodeData condition && condition.Condition == null)
                 {
-                    error = $"'{container.name}'의 Condition 노드 '{nodeData.Guid}'에 호출 정보가 없습니다.";
-                    return false;
+                    throw new InvalidOperationException($"'{container.name}'의 Condition 노드 '{nodeData.Guid}'에 호출 정보가 없습니다.");
                 }
 
                 if (nodeData is QuestRewardNodeData reward && reward.RewardAction == null)
                 {
-                    error = $"'{container.name}'의 Reward 노드 '{nodeData.Guid}'에 호출 정보가 없습니다.";
-                    return false;
+                    throw new InvalidOperationException($"'{container.name}'의 Reward 노드 '{nodeData.Guid}'에 호출 정보가 없습니다.");
                 }
             }
 
-            var edgeKeys = new HashSet<(
-                string SourceGuid,
-                string SourcePort,
-                string TargetGuid,
-                string TargetPort)>();
-            var incomingSources = new Dictionary<string, HashSet<string>>();
+            HashSet<(string SourceGuid, string SourcePort, string TargetGuid, string TargetPort)> edgeKeys = new();
+            Dictionary<string, HashSet<string>> StartNodeByTargetNode = new ();
 
             foreach (NodeLinkData link in container.NodeLinks)
             {
                 if (link == null)
                 {
-                    error = $"'{container.name}'에 null 연결선이 있습니다.";
-                    return false;
+                    throw new InvalidOperationException($"'{container.name}'에 null 연결선이 있습니다.");
                 }
 
                 if (string.IsNullOrWhiteSpace(link.StartNodeGuid)
                     || string.IsNullOrWhiteSpace(link.TargetNodeGuid))
                 {
-                    error = $"'{container.name}'에 출발 또는 도착 노드 GUID가 없는 연결선이 있습니다.";
-                    return false;
+                    throw new InvalidOperationException($"'{container.name}'에 출발 또는 도착 노드 GUID가 없는 연결선이 있습니다.");
                 }
 
-                if (string.IsNullOrWhiteSpace(link.StartPortName)
-                    || string.IsNullOrWhiteSpace(link.TargetPortName))
+                if (string.IsNullOrWhiteSpace(link.StartPortName) || string.IsNullOrWhiteSpace(link.TargetPortName))
                 {
-                    error = $"'{container.name}'에 출발 또는 도착 포트 ID가 없는 연결선이 있습니다.";
-                    return false;
+                    throw new InvalidOperationException($"'{container.name}'에 출발 또는 도착 포트 ID가 없는 연결선이 있습니다.");
                 }
 
-                if (!created.nodes.ContainsKey(link.StartNodeGuid)
-                    || !created.nodes.ContainsKey(link.TargetNodeGuid))
+                if (!Nodes.ContainsKey(link.StartNodeGuid) || !Nodes.ContainsKey(link.TargetNodeGuid))
                 {
-                    error = $"'{container.name}'의 연결선이 존재하지 않는 노드를 참조합니다: " +
-                            $"{link.StartNodeGuid} -> {link.TargetNodeGuid}.";
-                    return false;
+                    throw new InvalidOperationException(
+                        $"'{container.name}'의 연결선이 존재하지 않는 노드를 참조합니다: " +
+                        $"{link.StartNodeGuid} -> {link.TargetNodeGuid}.");
                 }
 
-                var edgeKey = (
-                    link.StartNodeGuid,
-                    link.StartPortName,
-                    link.TargetNodeGuid,
-                    link.TargetPortName);
+                var edgeKey = (link.StartNodeGuid, link.StartPortName, link.TargetNodeGuid, link.TargetPortName);
                 if (!edgeKeys.Add(edgeKey))
                 {
-                    error = $"'{container.name}'에 중복된 연결선이 있습니다: " +
-                            $"{link.StartNodeGuid}.{link.StartPortName} -> " +
-                            $"{link.TargetNodeGuid}.{link.TargetPortName}.";
-                    return false;
+                    throw new InvalidOperationException(
+                        $"'{container.name}'에 중복된 연결선이 있습니다: " +
+                        $"{link.StartNodeGuid}.{link.StartPortName} -> " +
+                        $"{link.TargetNodeGuid}.{link.TargetPortName}.");
                 }
 
-                if (!created.outgoingLinks.TryGetValue(link.StartNodeGuid, out List<NodeLinkData> links))
+                //다음에 실행할 노드들을 찾는 용도
+                if (!OutputLinksByStartNode.TryGetValue(link.StartNodeGuid, out List<NodeLinkData> links))
                 {
                     links = new List<NodeLinkData>();
-                    created.outgoingLinks.Add(link.StartNodeGuid, links);
+                    OutputLinksByStartNode.Add(link.StartNodeGuid, links);
                 }
                 links.Add(link);
 
-                if (!incomingSources.TryGetValue(link.TargetNodeGuid, out HashSet<string> sources))
+                //해당 노드로 들어오는 출발 노드들을 중복 없이 모으는 용도
+                if (!StartNodeByTargetNode.TryGetValue(link.TargetNodeGuid, out HashSet<string> sources))
                 {
                     sources = new HashSet<string>();
-                    incomingSources.Add(link.TargetNodeGuid, sources);
+                    StartNodeByTargetNode.Add(link.TargetNodeGuid, sources);
                 }
 
                 sources.Add(link.StartNodeGuid);
             }
 
-            foreach (KeyValuePair<string, HashSet<string>> pair in incomingSources)
+            //AND Gate가 기다려야 하는 입력 개수
+            foreach (KeyValuePair<string, HashSet<string>> pair in StartNodeByTargetNode)
             {
-                created.distinctIncomingSourceCounts.Add(pair.Key, pair.Value.Count);
+                StartNodeCountByTargetNode.Add(pair.Key, pair.Value.Count);
             }
-
-            index = created;
-            error = null;
-            return true;
         }
 
     }

@@ -80,7 +80,7 @@ namespace UniversalGraph.Editor
 		}
 	}
 
-	//===============================================================================================================
+	//================================================= 제네릭 클래스 ==============================================================
 
 
 
@@ -127,7 +127,6 @@ namespace UniversalGraph.Editor
 		{
 			T newData = new();
 			InitializeNewData(newData, creationContext);
-			newData.Guid = Guid.NewGuid().ToString();
 			newData.Position = creationContext.Position;
 			return newData;
 		}

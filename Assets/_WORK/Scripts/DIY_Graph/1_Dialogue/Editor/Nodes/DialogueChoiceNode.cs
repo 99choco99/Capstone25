@@ -42,8 +42,18 @@ namespace UniversalGraph.Dialogue.Editor
             title = $"CHOICE: {NodeData?.Choices?.Count ?? 0}";
         }
 
+        /// <summary>선택지 데이터와 포트를 함께 추가하고 노드 표시를 갱신</summary>
+        public void AddChoice(DialogueChoiceData choiceData)
+        {
+            AddChoicePort(choiceData);
+            NodeData.Choices.Add(choiceData);
+            RefreshPreview();
+            RefreshPorts();
+            RefreshExpandedState();
+        }
+
         /// <summary>선택지 포트를 하나 추가하는 함수</summary>
-        public void AddChoicePort(DialogueChoiceData choiceData)
+        private void AddChoicePort(DialogueChoiceData choiceData)
         {
             if (choiceData == null || string.IsNullOrWhiteSpace(choiceData.PortName))
             {
@@ -58,17 +68,16 @@ namespace UniversalGraph.Dialogue.Editor
             Label typeLabel = port.contentContainer.Q<Label>("type");
             if (typeLabel != null)
             {
-                typeLabel.text = "Choice";
+                // portName도 이 Label의 값을 읽으므로 표시용 글자는 따로 둡니다.
+                UniversalGraphStyles.SetVisible(typeLabel, false);
+                port.contentContainer.Add(new Label("Choice"));
             }
 
             outputContainer.Add(port);
-            RefreshPreview();
-            RefreshPorts();
-            RefreshExpandedState();
         }
 
-        /// <summary>선택지 포트를 삭제하는 함수</summary>
-        public void RemoveChoicePort(DialogueChoiceData choiceData)
+        /// <summary>선택지 데이터와 포트, 연결선을 함께 삭제하고 노드 표시를 갱신</summary>
+        public void RemoveChoice(DialogueChoiceData choiceData)
         {
             Port port = outputContainer.Children().OfType<Port>()
                 .FirstOrDefault(candidate => ReferenceEquals(candidate.userData, choiceData) || candidate.portName == choiceData.PortName) 
@@ -83,7 +92,9 @@ namespace UniversalGraph.Dialogue.Editor
             }
 
             port.RemoveFromHierarchy();
+            NodeData.Choices.Remove(choiceData);
 
+            RefreshPreview();
             RefreshPorts();
             RefreshExpandedState();
             MarkDirtyRepaint();

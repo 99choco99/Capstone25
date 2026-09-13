@@ -32,14 +32,15 @@ namespace UniversalGraph.Editor
             //사용 가능한 메서드들의 키를 추출
             List<string> keys = new () { string.Empty };
             keys.AddRange(descriptorList.Where(descriptor => descriptor != null).Select(descriptor => descriptor.Key));
-            if (!string.IsNullOrWhiteSpace(currentKey) && !keys.Contains(currentKey))
-            {
-                keys.Add(currentKey);   
-            }
 
             //드롭다운 생성
-            int index = Math.Max(0, keys.FindIndex(key => key == currentKey));
-            PopupField<string> keyField = new ("Method", keys, index, GetMethodDisplayName, GetMethodDisplayName);
+            PopupField<string> keyField = new ("Method")
+            {
+                choices = keys,
+                formatSelectedValueCallback = GetMethodDisplayName,
+                formatListItemCallback = GetMethodDisplayName
+            };
+            keyField.SetValueWithoutNotify(currentKey);
             root.Add(keyField);
 
             //선택된 메서드의 파라미터 값을 넣을 공간 마련
@@ -84,7 +85,7 @@ namespace UniversalGraph.Editor
                 argumentsRoot.Clear();
 
                 string key = data.Key;
-                if (string.IsNullOrWhiteSpace(key)) { return; }
+                if (!data.HasKey) { return; }
                 MethodDescriptor descriptor = FindDescriptor(key);
 
                 if (descriptor == null)

@@ -63,7 +63,7 @@ namespace UniversalGraph
         /// </summary>
         public bool StartConversation(DialogueEntryPoint entryPoint, DialogueExecutionContext executionContext = null, Action onComplete = null)
         {
-            DialogueContainer container = entryPoint.GraphAsset;
+            DialogueContainer container = entryPoint.Container;
 
             if (IsConversationActive || isNodeProcessing || isConversationStarting || isConversationEnding)
             {
@@ -150,7 +150,7 @@ namespace UniversalGraph
                 return false;
             }
 
-            ProceedToNextNode(activeConversationId, currentNodeData, DialoguePortNames.Next);
+            ProceedToNextNode(DialoguePortNames.Next);
             return true;
         }
 
@@ -168,23 +168,7 @@ namespace UniversalGraph
                 return false;
             }
 
-            int conversationId = activeConversationId;
-            NodeBaseData nodeData = currentNodeData;
-
-            // Choice Action 안에서 같은 선택지를 다시 고르지 못하도록 입력을 먼저 소비
-            blockKind = BlockKind.None;
-
-            //선택지 Action 실행
-            if (!string.IsNullOrWhiteSpace(selectedChoiceData.SelectionAction.Key) && !DialogueMethodInvoker.TryInvokeMethod(selectedChoiceData.SelectionAction, currentExecutionContext, MethodKind.Action, out _))
-            {
-                if (IsCurrentConversation(conversationId, nodeData))
-                {
-                    FinishConversation(DialogueEndReason.Faulted);
-                }
-                return true;
-            }
-
-            ProceedToNextNode(conversationId, nodeData, selectedChoiceData.PortName);
+            ProceedToNextNode(selectedChoiceData.PortName);
             return true;
         }
 
@@ -202,7 +186,7 @@ namespace UniversalGraph
                 return false;
             }
 
-            ProceedToNextNode(activeConversationId, currentNodeData, DialoguePortNames.Next);
+            ProceedToNextNode(DialoguePortNames.Next);
             return true;
         }
 
@@ -223,7 +207,7 @@ namespace UniversalGraph
             waitTimeLeft -= deltaTime;
             if (waitTimeLeft <= 0f)
             {
-                ProceedToNextNode(activeConversationId, currentNodeData, DialoguePortNames.Next);
+                ProceedToNextNode(DialoguePortNames.Next);
             }
         }
     }

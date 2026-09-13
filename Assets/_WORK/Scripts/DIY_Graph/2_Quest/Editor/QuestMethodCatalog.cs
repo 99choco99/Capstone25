@@ -6,7 +6,7 @@ using UnityEditor.Compilation;
 
 namespace UniversalGraph.Quest.Editor
 {
-    /// <summary>그래프 작성에서 선택할 수 있는 유효한 Quest Attribute 메서드를 나열합니다.</summary>
+    /// <summary>그래프 작성에서 선택할 수 있는 유효한 Quest Attribute 메서드를 나열</summary>
     internal static class QuestMethodCatalog
     {
         private static readonly List<QuestMethodDescriptor> actions = new();
@@ -19,17 +19,14 @@ namespace UniversalGraph.Quest.Editor
             BuildCatalog();
         }
 
-        /// <summary>특정 바인딩 종류의 유효하고 중복되지 않는 메서드를 반환합니다.</summary>
+        /// <summary>메서드 설명서 목록 반환</summary>
         public static IReadOnlyList<QuestMethodDescriptor> GetMethodList(MethodKind kind)
         {
             return kind == MethodKind.Action ? actions : conditions;
         }
 
-        /// <summary>고정 키로 유효한 메서드 하나를 찾습니다.</summary>
-        public static bool GetMethodDescriptor(
-            MethodKind kind,
-            string key,
-            out QuestMethodDescriptor descriptor)
+        /// <summary>키로 메서드 설명서 하나 찾기</summary>
+        public static bool GetMethodDescriptor(MethodKind kind, string key, out QuestMethodDescriptor descriptor)
         {
             descriptor = null;
             if (string.IsNullOrWhiteSpace(key))
@@ -37,76 +34,66 @@ namespace UniversalGraph.Quest.Editor
                 return false;
             }
 
-            return (kind == MethodKind.Action ? actionByKey : conditionByKey)
-                .TryGetValue(key.Trim(), out descriptor);
+            return (kind == MethodKind.Action ? actionByKey : conditionByKey).TryGetValue(key, out descriptor);
         }
 
         /// <summary>플레이어 어셈블리를 검사하고 대상을 확정할 수 없는 중복 키를 제외합니다.</summary>
         private static void BuildCatalog()
         {
-            var playerAssemblies = new HashSet<string>();
-            foreach (UnityEditor.Compilation.Assembly assembly in
-                     CompilationPipeline.GetAssemblies(AssembliesType.Player))
+            //플레이어 어셈블리만 가져오기
+            HashSet<string> playerAssemblies = new ();
+            foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player))
             {
                 playerAssemblies.Add(assembly.name);
+                foreach (string reference in assembly.compiledAssemblyReferences)
+                {
+                    playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
+                }
             }
 
-            var actionCandidates = new Dictionary<string, List<QuestMethodDescriptor>>();
+            //action 메서드들 TypeCache로 가져오기
+            Dictionary<string, List<QuestMethodDescriptor>> actionCandidates = new();
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<QuestActionAttribute>())
             {
                 QuestActionAttribute attribute = method.GetCustomAttribute<QuestActionAttribute>(false);
                 if (attribute != null && IsPlayerMethod(method, playerAssemblies))
                 {
-                    AddCandidate(
-                        method,
-                        MethodKind.Action,
-                        attribute.Key,
-                        attribute.Owner,
-                        actionCandidates);
+                    AddCandidate(method, MethodKind.Action, attribute.Key, attribute.Owner, actionCandidates);
                 }
             }
 
-            var conditionCandidates = new Dictionary<string, List<QuestMethodDescriptor>>();
+            //condition 메서드들 TypeCache로 가져오기
+            Dictionary<string, List<QuestMethodDescriptor>> conditionCandidates = new ();
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<QuestConditionAttribute>())
             {
                 QuestConditionAttribute attribute = method.GetCustomAttribute<QuestConditionAttribute>(false);
                 if (attribute != null && IsPlayerMethod(method, playerAssemblies))
                 {
-                    AddCandidate(
-                        method,
-                        MethodKind.Condition,
-                        attribute.Key,
-                        attribute.Owner,
-                        conditionCandidates);
+                    AddCandidate(method, MethodKind.Condition, attribute.Key, attribute.Owner, conditionCandidates);
                 }
             }
 
+            //확정짓기
             FinalizeCandidates(actionCandidates, actions, actionByKey);
             FinalizeCandidates(conditionCandidates, conditions, conditionByKey);
         }
 
-        private static bool IsPlayerMethod(
-            MethodInfo method,
-            ISet<string> playerAssemblies)
+        /// <summary>
+        /// 플레이어 어셈블리의 메서드인지?
+        /// </summary>
+        private static bool IsPlayerMethod(MethodInfo method, ISet<string> playerAssemblies)
         {
             string assemblyName = method.DeclaringType?.Assembly.GetName().Name;
             return !string.IsNullOrWhiteSpace(assemblyName) && playerAssemblies.Contains(assemblyName);
         }
+        
 
-        private static void AddCandidate(
-            MethodInfo method,
-            MethodKind kind,
-            string key,
-            QuestMethodOwner owner,
-            IDictionary<string, List<QuestMethodDescriptor>> candidatesByKey)
+        /// <summary>
+        /// 메서드 후보를 목록에 추가
+        /// </summary>
+        private static void AddCandidate(MethodInfo method, MethodKind kind, string key, QuestMethodOwner owner, IDictionary<string, List<QuestMethodDescriptor>> candidatesByKey)
         {
-            if (!QuestMethodDescriptorFactory.TryCreateDescriptor(
-                    method,
-                    kind,
-                    key,
-                    owner,
-                    out QuestMethodDescriptor descriptor,
-                    out _))
+            if (!QuestMethodDescriptorFactory.CreateDescriptor(method, kind, key, owner, out QuestMethodDescriptor descriptor, out _))
             {
                 return;
             }
@@ -120,6 +107,10 @@ namespace UniversalGraph.Quest.Editor
             candidates.Add(descriptor);
         }
 
+
+        /// <summary>
+        /// 후보 메서드들을 검증 후 확정
+        /// </summary>
         private static void FinalizeCandidates(
             IReadOnlyDictionary<string, List<QuestMethodDescriptor>> candidatesByKey,
             List<QuestMethodDescriptor> list,
@@ -132,6 +123,7 @@ namespace UniversalGraph.Quest.Editor
                     continue;
                 }
 
+                //유일한것만 담기
                 QuestMethodDescriptor descriptor = pair.Value[0];
                 list.Add(descriptor);
                 listByKey.Add(descriptor.Key, descriptor);

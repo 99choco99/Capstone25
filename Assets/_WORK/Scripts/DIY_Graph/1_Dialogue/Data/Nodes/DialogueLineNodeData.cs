@@ -8,8 +8,5 @@ namespace UniversalGraph
 		public string SpeakerName;
 
 		public string DialogueText;
-
-        //대화시 
-		public MethodBindingData EnterAction = new();
 	}
 }

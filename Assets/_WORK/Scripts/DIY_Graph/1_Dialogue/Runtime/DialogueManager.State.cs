@@ -73,10 +73,6 @@ namespace UniversalGraph
 
                 switch (nodeData)
                 {
-                    case DialogueLineNodeData lineData when lineData.EnterAction == null:
-                        error = $"대화 그래프 '{container.name}'의 Line 노드 '{lineData.Guid}'에 진입 Action 데이터가 없습니다.";
-                        return false;
-
                     case DialogueActionNodeData actionData when actionData.Action == null:
                         error = $"대화 그래프 '{container.name}'의 Action 노드 '{actionData.Guid}'에 Action 데이터가 없습니다.";
                         return false;
@@ -128,10 +124,10 @@ namespace UniversalGraph
                         return false;
                     }
 
-                    if (choiceData.VisibilityCondition == null || choiceData.SelectionAction == null)
+                    if (choiceData.VisibilityCondition == null)
                     {
                         error = $"대화 그래프 '{container.name}'의 Choice 노드 '{choiceNodeData.Guid}'에 " +
-                                $"선택지 Condition 또는 Action 데이터가 없습니다.";
+                                $"선택지 Condition 데이터가 없습니다.";
                         return false;
                     }
                 }

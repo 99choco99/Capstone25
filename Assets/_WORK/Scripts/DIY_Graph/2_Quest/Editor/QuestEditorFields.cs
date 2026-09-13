@@ -10,58 +10,62 @@ namespace UniversalGraph.Quest.Editor
     /// <summary>실수하기 쉬운 숫자 직접 입력을 대신하는 재사용 가능한 Quest 참조 필드입니다.</summary>
     internal static class QuestEditorFields
     {
-        /// <summary>Dialogue 그래프와 Entry를 함께 선택하는 공통 입력 영역을 만듭니다.</summary>
-        public static VisualElement CreateDialogueEntryPointField(
-            DialogueEntryPoint current,
-            NodeInspectorEditHandler editHandler,
-            Action<DialogueEntryPoint> apply)
+        /// <summary>퀘스트 그래프에서 DialogueEntryPoint를 사용해야 할 때 참조시켜줄 필드를 생성하는 함수</summary>
+        public static VisualElement CreateDialogueEntryPointField(DialogueEntryPoint current, NodeInspectorEditHandler editHandler, Action<DialogueEntryPoint> apply)
         {
-            var root = new VisualElement();
+            VisualElement root = new ();
             DialogueEntryPoint entryPoint = current;
 
-            var graphField = new ObjectField("Graph Asset")
+            //Dialogue Graph 넣을 곳
+            ObjectField graphField = new ("Graph Asset")
             {
                 objectType = typeof(DialogueContainer),
                 allowSceneObjects = false,
-                value = entryPoint.GraphAsset
+                value = entryPoint.Container
             };
-            var entryField = new PopupField<string>(
-                "Entry ID",
-                GetEntryChoices(entryPoint.GraphAsset, entryPoint.EntryId),
-                0);
-            entryField.SetValueWithoutNotify(entryPoint.EntryId);
-            entryField.SetEnabled(entryPoint.GraphAsset != null);
 
-            var openGraphButton = new Button(() =>
+            //EntryId 설정하는 곳
+            PopupField<string> entryField = new ("Entry ID")
             {
-                if (entryPoint.GraphAsset != null)
-                {
-                    UniversalGraphWindow.OpenWindow(entryPoint.GraphAsset);
-                }
-            })
-            {
-                text = "Open Dialogue Graph"
+                choices = GetDialogueEntryList(entryPoint.Container)
             };
-            openGraphButton.SetEnabled(entryPoint.GraphAsset != null);
+            entryField.formatSelectedValueCallback = id =>
+            {
+                if (entryField.choices.Count == 0)
+                    return "선택 가능한 Entry 없음";
+
+                if (entryField.choices.Contains(id))
+                    return id;
+
+                return $"<다시 선택 필요> {id}";
+            };
+            entryField.SetValueWithoutNotify(entryPoint.EntryId);
+            entryField.SetEnabled(entryField.choices.Count > 0);
+
+            //설정한 그래프 조회하는 버튼
+            Button openGraphButton = new(() =>
+            {
+                if (entryPoint.Container != null)
+                {
+                    UniversalGraphWindow.OpenWindow(entryPoint.Container);
+                }
+            }) { text = "Open Dialogue Graph" };
+            openGraphButton.SetEnabled(entryPoint.Container != null);
 
             graphField.RegisterValueChangedCallback(change =>
             {
                 editHandler.ApplyDataEdit("Change dialogue graph", () =>
                 {
-                    entryPoint.GraphAsset = change.newValue as DialogueContainer;
-                    List<string> entries = GetEntryChoices(
-                        entryPoint.GraphAsset,
-                        DialogueEntryNodeData.DefaultEntryId);
-                    entryPoint.EntryId = entries[0];
+                    entryPoint.Container = change.newValue as DialogueContainer;
                     apply(entryPoint);
 
-                    entryField.choices = entries;
-                    entryField.SetValueWithoutNotify(entries[0]);
-                    entryField.SetEnabled(entryPoint.GraphAsset != null);
-                    openGraphButton.SetEnabled(entryPoint.GraphAsset != null);
+                    entryField.choices = GetDialogueEntryList(entryPoint.Container);
+                    entryField.SetValueWithoutNotify(entryPoint.EntryId);
+                    entryField.SetEnabled(entryField.choices.Count > 0);
+                    openGraphButton.SetEnabled(entryPoint.Container != null);
                 });
             });
-            root.Add(graphField);
+
 
             entryField.RegisterValueChangedCallback(change =>
             {
@@ -71,66 +75,63 @@ namespace UniversalGraph.Quest.Editor
                     apply(entryPoint);
                 });
             });
+
+            root.Add(graphField);
             root.Add(entryField);
             root.Add(openGraphButton);
             return root;
         }
 
-        /// <summary>프로젝트 에셋 기반 Quest 선택기를 만들며, 누락된 ID는 복구할 수 있도록 유지합니다.</summary>
-        public static PopupField<int> CreateQuestIdField(
-            string label,
-            int currentQuestId,
-            string undoName,
-            NodeInspectorEditHandler editHandler,
-            Action<int> apply)
+        /// <summary>프로젝트 에셋 기반 Quest 선택기를 만들며 누락된 ID는 복구할 수 있도록 유지</summary>
+        public static PopupField<int> CreateQuestIdField(int currentQuestId, string undoName, NodeInspectorEditHandler editHandler, Action<int> apply)
         {
-            var ids = QuestAssetIndex.Quests
-                .Where(quest => quest != null)
-                .Select(quest => quest.QuestId)
+            List<int> ids = QuestAssetCatalog.Containers
+                .Select(container => container.QuestId)
                 .Distinct()
                 .OrderBy(id => id)
                 .ToList();
-            if (!ids.Contains(currentQuestId))
+
+            PopupField<int> field = new ("TargetQuest")
             {
-                ids.Add(currentQuestId);
-                ids.Sort();
-            }
-            int selectedIndex = ids.IndexOf(currentQuestId);
-            var field = new PopupField<int>(label, ids, selectedIndex, FormatQuest, FormatQuest);
-            field.RegisterValueChangedCallback(change =>
-                editHandler.ApplyDataEdit(undoName, () => apply(change.newValue)));
+                choices = ids,
+                formatSelectedValueCallback = id => ids.Count == 0 ? "선택 가능한 Quest 없음" : FormatQuest(id),
+                formatListItemCallback = FormatQuest
+            };
+            field.SetValueWithoutNotify(currentQuestId);
+            field.SetEnabled(ids.Count > 0);
+            field.RegisterValueChangedCallback(change => editHandler.ApplyDataEdit(undoName, () => apply(change.newValue)));
             return field;
         }
 
-        private static List<string> GetEntryChoices(DialogueContainer graph, string currentEntryId)
+        /// <summary>
+        /// DialogueEntry 의 후보군을 리스트로 반환
+        /// </summary>
+        private static List<string> GetDialogueEntryList(DialogueContainer graph)
         {
-            var entries = graph?.Nodes?
+            List<string> entries = graph?.Nodes?
                 .OfType<DialogueEntryNodeData>()
                 .Select(entry => entry.EntryId)
                 .Distinct()
-                .OrderBy(entry => entry == DialogueEntryNodeData.DefaultEntryId ? 0 : 1)
-                .ThenBy(entry => entry, StringComparer.Ordinal)
-                .ToList()
-                ?? new List<string>();
-
-            if (!entries.Contains(currentEntryId))
-            {
-                entries.Add(currentEntryId);
-            }
+                .OrderByDescending(id => id == DialogueEntryNodeData.DefaultEntryId)
+                .ThenBy(id => id, StringComparer.Ordinal)
+                .ToList() ?? new();
 
             return entries;
         }
 
+        /// <summary>
+        /// 드롭다운에 띄울 형식
+        /// </summary>
         private static string FormatQuest(int questId)
         {
-            QuestContainer[] matches = QuestAssetIndex.Quests
-                .Where(quest => quest != null && quest.QuestId == questId)
+            QuestContainer[] matchingContainers = QuestAssetCatalog.Containers
+                .Where(container => container.QuestId == questId)
                 .ToArray();
-            return matches.Length switch
+            return matchingContainers.Length switch
             {
                 0 => $"<존재하지 않음> {questId}",
-                1 => $"{questId} - {matches[0].questName}",
-                _ => $"<Duplicate> {questId} ({matches.Length} assets)"
+                1 => $"{questId} - {matchingContainers[0].questName}",
+                _ => $"<Duplicate> {questId} ({matchingContainers.Length} assets)"
             };
         }
     }

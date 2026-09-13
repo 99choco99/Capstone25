@@ -12,20 +12,11 @@ namespace UniversalGraph
 		/// <summary>
 		/// Reflection으로 얻은 MethodInfo와 파라미터 설명서로 구성
 		/// </summary>
-		internal DialogueMethodDescriptor(
-			string key,
-			MethodKind kind,
-			DialogueMethodOwner owner,
-			MethodInfo methodInfo,
-			MethodParameterDescriptor[] parameters)
-			: base(
-				key,
-				kind,
-				methodInfo,
-				parameters)
+		internal DialogueMethodDescriptor(string key, MethodKind kind, DialogueMethodOwner owner, MethodInfo methodInfo, MethodParameterDescriptor[] parameters)
+			: base(key, kind, methodInfo, parameters)
 		{
 			Owner = owner;
-			DisplayName = $"{Key}  [{Owner}]  {DeclaringType?.Name}.{MethodName}";
+			DisplayName = $"{Key}  [{Owner}]  {DeclaringType.Name}.{MethodName}";
 		}
 	}
 }

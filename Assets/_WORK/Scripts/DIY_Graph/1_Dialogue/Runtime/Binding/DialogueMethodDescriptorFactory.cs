@@ -10,7 +10,7 @@ namespace UniversalGraph
     public static class DialogueMethodDescriptorFactory
 	{
         /// <summary>Reflection으로 찾은 Attribute 메서드 하나에 대해서 Descriptor하나 제작</summary>
-        public static bool TryCreateDescriptor(MethodInfo method, MethodKind kind, string key, DialogueMethodOwner owner, out DialogueMethodDescriptor descriptor, out string error)
+        public static bool CreateDescriptor(MethodInfo method, MethodKind kind, string key, DialogueMethodOwner owner, out DialogueMethodDescriptor descriptor, out string error)
 		{
 			descriptor = null;
 			if (method == null)
@@ -31,9 +31,9 @@ namespace UniversalGraph
 
 			//메서드 이름 설정(오류검출용)
 			string name = method.DeclaringType?.FullName + "." + method.Name;
-			if (string.IsNullOrWhiteSpace(key) || key == "None")
+			if (string.IsNullOrWhiteSpace(key))
 			{
-				error = $"'{name}'에 빈 키가 있거나 예약 값 'None'을 사용했습니다.";
+				error = $"'{name}'에 메서드 키가 비어 있습니다.";
 				return false;
 			}
 
@@ -44,30 +44,33 @@ namespace UniversalGraph
 				error = $"'{key}' ({name})는 {expectedReturn.Name} 타입을 반환해야 합니다.";
 				return false;
 			}
-			if (method.IsAbstract || method.IsSpecialName || method.IsGenericMethodDefinition || method.ContainsGenericParameters || method.DeclaringType == null || method.DeclaringType.ContainsGenericParameters)
+			if (method.DeclaringType == null
+				|| method.IsAbstract
+				|| method.IsSpecialName
+				|| method.IsGenericMethod
+				|| method.ContainsGenericParameters)
 			{
 				error = $"'{key}' ({name})는 구체적인 타입에 선언된 제네릭이 아닌 구체적인 메서드여야 합니다.";
 				return false;
 			}
-			if ((method.CallingConvention & CallingConventions.VarArgs) != 0 || method.IsDefined(typeof(ExtensionAttribute), inherit: false))
+			if ((method.CallingConvention & CallingConventions.VarArgs) != 0
+				|| method.IsDefined(typeof(ExtensionAttribute), inherit: false))
 			{
 				error = $"'{key}' ({name})는 가변 인수 또는 확장 메서드일 수 없습니다.";
 				return false;
 			}
-			if (method.GetCustomAttribute<AsyncStateMachineAttribute>(inherit: false) != null)
+			if (method.IsDefined(typeof(AsyncStateMachineAttribute), inherit: false))
 			{
 				error = $"'{key}' ({name})는 async 메서드일 수 없습니다.";
 				return false;
 			}
-			if (owner == DialogueMethodOwner.Global)
+			if (owner == DialogueMethodOwner.Global && !method.IsStatic)
 			{
-				if (!method.IsStatic)
-				{
-					error = $"Global 대상 '{key}' ({name})는 static 메서드여야 합니다.";
-					return false;
-				}
+				error = $"Global 대상 '{key}' ({name})는 static 메서드여야 합니다.";
+				return false;
 			}
-			else if (method.IsStatic || !typeof(Component).IsAssignableFrom(method.DeclaringType))
+			if (owner != DialogueMethodOwner.Global
+				&& (method.IsStatic || !typeof(Component).IsAssignableFrom(method.DeclaringType)))
 			{
 				error = $"{owner} 대상 '{key}' ({name})는 Component의 인스턴스 메서드여야 합니다.";
 				return false;
@@ -92,7 +95,7 @@ namespace UniversalGraph
 					error = $"'{key}' ({name})의 파라미터 '{displayName}'에는 ref, out, in을 사용할 수 없습니다.";
 					return false;
 				}
-				if (parameter.IsOptional || parameter.GetCustomAttribute<ParamArrayAttribute>(inherit: false) != null)
+				if (parameter.IsOptional || parameter.IsDefined(typeof(ParamArrayAttribute), inherit: false))
 				{
 					error = $"'{key}' ({name})의 파라미터 '{displayName}'는 선택적 파라미터 또는 params일 수 없습니다.";
 					return false;
@@ -126,15 +129,13 @@ namespace UniversalGraph
 
 				//파라미터 설명서 완성
 				string parameterId = $"arg{serializedParameterCount++}";
-                MethodParameterDescriptor descriptorParameter = new (
+				parameters[index] = new MethodParameterDescriptor(
 					index,
 					parameterId,
 					displayName,
 					parameterType,
 					MethodParameterSource.Serialized,
 					argumentKind);
-
-				parameters[index] = descriptorParameter;
 			}
 
 			descriptor = new DialogueMethodDescriptor(key, kind, owner, method, parameters);

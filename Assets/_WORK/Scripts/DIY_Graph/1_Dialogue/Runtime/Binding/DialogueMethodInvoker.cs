@@ -48,9 +48,13 @@ namespace UniversalGraph
 #if UNITY_EDITOR
             // 테스트용 DialogueAction이 게임 메서드로 등록되지 않도록 플레이어에 포함되는 어셈블리만 선별
             HashSet<string> playerAssemblies = new();
-			foreach (UnityEditor.Compilation.Assembly playerAssembly in UnityEditor.Compilation.CompilationPipeline.GetAssemblies(UnityEditor.Compilation.AssembliesType.Player))
+			foreach (UnityEditor.Compilation.Assembly playerAssembly in UnityEditor.Compilation.CompilationPipeline.GetAssemblies(UnityEditor.Compilation.AssembliesType.PlayerWithoutTestAssemblies))
 			{
 				playerAssemblies.Add(playerAssembly.name);
+				foreach (string reference in playerAssembly.compiledAssemblyReferences)
+				{
+					playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
+				}
 			}
 #endif
 			//로드된 어셈블리 하나씩 꺼내서 분류
@@ -66,7 +70,7 @@ namespace UniversalGraph
 				{
 					continue;
 				}
-				ScanAssemblyByReflection(assembly);
+				ScanAssembly(assembly);
 			}
 			isInitialized = true;
 		}
@@ -107,7 +111,7 @@ namespace UniversalGraph
 		/// <summary>
 		/// 리플렉션으로 메서드 가져오기(Assembly -> Type -> method -> attribute순)
 		/// </summary>
-		private static void ScanAssemblyByReflection(Assembly assembly)
+		private static void ScanAssembly(Assembly assembly)
 		{
 			Type[] types;
 			try
@@ -132,7 +136,8 @@ namespace UniversalGraph
 				MethodInfo[] methods;
 				try
 				{
-					methods = type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    //현재 타입에 직접 선언된 메서드라면, 공개 여부와 static 여부에 관계없이 전부 가져온다
+                    methods = type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 				}
 				catch (Exception exception)
 				{
@@ -161,7 +166,7 @@ namespace UniversalGraph
 		/// <summary>Reflection으로 찾은 메서드의 설명서를 만들고 등록</summary>
 		private static void RegisterMethod(MethodInfo method, MethodKind kind, string key, DialogueMethodOwner owner)
 		{
-			if (!DialogueMethodDescriptorFactory.TryCreateDescriptor(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out string error))
+			if (!DialogueMethodDescriptorFactory.CreateDescriptor(method, kind, key, owner, out DialogueMethodDescriptor descriptor, out string error))
 			{
 				Debug.LogError($"[Dialogue] {error}");
 				return;
@@ -193,7 +198,7 @@ namespace UniversalGraph
 		}
 
 		/// <summary>메서드 종류에 맞는 등록 정보를 찾아 인수를 복원하고 호출</summary>
-		public static bool TryInvokeMethod(MethodBindingData binding, DialogueExecutionContext context, MethodKind kind, out bool conditionResult)
+		public static bool InvokeMethod(MethodBindingData binding, DialogueExecutionContext context, MethodKind kind, out bool conditionResult)
 		{
 			conditionResult = false;
 			if (kind != MethodKind.Action && kind != MethodKind.Condition)
@@ -202,7 +207,7 @@ namespace UniversalGraph
 				return false;
 			}
 			string key = binding?.Key;
-			if (string.IsNullOrWhiteSpace(key) || key == "None")
+			if (binding == null || !binding.HasKey)
 			{
 				Debug.LogError($"[Dialogue] {kind} 키가 비어 있습니다.");
 				return false;
@@ -279,12 +284,12 @@ namespace UniversalGraph
             Component[] components = target.GetComponents(descriptor.DeclaringType);
             if (components.Length == 0)
             {
-                Debug.LogWarning($"[Dialogue] '{target.name}'에 '{descriptor.DeclaringType?.Name}' 컴포넌트가 없습니다.", target);
+                Debug.LogWarning($"[Dialogue] '{target.name}'에 '{descriptor.DeclaringType.Name}' 컴포넌트가 없습니다.", target);
                 return null;
             }
             if (components.Length > 1)
             {
-                Debug.LogError($"[Dialogue] '{target.name}'에 '{descriptor.DeclaringType?.Name}' 컴포넌트가 {components.Length}개 있어 호출 대상을 결정할 수 없습니다.", target);
+                Debug.LogError($"[Dialogue] '{target.name}'에 '{descriptor.DeclaringType.Name}' 컴포넌트가 {components.Length}개 있어 호출 대상을 결정할 수 없습니다.", target);
                 return null;
             }
 

@@ -31,7 +31,7 @@ namespace UniversalGraph.Dialogue.Editor
         /// <summary>현재 연결된 Action 키로 노드 제목을 갱신</summary>
         private void RefreshPreview()
         {
-            title = string.IsNullOrWhiteSpace(NodeData?.Action?.Key) ? "ACTION: 선택 안 됨" : $"ACTION: {NodeData.Action.Key}";
+            title = NodeData?.Action?.HasKey != true ? "ACTION: 선택 안 됨" : $"ACTION: {NodeData.Action.Key}";
         }
 
         /// <summary>인스펙터에 메서드 하나를 선택하고 그 파라미터들 값들 채울 수 있게 생성</summary>

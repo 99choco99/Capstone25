@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace UniversalGraph
 {
-	/// <summary>Dialogue 그래프의 이름 있는 시작점을 대화 후보로 제공하는 Quest 흐름 종착 노드입니다.</summary>
+	/// <summary>Dialogue 그래프의 시작점을 제공하는 Quest 종착 노드</summary>
 	[Serializable]
 	public sealed class DialogueCandidateNodeData : NodeBaseData
 	{

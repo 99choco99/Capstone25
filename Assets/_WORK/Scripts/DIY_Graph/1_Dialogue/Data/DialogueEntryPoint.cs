@@ -7,11 +7,15 @@ namespace UniversalGraph
 	[Serializable]
 	public struct DialogueEntryPoint
 	{
-		[Tooltip("재생할 Dialogue 그래프 에셋입니다.")]
-		public DialogueContainer GraphAsset;
+        /// <summary>
+        /// 재생할 Dialogue 그래프 에셋
+        /// </summary>
+        public DialogueContainer Container;
 
-		[Tooltip("지정할 EntryId. 비어 있으면 기본 Entry를 사용합니다.")]
-		[SerializeField] private string entryId;
+        /// <summary>
+        /// 지정할 EntryId. 비어 있으면 기본 Entry를 사용
+        /// </summary>
+        [SerializeField] private string entryId;
 
 
         /// <summary>빈 ID는 기본 Entry로 바꾸고 앞뒤 공백을 제거</summary>
@@ -22,9 +26,9 @@ namespace UniversalGraph
 		}
 
 		/// <summary>그냥 생성자</summary>
-		public DialogueEntryPoint(DialogueContainer graphAsset, string entryId)
+		public DialogueEntryPoint(DialogueContainer container, string entryId)
 		{
-			GraphAsset = graphAsset;
+			Container = container;
 			this.entryId = string.IsNullOrWhiteSpace(entryId) ? DialogueEntryNodeData.DefaultEntryId : entryId.Trim();
 		}
 	}

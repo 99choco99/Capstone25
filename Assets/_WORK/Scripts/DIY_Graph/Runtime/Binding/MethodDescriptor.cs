@@ -7,11 +7,7 @@ namespace UniversalGraph
     /// <summary>Attribute가 붙은 메서드 한 개의 공통 설명서</summary>
     public abstract class MethodDescriptor
     {
-        protected MethodDescriptor(
-            string key,
-            MethodKind kind,
-            MethodInfo method,
-            MethodParameterDescriptor[] parameters)
+        protected MethodDescriptor(string key, MethodKind kind, MethodInfo method, MethodParameterDescriptor[] parameters)
         {
             Key = key;
             Kind = kind;

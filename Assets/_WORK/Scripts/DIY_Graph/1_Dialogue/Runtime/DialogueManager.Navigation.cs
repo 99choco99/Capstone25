@@ -45,16 +45,16 @@ namespace UniversalGraph
         /// <summary>
         /// 현재 대기 상태를 정리하고 지정한 출력 포트의 다음 노드부터 실행을 재개
         /// </summary>
-        private void ProceedToNextNode(int conversationId, NodeBaseData nodeData, string portName)
+        private void ProceedToNextNode(string portName)
         {
-            if (!IsCurrentConversation(conversationId, nodeData))
+            if (!IsConversationActive)
             {
                 return;
             }
 
             ResetBlockingState();
 
-            if (MoveToNextNode(nodeData.Guid, portName))
+            if (MoveToNextNode(currentNodeData.Guid, portName))
             {
                 RunUntilBlocked();
             }

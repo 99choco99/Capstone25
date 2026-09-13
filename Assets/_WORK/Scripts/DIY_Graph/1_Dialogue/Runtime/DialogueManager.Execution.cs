@@ -90,7 +90,7 @@ namespace UniversalGraph
         private void ProcessCondition(DialogueConditionNodeData data)
         {
             int conversationId = activeConversationId;
-            bool evaluated = DialogueMethodInvoker.TryInvokeMethod(data.Condition, currentExecutionContext, MethodKind.Condition, out bool result);
+            bool evaluated = DialogueMethodInvoker.InvokeMethod(data.Condition, currentExecutionContext, MethodKind.Condition, out bool result);
 
             if (!IsCurrentConversation(conversationId, data))
             {
@@ -113,7 +113,7 @@ namespace UniversalGraph
         private void ProcessAction(DialogueActionNodeData data)
         {
             int conversationId = activeConversationId;
-            bool executed = DialogueMethodInvoker.TryInvokeMethod(data.Action, currentExecutionContext, MethodKind.Action, out _);
+            bool executed = DialogueMethodInvoker.InvokeMethod(data.Action, currentExecutionContext, MethodKind.Action, out _);
 
             if (!IsCurrentConversation(conversationId, data))
             {
@@ -177,26 +177,10 @@ namespace UniversalGraph
         /// </summary>
         private void ProcessDialogueLine(DialogueLineNodeData data)
         {
-            int conversationId = activeConversationId;
-
-            if (!string.IsNullOrWhiteSpace(data.EnterAction.Key) && !DialogueMethodInvoker.TryInvokeMethod(data.EnterAction, currentExecutionContext, MethodKind.Action, out _))
-            {
-                if (IsCurrentConversation(conversationId, data))
-                {
-                    FinishConversation(DialogueEndReason.Faulted);
-                }
-                return;
-            }
-
-            if (!IsCurrentConversation(conversationId, data))
-            {
-                return;
-            }
-
             blockKind = BlockKind.Line;
             currentPromptId = ++promptCounter;
 
-            InvokeDuringConversation(ShowLine, data, nameof(ShowLine), conversationId, data);
+            InvokeDuringConversation(ShowLine, data, nameof(ShowLine), activeConversationId, data);
         }
 
 
@@ -230,13 +214,13 @@ namespace UniversalGraph
             foreach (DialogueChoiceData choiceData in data.Choices)
             {
                 //조건이 없으면 일단 띄움
-                if (string.IsNullOrWhiteSpace(choiceData.VisibilityCondition.Key))
+                if (!choiceData.VisibilityCondition.HasKey)
                 {
                     visibleChoices.Add(choiceData);
                     continue;
                 }
 
-                bool evaluated = DialogueMethodInvoker.TryInvokeMethod(choiceData.VisibilityCondition, currentExecutionContext, MethodKind.Condition, out bool visible);
+                bool evaluated = DialogueMethodInvoker.InvokeMethod(choiceData.VisibilityCondition, currentExecutionContext, MethodKind.Condition, out bool visible);
                 if (!IsCurrentConversation(conversationId, data))
                 {
                     return false;

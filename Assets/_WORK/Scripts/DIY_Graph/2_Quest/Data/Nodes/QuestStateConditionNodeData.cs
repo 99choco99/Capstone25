@@ -3,14 +3,18 @@ using UnityEngine;
 
 namespace UniversalGraph
 {
-	/// <summary>다른 Quest의 현재 상태에 따라 진행 또는 상호작용 조회 흐름을 분기합니다.</summary>
+	/// <summary>다른 Quest의 상태를 검사</summary>
 	[Serializable]
 	public sealed class QuestStateConditionNodeData : NodeBaseData
 	{
-		[Tooltip("상태를 검사할 Quest의 고정 ID입니다.")]
-		public int QuestId;
+        /// <summary>
+        /// 상태를 검사할 Quest의 고정 ID
+        /// </summary>
+        public int QuestId;
 
-		[Tooltip("True 출력으로 진행할 Quest 상태입니다.")]
-		public QuestState TargetState;
+        /// <summary>
+        /// 원하는 Quest 상태
+        /// </summary>
+        public QuestState TargetState;
 	}
 }

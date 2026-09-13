@@ -13,7 +13,7 @@ namespace UniversalGraph
             ParameterType = parameterType;
             Source = source;
             ArgumentKind = argumentKind;
-            TypeSignature = parameterType == null ? string.Empty : $"{parameterType.FullName}, {parameterType.Assembly.GetName().Name}";
+            TypeSignature = $"{parameterType.FullName}, {parameterType.Assembly.GetName().Name}";
         }
 
         //================================ 파라미터 식별 =====================================

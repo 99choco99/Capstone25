@@ -248,7 +248,7 @@ namespace UniversalGraph.Editor
             }
 
             //생성 경로
-            string menuPath = attribute.MenuPath?.Trim();
+            string menuPath = attribute.MenuPath;
             if (!IsValidMenuPath(menuPath))
             {
                 error = $"'{viewType.FullName}'의 메뉴 경로 '{menuPath ?? "null"}'가 올바르지 않습니다.";

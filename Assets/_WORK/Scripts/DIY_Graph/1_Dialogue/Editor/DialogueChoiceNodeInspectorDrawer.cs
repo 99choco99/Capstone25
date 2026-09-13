@@ -13,20 +13,16 @@ namespace UniversalGraph.Dialogue.Editor
             VisualElement root = new();
 
             root.Add(new HelpBox("표시 가능한 선택지가 없으면 Default 포트로 즉시 진행합니다.", HelpBoxMessageType.Info));
-            root.Add(CreateChoicesSector(selectedNode, editHandler));
-            return root;
-        }
 
-        /// <summary>선택지 추가 버튼과 선택지들이 들어갈 공간을 생성</summary>
-        private static VisualElement CreateChoicesSector(DialogueChoiceNode selectedNode, NodeInspectorEditHandler editHandler)
-        {
-            VisualElement root = new();
+            //선택지 추가 버튼과 선택지들이 들어갈 공간을 생성
+            VisualElement section = new();
+            root.Add(section);
             Label title = new("Choices");
             title.AddToClassList("choice-title");
-            root.Add(title);
+            section.Add(title);
 
             VisualElement choicesContainer = new();
-            root.Add(choicesContainer);
+            section.Add(choicesContainer);
 
             //동적으로 생성하는 버튼
             Button addButton = new(() =>
@@ -35,11 +31,9 @@ namespace UniversalGraph.Dialogue.Editor
                 {
                     DialogueChoiceData choice = new()
                     {
-                        PortName = Guid.NewGuid().ToString(),
                         ChoiceText = "New Choice"
                     };
-                    selectedNode.NodeData.Choices.Add(choice);
-                    selectedNode.AddChoicePort(choice);
+                    selectedNode.AddChoice(choice);
                     RedrawChoices();
                 });
             })
@@ -47,7 +41,7 @@ namespace UniversalGraph.Dialogue.Editor
                 text = "+ Add Choice"
             };
             addButton.AddToClassList("add-choice-btn");
-            root.Add(addButton);
+            section.Add(addButton);
 
             RedrawChoices();
             return root;
@@ -77,9 +71,7 @@ namespace UniversalGraph.Dialogue.Editor
             {
                 editHandler.ApplyStructureEdit("Delete dialogue choice", () =>
                 {
-                    selectedNode.RemoveChoicePort(choice);
-                    selectedNode.NodeData.Choices.Remove(choice);
-                    selectedNode.RefreshPreview();
+                    selectedNode.RemoveChoice(choice);
                     redrawChoices?.Invoke();
                 });
             })
@@ -102,9 +94,8 @@ namespace UniversalGraph.Dialogue.Editor
             });
             box.Add(textField);
 
-            //선택 시 실행할 Action
+            //선택지 공개 조건
             box.Add(MethodBindingInspector.Create(editHandler, "선택지 공개 조건", choice.VisibilityCondition, DialogueMethodCatalog.GetMethodList(MethodKind.Condition)));
-            box.Add(MethodBindingInspector.Create(editHandler, "실행할 Action", choice.SelectionAction, DialogueMethodCatalog.GetMethodList(MethodKind.Action)));
 
             return box;
         }

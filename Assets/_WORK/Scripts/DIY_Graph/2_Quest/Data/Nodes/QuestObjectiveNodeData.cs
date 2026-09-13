@@ -7,12 +7,26 @@ namespace UniversalGraph
     [Serializable]
     public class QuestObjectiveNodeData : NodeBaseData
     {
-        public string EventKey;
+        [SerializeField]
+        private string eventKey = string.Empty;
 
-        [Tooltip("게임 플레이 이벤트와 비교할 프로젝트 정의 대상 ID입니다.")]
+        /// <summary>
+        /// 어떤 Event에 반응해서 Objective를 변화시킬지.
+        /// </summary>
+        public string EventKey
+        {
+            get => eventKey?.Trim() ?? string.Empty;
+            set => eventKey = value?.Trim() ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Objective를 검사할 때 사용할 id
+        /// </summary>
         public int TargetId;
 
-        [Tooltip("선택적인 제작용 참조입니다. 현재 런타임 비교에는 TargetId를 사용합니다.")]
+        /// <summary>
+        /// UI 등에서 활용할 때 편리하게 쓸 id의 실물
+        /// </summary>
         public UnityEngine.Object TargetReference;
 
         [Min(1)]

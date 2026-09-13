@@ -41,7 +41,6 @@ namespace UniversalGraph.Dialogue.Editor
                             AddWarning("DIALOGUE_EMPTY_TEXT", "대화문이 비어 있습니다.", line.Guid);
                         }
 
-                        ValidateMethodBinding(line.Guid, MethodKind.Action, line.EnterAction, "대화 진입 Action");
                         OutputValidation(line.Guid, DialoguePortNames.Next);
                         break;
 
@@ -145,13 +144,12 @@ namespace UniversalGraph.Dialogue.Editor
                     }
 
                     ValidateMethodBinding(choiceNode.Guid, MethodKind.Condition, choice.VisibilityCondition, $"{label} Condition");
-                    ValidateMethodBinding(choiceNode.Guid, MethodKind.Action, choice.SelectionAction, $"{label} Action");
 
                     OutputValidation(choiceNode.Guid, choice.PortName, label);
                 }
 
                 //혹시 선택지가 없어서 default 포트를 사용하는 경우 default가 연결되어 있는지 확인
-                bool needsDefault = choiceNode.Choices.All(choice => !string.IsNullOrWhiteSpace(choice?.VisibilityCondition?.Key));
+                bool needsDefault = choiceNode.Choices.All(choice => choice?.VisibilityCondition?.HasKey == true);
 
                 if (needsDefault)
                 {
@@ -177,7 +175,7 @@ namespace UniversalGraph.Dialogue.Editor
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(bindingData.Key))
+                if (!bindingData.HasKey)
                 {
                     if (required)
                     {

@@ -357,6 +357,7 @@ namespace UniversalGraph
             DialogueExecutionContext dialogueContext = null, 
             QuestExecutionContext questContext = null)
 		{
+            //여기서 사실상 복구 완료, context는 아직임.
 			if (!TryDecodeAllArgumentData(argumentData, descriptor, out result, out error))
 			{
 				return false;

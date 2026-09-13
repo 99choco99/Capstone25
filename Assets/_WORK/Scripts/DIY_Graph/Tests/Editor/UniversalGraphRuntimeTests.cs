@@ -14,6 +14,7 @@ namespace UniversalGraph.Tests
         private static int attributedQuestActionAmount;
         private static bool attributedQuestActionFlag;
         private static int dialogueChoiceActionCount;
+        private static Action<string> dialogueRunAction;
         private static Action<QuestExecutionContext> questRunAction;
         private static Func<QuestExecutionContext, bool> questRunCondition;
         private static int overloadedActionAmount;
@@ -29,8 +30,7 @@ namespace UniversalGraph.Tests
                 invoker.GetMethod("ResetStaticState", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, null);
                 invoker.GetMethod("Initialize").Invoke(null, null);
                 object[] arguments = { typeof(UniversalGraphRuntimeTests).Assembly };
-                string scanMethod = invoker == typeof(DialogueMethodInvoker) ? "ScanAssemblyByReflection" : "ScanAssembly";
-                invoker.GetMethod(scanMethod, BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, arguments);
+                invoker.GetMethod("ScanAssembly", BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, arguments);
             }
         }
 
@@ -46,6 +46,7 @@ namespace UniversalGraph.Tests
         [TearDown]
         public void TearDown()
         {
+            dialogueRunAction = null;
             questRunAction = null;
             questRunCondition = null;
             invokedArgumentValues = null;
@@ -89,7 +90,7 @@ namespace UniversalGraph.Tests
         [TestCase(typeof(QuestMethodInvoker), "Quest", "tests.quest.choice-visible")]
         public void MethodInvokers_InvokeActionAndConditionWithOneApi(Type invoker, string label, string conditionKey)
         {
-            MethodInfo invoke = invoker.GetMethod("TryInvokeMethod");
+            MethodInfo invoke = invoker.GetMethod("InvokeMethod");
             var binding = new MethodBindingData { Key = "tests.invoker.action" };
             object[] arguments = { binding, null, MethodKind.Action, true };
             int actionCount = dialogueChoiceActionCount;
@@ -117,13 +118,35 @@ namespace UniversalGraph.Tests
             Assert.That(dialogueChoiceActionCount, Is.EqualTo(actionCount + 1));
         }
 
+        [TestCase(typeof(DialogueMethodInvoker))]
+        [TestCase(typeof(QuestMethodInvoker))]
+        public void MethodInvokers_InvokeNormalizedBindingWithoutChangingArguments(Type invoker)
+        {
+            var binding = JsonUtility.FromJson<MethodBindingData>("{\"key\":\"  tests.invoker.all-types  \"}");
+            DialogueContainer asset = CreateAsset<DialogueContainer>();
+            binding.Arguments = CreateDialogueArguments(
+                nameof(AcceptAllSupportedArgumentTypes), MethodKind.Action,
+                ("arg0", "text"), ("arg1", true), ("arg2", 42),
+                ("arg3", 1.25f), ("arg4", QuestState.InProgress), ("arg5", asset));
+            List<MethodArgumentData> savedArguments = binding.Arguments;
+            string before = JsonUtility.ToJson(binding);
+            object[] arguments = { binding, null, MethodKind.Action, false };
+
+            Assert.That(binding.Key, Is.EqualTo("tests.invoker.all-types"));
+            Assert.That((bool)invoker.GetMethod("InvokeMethod").Invoke(null, arguments), Is.True);
+            Assert.That(invokedArgumentValues,
+                Is.EqualTo(new object[] { "text", true, 42, 1.25f, QuestState.InProgress, asset }));
+            Assert.That(binding.Arguments, Is.SameAs(savedArguments));
+            Assert.That(JsonUtility.ToJson(binding), Is.EqualTo(before));
+        }
+
         [TestCase(false)]
         [TestCase(true)]
         public void MethodDescriptorFactories_AcceptNonGenericOverloadAndRejectGenericDeclaration(bool quest)
         {
             Type factory = quest ? typeof(QuestMethodDescriptorFactory) : typeof(DialogueMethodDescriptorFactory);
             object owner = quest ? (object)QuestMethodOwner.Global : DialogueMethodOwner.Global;
-            MethodInfo create = factory.GetMethod("TryCreateDescriptor");
+            MethodInfo create = factory.GetMethod("CreateDescriptor");
             foreach (MethodInfo method in typeof(UniversalGraphRuntimeTests)
                          .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
                          .Where(method => method.Name == nameof(RecordOverloadedAction)))
@@ -145,6 +168,115 @@ namespace UniversalGraph.Tests
             }
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void MethodDescriptorFactories_RejectConstructedGenericMethod(bool quest)
+        {
+            MethodInfo method = typeof(UniversalGraphRuntimeTests)
+                .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+                .Single(candidate => candidate.Name == nameof(RecordOverloadedAction) && candidate.IsGenericMethodDefinition)
+                .MakeGenericMethod(typeof(int));
+
+            Assert.That(method.ContainsGenericParameters, Is.False);
+            Type factory = quest ? typeof(QuestMethodDescriptorFactory) : typeof(DialogueMethodDescriptorFactory);
+            object owner = quest ? (object)QuestMethodOwner.Global : DialogueMethodOwner.Global;
+            object[] arguments = { method, MethodKind.Action, "tests.closed-generic", owner, null, null };
+
+            Assert.That((bool)factory.GetMethod("CreateDescriptor").Invoke(null, arguments), Is.False);
+            Assert.That(arguments[4], Is.Null);
+            Assert.That(arguments[5], Is.Not.Null.And.Not.Empty);
+        }
+
+        [TestCase(false, false)]
+        [TestCase(false, true)]
+        [TestCase(true, false)]
+        [TestCase(true, true)]
+        public void MethodDescriptorFactories_RequireClosedDeclaringType(bool quest, bool closedType)
+        {
+            Type declaringType = closedType ? typeof(FactoryGenericOwner<int>) : typeof(FactoryGenericOwner<>);
+            MethodInfo method = declaringType.GetMethod("Execute");
+            Type factory = quest ? typeof(QuestMethodDescriptorFactory) : typeof(DialogueMethodDescriptorFactory);
+            object owner = quest ? (object)QuestMethodOwner.Global : DialogueMethodOwner.Global;
+            object[] arguments = { method, MethodKind.Action, "tests.generic-owner", owner, null, null };
+
+            Assert.That(method.IsGenericMethod, Is.False);
+            Assert.That(method.ContainsGenericParameters, Is.EqualTo(!closedType));
+            Assert.That((bool)factory.GetMethod("CreateDescriptor").Invoke(null, arguments), Is.EqualTo(closedType));
+            if (closedType)
+            {
+                Assert.That(((MethodDescriptor)arguments[4]).DeclaringType, Is.EqualTo(declaringType));
+                Assert.That(arguments[5], Is.Null);
+            }
+            else
+            {
+                Assert.That(arguments[4], Is.Null);
+                Assert.That(arguments[5], Is.Not.Null.And.Not.Empty);
+            }
+        }
+
+        [TestCase(false, nameof(FactoryAsyncAction))]
+        [TestCase(true, nameof(FactoryAsyncAction))]
+        [TestCase(false, nameof(FactoryOptionalAction))]
+        [TestCase(true, nameof(FactoryOptionalAction))]
+        [TestCase(false, nameof(FactoryParamsAction))]
+        [TestCase(true, nameof(FactoryParamsAction))]
+        public void MethodDescriptorFactories_RejectUnsupportedCallingForms(bool quest, string methodName)
+        {
+            MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+            Type factory = quest ? typeof(QuestMethodDescriptorFactory) : typeof(DialogueMethodDescriptorFactory);
+            object owner = quest ? (object)QuestMethodOwner.Global : DialogueMethodOwner.Global;
+            object[] arguments = { method, MethodKind.Action, "tests.unsupported-call", owner, null, null };
+
+            Assert.That((bool)factory.GetMethod("CreateDescriptor").Invoke(null, arguments), Is.False);
+            Assert.That(arguments[4], Is.Null);
+            Assert.That(arguments[5], Is.Not.Null.And.Not.Empty);
+        }
+
+        [TestCase(false, MethodKind.Action)]
+        [TestCase(false, MethodKind.Condition)]
+        [TestCase(true, MethodKind.Action)]
+        [TestCase(true, MethodKind.Condition)]
+        public void MethodBindings_TreatNoneAsAnOrdinaryRegisteredKey(bool quest, MethodKind kind)
+        {
+            string methodName = kind == MethodKind.Action ? nameof(RecordNoneKeyAction) : nameof(EvaluateNoneKeyCondition);
+            MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+            Type factory = quest ? typeof(QuestMethodDescriptorFactory) : typeof(DialogueMethodDescriptorFactory);
+            object owner = quest ? (object)QuestMethodOwner.Global : DialogueMethodOwner.Global;
+            object[] factoryArguments = { method, kind, "None", owner, null, null };
+
+            Assert.That((bool)factory.GetMethod("CreateDescriptor").Invoke(null, factoryArguments), Is.True);
+            Assert.That(((MethodDescriptor)factoryArguments[4]).Key, Is.EqualTo("None"));
+            Assert.That(factoryArguments[5], Is.Null);
+
+            var binding = new MethodBindingData { Key = "  None  " };
+            Type invoker = quest ? typeof(QuestMethodInvoker) : typeof(DialogueMethodInvoker);
+            object[] arguments = { binding, null, kind, false };
+            int previousCount = dialogueChoiceActionCount;
+
+            Assert.That(binding.HasKey, Is.True);
+            Assert.That((bool)invoker.GetMethod("InvokeMethod").Invoke(null, arguments), Is.True);
+            Assert.That((bool)arguments[3], Is.EqualTo(kind == MethodKind.Condition));
+            Assert.That(dialogueChoiceActionCount, Is.EqualTo(previousCount + (kind == MethodKind.Action ? 1 : 0)));
+        }
+
+        [TestCase(false, null)]
+        [TestCase(false, "")]
+        [TestCase(false, " \t\r\n ")]
+        [TestCase(true, null)]
+        [TestCase(true, "")]
+        [TestCase(true, " \t\r\n ")]
+        public void MethodDescriptorFactories_StillRejectEmptyKeys(bool quest, string key)
+        {
+            MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(nameof(RecordInvokerAction), BindingFlags.Static | BindingFlags.NonPublic);
+            Type factory = quest ? typeof(QuestMethodDescriptorFactory) : typeof(DialogueMethodDescriptorFactory);
+            object owner = quest ? (object)QuestMethodOwner.Global : DialogueMethodOwner.Global;
+            object[] arguments = { method, MethodKind.Action, key, owner, null, null };
+
+            Assert.That((bool)factory.GetMethod("CreateDescriptor").Invoke(null, arguments), Is.False);
+            Assert.That(arguments[4], Is.Null);
+            Assert.That(arguments[5], Is.Not.Null.And.Not.Empty);
+        }
+
         [TestCase(false, MethodKind.Action, nameof(IsDialogueChoiceVisible))]
         [TestCase(true, MethodKind.Action, nameof(IsDialogueChoiceVisible))]
         [TestCase(false, MethodKind.Condition, nameof(RecordInvokerAction))]
@@ -156,7 +288,7 @@ namespace UniversalGraph.Tests
             MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
             object[] arguments = { method, kind, "tests.invalid-return", owner, null, null };
 
-            Assert.That((bool)factory.GetMethod("TryCreateDescriptor").Invoke(null, arguments), Is.False);
+            Assert.That((bool)factory.GetMethod("CreateDescriptor").Invoke(null, arguments), Is.False);
             Assert.That(arguments[4], Is.Null);
             Assert.That(arguments[5], Is.Not.Null.And.Not.Empty);
         }
@@ -176,7 +308,7 @@ namespace UniversalGraph.Tests
             };
 
             object[] arguments = { binding, null, MethodKind.Action, false };
-            Assert.That((bool)invoker.GetMethod("TryInvokeMethod").Invoke(null, arguments), Is.True);
+            Assert.That((bool)invoker.GetMethod("InvokeMethod").Invoke(null, arguments), Is.True);
             Assert.That(invokedArgumentValues,
                 Is.EqualTo(new object[] { "text", true, 42, 1.25f, QuestState.InProgress, asset }));
         }
@@ -187,7 +319,7 @@ namespace UniversalGraph.Tests
             var context = new DialogueExecutionContext(CreateGameObject("speaker"), CreateGameObject("interactor"));
             var binding = new MethodBindingData { Key = "tests.dialogue.context" };
 
-            Assert.That(DialogueMethodInvoker.TryInvokeMethod(binding, context, MethodKind.Action, out _), Is.True);
+            Assert.That(DialogueMethodInvoker.InvokeMethod(binding, context, MethodKind.Action, out _), Is.True);
             Assert.That(binding.Arguments, Is.Empty);
             Assert.That(invokedDialogueContext, Is.SameAs(context));
         }
@@ -205,7 +337,7 @@ namespace UniversalGraph.Tests
             target.transform.SetSiblingIndex(1);
 
             MethodInfo method = typeof(Transform).GetMethod(nameof(Transform.SetSiblingIndex), new[] { typeof(int) });
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(DialogueMethodDescriptorFactory.CreateDescriptor(
                 method, MethodKind.Action, "tests.dialogue.instance", owner,
                 out DialogueMethodDescriptor descriptor, out string error), Is.True, error);
             typeof(DialogueMethodInvoker).GetMethod("RegisterDescriptor", BindingFlags.Static | BindingFlags.NonPublic)
@@ -219,7 +351,7 @@ namespace UniversalGraph.Tests
 
             try
             {
-                Assert.That(DialogueMethodInvoker.TryInvokeMethod(
+                Assert.That(DialogueMethodInvoker.InvokeMethod(
                     binding, new DialogueExecutionContext(speaker, interactor), MethodKind.Action, out _), Is.True);
                 Assert.That(target.transform.GetSiblingIndex(), Is.Zero);
             }
@@ -230,13 +362,27 @@ namespace UniversalGraph.Tests
         }
 
         [Test]
+        public void QuestMethodInvoker_StillRejectsNullControllerWithAnError()
+        {
+            MethodInfo method = typeof(FakeQuestController).GetMethod("RecordContext", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(QuestMethodDescriptorFactory.CreateDescriptor(
+                method, MethodKind.Action, "tests.null-controller", QuestMethodOwner.Controller,
+                out QuestMethodDescriptor descriptor, out string error), Is.True, error);
+            MethodInfo getTarget = typeof(QuestMethodInvoker).GetMethod("GetTargetInstance", BindingFlags.Static | BindingFlags.NonPublic);
+
+            LogAssert.Expect(LogType.Error,
+                $"[Quest] Controller Action 'tests.null-controller'에는 '{typeof(FakeQuestController).FullName}' 타입이 필요하지만, 현재 Controller 타입은 'null'입니다.");
+            Assert.That(getTarget.Invoke(null, new object[] { descriptor, null }), Is.Null);
+        }
+
+        [Test]
         public void QuestMethodInvoker_UsesControllerInstanceAndInjectsContext()
         {
             var controller = new FakeQuestController();
-            QuestContainer graph = CreateAsset<QuestContainer>();
-            var context = new QuestExecutionContext(controller, graph, null, new QuestActionNodeData());
+            QuestContainer container = CreateAsset<QuestContainer>();
+            var context = new QuestExecutionContext(controller, container, null, new QuestActionNodeData());
             MethodInfo method = typeof(FakeQuestController).GetMethod("RecordContext", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.That(QuestMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(QuestMethodDescriptorFactory.CreateDescriptor(
                 method, MethodKind.Action, "tests.quest.instance", QuestMethodOwner.Controller,
                 out QuestMethodDescriptor descriptor, out string error), Is.True, error);
             var binding = new MethodBindingData
@@ -247,7 +393,7 @@ namespace UniversalGraph.Tests
             WriteArguments(binding.Arguments, descriptor.SerializedParameters, new[] { ("arg0", (object)17) });
 
             Assert.That(binding.Arguments, Has.Count.EqualTo(1));
-            Assert.That(QuestMethodInvoker.TryInvokeMethod(binding, context, MethodKind.Action, out _), Is.True);
+            Assert.That(QuestMethodInvoker.InvokeMethod(binding, context, MethodKind.Action, out _), Is.True);
             Assert.That(controller.InvokedContext, Is.SameAs(context));
             Assert.That(controller.InvokedAmount, Is.EqualTo(17));
         }
@@ -261,7 +407,7 @@ namespace UniversalGraph.Tests
             LogAssert.Expect(LogType.Error,
                 new System.Text.RegularExpressions.Regex("tests\\.invoker\\.throw[\\s\\S]*InvalidOperationException: reflection invocation test"));
 
-            Assert.That((bool)invoker.GetMethod("TryInvokeMethod").Invoke(null, arguments), Is.False);
+            Assert.That((bool)invoker.GetMethod("InvokeMethod").Invoke(null, arguments), Is.False);
             Assert.That(arguments[3], Is.False);
         }
 
@@ -273,7 +419,7 @@ namespace UniversalGraph.Tests
             object owner = invoker == typeof(DialogueMethodInvoker)
                 ? (object)DialogueMethodOwner.Global : QuestMethodOwner.Global;
             MethodInfo register = invoker.GetMethod("RegisterMethod", BindingFlags.Static | BindingFlags.NonPublic);
-            string[] methodNames = { nameof(RecordInvokerAction), nameof(RecordDialogueChoiceAction), nameof(EndCurrentDialogue) };
+            string[] methodNames = { nameof(RecordInvokerAction), nameof(RecordDialogueChoiceAction), nameof(ThrowInvokerException) };
             for (int i = 0; i < methodNames.Length; i++)
             {
                 if (i == 1)
@@ -433,7 +579,7 @@ namespace UniversalGraph.Tests
             MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(
                 nameof(AcceptAllSupportedArgumentTypes),
                 BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(DialogueMethodDescriptorFactory.CreateDescriptor(
                     method,
                     MethodKind.Action,
                     "tests.dialogue.all-argument-types",
@@ -501,7 +647,7 @@ namespace UniversalGraph.Tests
             MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(
                 nameof(IsDialogueChoiceVisible),
                 BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(DialogueMethodDescriptorFactory.CreateDescriptor(
                     method,
                     MethodKind.Condition,
                     "tests.dialogue.invalid-argument",
@@ -532,6 +678,55 @@ namespace UniversalGraph.Tests
             Assert.That(argument.ObjectValue, Is.Null);
         }
 
+        [TestCase("  tests.binding.action  ", "tests.binding.action")]
+        [TestCase(" \t\r\n ", "")]
+        [TestCase("", "")]
+        [TestCase(null, "")]
+        public void MethodBindingData_NormalizesAssignedKeyWithoutChangingArguments(string assignedKey, string expectedKey)
+        {
+            var argument = new MethodArgumentData
+            {
+                ParameterId = "arg0",
+                TypeSignature = "unchanged-type",
+                SerializedValue = "  unchanged value  ",
+                ObjectValue = CreateAsset<DialogueContainer>()
+            };
+            var arguments = new List<MethodArgumentData> { argument };
+            var binding = new MethodBindingData { Arguments = arguments };
+            string before = JsonUtility.ToJson(argument);
+
+            binding.Key = assignedKey;
+
+            Assert.That(binding.Key, Is.EqualTo(expectedKey));
+            Assert.That(binding.Arguments, Is.SameAs(arguments));
+            Assert.That(binding.Arguments[0], Is.SameAs(argument));
+            Assert.That(JsonUtility.ToJson(argument), Is.EqualTo(before));
+        }
+
+        [Test]
+        public void MethodBindingData_NormalizesDeserializedKeyWithoutChangingArguments()
+        {
+            var binding = JsonUtility.FromJson<MethodBindingData>(
+                "{\"key\":\"  tests.binding.deserialized  \",\"Arguments\":[{\"ParameterId\":\"arg0\",\"TypeSignature\":\"unchanged-type\",\"SerializedValue\":\"  unchanged value  \"}]}");
+
+            Assert.That(binding.Key, Is.EqualTo("tests.binding.deserialized"));
+            Assert.That(binding.Arguments, Has.Count.EqualTo(1));
+            Assert.That(binding.Arguments[0].ParameterId, Is.EqualTo("arg0"));
+            Assert.That(binding.Arguments[0].TypeSignature, Is.EqualTo("unchanged-type"));
+            Assert.That(binding.Arguments[0].SerializedValue, Is.EqualTo("  unchanged value  "));
+        }
+
+        [Test]
+        public void MethodBindingData_SerializesAssignedKeyInNormalizedForm()
+        {
+            var binding = new MethodBindingData { Key = "  tests.binding.serialized  " };
+
+            string json = JsonUtility.ToJson(binding);
+
+            Assert.That(json, Does.Contain("\"key\":\"tests.binding.serialized\""));
+            Assert.That(JsonUtility.FromJson<MethodBindingData>(json).Key, Is.EqualTo(binding.Key));
+        }
+
         [Test]
         public void WaitSignalNodeData_NormalizesSignalKeyWhenAssignedOrDeserialized()
         {
@@ -547,6 +742,130 @@ namespace UniversalGraph.Tests
         }
 
         [Test]
+        public void NewGraphData_CreatesUniqueStableIdentifiers()
+        {
+            NodeBaseData[] nodes = { new DialogueLineNodeData(), new QuestObjectiveNodeData() };
+            DialogueChoiceData[] choices = { new(), new() };
+            string[] ids = { nodes[0].Guid, nodes[1].Guid, choices[0].PortName, choices[1].PortName };
+
+            Assert.That(ids.Distinct().Count(), Is.EqualTo(ids.Length));
+            foreach (string id in ids)
+            {
+                Assert.That(Guid.TryParse(id, out _), Is.True);
+            }
+
+            Assert.That(nodes[0].Guid, Is.EqualTo(ids[0]));
+            Assert.That(choices[0].PortName, Is.EqualTo(ids[2]));
+        }
+
+        [Test]
+        public void GraphIdentifiers_SurviveSerializationWithoutBeingRegenerated()
+        {
+            var node = new DialogueChoiceNodeData();
+            node.Choices.Add(new DialogueChoiceData { ChoiceText = "Choice" });
+
+            var restored = JsonUtility.FromJson<DialogueChoiceNodeData>(JsonUtility.ToJson(node));
+
+            Assert.That(restored.Guid, Is.EqualTo(node.Guid));
+            Assert.That(restored.Choices.Single().PortName, Is.EqualTo(node.Choices.Single().PortName));
+        }
+
+        [TestCase(null)]
+        [TestCase("")]
+        public void GraphIdentifiers_ExplicitInvalidSavedValuesAreNotReplaced(string id)
+        {
+            var node = new DialogueChoiceNodeData { Guid = id };
+            node.Choices.Add(new DialogueChoiceData { PortName = id });
+
+            var restored = JsonUtility.FromJson<DialogueChoiceNodeData>(JsonUtility.ToJson(node));
+
+            Assert.That(string.IsNullOrEmpty(restored.Guid), Is.True);
+            Assert.That(string.IsNullOrEmpty(restored.Choices.Single().PortName), Is.True);
+        }
+
+        [TestCase(null, false)]
+        [TestCase("", false)]
+        [TestCase(" \t\r\n ", false)]
+        [TestCase("  missing.method  ", true)]
+        public void MethodBinding_HasKeyOnlyChecksWhetherAKeyWasEntered(string key, bool expected)
+        {
+            var binding = new MethodBindingData { Key = key };
+            var restored = JsonUtility.FromJson<MethodBindingData>(JsonUtility.ToJson(binding));
+
+            Assert.That(binding.HasKey, Is.EqualTo(expected));
+            Assert.That(restored.HasKey, Is.EqualTo(expected));
+            Assert.That(restored.Arguments, Is.Empty);
+        }
+
+        [TestCase("  item.give  ", "item.give")]
+        [TestCase("  item give  ", "item give")]
+        [TestCase(" \t\r\n ", "")]
+        [TestCase(null, "")]
+        public void MethodAttributes_NormalizeKeysInTheirConstructors(string key, string expected)
+        {
+            Assert.That(new DialogueActionAttribute(key).Key, Is.EqualTo(expected));
+            Assert.That(new DialogueConditionAttribute(key).Key, Is.EqualTo(expected));
+            Assert.That(new QuestActionAttribute(key).Key, Is.EqualTo(expected));
+            Assert.That(new QuestConditionAttribute(key).Key, Is.EqualTo(expected));
+        }
+
+        [TestCase("  quest.key  ", "quest.key")]
+        [TestCase("  quest key  ", "quest key")]
+        [TestCase(" \t\r\n ", "")]
+        [TestCase(null, "")]
+        public void QuestKeyData_NormalizesAssignmentsBeforeSaving(string key, string expected)
+        {
+            var objective = new QuestObjectiveNodeData
+            {
+                EventKey = key,
+                TargetId = 7,
+                ObjectiveDescription = "  Keep these spaces  "
+            };
+            var entry = new QuestInteractionEntryNodeData { TargetId = key };
+
+            Assert.That(objective.EventKey, Is.EqualTo(expected));
+            Assert.That(entry.TargetId, Is.EqualTo(expected));
+            Assert.That(JsonUtility.ToJson(objective), Does.Contain($"\"eventKey\":\"{expected}\""));
+            Assert.That(JsonUtility.ToJson(entry), Does.Contain($"\"targetId\":\"{expected}\""));
+            Assert.That(objective.TargetId, Is.EqualTo(7));
+            Assert.That(objective.ObjectiveDescription, Is.EqualTo("  Keep these spaces  "));
+        }
+
+        [Test]
+        public void QuestKeyData_NormalizesDeserializedKeysWithoutChangingDescriptions()
+        {
+            var objective = JsonUtility.FromJson<QuestObjectiveNodeData>(
+                "{\"eventKey\":\"  Collect  \",\"TargetId\":7,\"ObjectiveDescription\":\"  Keep these spaces  \"}");
+            var entry = JsonUtility.FromJson<QuestInteractionEntryNodeData>("{\"targetId\":\"  village chief  \"}");
+
+            Assert.That(objective.EventKey, Is.EqualTo("Collect"));
+            Assert.That(entry.TargetId, Is.EqualTo("village chief"));
+            Assert.That(objective.TargetId, Is.EqualTo(7));
+            Assert.That(objective.ObjectiveDescription, Is.EqualTo("  Keep these spaces  "));
+        }
+
+        [Test]
+        public void QuestObjective_MatchesNormalizedStoredAndReportedEventKeys()
+        {
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 963;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestObjectiveNodeData
+            {
+                Guid = "objective", EventKey = "  Collect  ", TargetId = 7, RequiredAmount = 1
+            });
+            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "end", NewState = QuestState.CanComplete });
+            container.NodeLinks.Add(Link("start", QuestPortNames.Next, "objective"));
+            container.NodeLinks.Add(Link("objective", QuestPortNames.Next, "end"));
+            QuestManager.Initialize(new[] { container });
+            var controller = new FakeQuestController();
+
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
+            QuestManager.ReportObjectiveProgress(controller, "  Collect  ", 7, 1);
+            Assert.That(controller.QuestProgress[container.QuestId].state, Is.EqualTo(QuestState.CanComplete));
+        }
+
+        [Test]
         public void DialogueAndQuestDescriptors_UseTheCommonMethodContract()
         {
             MethodInfo dialogueMethod = typeof(UniversalGraphRuntimeTests).GetMethod(
@@ -556,7 +875,7 @@ namespace UniversalGraph.Tests
                 nameof(IsAttributedQuestReady),
                 BindingFlags.Static | BindingFlags.NonPublic);
 
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(DialogueMethodDescriptorFactory.CreateDescriptor(
                     dialogueMethod,
                     MethodKind.Condition,
                     "tests.dialogue.choice-visible",
@@ -565,7 +884,7 @@ namespace UniversalGraph.Tests
                     out string dialogueError),
                 Is.True,
                 dialogueError);
-            Assert.That(QuestMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(QuestMethodDescriptorFactory.CreateDescriptor(
                     questMethod,
                     MethodKind.Condition,
                     "tests.quest.is-ready",
@@ -595,28 +914,28 @@ namespace UniversalGraph.Tests
                 nameof(IsAttributedQuestReady),
                 BindingFlags.Static | BindingFlags.NonPublic);
 
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(DialogueMethodDescriptorFactory.CreateDescriptor(
                 dialogueMethod,
                 (MethodKind)999,
                 "tests.dialogue.invalid-kind",
                 DialogueMethodOwner.Global,
                 out _,
                 out _), Is.False);
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(DialogueMethodDescriptorFactory.CreateDescriptor(
                 dialogueMethod,
                 MethodKind.Condition,
                 "tests.dialogue.invalid-owner",
                 (DialogueMethodOwner)999,
                 out _,
                 out _), Is.False);
-            Assert.That(QuestMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(QuestMethodDescriptorFactory.CreateDescriptor(
                 questMethod,
                 (MethodKind)999,
                 "tests.quest.invalid-kind",
                 QuestMethodOwner.Global,
                 out _,
                 out _), Is.False);
-            Assert.That(QuestMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(QuestMethodDescriptorFactory.CreateDescriptor(
                 questMethod,
                 MethodKind.Condition,
                 "tests.quest.invalid-target",
@@ -625,12 +944,88 @@ namespace UniversalGraph.Tests
                 out _), Is.False);
         }
 
-        [Test]
-        public void QuestQueries_ReturnsDialogueFromQuestStateWithoutGameTypes()
+        [TestCase(false)]
+        [TestCase(true)]
+        public void QuestCustomCondition_StartsAllObjectivesOnTheSelectedPort(bool result)
+        {
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 99101;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestConditionNodeData
+            {
+                Guid = "condition",
+                Condition = new MethodBindingData { Key = "tests.quest.run-condition" }
+            });
+            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "end" });
+            container.NodeLinks.Add(Link("start", QuestPortNames.Next, "condition"));
+            foreach (string port in new[] { QuestPortNames.True, QuestPortNames.False })
+            {
+                foreach (int i in new[] { 1, 2 })
+                {
+                    string guid = port + i;
+                    container.Nodes.Add(new QuestObjectiveNodeData { Guid = guid, EventKey = guid });
+                    container.NodeLinks.Add(Link("condition", port, guid));
+                    container.NodeLinks.Add(Link(guid, QuestPortNames.Next, "end"));
+                }
+            }
+            questRunCondition = _ => result;
+            QuestManager.Initialize(new[] { container });
+            var controller = new FakeQuestController();
+
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
+
+            string selectedPort = result ? QuestPortNames.True : QuestPortNames.False;
+            Assert.That(controller.QuestProgress[container.QuestId].ActiveNodeGuids,
+                Is.EquivalentTo(new[] { selectedPort + 1, selectedPort + 2 }));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void QuestCustomCondition_CollectsAllDialogueCandidatesOnTheSelectedPort(bool result)
         {
             DialogueContainer dialogue = CreateAsset<DialogueContainer>();
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 10;
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 99102;
+            container.Nodes.Add(new QuestInteractionEntryNodeData { Guid = "entry", TargetId = "npc" });
+            container.Nodes.Add(new QuestConditionNodeData
+            {
+                Guid = "condition",
+                Condition = new MethodBindingData { Key = "tests.quest.run-condition" }
+            });
+            container.NodeLinks.Add(Link("entry", QuestPortNames.Next, "condition"));
+            foreach (string port in new[] { QuestPortNames.True, QuestPortNames.False })
+            {
+                foreach (int i in new[] { 1, 2 })
+                {
+                    string guid = port + i;
+                    container.Nodes.Add(new DialogueCandidateNodeData
+                    {
+                        Guid = guid,
+                        DisplayName = guid,
+                        EntryPoint = new DialogueEntryPoint(dialogue, DialogueEntryNodeData.DefaultEntryId)
+                    });
+                    container.NodeLinks.Add(Link("condition", port, guid));
+                }
+            }
+            questRunCondition = _ => result;
+            QuestManager.Initialize(new[] { container });
+
+            DialogueCandidateNodeData[] candidates = QuestManager.GetDialogueCandidates(new FakeQuestController(), "npc");
+
+            string selectedPort = result ? QuestPortNames.True : QuestPortNames.False;
+            Assert.That(candidates.Select(candidate => candidate.DisplayName),
+                Is.EquivalentTo(new[] { selectedPort + 1, selectedPort + 2 }));
+        }
+
+        [TestCase("Quest")]
+        [TestCase("  Quest  ")]
+        [TestCase("")]
+        [TestCase(null)]
+        public void QuestManager_ReturnsDialogueFromQuestStateWithoutGameTypes(string displayName)
+        {
+            DialogueContainer dialogue = CreateAsset<DialogueContainer>();
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 10;
             var entry = new QuestInteractionEntryNodeData { Guid = "entry", TargetId = "npc-7" };
             var condition = new QuestStateConditionNodeData
             {
@@ -642,37 +1037,38 @@ namespace UniversalGraph.Tests
             {
                 Guid = "candidate",
                 EntryPoint = new DialogueEntryPoint(dialogue, "Default"),
-                DisplayName = "Quest",
+                DisplayName = displayName,
                 Priority = 5
             };
-            quest.Nodes.Add(entry);
-            quest.Nodes.Add(condition);
-            quest.Nodes.Add(candidate);
-            quest.NodeLinks.Add(Link("entry", "Next", "condition"));
-            quest.NodeLinks.Add(Link("condition", "True", "candidate"));
+            container.Nodes.Add(entry);
+            container.Nodes.Add(condition);
+            container.Nodes.Add(candidate);
+            container.NodeLinks.Add(Link("entry", "Next", "condition"));
+            container.NodeLinks.Add(Link("condition", "True", "candidate"));
 
             var controller = new FakeQuestController();
-            controller.QuestProgress.Add(10, new QuestProgress(quest) { state = QuestState.InProgress });
+            controller.QuestProgress.Add(10, new QuestProgress(container) { state = QuestState.InProgress });
 
-            QuestDefinitionRegistry.Initialize(new[] { quest });
-            DialogueCandidate[] candidates = QuestQueries.GetDialogueCandidates(controller, "npc-7");
+            QuestManager.Initialize(new[] { container });
+            DialogueCandidateNodeData[] candidates = QuestManager.GetDialogueCandidates(controller, "npc-7");
 
             Assert.That(candidates, Has.Length.EqualTo(1));
-            Assert.That(candidates[0].EntryPoint.GraphAsset, Is.SameAs(dialogue));
-            Assert.That(candidates[0].DisplayName, Is.EqualTo("Quest"));
+            Assert.That(candidates[0], Is.SameAs(candidate));
+            Assert.That(candidates[0].EntryPoint.Container, Is.SameAs(dialogue));
+            Assert.That(candidates[0].DisplayName, Is.EqualTo(displayName));
             Assert.That(candidates[0].Priority, Is.EqualTo(5));
         }
 
         [Test]
-        public void QuestOffer_RevalidatesPrerequisiteAndCreatesProgressWhenAccepted()
+        public void QuestSuggestion_RevalidatesPrerequisiteAndCreatesProgressWhenAccepted()
         {
-            QuestContainer prerequisite = CreateAsset<QuestContainer>();
-            prerequisite.QuestId = 40;
-            prerequisite.Nodes.Add(new QuestStartNodeData { Guid = "prerequisite-start" });
+            QuestContainer prerequisiteContainer = CreateAsset<QuestContainer>();
+            prerequisiteContainer.QuestId = 40;
+            prerequisiteContainer.Nodes.Add(new QuestStartNodeData { Guid = "prerequisite-start" });
 
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 41;
-            quest.questName = "Available Quest";
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 41;
+            container.questName = "Available Quest";
             var start = new QuestStartNodeData { Guid = "quest-start" };
             var objective = new QuestObjectiveNodeData
             {
@@ -689,66 +1085,66 @@ namespace UniversalGraph.Tests
             var condition = new QuestStateConditionNodeData
             {
                 Guid = "prerequisite-condition",
-                QuestId = prerequisite.QuestId,
+                QuestId = prerequisiteContainer.QuestId,
                 TargetState = QuestState.TurnedIn
             };
-            var available = new QuestOfferNodeData
+            var availableNodeData = new QuestSuggestionNodeData
             {
-                Guid = "available-offer",
+                Guid = "available-candidate",
                 Priority = 10,
                 IsAvailable = true
             };
-            var blocked = new QuestOfferNodeData
+            var blockedNodeData = new QuestSuggestionNodeData
             {
-                Guid = "blocked-offer",
+                Guid = "blocked-candidate",
                 Priority = 10,
                 IsAvailable = false,
                 BlockReason = "선행 Quest 미완료"
             };
-            quest.Nodes.Add(start);
-            quest.Nodes.Add(objective);
-            quest.Nodes.Add(interaction);
-            quest.Nodes.Add(condition);
-            quest.Nodes.Add(available);
-            quest.Nodes.Add(blocked);
-            quest.NodeLinks.Add(Link("quest-start", "Next", "objective"));
-            quest.NodeLinks.Add(Link("interaction", "Next", "prerequisite-condition"));
-            quest.NodeLinks.Add(Link("prerequisite-condition", "True", "available-offer"));
-            quest.NodeLinks.Add(Link("prerequisite-condition", "False", "blocked-offer"));
+            container.Nodes.Add(start);
+            container.Nodes.Add(objective);
+            container.Nodes.Add(interaction);
+            container.Nodes.Add(condition);
+            container.Nodes.Add(availableNodeData);
+            container.Nodes.Add(blockedNodeData);
+            container.NodeLinks.Add(Link("quest-start", "Next", "objective"));
+            container.NodeLinks.Add(Link("interaction", "Next", "prerequisite-condition"));
+            container.NodeLinks.Add(Link("prerequisite-condition", "True", "available-candidate"));
+            container.NodeLinks.Add(Link("prerequisite-condition", "False", "blocked-candidate"));
 
-            QuestDefinitionRegistry.Initialize(new[] { prerequisite, quest });
+            QuestManager.Initialize(new[] { prerequisiteContainer, container });
             var controller = new FakeQuestController();
 
-            QuestOffer blockedOffer = QuestQueries.GetQuestOffers(controller, "NPC").Single();
-            Assert.That(blockedOffer.QuestId, Is.EqualTo(quest.QuestId));
-            Assert.That(blockedOffer.IsAvailable, Is.False);
-            Assert.That(blockedOffer.BlockReason, Is.EqualTo("선행 Quest 미완료"));
+            QuestSuggestion blockedSuggestion = QuestManager.GetQuestSuggestions(controller, "NPC").Single();
+            Assert.That(blockedSuggestion.QuestId, Is.EqualTo(container.QuestId));
+            Assert.That(blockedSuggestion.IsAvailable, Is.False);
+            Assert.That(blockedSuggestion.BlockReason, Is.EqualTo("선행 Quest 미완료"));
 
-            var prerequisiteProgress = new QuestProgress(prerequisite) { state = QuestState.TurnedIn };
-            controller.QuestProgress.Add(prerequisite.QuestId, prerequisiteProgress);
-            QuestOffer staleOffer = QuestQueries.GetQuestOffers(controller, "NPC").Single();
-            Assert.That(staleOffer.IsAvailable, Is.True);
+            var prerequisiteProgress = new QuestProgress(prerequisiteContainer) { state = QuestState.TurnedIn };
+            controller.QuestProgress.Add(prerequisiteContainer.QuestId, prerequisiteProgress);
+            QuestSuggestion staleSuggestion = QuestManager.GetQuestSuggestions(controller, "NPC").Single();
+            Assert.That(staleSuggestion.IsAvailable, Is.True);
 
             prerequisiteProgress.state = QuestState.InProgress;
-            Assert.That(QuestRunner.TryAcceptQuest(controller, staleOffer), Is.False);
-            Assert.That(controller.QuestProgress.ContainsKey(quest.QuestId), Is.False);
+            Assert.That(QuestManager.AcceptQuest(controller, staleSuggestion), Is.False);
+            Assert.That(controller.QuestProgress.ContainsKey(container.QuestId), Is.False);
 
             prerequisiteProgress.state = QuestState.TurnedIn;
-            QuestOffer refreshedOffer = QuestQueries.GetQuestOffers(controller, "NPC").Single();
-            Assert.That(refreshedOffer.IsAvailable, Is.True);
-            Assert.That(QuestRunner.TryAcceptQuest(controller, refreshedOffer), Is.True);
+            QuestSuggestion refreshedSuggestion = QuestManager.GetQuestSuggestions(controller, "NPC").Single();
+            Assert.That(refreshedSuggestion.IsAvailable, Is.True);
+            Assert.That(QuestManager.AcceptQuest(controller, refreshedSuggestion), Is.True);
 
-            QuestProgress createdProgress = controller.QuestProgress[quest.QuestId];
+            QuestProgress createdProgress = controller.QuestProgress[container.QuestId];
             Assert.That(createdProgress, Is.Not.Null);
             Assert.That(createdProgress.state, Is.EqualTo(QuestState.InProgress));
-            Assert.That(createdProgress.activeNodeGuids, Does.Contain("objective"));
+            Assert.That(createdProgress.ActiveNodeGuids, Does.Contain("objective"));
         }
 
         [Test]
-        public void QuestQueries_GetQuestOffersReturnsAllMatchesWithoutSelectingForTheGame()
+        public void QuestManager_GetQuestSuggestionsReturnsAllMatchesWithoutSelectingForTheGame()
         {
-            QuestContainer firstQuest = CreateAsset<QuestContainer>();
-            firstQuest.QuestId = 50;
+            QuestContainer firstContainer = CreateAsset<QuestContainer>();
+            firstContainer.QuestId = 50;
             var firstStart = new QuestStartNodeData { Guid = "first-start" };
             var firstObjective = new QuestObjectiveNodeData
             {
@@ -762,20 +1158,20 @@ namespace UniversalGraph.Tests
                 Guid = "first-interaction",
                 TargetId = "NPC-MULTI"
             };
-            var firstOffer = new QuestOfferNodeData
+            var firstSuggestionNodeData = new QuestSuggestionNodeData
             {
-                Guid = "first-offer",
+                Guid = "first-candidate",
                 Priority = 5
             };
-            firstQuest.Nodes.Add(firstStart);
-            firstQuest.Nodes.Add(firstObjective);
-            firstQuest.Nodes.Add(firstInteraction);
-            firstQuest.Nodes.Add(firstOffer);
-            firstQuest.NodeLinks.Add(Link("first-start", "Next", "first-objective"));
-            firstQuest.NodeLinks.Add(Link("first-interaction", "Next", "first-offer"));
+            firstContainer.Nodes.Add(firstStart);
+            firstContainer.Nodes.Add(firstObjective);
+            firstContainer.Nodes.Add(firstInteraction);
+            firstContainer.Nodes.Add(firstSuggestionNodeData);
+            firstContainer.NodeLinks.Add(Link("first-start", "Next", "first-objective"));
+            firstContainer.NodeLinks.Add(Link("first-interaction", "Next", "first-candidate"));
 
-            QuestContainer secondQuest = CreateAsset<QuestContainer>();
-            secondQuest.QuestId = 51;
+            QuestContainer secondContainer = CreateAsset<QuestContainer>();
+            secondContainer.QuestId = 51;
             var secondStart = new QuestStartNodeData { Guid = "second-start" };
             var secondObjective = new QuestObjectiveNodeData
             {
@@ -789,40 +1185,40 @@ namespace UniversalGraph.Tests
                 Guid = "second-interaction",
                 TargetId = "NPC-MULTI"
             };
-            var secondOffer = new QuestOfferNodeData
+            var secondSuggestionNodeData = new QuestSuggestionNodeData
             {
-                Guid = "second-offer",
+                Guid = "second-candidate",
                 Priority = 10
             };
-            secondQuest.Nodes.Add(secondStart);
-            secondQuest.Nodes.Add(secondObjective);
-            secondQuest.Nodes.Add(secondInteraction);
-            secondQuest.Nodes.Add(secondOffer);
-            secondQuest.NodeLinks.Add(Link("second-start", "Next", "second-objective"));
-            secondQuest.NodeLinks.Add(Link("second-interaction", "Next", "second-offer"));
+            secondContainer.Nodes.Add(secondStart);
+            secondContainer.Nodes.Add(secondObjective);
+            secondContainer.Nodes.Add(secondInteraction);
+            secondContainer.Nodes.Add(secondSuggestionNodeData);
+            secondContainer.NodeLinks.Add(Link("second-start", "Next", "second-objective"));
+            secondContainer.NodeLinks.Add(Link("second-interaction", "Next", "second-candidate"));
 
-            QuestDefinitionRegistry.Initialize(new[] { firstQuest, secondQuest });
+            QuestManager.Initialize(new[] { firstContainer, secondContainer });
             var controller = new FakeQuestController();
 
-            QuestOffer[] offers = QuestQueries.GetQuestOffers(controller, "NPC-MULTI");
-            Assert.That(offers, Has.Length.EqualTo(2));
-            Assert.That(offers.Select(offer => offer.QuestId),
-                Is.EqualTo(new[] { firstQuest.QuestId, secondQuest.QuestId }));
-            Assert.That(offers.Select(offer => offer.Priority),
+            QuestSuggestion[] questSuggestions = QuestManager.GetQuestSuggestions(controller, "NPC-MULTI");
+            Assert.That(questSuggestions, Has.Length.EqualTo(2));
+            Assert.That(questSuggestions.Select(suggestion => suggestion.QuestId),
+                Is.EqualTo(new[] { firstContainer.QuestId, secondContainer.QuestId }));
+            Assert.That(questSuggestions.Select(suggestion => suggestion.Priority),
                 Is.EqualTo(new[] { 5, 10 }));
 
-            firstOffer.Priority = secondOffer.Priority;
-            QuestOffer[] samePriorityOffers = QuestQueries.GetQuestOffers(controller, "NPC-MULTI");
-            Assert.That(samePriorityOffers, Has.Length.EqualTo(2));
-            Assert.That(samePriorityOffers.Select(offer => offer.QuestId),
-                Is.EqualTo(new[] { firstQuest.QuestId, secondQuest.QuestId }));
+            firstSuggestionNodeData.Priority = secondSuggestionNodeData.Priority;
+            QuestSuggestion[] samePrioritySuggestions = QuestManager.GetQuestSuggestions(controller, "NPC-MULTI");
+            Assert.That(samePrioritySuggestions, Has.Length.EqualTo(2));
+            Assert.That(samePrioritySuggestions.Select(suggestion => suggestion.QuestId),
+                Is.EqualTo(new[] { firstContainer.QuestId, secondContainer.QuestId }));
         }
 
         [Test]
-        public void QuestRunner_CompletesObjectiveAndAdvancesToStateChange()
+        public void QuestManager_CompletesObjectiveAndAdvancesToStateChange()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 20;
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 20;
             var start = new QuestStartNodeData { Guid = "start" };
             var objective = new QuestObjectiveNodeData
             {
@@ -836,229 +1232,229 @@ namespace UniversalGraph.Tests
                 Guid = "complete",
                 NewState = QuestState.CanComplete
             };
-            quest.Nodes.Add(start);
-            quest.Nodes.Add(objective);
-            quest.Nodes.Add(complete);
-            quest.NodeLinks.Add(Link("start", "Next", "objective"));
-            quest.NodeLinks.Add(Link("objective", "Next", "complete"));
+            container.Nodes.Add(start);
+            container.Nodes.Add(objective);
+            container.Nodes.Add(complete);
+            container.NodeLinks.Add(Link("start", "Next", "objective"));
+            container.NodeLinks.Add(Link("objective", "Next", "complete"));
 
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            QuestManager.Initialize(new[] { container });
             var controller = new FakeQuestController();
-            var progress = new QuestProgress(quest) { state = QuestState.NotStarted };
-            controller.QuestProgress.Add(quest.QuestId, progress);
+            var progress = new QuestProgress(container) { state = QuestState.NotStarted };
+            controller.QuestProgress.Add(container.QuestId, progress);
 
-            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
-            Assert.That(progress.activeNodeGuids, Does.Contain("objective"));
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
+            Assert.That(progress.ActiveNodeGuids, Does.Contain("objective"));
 
-            Assert.That(QuestRunner.AdvanceObjective(controller, quest.QuestId, "objective", 2), Is.True);
+            Assert.That(QuestManager.AdvanceObjective(controller, container.QuestId, "objective", 2), Is.True);
             Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
-            Assert.That(progress.nodeProgressCounts["objective"], Is.EqualTo(2));
-            QuestObjectiveProgress currentObjective = QuestQueries.GetCurrentObjectives(controller, quest.QuestId).Single();
-            Assert.That(currentObjective.QuestId, Is.EqualTo(quest.QuestId));
+            Assert.That(progress.NodeProgressCounts["objective"], Is.EqualTo(2));
+            QuestObjectiveProgress currentObjective = QuestManager.GetCurrentObjectives(controller, container.QuestId).Single();
+            Assert.That(currentObjective.QuestId, Is.EqualTo(container.QuestId));
             Assert.That(currentObjective.NodeGuid, Is.EqualTo("objective"));
             Assert.That(currentObjective.EventKey, Is.EqualTo("Kill"));
             Assert.That(currentObjective.TargetId, Is.EqualTo(3));
             Assert.That(currentObjective.CurrentAmount, Is.EqualTo(2));
             Assert.That(currentObjective.RequiredAmount, Is.EqualTo(3));
 
-            Assert.That(QuestRunner.AdvanceObjective(controller, quest.QuestId, "objective"), Is.True);
+            Assert.That(QuestManager.AdvanceObjective(controller, container.QuestId, "objective"), Is.True);
             Assert.That(progress.state, Is.EqualTo(QuestState.CanComplete));
-            Assert.That(progress.activeNodeGuids, Does.Not.Contain("objective"));
-            Assert.That(QuestQueries.GetCurrentObjectives(controller, quest.QuestId), Is.Empty);
+            Assert.That(progress.ActiveNodeGuids, Does.Not.Contain("objective"));
+            Assert.That(QuestManager.GetCurrentObjectives(controller, container.QuestId), Is.Empty);
         }
 
         [Test]
         public void QuestRewardNode_ExecutesWithoutChoosingTheQuestCompletionPolicy()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 23;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestRewardNodeData { Guid = "reward" });
-            quest.Nodes.Add(new QuestObjectiveNodeData
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 23;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestRewardNodeData { Guid = "reward" });
+            container.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "objective",
                 EventKey = "Continue",
                 RequiredAmount = 1
             });
-            quest.NodeLinks.Add(Link("start", "Next", "reward"));
-            quest.NodeLinks.Add(Link("reward", "Next", "objective"));
+            container.NodeLinks.Add(Link("start", "Next", "reward"));
+            container.NodeLinks.Add(Link("reward", "Next", "objective"));
 
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            QuestManager.Initialize(new[] { container });
             var controller = new FakeQuestController();
 
-            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
 
-            QuestProgress progress = controller.QuestProgress[quest.QuestId];
+            QuestProgress progress = controller.QuestProgress[container.QuestId];
             Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
-            Assert.That(progress.completedNodeGuids, Does.Contain("reward"));
-            Assert.That(progress.activeNodeGuids, Does.Contain("objective"));
+            Assert.That(progress.CompletedNodeGuids, Does.Contain("reward"));
+            Assert.That(progress.ActiveNodeGuids, Does.Contain("objective"));
         }
 
         [Test]
-        public void QuestRunner_StopsWithExecutionErrorWhenActionCannotExecute()
+        public void QuestManager_StopsWithExecutionErrorWhenActionCannotExecute()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 24;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestActionNodeData
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 24;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestActionNodeData
             {
                 Guid = "action",
                 Action = new MethodBindingData { Key = "tests.quest.missing-action" }
             });
-            quest.NodeLinks.Add(Link("start", "Next", "action"));
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            container.NodeLinks.Add(Link("start", "Next", "action"));
+            QuestManager.Initialize(new[] { container });
             var controller = new FakeQuestController();
             LogAssert.Expect(LogType.Error, "[Quest] Action 'tests.quest.missing-action'이 등록되지 않았습니다.");
 
-            bool started = QuestRunner.StartQuest(controller, quest.QuestId);
+            bool started = QuestManager.StartQuest(controller, container.QuestId);
 
-            QuestProgress progress = controller.QuestProgress[quest.QuestId];
+            QuestProgress progress = controller.QuestProgress[container.QuestId];
             Assert.That(started, Is.False);
             Assert.That(progress.state, Is.EqualTo(QuestState.ExecutionError));
-            Assert.That(progress.activeNodeGuids, Is.Empty);
+            Assert.That(progress.ActiveNodeGuids, Is.Empty);
         }
 
         [TestCase(MethodKind.Action, QuestState.Failed)]
         [TestCase(MethodKind.Action, QuestState.NotStarted)]
         [TestCase(MethodKind.Condition, QuestState.Failed)]
         [TestCase(MethodKind.Condition, QuestState.NotStarted)]
-        public void QuestRunner_StopsOldFlowWhenMethodChangesQuestState(MethodKind kind, QuestState state)
+        public void QuestManager_StopsOldFlowWhenMethodChangesQuestState(MethodKind kind, QuestState state)
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 1201;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 1201;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
             NodeBaseData stop = kind == MethodKind.Action
                 ? new QuestActionNodeData { Guid = "stop", Action = new MethodBindingData { Key = "tests.quest.change-run" } }
                 : new QuestConditionNodeData { Guid = "stop", Condition = new MethodBindingData { Key = "tests.quest.run-condition" } };
-            quest.Nodes.Add(stop);
-            quest.Nodes.Add(new QuestObjectiveNodeData { Guid = "unexpected-objective", RequiredAmount = 1 });
-            quest.NodeLinks.Add(Link("start", "Next", "stop"));
-            quest.NodeLinks.Add(Link("stop", kind == MethodKind.Action ? "Next" : "True", "unexpected-objective"));
+            container.Nodes.Add(stop);
+            container.Nodes.Add(new QuestObjectiveNodeData { Guid = "unexpected-objective", RequiredAmount = 1 });
+            container.NodeLinks.Add(Link("start", "Next", "stop"));
+            container.NodeLinks.Add(Link("stop", kind == MethodKind.Action ? "Next" : "True", "unexpected-objective"));
 
-            questRunAction = context => Assert.That(QuestRunner.SetQuestState(context.Controller, quest.QuestId, state), Is.True);
+            questRunAction = context => Assert.That(QuestManager.SetQuestState(context.Controller, container.QuestId, state), Is.True);
             questRunCondition = context =>
             {
                 questRunAction(context);
                 return true;
             };
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            QuestManager.Initialize(new[] { container });
             var controller = new FakeQuestController();
 
-            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
 
-            QuestProgress progress = controller.QuestProgress[quest.QuestId];
+            QuestProgress progress = controller.QuestProgress[container.QuestId];
             Assert.That(progress.state, Is.EqualTo(state));
-            Assert.That(progress.activeNodeGuids, Is.Empty);
-            Assert.That(progress.completedNodeGuids, Does.Not.Contain("stop"));
+            Assert.That(progress.ActiveNodeGuids, Is.Empty);
+            Assert.That(progress.CompletedNodeGuids, Does.Not.Contain("stop"));
         }
 
         [Test]
-        public void QuestRunner_ResetAndRestartInsideActionDoesNotResumeOldRun()
+        public void QuestManager_ResetAndRestartInsideActionDoesNotResumeOldRun()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 1202;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestConditionNodeData { Guid = "route", Condition = new MethodBindingData { Key = "tests.quest.run-condition" } });
-            quest.Nodes.Add(new QuestActionNodeData { Guid = "restart", Action = new MethodBindingData { Key = "tests.quest.change-run" } });
-            quest.Nodes.Add(new QuestObjectiveNodeData { Guid = "old-objective", RequiredAmount = 1 });
-            quest.Nodes.Add(new QuestObjectiveNodeData { Guid = "new-objective", RequiredAmount = 1 });
-            quest.NodeLinks.Add(Link("start", "Next", "route"));
-            quest.NodeLinks.Add(Link("route", "False", "restart"));
-            quest.NodeLinks.Add(Link("route", "True", "new-objective"));
-            quest.NodeLinks.Add(Link("restart", "Next", "old-objective"));
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 1202;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestConditionNodeData { Guid = "route", Condition = new MethodBindingData { Key = "tests.quest.run-condition" } });
+            container.Nodes.Add(new QuestActionNodeData { Guid = "restart", Action = new MethodBindingData { Key = "tests.quest.change-run" } });
+            container.Nodes.Add(new QuestObjectiveNodeData { Guid = "old-objective", RequiredAmount = 1 });
+            container.Nodes.Add(new QuestObjectiveNodeData { Guid = "new-objective", RequiredAmount = 1 });
+            container.NodeLinks.Add(Link("start", "Next", "route"));
+            container.NodeLinks.Add(Link("route", "False", "restart"));
+            container.NodeLinks.Add(Link("route", "True", "new-objective"));
+            container.NodeLinks.Add(Link("restart", "Next", "old-objective"));
 
             bool restarted = false;
             questRunCondition = _ => restarted;
             questRunAction = context =>
             {
                 restarted = true;
-                Assert.That(QuestRunner.ResetQuest(context.Controller, quest.QuestId), Is.True);
-                Assert.That(QuestRunner.StartQuest(context.Controller, quest.QuestId), Is.True);
+                Assert.That(QuestManager.ResetQuest(context.Controller, container.QuestId), Is.True);
+                Assert.That(QuestManager.StartQuest(context.Controller, container.QuestId), Is.True);
             };
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            QuestManager.Initialize(new[] { container });
             var controller = new FakeQuestController();
 
-            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
 
-            QuestProgress progress = controller.QuestProgress[quest.QuestId];
+            QuestProgress progress = controller.QuestProgress[container.QuestId];
             Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
-            Assert.That(progress.activeNodeGuids, Is.EqualTo(new[] { "new-objective" }));
-            Assert.That(progress.completedNodeGuids, Does.Not.Contain("restart"));
-            Assert.That(controller.StatusChangedQuestIds, Has.Count.EqualTo(2));
+            Assert.That(progress.ActiveNodeGuids, Is.EqualTo(new[] { "new-objective" }));
+            Assert.That(progress.CompletedNodeGuids, Does.Not.Contain("restart"));
+            Assert.That(controller.ProgressChangedQuestIds, Has.Count.EqualTo(2));
         }
 
         [Test]
-        public void QuestRunner_DoesNotStartNodesIfWaitingQuestStopsTheNewQuest()
+        public void QuestManager_DoesNotStartNodesIfWaitingQuestStopsTheNewQuest()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 1203;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestObjectiveNodeData { Guid = "unexpected-objective", RequiredAmount = 1 });
-            quest.NodeLinks.Add(Link("start", "Next", "unexpected-objective"));
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 1203;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestObjectiveNodeData { Guid = "unexpected-objective", RequiredAmount = 1 });
+            container.NodeLinks.Add(Link("start", "Next", "unexpected-objective"));
 
-            QuestContainer waiting = CreateAsset<QuestContainer>();
-            waiting.QuestId = 1204;
-            waiting.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            waiting.Nodes.Add(new QuestWaitForQuestNodeData { Guid = "wait", TargetQuestId = quest.QuestId, RequiredState = QuestState.InProgress });
-            waiting.Nodes.Add(new QuestActionNodeData { Guid = "stop-other-quest", Action = new MethodBindingData { Key = "tests.quest.change-run" } });
-            waiting.Nodes.Add(new QuestObjectiveNodeData { Guid = "waiting-objective", RequiredAmount = 1 });
-            waiting.NodeLinks.Add(Link("start", "Next", "wait"));
-            waiting.NodeLinks.Add(Link("wait", "Next", "stop-other-quest"));
-            waiting.NodeLinks.Add(Link("stop-other-quest", "Next", "waiting-objective"));
+            QuestContainer waitingContainer = CreateAsset<QuestContainer>();
+            waitingContainer.QuestId = 1204;
+            waitingContainer.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            waitingContainer.Nodes.Add(new WaitForQuestNodeData { Guid = "wait", TargetQuestId = container.QuestId, RequiredState = QuestState.InProgress });
+            waitingContainer.Nodes.Add(new QuestActionNodeData { Guid = "stop-other-quest", Action = new MethodBindingData { Key = "tests.quest.change-run" } });
+            waitingContainer.Nodes.Add(new QuestObjectiveNodeData { Guid = "waiting-objective", RequiredAmount = 1 });
+            waitingContainer.NodeLinks.Add(Link("start", "Next", "wait"));
+            waitingContainer.NodeLinks.Add(Link("wait", "Next", "stop-other-quest"));
+            waitingContainer.NodeLinks.Add(Link("stop-other-quest", "Next", "waiting-objective"));
 
-            questRunAction = context => Assert.That(QuestRunner.SetQuestState(context.Controller, quest.QuestId, QuestState.Failed), Is.True);
-            QuestDefinitionRegistry.Initialize(new[] { quest, waiting });
+            questRunAction = context => Assert.That(QuestManager.SetQuestState(context.Controller, container.QuestId, QuestState.Failed), Is.True);
+            QuestManager.Initialize(new[] { container, waitingContainer });
             var controller = new FakeQuestController();
-            Assert.That(QuestRunner.StartQuest(controller, waiting.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(controller, waitingContainer.QuestId), Is.True);
 
-            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
 
-            Assert.That(controller.QuestProgress[quest.QuestId].state, Is.EqualTo(QuestState.Failed));
-            Assert.That(controller.QuestProgress[quest.QuestId].activeNodeGuids, Is.Empty);
-            Assert.That(controller.QuestProgress[waiting.QuestId].activeNodeGuids, Is.EqualTo(new[] { "waiting-objective" }));
+            Assert.That(controller.QuestProgress[container.QuestId].state, Is.EqualTo(QuestState.Failed));
+            Assert.That(controller.QuestProgress[container.QuestId].ActiveNodeGuids, Is.Empty);
+            Assert.That(controller.QuestProgress[waitingContainer.QuestId].ActiveNodeGuids, Is.EqualTo(new[] { "waiting-objective" }));
         }
 
         [Test]
-        public void QuestDefinitionRegistry_RejectsLinksToMissingNodesDuringInitialization()
+        public void QuestManager_RejectsLinksToMissingNodesDuringInitialization()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 21;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.NodeLinks.Add(Link("start", "Next", "missing"));
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 21;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.NodeLinks.Add(Link("start", "Next", "missing"));
 
             InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
-                () => QuestDefinitionRegistry.Initialize(new[] { quest }));
+                () => QuestManager.Initialize(new[] { container }));
 
             Assert.That(exception.Message, Does.Contain("존재하지 않는 노드"));
         }
 
         [Test]
-        public void QuestDefinitionRegistry_RejectsNonPositiveQuestId()
+        public void QuestManager_RejectsNonPositiveQuestId()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 0;
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 0;
 
             InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
-                () => QuestDefinitionRegistry.Initialize(new[] { quest }));
+                () => QuestManager.Initialize(new[] { container }));
 
             Assert.That(exception.Message, Does.Contain("양수를 사용"));
         }
 
         [Test]
-        public void QuestDefinitionRegistry_UsesCachedIndexUntilReinitialized()
+        public void QuestManager_UsesCachedIndexUntilReinitialized()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 22;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "old-start" });
-            quest.Nodes.Add(new QuestObjectiveNodeData
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 22;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "old-start" });
+            container.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "old-objective",
                 EventKey = "Old"
             });
-            quest.NodeLinks.Add(Link("old-start", "Next", "old-objective"));
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            container.NodeLinks.Add(Link("old-start", "Next", "old-objective"));
+            QuestManager.Initialize(new[] { container });
 
-            quest.Nodes = new List<NodeBaseData>
+            container.Nodes = new List<NodeBaseData>
             {
                 new QuestStartNodeData { Guid = "new-start" },
                 new QuestStateChangeNodeData
@@ -1067,33 +1463,33 @@ namespace UniversalGraph.Tests
                     NewState = QuestState.CanComplete
                 }
             };
-            quest.NodeLinks = new List<NodeLinkData>
+            container.NodeLinks = new List<NodeLinkData>
             {
                 Link("new-start", "Next", "new-state")
             };
 
             var controller = new FakeQuestController();
-            var progress = new QuestProgress(quest) { state = QuestState.NotStarted };
-            controller.QuestProgress.Add(quest.QuestId, progress);
+            var progress = new QuestProgress(container) { state = QuestState.NotStarted };
+            controller.QuestProgress.Add(container.QuestId, progress);
 
-            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
             Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
-            Assert.That(progress.activeNodeGuids, Does.Contain("old-objective"));
+            Assert.That(progress.ActiveNodeGuids, Does.Contain("old-objective"));
 
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            QuestManager.Initialize(new[] { container });
             var refreshedController = new FakeQuestController();
-            var refreshedProgress = new QuestProgress(quest) { state = QuestState.NotStarted };
-            refreshedController.QuestProgress.Add(quest.QuestId, refreshedProgress);
+            var refreshedProgress = new QuestProgress(container) { state = QuestState.NotStarted };
+            refreshedController.QuestProgress.Add(container.QuestId, refreshedProgress);
 
-            Assert.That(QuestRunner.StartQuest(refreshedController, quest.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(refreshedController, container.QuestId), Is.True);
             Assert.That(refreshedProgress.state, Is.EqualTo(QuestState.CanComplete));
         }
 
         [Test]
-        public void QuestRunner_AndGateDerivesRequiredCountFromConnectedBranches()
+        public void QuestManager_AndGateDerivesRequiredCountFromConnectedBranches()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 30;
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 30;
             var start = new QuestStartNodeData { Guid = "start" };
             var first = new QuestObjectiveNodeData
             {
@@ -1117,35 +1513,35 @@ namespace UniversalGraph.Tests
                 Guid = "complete",
                 NewState = QuestState.CanComplete
             };
-            quest.Nodes.Add(start);
-            quest.Nodes.Add(first);
-            quest.Nodes.Add(second);
-            quest.Nodes.Add(gate);
-            quest.Nodes.Add(complete);
-            quest.NodeLinks.Add(Link("start", "Next", "first"));
-            quest.NodeLinks.Add(Link("start", "Next", "second"));
-            quest.NodeLinks.Add(Link("first", "Next", "gate"));
-            quest.NodeLinks.Add(Link("second", "Next", "gate"));
-            quest.NodeLinks.Add(Link("gate", "Next", "complete"));
+            container.Nodes.Add(start);
+            container.Nodes.Add(first);
+            container.Nodes.Add(second);
+            container.Nodes.Add(gate);
+            container.Nodes.Add(complete);
+            container.NodeLinks.Add(Link("start", "Next", "first"));
+            container.NodeLinks.Add(Link("start", "Next", "second"));
+            container.NodeLinks.Add(Link("first", "Next", "gate"));
+            container.NodeLinks.Add(Link("second", "Next", "gate"));
+            container.NodeLinks.Add(Link("gate", "Next", "complete"));
 
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            QuestManager.Initialize(new[] { container });
             var controller = new FakeQuestController();
-            var progress = new QuestProgress(quest) { state = QuestState.NotStarted };
-            controller.QuestProgress.Add(quest.QuestId, progress);
+            var progress = new QuestProgress(container) { state = QuestState.NotStarted };
+            controller.QuestProgress.Add(container.QuestId, progress);
 
-            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
-            QuestRunner.ReportObjectiveProgress(controller, "Collect", 1, 1);
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
+            QuestManager.ReportObjectiveProgress(controller, "Collect", 1, 1);
             Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
 
-            QuestRunner.ReportObjectiveProgress(controller, "Collect", 2, 1);
+            QuestManager.ReportObjectiveProgress(controller, "Collect", 2, 1);
             Assert.That(progress.state, Is.EqualTo(QuestState.CanComplete));
         }
 
         [Test]
-        public void QuestRunner_ReportsOneEventToAllMatchingParallelObjectives()
+        public void QuestManager_ReportsOneEventToAllMatchingParallelObjectives()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 36;
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 36;
             var start = new QuestStartNodeData { Guid = "start" };
             var first = new QuestObjectiveNodeData
             {
@@ -1167,214 +1563,276 @@ namespace UniversalGraph.Tests
                 Guid = "complete",
                 NewState = QuestState.CanComplete
             };
-            quest.Nodes.Add(start);
-            quest.Nodes.Add(first);
-            quest.Nodes.Add(second);
-            quest.Nodes.Add(gate);
-            quest.Nodes.Add(complete);
-            quest.NodeLinks.Add(Link("start", "Next", "first"));
-            quest.NodeLinks.Add(Link("start", "Next", "second"));
-            quest.NodeLinks.Add(Link("first", "Next", "gate"));
-            quest.NodeLinks.Add(Link("second", "Next", "gate"));
-            quest.NodeLinks.Add(Link("gate", "Next", "complete"));
+            container.Nodes.Add(start);
+            container.Nodes.Add(first);
+            container.Nodes.Add(second);
+            container.Nodes.Add(gate);
+            container.Nodes.Add(complete);
+            container.NodeLinks.Add(Link("start", "Next", "first"));
+            container.NodeLinks.Add(Link("start", "Next", "second"));
+            container.NodeLinks.Add(Link("first", "Next", "gate"));
+            container.NodeLinks.Add(Link("second", "Next", "gate"));
+            container.NodeLinks.Add(Link("gate", "Next", "complete"));
 
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            QuestManager.Initialize(new[] { container });
             var controller = new FakeQuestController();
 
-            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
-            QuestRunner.ReportObjectiveProgress(controller, "Collect", 1, 1);
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
+            QuestManager.ReportObjectiveProgress(controller, "Collect", 1, 1);
 
-            QuestProgress progress = controller.QuestProgress[quest.QuestId];
-            Assert.That(progress.nodeProgressCounts["first"], Is.EqualTo(1));
-            Assert.That(progress.nodeProgressCounts["second"], Is.EqualTo(1));
+            QuestProgress progress = controller.QuestProgress[container.QuestId];
+            Assert.That(progress.NodeProgressCounts["first"], Is.EqualTo(1));
+            Assert.That(progress.NodeProgressCounts["second"], Is.EqualTo(1));
             Assert.That(progress.state, Is.EqualTo(QuestState.CanComplete));
         }
 
         [Test]
-        public void QuestRunner_ProgressesMultipleQuestsIndependently()
+        public void QuestManager_ProgressesMultipleQuestsIndependently()
         {
-            QuestContainer firstQuest = CreateAsset<QuestContainer>();
-            firstQuest.QuestId = 31;
-            firstQuest.Nodes.Add(new QuestStartNodeData { Guid = "first-start" });
-            firstQuest.Nodes.Add(new QuestObjectiveNodeData
+            QuestContainer firstContainer = CreateAsset<QuestContainer>();
+            firstContainer.QuestId = 31;
+            firstContainer.Nodes.Add(new QuestStartNodeData { Guid = "first-start" });
+            firstContainer.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "first-objective",
                 EventKey = "Kill",
                 TargetId = 101,
                 RequiredAmount = 1
             });
-            firstQuest.Nodes.Add(new QuestStateChangeNodeData
+            firstContainer.Nodes.Add(new QuestStateChangeNodeData
             {
                 Guid = "first-complete",
                 NewState = QuestState.CanComplete
             });
-            firstQuest.NodeLinks.Add(Link("first-start", "Next", "first-objective"));
-            firstQuest.NodeLinks.Add(Link("first-objective", "Next", "first-complete"));
+            firstContainer.NodeLinks.Add(Link("first-start", "Next", "first-objective"));
+            firstContainer.NodeLinks.Add(Link("first-objective", "Next", "first-complete"));
 
-            QuestContainer secondQuest = CreateAsset<QuestContainer>();
-            secondQuest.QuestId = 32;
-            secondQuest.Nodes.Add(new QuestStartNodeData { Guid = "second-start" });
-            secondQuest.Nodes.Add(new QuestObjectiveNodeData
+            QuestContainer secondContainer = CreateAsset<QuestContainer>();
+            secondContainer.QuestId = 32;
+            secondContainer.Nodes.Add(new QuestStartNodeData { Guid = "second-start" });
+            secondContainer.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "second-objective",
                 EventKey = "Kill",
                 TargetId = 202,
                 RequiredAmount = 1
             });
-            secondQuest.Nodes.Add(new QuestStateChangeNodeData
+            secondContainer.Nodes.Add(new QuestStateChangeNodeData
             {
                 Guid = "second-complete",
                 NewState = QuestState.CanComplete
             });
-            secondQuest.NodeLinks.Add(Link("second-start", "Next", "second-objective"));
-            secondQuest.NodeLinks.Add(Link("second-objective", "Next", "second-complete"));
+            secondContainer.NodeLinks.Add(Link("second-start", "Next", "second-objective"));
+            secondContainer.NodeLinks.Add(Link("second-objective", "Next", "second-complete"));
 
-            QuestDefinitionRegistry.Initialize(new[] { firstQuest, secondQuest });
+            QuestManager.Initialize(new[] { firstContainer, secondContainer });
             var controller = new FakeQuestController();
 
-            Assert.That(QuestRunner.StartQuest(controller, firstQuest.QuestId), Is.True);
-            Assert.That(QuestRunner.StartQuest(controller, secondQuest.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(controller, firstContainer.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(controller, secondContainer.QuestId), Is.True);
 
-            QuestProgress firstProgress = controller.QuestProgress[firstQuest.QuestId];
-            QuestProgress secondProgress = controller.QuestProgress[secondQuest.QuestId];
+            QuestProgress firstProgress = controller.QuestProgress[firstContainer.QuestId];
+            QuestProgress secondProgress = controller.QuestProgress[secondContainer.QuestId];
             Assert.That(firstProgress.state, Is.EqualTo(QuestState.InProgress));
             Assert.That(secondProgress.state, Is.EqualTo(QuestState.InProgress));
 
-            QuestRunner.ReportObjectiveProgress(controller, "Kill", 101, 1);
+            QuestManager.ReportObjectiveProgress(controller, "Kill", 101, 1);
 
             Assert.That(firstProgress.state, Is.EqualTo(QuestState.CanComplete));
             Assert.That(secondProgress.state, Is.EqualTo(QuestState.InProgress));
-            Assert.That(secondProgress.activeNodeGuids, Does.Contain("second-objective"));
-            Assert.That(secondProgress.nodeProgressCounts["second-objective"], Is.Zero);
+            Assert.That(secondProgress.ActiveNodeGuids, Does.Contain("second-objective"));
+            Assert.That(secondProgress.NodeProgressCounts["second-objective"], Is.Zero);
         }
 
         [Test]
-        public void QuestRunner_ResetsAndRestartsQuestWithCleanProgress()
+        public void QuestManager_ResetsAndRestartsQuestWithCleanProgress()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 33;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestObjectiveNodeData
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 33;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "objective",
                 EventKey = "Collect",
                 TargetId = 7,
                 RequiredAmount = 3
             });
-            quest.NodeLinks.Add(Link("start", "Next", "objective"));
+            container.NodeLinks.Add(Link("start", "Next", "objective"));
 
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            QuestManager.Initialize(new[] { container });
             var controller = new FakeQuestController();
-            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
 
-            QuestProgress progress = controller.QuestProgress[quest.QuestId];
-            QuestRunner.ReportObjectiveProgress(controller, "Collect", 7, 1);
-            progress.completedNodeGuids.Add("old-action");
-            progress.completedGateInputs.Add("old-gate|old-input");
+            QuestProgress progress = controller.QuestProgress[container.QuestId];
+            QuestManager.ReportObjectiveProgress(controller, "Collect", 7, 1);
+            progress.CompletedNodeGuids.Add("old-action");
+            progress.CompletedGateInputs.Add("old-gate|old-input");
 
-            Assert.That(QuestRunner.ResetQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestManager.ResetQuest(controller, container.QuestId), Is.True);
             Assert.That(progress.state, Is.EqualTo(QuestState.NotStarted));
-            Assert.That(progress.activeNodeGuids, Is.Empty);
-            Assert.That(progress.nodeProgressCounts, Is.Empty);
-            Assert.That(progress.completedNodeGuids, Is.Empty);
-            Assert.That(progress.completedGateInputs, Is.Empty);
+            Assert.That(progress.ActiveNodeGuids, Is.Empty);
+            Assert.That(progress.NodeProgressCounts, Is.Empty);
+            Assert.That(progress.CompletedNodeGuids, Is.Empty);
+            Assert.That(progress.CompletedGateInputs, Is.Empty);
 
-            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
             Assert.That(progress.state, Is.EqualTo(QuestState.InProgress));
-            Assert.That(progress.activeNodeGuids, Is.EquivalentTo(new[] { "objective" }));
-            Assert.That(progress.nodeProgressCounts["objective"], Is.Zero);
+            Assert.That(progress.ActiveNodeGuids, Is.EquivalentTo(new[] { "objective" }));
+            Assert.That(progress.NodeProgressCounts["objective"], Is.Zero);
 
             progress.state = QuestState.TurnedIn;
-            Assert.That(QuestRunner.ResetQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestManager.ResetQuest(controller, container.QuestId), Is.True);
             Assert.That(progress.state, Is.EqualTo(QuestState.NotStarted));
         }
 
         [Test]
         public void QuestWaitForQuest_DoesNotStartTargetAndUsesTheStateChosenByTheDesigner()
         {
-            QuestContainer childQuest = CreateAsset<QuestContainer>();
-            childQuest.QuestId = 34;
-            childQuest.Nodes.Add(new QuestStartNodeData { Guid = "child-start" });
-            childQuest.Nodes.Add(new QuestObjectiveNodeData
+            QuestContainer childContainer = CreateAsset<QuestContainer>();
+            childContainer.QuestId = 34;
+            childContainer.Nodes.Add(new QuestStartNodeData { Guid = "child-start" });
+            childContainer.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "child-objective",
                 EventKey = "Talk",
                 TargetId = 10,
                 RequiredAmount = 1
             });
-            childQuest.Nodes.Add(new QuestStateChangeNodeData
+            childContainer.Nodes.Add(new QuestStateChangeNodeData
             {
                 Guid = "child-ready",
                 NewState = QuestState.CanComplete
             });
-            childQuest.NodeLinks.Add(Link("child-start", "Next", "child-objective"));
-            childQuest.NodeLinks.Add(Link("child-objective", "Next", "child-ready"));
+            childContainer.NodeLinks.Add(Link("child-start", "Next", "child-objective"));
+            childContainer.NodeLinks.Add(Link("child-objective", "Next", "child-ready"));
 
-            QuestContainer parentQuest = CreateAsset<QuestContainer>();
-            parentQuest.QuestId = 35;
-            parentQuest.Nodes.Add(new QuestStartNodeData { Guid = "parent-start" });
-            parentQuest.Nodes.Add(new QuestWaitForQuestNodeData
+            QuestContainer parentContainer = CreateAsset<QuestContainer>();
+            parentContainer.QuestId = 35;
+            parentContainer.Nodes.Add(new QuestStartNodeData { Guid = "parent-start" });
+            parentContainer.Nodes.Add(new WaitForQuestNodeData
             {
                 Guid = "sub-quest",
-                TargetQuestId = childQuest.QuestId,
+                TargetQuestId = childContainer.QuestId,
                 RequiredState = QuestState.CanComplete
             });
-            parentQuest.Nodes.Add(new QuestStateChangeNodeData
+            parentContainer.Nodes.Add(new QuestStateChangeNodeData
             {
                 Guid = "parent-complete",
                 NewState = QuestState.TurnedIn
             });
-            parentQuest.NodeLinks.Add(Link("parent-start", "Next", "sub-quest"));
-            parentQuest.NodeLinks.Add(Link("sub-quest", "Next", "parent-complete"));
+            parentContainer.NodeLinks.Add(Link("parent-start", "Next", "sub-quest"));
+            parentContainer.NodeLinks.Add(Link("sub-quest", "Next", "parent-complete"));
 
-            QuestDefinitionRegistry.Initialize(new[] { parentQuest, childQuest });
+            QuestManager.Initialize(new[] { parentContainer, childContainer });
             var controller = new FakeQuestController();
 
-            Assert.That(QuestRunner.StartQuest(controller, parentQuest.QuestId), Is.True);
-            Assert.That(controller.QuestProgress.ContainsKey(childQuest.QuestId), Is.False);
-            Assert.That(QuestRunner.StartQuest(controller, childQuest.QuestId), Is.True);
-            Assert.That(QuestRunner.AdvanceObjective(controller, childQuest.QuestId, "child-objective"), Is.True);
-            Assert.That(controller.QuestProgress[childQuest.QuestId].state, Is.EqualTo(QuestState.CanComplete));
-            Assert.That(controller.QuestProgress[parentQuest.QuestId].state, Is.EqualTo(QuestState.TurnedIn));
+            Assert.That(QuestManager.StartQuest(controller, parentContainer.QuestId), Is.True);
+            Assert.That(controller.QuestProgress.ContainsKey(childContainer.QuestId), Is.False);
+            Assert.That(QuestManager.StartQuest(controller, childContainer.QuestId), Is.True);
+            Assert.That(QuestManager.AdvanceObjective(controller, childContainer.QuestId, "child-objective"), Is.True);
+            Assert.That(controller.QuestProgress[childContainer.QuestId].state, Is.EqualTo(QuestState.CanComplete));
+            Assert.That(controller.QuestProgress[parentContainer.QuestId].state, Is.EqualTo(QuestState.TurnedIn));
+        }
+
+        [Test]
+        public void QuestProgress_CollectionsAreGetOnlyAndCreatedPerInstance()
+        {
+            var first = new QuestProgress();
+            var second = new QuestProgress();
+            string[] names =
+            {
+                nameof(QuestProgress.ActiveNodeGuids), nameof(QuestProgress.NodeProgressCounts),
+                nameof(QuestProgress.CompletedNodeGuids), nameof(QuestProgress.CompletedGateInputs)
+            };
+
+            foreach (string name in names)
+            {
+                PropertyInfo property = typeof(QuestProgress).GetProperty(name);
+                Assert.That(property, Is.Not.Null, name);
+                Assert.That(property.CanWrite, Is.False, name);
+                object collection = property.GetValue(first);
+                Assert.That(collection, Is.Not.Null.And.Empty, name);
+                Assert.That(property.GetValue(first), Is.SameAs(collection), name);
+                Assert.That(property.GetValue(second), Is.Not.SameAs(collection), name);
+            }
+        }
+
+        [Test]
+        public void QuestProgress_CollectionsAllowContentChangesWithoutAffectingOtherProgress()
+        {
+            var first = new QuestProgress();
+            var second = new QuestProgress();
+
+            first.ActiveNodeGuids.Add("objective");
+            first.NodeProgressCounts["objective"] = 2;
+            first.CompletedNodeGuids.Add("action");
+            first.CompletedGateInputs.Add("gate|objective");
+
+            Assert.That(first.ActiveNodeGuids, Is.EqualTo(new[] { "objective" }));
+            Assert.That(first.NodeProgressCounts["objective"], Is.EqualTo(2));
+            Assert.That(first.CompletedNodeGuids, Is.EqualTo(new[] { "action" }));
+            Assert.That(first.CompletedGateInputs, Is.EqualTo(new[] { "gate|objective" }));
+            Assert.That(second.ActiveNodeGuids, Is.Empty);
+            Assert.That(second.NodeProgressCounts, Is.Empty);
+            Assert.That(second.CompletedNodeGuids, Is.Empty);
+            Assert.That(second.CompletedGateInputs, Is.Empty);
+        }
+
+        [Test]
+        public void QuestProgressSaveData_RestoresMissingCollectionsAsEmptyCollections()
+        {
+            var saved = new QuestProgressSaveData
+            {
+                questId = 77,
+                definitionSchemaVersion = GraphAssetMigrator.CurrentVersion,
+                state = QuestState.NotStarted,
+                activeNodeGuids = null,
+                nodeProgressCounts = null,
+                completedNodeGuids = null,
+                completedGateInputs = null
+            };
+
+            Assert.That(saved.TryRestore(out QuestProgress progress, out string error), Is.True, error);
+            Assert.That(progress.questId, Is.EqualTo(saved.questId));
+            Assert.That(progress.state, Is.EqualTo(QuestState.NotStarted));
+            Assert.That(progress.ActiveNodeGuids, Is.Not.Null.And.Empty);
+            Assert.That(progress.NodeProgressCounts, Is.Not.Null.And.Empty);
+            Assert.That(progress.CompletedNodeGuids, Is.Not.Null.And.Empty);
+            Assert.That(progress.CompletedGateInputs, Is.Not.Null.And.Empty);
         }
 
         [Test]
         public void QuestSaveData_RoundTripsDictionaryAndFlowCollections()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 77;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestObjectiveNodeData
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 77;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "objective-a",
                 EventKey = "Collect",
                 RequiredAmount = 10
             });
-            quest.Nodes.Add(new QuestObjectiveNodeData
+            container.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "objective-c",
                 EventKey = "Visit",
                 RequiredAmount = 2
             });
-            quest.Nodes.Add(new QuestActionNodeData { Guid = "action-1" });
-            quest.Nodes.Add(new QuestAndGateNodeData { Guid = "gate-1" });
-            quest.NodeLinks.Add(Link("start", "Next", "objective-a"));
-            quest.NodeLinks.Add(Link("objective-c", "Next", "gate-1"));
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            container.Nodes.Add(new QuestActionNodeData { Guid = "action-1" });
+            container.Nodes.Add(new QuestAndGateNodeData { Guid = "gate-1" });
+            container.NodeLinks.Add(Link("start", "Next", "objective-a"));
+            container.NodeLinks.Add(Link("objective-c", "Next", "gate-1"));
+            QuestManager.Initialize(new[] { container });
 
             var source = new FakeQuestController();
-            source.QuestProgress.Add(quest.QuestId, new QuestProgress(quest)
-            {
-                state = QuestState.InProgress,
-                activeNodeGuids = new List<string> { "objective-a" },
-                nodeProgressCounts = new Dictionary<string, int>
-                {
-                    ["objective-a"] = 4,
-                    ["objective-c"] = 2
-                },
-                completedNodeGuids = new List<string> { "objective-c", "action-1" },
-                completedGateInputs = new List<string> { "gate-1|objective-c" }
-            });
+            var progress = new QuestProgress(container) { state = QuestState.InProgress };
+            progress.ActiveNodeGuids.Add("objective-a");
+            progress.NodeProgressCounts["objective-a"] = 4;
+            progress.NodeProgressCounts["objective-c"] = 2;
+            progress.CompletedNodeGuids.AddRange(new[] { "objective-c", "action-1" });
+            progress.CompletedGateInputs.Add("gate-1|objective-c");
+            source.QuestProgress.Add(container.QuestId, progress);
 
             string json = QuestSaveData.Capture(source).ToJson();
             Assert.That(QuestSaveData.TryFromJson(json, out QuestSaveData parsed, out string parseError),
@@ -1386,25 +1844,34 @@ namespace UniversalGraph.Tests
                 Is.True,
                 restoreError);
 
-            QuestProgress restored = target.QuestProgress[quest.QuestId];
+            QuestProgress restored = target.QuestProgress[container.QuestId];
             Assert.That(restored.state, Is.EqualTo(QuestState.InProgress));
-            Assert.That(restored.activeNodeGuids, Is.EquivalentTo(new[] { "objective-a" }));
-            Assert.That(restored.nodeProgressCounts["objective-a"], Is.EqualTo(4));
-            Assert.That(restored.nodeProgressCounts["objective-c"], Is.EqualTo(2));
-            Assert.That(restored.completedNodeGuids, Does.Contain("objective-c"));
-            Assert.That(restored.completedNodeGuids, Does.Contain("action-1"));
-            Assert.That(restored.completedGateInputs, Does.Contain("gate-1|objective-c"));
+            Assert.That(restored.ActiveNodeGuids, Is.EquivalentTo(new[] { "objective-a" }));
+            Assert.That(restored.NodeProgressCounts["objective-a"], Is.EqualTo(4));
+            Assert.That(restored.NodeProgressCounts["objective-c"], Is.EqualTo(2));
+            Assert.That(restored.CompletedNodeGuids, Does.Contain("objective-c"));
+            Assert.That(restored.CompletedNodeGuids, Does.Contain("action-1"));
+            Assert.That(restored.CompletedGateInputs, Does.Contain("gate-1|objective-c"));
+
+            restored.ActiveNodeGuids.Clear();
+            restored.NodeProgressCounts.Clear();
+            restored.CompletedNodeGuids.Clear();
+            restored.CompletedGateInputs.Clear();
+            Assert.That(progress.ActiveNodeGuids, Is.EqualTo(new[] { "objective-a" }));
+            Assert.That(progress.NodeProgressCounts, Has.Count.EqualTo(2));
+            Assert.That(progress.CompletedNodeGuids, Is.EqualTo(new[] { "objective-c", "action-1" }));
+            Assert.That(progress.CompletedGateInputs, Is.EqualTo(new[] { "gate-1|objective-c" }));
         }
 
         [Test]
         public void QuestSaveData_RejectsUnknownNodeBeforeChangingController()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 82;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestObjectiveNodeData { Guid = "objective", RequiredAmount = 1 });
-            quest.NodeLinks.Add(Link("start", "Next", "objective"));
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 82;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestObjectiveNodeData { Guid = "objective", RequiredAmount = 1 });
+            container.NodeLinks.Add(Link("start", "Next", "objective"));
+            QuestManager.Initialize(new[] { container });
 
             var saveData = new QuestSaveData
             {
@@ -1412,8 +1879,8 @@ namespace UniversalGraph.Tests
                 {
                     new()
                     {
-                        questId = quest.QuestId,
-                        definitionSchemaVersion = quest.SchemaVersion,
+                        questId = container.QuestId,
+                        definitionSchemaVersion = container.SchemaVersion,
                         state = QuestState.InProgress,
                         activeNodeGuids = new List<string> { "missing-objective" }
                     }
@@ -1434,38 +1901,35 @@ namespace UniversalGraph.Tests
         [TestCase("duplicate-active-node")]
         public void QuestSaveData_CaptureRejectsDataThatCannotBeRestored(string invalidData)
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 84;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestObjectiveNodeData { Guid = "objective", RequiredAmount = 3 });
-            quest.NodeLinks.Add(Link("start", QuestPortNames.Next, "objective"));
-            QuestDefinitionRegistry.Initialize(new[] { quest });
-            var progress = new QuestProgress(quest)
-            {
-                state = QuestState.InProgress,
-                activeNodeGuids = new List<string> { "objective" }
-            };
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 84;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestObjectiveNodeData { Guid = "objective", RequiredAmount = 3 });
+            container.NodeLinks.Add(Link("start", QuestPortNames.Next, "objective"));
+            QuestManager.Initialize(new[] { container });
+            var progress = new QuestProgress(container) { state = QuestState.InProgress };
+            progress.ActiveNodeGuids.Add("objective");
             if (invalidData == "negative-count")
             {
-                progress.nodeProgressCounts["objective"] = -1;
+                progress.NodeProgressCounts["objective"] = -1;
             }
             else if (invalidData == "unknown-state")
             {
                 progress.state = (QuestState)999;
-                progress.activeNodeGuids.Clear();
+                progress.ActiveNodeGuids.Clear();
             }
             else
             {
-                progress.activeNodeGuids.Add("objective");
+                progress.ActiveNodeGuids.Add("objective");
             }
 
             var saved = new QuestProgressSaveData
             {
-                questId = quest.QuestId,
-                definitionSchemaVersion = quest.SchemaVersion,
+                questId = container.QuestId,
+                definitionSchemaVersion = container.SchemaVersion,
                 state = progress.state,
-                activeNodeGuids = new List<string>(progress.activeNodeGuids),
-                nodeProgressCounts = progress.nodeProgressCounts.Select(pair =>
+                activeNodeGuids = new List<string>(progress.ActiveNodeGuids),
+                nodeProgressCounts = progress.NodeProgressCounts.Select(pair =>
                     new QuestNodeProgressSaveData { nodeGuid = pair.Key, count = pair.Value }).ToList()
             };
 
@@ -1477,16 +1941,16 @@ namespace UniversalGraph.Tests
         [Test]
         public void QuestSaveData_RejectsRequiredCountForActiveObjective()
         {
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 83;
-            quest.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            quest.Nodes.Add(new QuestObjectiveNodeData
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 83;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestObjectiveNodeData
             {
                 Guid = "objective",
                 RequiredAmount = 3
             });
-            quest.NodeLinks.Add(Link("start", "Next", "objective"));
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            container.NodeLinks.Add(Link("start", "Next", "objective"));
+            QuestManager.Initialize(new[] { container });
 
             var saveData = new QuestSaveData
             {
@@ -1494,8 +1958,8 @@ namespace UniversalGraph.Tests
                 {
                     new()
                     {
-                        questId = quest.QuestId,
-                        definitionSchemaVersion = quest.SchemaVersion,
+                        questId = container.QuestId,
+                        definitionSchemaVersion = container.SchemaVersion,
                         state = QuestState.InProgress,
                         activeNodeGuids = new List<string> { "objective" },
                         nodeProgressCounts = new List<QuestNodeProgressSaveData>
@@ -1516,46 +1980,46 @@ namespace UniversalGraph.Tests
         }
 
         [Test]
-        public void QuestRunner_ResumeRestoredQuestsNotifiesOnlyActiveStates()
+        public void QuestManager_ResumeRestoredQuestsNotifiesOnlyActiveStates()
         {
-            QuestContainer inProgressQuest = CreateAsset<QuestContainer>();
-            inProgressQuest.QuestId = 78;
-            inProgressQuest.Nodes.Add(new QuestStartNodeData { Guid = "in-progress-start" });
+            QuestContainer inProgressContainer = CreateAsset<QuestContainer>();
+            inProgressContainer.QuestId = 78;
+            inProgressContainer.Nodes.Add(new QuestStartNodeData { Guid = "in-progress-start" });
 
-            QuestContainer canCompleteQuest = CreateAsset<QuestContainer>();
-            canCompleteQuest.QuestId = 79;
-            canCompleteQuest.Nodes.Add(new QuestStartNodeData { Guid = "can-complete-start" });
+            QuestContainer canCompleteContainer = CreateAsset<QuestContainer>();
+            canCompleteContainer.QuestId = 79;
+            canCompleteContainer.Nodes.Add(new QuestStartNodeData { Guid = "can-complete-start" });
 
-            QuestContainer notStartedQuest = CreateAsset<QuestContainer>();
-            notStartedQuest.QuestId = 80;
-            notStartedQuest.Nodes.Add(new QuestStartNodeData { Guid = "not-started-start" });
+            QuestContainer notStartedContainer = CreateAsset<QuestContainer>();
+            notStartedContainer.QuestId = 80;
+            notStartedContainer.Nodes.Add(new QuestStartNodeData { Guid = "not-started-start" });
 
-            QuestContainer turnedInQuest = CreateAsset<QuestContainer>();
-            turnedInQuest.QuestId = 81;
-            turnedInQuest.Nodes.Add(new QuestStartNodeData { Guid = "turned-in-start" });
+            QuestContainer turnedInContainer = CreateAsset<QuestContainer>();
+            turnedInContainer.QuestId = 81;
+            turnedInContainer.Nodes.Add(new QuestStartNodeData { Guid = "turned-in-start" });
 
-            QuestDefinitionRegistry.Initialize(new[]
+            QuestManager.Initialize(new[]
             {
-                inProgressQuest,
-                canCompleteQuest,
-                notStartedQuest,
-                turnedInQuest
+                inProgressContainer,
+                canCompleteContainer,
+                notStartedContainer,
+                turnedInContainer
             });
 
             var controller = new FakeQuestController();
-            controller.QuestProgress.Add(inProgressQuest.QuestId,
-                new QuestProgress(inProgressQuest) { state = QuestState.InProgress });
-            controller.QuestProgress.Add(canCompleteQuest.QuestId,
-                new QuestProgress(canCompleteQuest) { state = QuestState.CanComplete });
-            controller.QuestProgress.Add(notStartedQuest.QuestId,
-                new QuestProgress(notStartedQuest) { state = QuestState.NotStarted });
-            controller.QuestProgress.Add(turnedInQuest.QuestId,
-                new QuestProgress(turnedInQuest) { state = QuestState.TurnedIn });
+            controller.QuestProgress.Add(inProgressContainer.QuestId,
+                new QuestProgress(inProgressContainer) { state = QuestState.InProgress });
+            controller.QuestProgress.Add(canCompleteContainer.QuestId,
+                new QuestProgress(canCompleteContainer) { state = QuestState.CanComplete });
+            controller.QuestProgress.Add(notStartedContainer.QuestId,
+                new QuestProgress(notStartedContainer) { state = QuestState.NotStarted });
+            controller.QuestProgress.Add(turnedInContainer.QuestId,
+                new QuestProgress(turnedInContainer) { state = QuestState.TurnedIn });
 
-            QuestRunner.ResumeRestoredQuests(controller);
+            QuestManager.ResumeRestoredQuests(controller);
 
-            Assert.That(controller.StatusChangedQuestIds,
-                Is.EquivalentTo(new[] { inProgressQuest.QuestId, canCompleteQuest.QuestId }));
+            Assert.That(controller.ProgressChangedQuestIds,
+                Is.EquivalentTo(new[] { inProgressContainer.QuestId, canCompleteContainer.QuestId }));
         }
 
         [Test]
@@ -1595,16 +2059,16 @@ namespace UniversalGraph.Tests
         [TestCase(0)]
         public void GraphAssetMigrator_RejectsPreBaselineSchemaWithoutChangingIt(int version)
         {
-            QuestContainer graph = CreateAsset<QuestContainer>();
+            QuestContainer container = CreateAsset<QuestContainer>();
             FieldInfo schemaField = typeof(GraphContainer).GetField(
                 "schemaVersion",
                 BindingFlags.Instance | BindingFlags.NonPublic);
-            schemaField.SetValue(graph, version);
-            string before = JsonUtility.ToJson(graph);
+            schemaField.SetValue(container, version);
+            string before = JsonUtility.ToJson(container);
 
-            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => GraphAssetMigrator.Migrate(graph));
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => GraphAssetMigrator.Migrate(container));
             Assert.That(exception.Message, Does.Contain("지원하지 않습니다"));
-            Assert.That(JsonUtility.ToJson(graph), Is.EqualTo(before));
+            Assert.That(JsonUtility.ToJson(container), Is.EqualTo(before));
         }
 
         [Test]
@@ -1670,23 +2134,23 @@ namespace UniversalGraph.Tests
         [TestCase(QuestState.ExecutionError)]
         public void QuestSaveData_PreservesStoppedStateAndAllowsExplicitRestart(QuestState state)
         {
-            QuestContainer graph = CreateAsset<QuestContainer>();
-            graph.QuestId = 94;
-            graph.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            graph.Nodes.Add(new QuestObjectiveNodeData { Guid = "goal", EventKey = "Test" });
-            graph.NodeLinks.Add(Link("start", QuestPortNames.Next, "goal"));
-            QuestDefinitionRegistry.Initialize(new[] { graph });
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 94;
+            container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
+            container.Nodes.Add(new QuestObjectiveNodeData { Guid = "goal", EventKey = "Test" });
+            container.NodeLinks.Add(Link("start", QuestPortNames.Next, "goal"));
+            QuestManager.Initialize(new[] { container });
             var source = new FakeQuestController();
-            source.QuestProgress.Add(graph.QuestId, new QuestProgress(graph) { state = state });
+            source.QuestProgress.Add(container.QuestId, new QuestProgress(container) { state = state });
 
             string json = QuestSaveData.Capture(source).ToJson();
             Assert.That(QuestSaveData.TryFromJson(json, out QuestSaveData saved, out string error), Is.True, error);
             var restored = new FakeQuestController();
             Assert.That(saved.TryApplyTo(restored, replaceExisting: true, out error), Is.True, error);
-            Assert.That(restored.QuestProgress[graph.QuestId].state, Is.EqualTo(state));
-            Assert.That(QuestRunner.ResetQuest(restored, graph.QuestId), Is.True);
-            Assert.That(QuestRunner.StartQuest(restored, graph.QuestId), Is.True);
-            Assert.That(restored.QuestProgress[graph.QuestId].activeNodeGuids, Is.EqualTo(new[] { "goal" }));
+            Assert.That(restored.QuestProgress[container.QuestId].state, Is.EqualTo(state));
+            Assert.That(QuestManager.ResetQuest(restored, container.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(restored, container.QuestId), Is.True);
+            Assert.That(restored.QuestProgress[container.QuestId].ActiveNodeGuids, Is.EqualTo(new[] { "goal" }));
         }
 
         [TestCase(-1)]
@@ -1735,13 +2199,13 @@ namespace UniversalGraph.Tests
         }
 
         [Test]
-        public void QuestRunner_InvokesAttributedConditionAndTypedAction()
+        public void QuestManager_InvokesAttributedConditionAndTypedAction()
         {
             attributedQuestActionAmount = 0;
             attributedQuestActionFlag = false;
 
-            QuestContainer quest = CreateAsset<QuestContainer>();
-            quest.QuestId = 88;
+            QuestContainer container = CreateAsset<QuestContainer>();
+            container.QuestId = 88;
             var start = new QuestStartNodeData { Guid = "start" };
             var condition = new QuestConditionNodeData
             {
@@ -1773,21 +2237,21 @@ namespace UniversalGraph.Tests
                 Guid = "complete",
                 NewState = QuestState.CanComplete
             };
-            quest.Nodes.Add(start);
-            quest.Nodes.Add(condition);
-            quest.Nodes.Add(action);
-            quest.Nodes.Add(complete);
-            quest.NodeLinks.Add(Link("start", "Next", "condition"));
-            quest.NodeLinks.Add(Link("condition", "True", "action"));
-            quest.NodeLinks.Add(Link("action", "Next", "complete"));
+            container.Nodes.Add(start);
+            container.Nodes.Add(condition);
+            container.Nodes.Add(action);
+            container.Nodes.Add(complete);
+            container.NodeLinks.Add(Link("start", "Next", "condition"));
+            container.NodeLinks.Add(Link("condition", "True", "action"));
+            container.NodeLinks.Add(Link("action", "Next", "complete"));
 
-            QuestDefinitionRegistry.Initialize(new[] { quest });
+            QuestManager.Initialize(new[] { container });
             QuestMethodInvoker.Initialize();
             var controller = new FakeQuestController();
-            var progress = new QuestProgress(quest) { state = QuestState.NotStarted };
-            controller.QuestProgress.Add(quest.QuestId, progress);
+            var progress = new QuestProgress(container) { state = QuestState.NotStarted };
+            controller.QuestProgress.Add(container.QuestId, progress);
 
-            Assert.That(QuestRunner.StartQuest(controller, quest.QuestId), Is.True);
+            Assert.That(QuestManager.StartQuest(controller, container.QuestId), Is.True);
 
             Assert.That(attributedQuestActionAmount, Is.EqualTo(7));
             Assert.That(attributedQuestActionFlag, Is.True);
@@ -1935,25 +2399,50 @@ namespace UniversalGraph.Tests
         }
 
         [Test]
-        public void DialogueManager_ExecutesChoiceActionAndFollowsSelectedPort()
+        public void DialogueManager_ExecutesActionBeforeShowingFollowingLine()
         {
-            dialogueChoiceActionCount = 0;
             DialogueContainer graph = CreateAsset<DialogueContainer>();
             var entry = new DialogueEntryNodeData { Guid = "entry", EntryId = "Default" };
-            var selectedChoice = new DialogueChoiceData
+            var action = CreateDialogueRunActionNode("action");
+            var line = new DialogueLineNodeData { Guid = "line", DialogueText = "After action" };
+            graph.Nodes.Add(entry);
+            graph.Nodes.Add(action);
+            graph.Nodes.Add(line);
+            graph.NodeLinks.Add(Link("entry", "Next", "action"));
+            graph.NodeLinks.Add(Link("action", "Next", "line"));
+
+            var order = new List<string>();
+            dialogueRunAction = step => order.Add(step);
+            void CaptureLine(DialogueLineNodeData shownLine) => order.Add(shownLine.Guid);
+            DialogueManager.Instance.ShowLine += CaptureLine;
+            try
             {
-                PortName = "accept",
-                ChoiceText = "Accept",
-                SelectionAction = new MethodBindingData
-                {
-                    Key = "tests.dialogue.choice-action"
-                }
-            };
+                Assert.That(DialogueManager.Instance.StartConversation(new DialogueEntryPoint(graph, "Default")), Is.True);
+                Assert.That(order, Is.EqualTo(new[] { "action", "line" }));
+                Assert.That(DialogueManager.Instance.CurrentLine, Is.SameAs(line));
+            }
+            finally
+            {
+                DialogueManager.Instance.ShowLine -= CaptureLine;
+            }
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void DialogueManager_FollowsChoicePortWithOptionalActionChain(bool executeActions)
+        {
+            DialogueContainer graph = CreateAsset<DialogueContainer>();
+            var entry = new DialogueEntryNodeData { Guid = "entry", EntryId = "Default" };
+            var actionChoice = new DialogueChoiceData { PortName = "accept", ChoiceText = "Accept" };
+            var directChoice = new DialogueChoiceData { PortName = "skip", ChoiceText = "Skip" };
+            DialogueChoiceData selectedChoice = executeActions ? actionChoice : directChoice;
             var choiceNode = new DialogueChoiceNodeData
             {
                 Guid = "choice",
-                Choices = new List<DialogueChoiceData> { selectedChoice }
+                Choices = new List<DialogueChoiceData> { actionChoice, directChoice }
             };
+            var firstAction = CreateDialogueRunActionNode("first-action");
+            var secondAction = CreateDialogueRunActionNode("second-action");
             var resultLine = new DialogueLineNodeData
             {
                 Guid = "result",
@@ -1961,14 +2450,26 @@ namespace UniversalGraph.Tests
             };
             graph.Nodes.Add(entry);
             graph.Nodes.Add(choiceNode);
+            graph.Nodes.Add(firstAction);
+            graph.Nodes.Add(secondAction);
             graph.Nodes.Add(resultLine);
             graph.NodeLinks.Add(Link("entry", "Next", "choice"));
-            graph.NodeLinks.Add(Link("choice", "accept", "result"));
+            graph.NodeLinks.Add(Link("choice", "accept", "first-action"));
+            graph.NodeLinks.Add(Link("first-action", "Next", "second-action"));
+            graph.NodeLinks.Add(Link("second-action", "Next", "result"));
+            graph.NodeLinks.Add(Link("choice", "skip", "result"));
 
             GameObject speaker = CreateGameObject("speaker");
             GameObject interactor = CreateGameObject("interactor");
-            DialogueLineNodeData shownLine = null;
-            void CaptureLine(DialogueLineNodeData line) => shownLine = line;
+            var order = new List<string>();
+            var reentrantSelections = new List<bool>();
+            int promptId = 0;
+            dialogueRunAction = step =>
+            {
+                order.Add(step);
+                reentrantSelections.Add(DialogueManager.Instance.SelectChoice(promptId, selectedChoice));
+            };
+            void CaptureLine(DialogueLineNodeData line) => order.Add(line.Guid);
             DialogueManager.Instance.ShowLine += CaptureLine;
             try
             {
@@ -1978,13 +2479,21 @@ namespace UniversalGraph.Tests
                         new DialogueExecutionContext(speaker, interactor)),
                     Is.True);
                 Assert.That(DialogueManager.Instance.IsWaitingForChoice, Is.True);
+                Assert.That(order, Is.Empty);
+                promptId = DialogueManager.Instance.CurrentPromptId;
 
                 Assert.That(
-                    DialogueManager.Instance.SelectChoice(DialogueManager.Instance.CurrentPromptId, selectedChoice),
+                    DialogueManager.Instance.SelectChoice(promptId, selectedChoice),
                     Is.True);
 
-                Assert.That(dialogueChoiceActionCount, Is.EqualTo(1));
-                Assert.That(shownLine, Is.SameAs(resultLine));
+                Assert.That(DialogueManager.Instance.SelectChoice(promptId, selectedChoice), Is.False);
+                Assert.That(order, Is.EqualTo(executeActions
+                    ? new[] { "first-action", "second-action", "result" }
+                    : new[] { "result" }));
+                Assert.That(reentrantSelections, Is.EqualTo(executeActions
+                    ? new[] { false, false }
+                    : Array.Empty<bool>()));
+                Assert.That(DialogueManager.Instance.CurrentLine, Is.SameAs(resultLine));
                 Assert.That(DialogueManager.Instance.IsWaitingForChoice, Is.False);
             }
             finally
@@ -1993,20 +2502,34 @@ namespace UniversalGraph.Tests
             }
         }
 
-        [Test]
-        public void DialogueManager_DoesNotOverwriteConversationStartedByCompletionCallback()
+        [TestCase(false)]
+        [TestCase(true)]
+        public void DialogueManager_ActionCompletionStartsNextConversationAfterActionReturns(bool selectAction)
         {
             DialogueContainer firstGraph = CreateAsset<DialogueContainer>();
             var firstEntry = new DialogueEntryNodeData { Guid = "first-entry", EntryId = "Default" };
+            var selectedChoice = new DialogueChoiceData { PortName = "end", ChoiceText = "End" };
+            var choiceNode = new DialogueChoiceNodeData
+            {
+                Guid = "choice",
+                Choices = new List<DialogueChoiceData> { selectedChoice }
+            };
+            var endingAction = CreateDialogueRunActionNode("ending-action");
             var endingLine = new DialogueLineNodeData
             {
                 Guid = "ending-line",
-                DialogueText = "End",
-                EnterAction = new MethodBindingData { Key = "tests.dialogue.end-current" }
+                DialogueText = "Must not show"
             };
             firstGraph.Nodes.Add(firstEntry);
+            firstGraph.Nodes.Add(endingAction);
             firstGraph.Nodes.Add(endingLine);
-            firstGraph.NodeLinks.Add(Link("first-entry", "Next", "ending-line"));
+            firstGraph.NodeLinks.Add(Link("first-entry", "Next", selectAction ? "choice" : "ending-action"));
+            firstGraph.NodeLinks.Add(Link("ending-action", "Next", "ending-line"));
+            if (selectAction)
+            {
+                firstGraph.Nodes.Add(choiceNode);
+                firstGraph.NodeLinks.Add(Link("choice", "end", "ending-action"));
+            }
 
             DialogueContainer secondGraph = CreateAsset<DialogueContainer>();
             var secondEntry = new DialogueEntryNodeData { Guid = "second-entry", EntryId = "Default" };
@@ -2029,9 +2552,16 @@ namespace UniversalGraph.Tests
             GameObject speaker = CreateGameObject("speaker");
             GameObject interactor = CreateGameObject("interactor");
             var executionContext = new DialogueExecutionContext(speaker, interactor);
-            DialogueLineNodeData shownLine = null;
+            var order = new List<string>();
             bool secondStarted = false;
-            void CaptureLine(DialogueLineNodeData line) => shownLine = line;
+            int callbackCount = 0;
+            dialogueRunAction = _ =>
+            {
+                order.Add("action-enter");
+                DialogueManager.Instance.EndConversation();
+                order.Add("action-exit");
+            };
+            void CaptureLine(DialogueLineNodeData line) => order.Add(line.Guid);
             DialogueManager.Instance.ShowLine += CaptureLine;
             try
             {
@@ -2041,6 +2571,8 @@ namespace UniversalGraph.Tests
                     executionContext,
                     () =>
                     {
+                        callbackCount++;
+                        order.Add("completion");
                         secondStarted = DialogueManager.Instance.StartConversation(
                             new DialogueEntryPoint(secondGraph, "Default"),
                             executionContext);
@@ -2048,9 +2580,70 @@ namespace UniversalGraph.Tests
                     });
 
                 Assert.That(firstStarted, Is.True);
+                if (selectAction)
+                {
+                    Assert.That(order, Is.Empty);
+                    Assert.That(DialogueManager.Instance.SelectChoice(
+                        DialogueManager.Instance.CurrentPromptId, selectedChoice), Is.True);
+                }
+                Assert.That(order, Is.EqualTo(new[] { "action-enter", "action-exit", "completion", "result-line" }));
+                Assert.That(callbackCount, Is.EqualTo(1));
                 Assert.That(secondStarted, Is.True);
                 Assert.That(DialogueManager.Instance.IsConversationActive, Is.True);
-                Assert.That(shownLine, Is.SameAs(resultLine));
+                Assert.That(DialogueManager.Instance.CurrentLine, Is.SameAs(resultLine));
+            }
+            finally
+            {
+                DialogueManager.Instance.ShowLine -= CaptureLine;
+            }
+        }
+
+        [Test]
+        public void DialogueManager_SelectedActionFailureDoesNotShowFollowingLineOrComplete()
+        {
+            DialogueContainer graph = CreateAsset<DialogueContainer>();
+            var entry = new DialogueEntryNodeData { Guid = "entry", EntryId = "Default" };
+            var selectedChoice = new DialogueChoiceData { PortName = "run", ChoiceText = "Run" };
+            var choiceNode = new DialogueChoiceNodeData
+            {
+                Guid = "choice",
+                Choices = new List<DialogueChoiceData> { selectedChoice }
+            };
+            var action = new DialogueActionNodeData
+            {
+                Guid = "action",
+                Action = new MethodBindingData { Key = "tests.invoker.throw" }
+            };
+            var line = new DialogueLineNodeData { Guid = "line", DialogueText = "Must not show" };
+            graph.Nodes.Add(entry);
+            graph.Nodes.Add(choiceNode);
+            graph.Nodes.Add(action);
+            graph.Nodes.Add(line);
+            graph.NodeLinks.Add(Link("entry", "Next", "choice"));
+            graph.NodeLinks.Add(Link("choice", "run", "action"));
+            graph.NodeLinks.Add(Link("action", "Next", "line"));
+
+            int shownCount = 0;
+            int callbackCount = 0;
+            void CaptureLine(DialogueLineNodeData _) => shownCount++;
+            DialogueManager.Instance.ShowLine += CaptureLine;
+            try
+            {
+                Assert.That(DialogueManager.Instance.StartConversation(
+                    new DialogueEntryPoint(graph, "Default"), onComplete: () => callbackCount++), Is.True);
+                int promptId = DialogueManager.Instance.CurrentPromptId;
+                LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex(
+                    "\\[Dialogue\\] Action 'tests\\.invoker\\.throw' 실행 중 예외가 발생했습니다\\.[\\s\\S]*InvalidOperationException: reflection invocation test"));
+
+                Assert.That(DialogueManager.Instance.SelectChoice(promptId, selectedChoice), Is.True);
+                Assert.That(DialogueManager.Instance.SelectChoice(promptId, selectedChoice), Is.False);
+                Assert.That(shownCount, Is.Zero);
+                Assert.That(callbackCount, Is.Zero);
+                Assert.That(DialogueManager.Instance.IsConversationActive, Is.False);
+                Assert.That(DialogueManager.Instance.LastEndReason, Is.EqualTo(DialogueEndReason.Faulted));
+                Assert.That(DialogueManager.Instance.CurrentLine, Is.Null);
+                Assert.That(DialogueManager.Instance.CurrentChoices, Is.Empty);
+                Assert.That(DialogueManager.Instance.CurrentPromptId, Is.Zero);
             }
             finally
             {
@@ -2220,22 +2813,28 @@ namespace UniversalGraph.Tests
             var secondChoice = new DialogueChoiceData
             {
                 PortName = "accept",
-                ChoiceText = "Second",
-                SelectionAction = new MethodBindingData { Key = "tests.dialogue.choice-action" }
+                ChoiceText = "Second"
             };
             var secondChoiceNode = new DialogueChoiceNodeData
             {
                 Guid = "choice-2",
                 Choices = new List<DialogueChoiceData> { secondChoice }
             };
+            var action = new DialogueActionNodeData
+            {
+                Guid = "action",
+                Action = new MethodBindingData { Key = "tests.dialogue.choice-action" }
+            };
             var resultLine = new DialogueLineNodeData { Guid = "result", DialogueText = "Result" };
             graph.Nodes.Add(entry);
             graph.Nodes.Add(firstChoiceNode);
             graph.Nodes.Add(secondChoiceNode);
+            graph.Nodes.Add(action);
             graph.Nodes.Add(resultLine);
             graph.NodeLinks.Add(Link("entry", "Next", "choice-1"));
             graph.NodeLinks.Add(Link("choice-1", "accept", "choice-2"));
-            graph.NodeLinks.Add(Link("choice-2", "accept", "result"));
+            graph.NodeLinks.Add(Link("choice-2", "accept", "action"));
+            graph.NodeLinks.Add(Link("action", "Next", "result"));
 
             GameObject speaker = CreateGameObject("speaker");
             GameObject interactor = CreateGameObject("interactor");
@@ -2251,6 +2850,7 @@ namespace UniversalGraph.Tests
             Assert.That(secondPromptId, Is.Not.EqualTo(firstPromptId));
 
             Assert.That(DialogueManager.Instance.SelectChoice(firstPromptId, firstChoice), Is.False);
+            Assert.That(DialogueManager.Instance.SelectChoice(secondPromptId, firstChoice), Is.False);
             Assert.That(DialogueManager.Instance.IsWaitingForChoice, Is.True);
             Assert.That(DialogueManager.Instance.CurrentPromptId, Is.EqualTo(secondPromptId));
             Assert.That(DialogueManager.Instance.CurrentChoices, Is.EqualTo(new[] { secondChoice }));
@@ -2262,7 +2862,7 @@ namespace UniversalGraph.Tests
         }
 
         [Test]
-        public void DialogueManager_SynchronousChoice_DoesNotReenterSelectionAction()
+        public void DialogueManager_SynchronousChoice_DoesNotReenterChoiceEvent()
         {
             DialogueContainer graph = CreateAsset<DialogueContainer>();
             var entry = new DialogueEntryNodeData { Guid = "entry", EntryId = "Default" };
@@ -2871,10 +3471,10 @@ namespace UniversalGraph.Tests
             dialogueChoiceActionCount++;
         }
 
-        [DialogueAction("tests.dialogue.end-current", Owner = DialogueMethodOwner.Global)]
-        private static void EndCurrentDialogue()
+        [DialogueAction("tests.dialogue.run-action", Owner = DialogueMethodOwner.Global)]
+        private static void RunDialogueAction(string step)
         {
-            DialogueManager.Instance.EndConversation();
+            dialogueRunAction?.Invoke(step);
         }
 
         [DialogueAction("tests.invoker.action", Owner = DialogueMethodOwner.Global)]
@@ -2897,6 +3497,20 @@ namespace UniversalGraph.Tests
             throw new InvalidOperationException("reflection invocation test");
         }
 
+        [DialogueAction("None", Owner = DialogueMethodOwner.Global)]
+        [QuestAction("None", Owner = QuestMethodOwner.Global)]
+        private static void RecordNoneKeyAction()
+        {
+            dialogueChoiceActionCount++;
+        }
+
+        [DialogueCondition("None", Owner = DialogueMethodOwner.Global)]
+        [QuestCondition("None", Owner = QuestMethodOwner.Global)]
+        private static bool EvaluateNoneKeyCondition()
+        {
+            return true;
+        }
+
         private static void RecordOverloadedAction(int amount)
         {
             overloadedActionAmount = amount;
@@ -2906,6 +3520,20 @@ namespace UniversalGraph.Tests
         {
             throw new InvalidOperationException("제네릭 오버로드가 선택되면 안 됩니다.");
         }
+
+        private sealed class FactoryGenericOwner<T>
+        {
+            public static void Execute() { }
+        }
+
+        private static async void FactoryAsyncAction()
+        {
+            await System.Threading.Tasks.Task.Yield();
+        }
+
+        private static void FactoryOptionalAction(int amount = 1) { }
+
+        private static void FactoryParamsAction(params int[] amounts) { }
 
         [DialogueAction("tests.invoker.all-types", Owner = DialogueMethodOwner.Global)]
         [QuestAction("tests.invoker.all-types", Owner = QuestMethodOwner.Global)]
@@ -2943,6 +3571,19 @@ namespace UniversalGraph.Tests
             tickMethod.Invoke(DialogueManager.Instance, new object[] { scaledDeltaTime, unscaledDeltaTime });
         }
 
+        private static DialogueActionNodeData CreateDialogueRunActionNode(string guid)
+        {
+            return new DialogueActionNodeData
+            {
+                Guid = guid,
+                Action = new MethodBindingData
+                {
+                    Key = "tests.dialogue.run-action",
+                    Arguments = CreateDialogueArguments(nameof(RunDialogueAction), MethodKind.Action, ("arg0", guid))
+                }
+            };
+        }
+
         private static List<MethodArgumentData> CreateQuestArguments(
             string methodName,
             MethodKind kind,
@@ -2951,7 +3592,7 @@ namespace UniversalGraph.Tests
             MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(
                 methodName,
                 BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(QuestMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(QuestMethodDescriptorFactory.CreateDescriptor(
                     method,
                     kind,
                     kind == MethodKind.Action
@@ -2975,7 +3616,7 @@ namespace UniversalGraph.Tests
             MethodInfo method = typeof(UniversalGraphRuntimeTests).GetMethod(
                 methodName,
                 BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(DialogueMethodDescriptorFactory.TryCreateDescriptor(
+            Assert.That(DialogueMethodDescriptorFactory.CreateDescriptor(
                     method,
                     kind,
                     "tests.dialogue.choice-visible",
@@ -3022,7 +3663,7 @@ namespace UniversalGraph.Tests
         private sealed class FakeQuestController : IQuestController
         {
             public IDictionary<int, QuestProgress> QuestProgress { get; } = new Dictionary<int, QuestProgress>();
-            public List<int> StatusChangedQuestIds { get; } = new();
+            public List<int> ProgressChangedQuestIds { get; } = new();
             public QuestExecutionContext InvokedContext { get; private set; }
             public int InvokedAmount { get; private set; }
 
@@ -3033,9 +3674,9 @@ namespace UniversalGraph.Tests
                 InvokedAmount = amount;
             }
 
-            public void InvokeStatusChanged(QuestContainer container, QuestProgress progress)
+            public void OnQuestProgressChanged(QuestContainer container, QuestProgress progress)
             {
-                StatusChangedQuestIds.Add(progress.questId);
+                ProgressChangedQuestIds.Add(progress.questId);
             }
         }
     }

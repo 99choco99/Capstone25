@@ -15,7 +15,7 @@ namespace UniversalGraph
 
 		public DialogueActionAttribute(string key)
 		{
-			Key = key;
+			Key = key?.Trim() ?? string.Empty;
 		}
 	}
 }
