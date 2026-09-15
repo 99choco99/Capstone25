@@ -47,19 +47,19 @@ namespace UniversalGraph.Editor
                 .OrderBy(path => path, StringComparer.Ordinal))
             {
                 // 한 파일에 함께 저장된 그래프도 빠뜨리지 않습니다.
-                foreach (GraphContainer graph in AssetDatabase.LoadAllAssetsAtPath(assetPath).OfType<GraphContainer>())
+                foreach (GraphContainer container in AssetDatabase.LoadAllAssetsAtPath(assetPath).OfType<GraphContainer>())
                 {
-                    foreach (GraphValidationIssue issue in GraphValidator.Validate(graph))
+                    foreach (GraphValidationIssue issue in GraphValidator.Validate(container))
                     {
-                        string message = $"[Universal Graph] '{assetPath}' ({graph.name}) {issue}";
+                        string message = $"[Universal Graph] '{assetPath}' ({container.name}) {issue}";
                         if (issue.Severity == GraphValidationSeverity.Error)
                         {
                             errorCount++;
-                            Debug.LogError(message, graph);
+                            Debug.LogError(message, container);
                         }
                         else
                         {
-                            Debug.LogWarning(message, graph);
+                            Debug.LogWarning(message, container);
                         }
                     }
                 }

@@ -12,13 +12,13 @@ namespace UniversalGraph.Editor
         /// <summary>플레이어 어셈블리에 들어가는 메서드만 검사하고 에디터 전용은 제외</summary>
         internal static List<string> Validate()
         {
-            HashSet<string> playerAssemblies = new ();
-            foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player))
+            HashSet<string> runtimeAssemblyNames = new ();
+            foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.PlayerWithoutTestAssemblies))
             {
-                playerAssemblies.Add(assembly.name);
+                runtimeAssemblyNames.Add(assembly.name);
                 foreach (string reference in assembly.compiledAssemblyReferences)
                 {
-                    playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
+                    runtimeAssemblyNames.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
                 }
             }
 
@@ -29,7 +29,7 @@ namespace UniversalGraph.Editor
             methods.AddRange(TypeCache.GetMethodsWithAttribute<QuestConditionAttribute>());
 
             return Validate(methods.Where(method => method.DeclaringType != null
-                && playerAssemblies.Contains(method.DeclaringType.Assembly.GetName().Name)));
+                && runtimeAssemblyNames.Contains(method.DeclaringType.Assembly.GetName().Name)));
         }
 
         /// <summary>메서드를 검사해서 어셈블리 사이의 중복 키를 검사</summary>

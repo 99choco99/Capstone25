@@ -15,7 +15,6 @@ namespace UniversalGraph.Editor
 		public NodeInspector(Action<string, Action> applyDataEdit, Action<string, Action> applyStructureEdit)
 		{
 			editHandler = new NodeInspectorEditHandler(applyDataEdit, applyStructureEdit);
-			AddToClassList("inspector-panel");
 			Add(validationRoot);
 			Add(contentRoot);
 		}
@@ -34,11 +33,11 @@ namespace UniversalGraph.Editor
 				}
 			}
 
-			RefreshValidation();
+			RefreshValidationDisplay();
 		}
 
 		/// <summary>필드 편집 도중 인스펙터 전체를 업데이트 하지 않고 진단 표시만 갱신</summary>
-		public void RefreshValidation()
+		public void RefreshValidationDisplay()
 		{
 			validationRoot.Clear();
 			if (selectedGraphNode == null)

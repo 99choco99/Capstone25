@@ -21,22 +21,18 @@ namespace UniversalGraph.Quest.Editor
             {
                 if (containers == null || containers.Any(container => container == null))
                 {
-                    containers = LoadContainers();
+                    containers = AssetDatabase.FindAssets("t:QuestContainer")
+                        .Select(AssetDatabase.GUIDToAssetPath)
+                        .Select(AssetDatabase.LoadAssetAtPath<QuestContainer>)
+                        .Where(container => container != null)
+                        .OrderBy(container => container.QuestId)
+                        .ThenBy(container => container.name, StringComparer.Ordinal)
+                        .ToArray();
                 }
 
                 return containers;
             }
         }
 
-        private static IReadOnlyList<QuestContainer> LoadContainers()
-        {
-            return AssetDatabase.FindAssets("t:QuestContainer")
-                .Select(AssetDatabase.GUIDToAssetPath)
-                .Select(AssetDatabase.LoadAssetAtPath<QuestContainer>)
-                .Where(container => container != null)
-                .OrderBy(container => container.QuestId)
-                .ThenBy(container => container.name, StringComparer.Ordinal)
-                .ToArray();
-        }
     }
 }

@@ -72,7 +72,8 @@ namespace UniversalGraph
             /// </summary>
             if (!CanContinueQuest(controller, progress, runVersion))
             {
-                return true;
+                // 교체된 이전 실행은 중단하되, 같은 실행에서 발생한 오류는 호출부에도 실패로 전달합니다.
+                return !IsCurrentRun(controller, progress, runVersion) || progress.state != QuestState.ExecutionError;
             }
 
             bool executionSucceeded = ExecuteNextNode(controller, container, progress, index, startData.Guid);
@@ -90,14 +91,14 @@ namespace UniversalGraph
         {
             int runVersion = progress.runVersion;
             Queue<FlowStep> queue = new ();
-            EnqueueNextNode(index, queue, sourceGuid, null);
+            EnqueueNextNodes(index, queue, sourceGuid, null);
 
             int stepCount = 0;
             while (queue.Count > 0)
             {
                 if (!CanContinueQuest(controller, progress, runVersion))
                 {
-                    return true;
+                    return !IsCurrentRun(controller, progress, runVersion) || progress.state != QuestState.ExecutionError;
                 }
 
                 FlowStep currentStep = queue.Dequeue();
@@ -123,7 +124,7 @@ namespace UniversalGraph
                 {
                     case QuestStartNodeData:
                     case QuestInteractionEntryNodeData:
-                        EnqueueNextNode(index, queue, nodeData.Guid, null);
+                        EnqueueNextNodes(index, queue, nodeData.Guid, null);
                         break;
 
                     case QuestObjectiveNodeData objectiveData:
@@ -132,16 +133,16 @@ namespace UniversalGraph
                             progress.ActiveNodeGuids.Add(objectiveData.Guid);
                         }
 
-                        progress.NodeProgressCounts.TryAdd(objectiveData.Guid, 0);
+                        progress.ObjectiveAmounts.TryAdd(objectiveData.Guid, 0);
                         break;
 
                     case QuestConditionNodeData conditionData:
                     {
-                        QuestExecutionContext executionContext = new (controller, container, progress, conditionData);
-                        bool evaluated = QuestMethodInvoker.InvokeMethod(conditionData.Condition, executionContext, MethodKind.Condition, out bool result);
+                        QuestExecutionContext context = new (controller, container, progress, conditionData);
+                        bool evaluated = QuestMethodInvoker.InvokeMethod(conditionData.Condition, context, MethodKind.Condition, out bool result);
                         if (!CanContinueQuest(controller, progress, runVersion))
                         {
-                            return true;
+                            return !IsCurrentRun(controller, progress, runVersion) || progress.state != QuestState.ExecutionError;
                         }
 
                         if (!evaluated)
@@ -149,7 +150,7 @@ namespace UniversalGraph
                             return StopAfterExecutionError(progress);
                         }
 
-                        EnqueueNextNode(index, queue, nodeData.Guid, result ? QuestPortNames.True : QuestPortNames.False);
+                        EnqueueNextNodes(index, queue, nodeData.Guid, result ? QuestPortNames.True : QuestPortNames.False);
                         break;
                     }
 
@@ -158,7 +159,7 @@ namespace UniversalGraph
                         controller.QuestProgress.TryGetValue(stateConditionData.QuestId, out QuestProgress inspectedProgress);
                         QuestState currentState = inspectedProgress?.state ?? QuestState.NotStarted;
                         bool result = currentState == stateConditionData.TargetState;
-                        EnqueueNextNode(index, queue, nodeData.Guid, result ? QuestPortNames.True : QuestPortNames.False);
+                        EnqueueNextNodes(index, queue, nodeData.Guid, result ? QuestPortNames.True : QuestPortNames.False);
                         break;
                     }
 
@@ -166,18 +167,18 @@ namespace UniversalGraph
                         ProcessAndGate(progress, index, queue, ANDGateData, currentStep.PreNodeGuid);
                         break;
 
-                    case QuestStateChangeNodeData stateChangeData:
-                        if (stateChangeData.NewState != QuestState.CanComplete
-                            && stateChangeData.NewState != QuestState.TurnedIn
-                            && stateChangeData.NewState != QuestState.Failed)
+                    case QuestFlowEndNodeData flowEndData:
+                        if (flowEndData.NewState != QuestState.CanComplete
+                            && flowEndData.NewState != QuestState.TurnedIn
+                            && flowEndData.NewState != QuestState.Failed)
                         {
                             Debug.LogError(
-                                $"[Quest] State Change 노드는 상태를 {stateChangeData.NewState}(으)로 변경할 수 없습니다. " +
+                                $"[Quest] State Change 노드는 상태를 {flowEndData.NewState}(으)로 변경할 수 없습니다. " +
                                 "CanComplete, TurnedIn 또는 Failed를 선택하세요.", container);
                             return StopAfterExecutionError(progress);
                         }
 
-                        progress.state = stateChangeData.NewState;
+                        progress.state = flowEndData.NewState;
                         progress.ActiveNodeGuids.Clear();
                         CompleteNode(progress, nodeData.Guid);
                         ResumeDependentQuests(controller, progress.questId);
@@ -186,11 +187,11 @@ namespace UniversalGraph
                     case QuestActionNodeData:
                     case QuestRewardNodeData:
                     {
-                        MethodBindingData binding = nodeData is QuestActionNodeData actionData ? actionData.Action : ((QuestRewardNodeData)nodeData).RewardAction;
-                        bool executed = ExecuteAction(controller, container, progress, nodeData, binding);
+                        MethodBindingData bindingData = nodeData is QuestActionNodeData actionData ? actionData.Action : ((QuestRewardNodeData)nodeData).RewardAction;
+                        bool executed = ExecuteAction(controller, container, progress, nodeData, bindingData);
                         if (!CanContinueQuest(controller, progress, runVersion))
                         {
-                            return true;
+                            return !IsCurrentRun(controller, progress, runVersion) || progress.state != QuestState.ExecutionError;
                         }
 
                         if (!executed)
@@ -199,18 +200,18 @@ namespace UniversalGraph
                         }
 
                         CompleteNode(progress, nodeData.Guid);
-                        EnqueueNextNode(index, queue, nodeData.Guid, null);
+                        EnqueueNextNodes(index, queue, nodeData.Guid, null);
                         break;
                     }
 
-                    case WaitForQuestNodeData waitForQuestData:
+                    case QuestStateWaitNodeData stateWaitData:
                     {
-                        controller.QuestProgress.TryGetValue(waitForQuestData.TargetQuestId, out QuestProgress targetProgress);
+                        controller.QuestProgress.TryGetValue(stateWaitData.TargetQuestId, out QuestProgress targetProgress);
                         QuestState targetState = targetProgress?.state ?? QuestState.NotStarted;
-                        if (targetState == waitForQuestData.RequiredState)
+                        if (targetState == stateWaitData.RequiredState)
                         {
                             CompleteNode(progress, nodeData.Guid);
-                            EnqueueNextNode(index, queue, nodeData.Guid, null);
+                            EnqueueNextNodes(index, queue, nodeData.Guid, null);
                             continue;
                         }
 
@@ -246,7 +247,7 @@ namespace UniversalGraph
 
 
         /// <summary>조건에 맞는 모든 도착 노드를 실행 대기열에 추가</summary>
-        private static void EnqueueNextNode(QuestGraphIndex index, Queue<FlowStep> queue, string sourceGuid, string sourcePort)
+        private static void EnqueueNextNodes(QuestGraphIndex index, Queue<FlowStep> queue, string sourceGuid, string sourcePort)
         {
             if (!index.OutputLinksByStartNode.TryGetValue(sourceGuid, out List<NodeLinkData> links))
             {
@@ -295,26 +296,26 @@ namespace UniversalGraph
         /// <summary>
         /// Quest Action 처리
         /// </summary>
-        private static bool ExecuteAction(IQuestController controller, QuestContainer container, QuestProgress progress, NodeBaseData nodeData, MethodBindingData binding)
+        private static bool ExecuteAction(IQuestController controller, QuestContainer container, QuestProgress progress, NodeBaseData nodeData, MethodBindingData bindingData)
         {
             //Reward는 Action을 지정하지 않아도 통과합니다. 호출 정보 자체가 null이면 오류입니다.
-            if (nodeData is QuestRewardNodeData && binding != null && !binding.HasKey)
+            if (nodeData is QuestRewardNodeData && bindingData != null && !bindingData.HasKey)
             {
                 return true;
             }
 
-            if (binding == null || !binding.HasKey)
+            if (bindingData == null || !bindingData.HasKey)
             {
                 Debug.LogError("[Quest] Action 키가 비어 있습니다.", container);
                 return false;
             }
 
-            QuestExecutionContext executionContext = new(controller, container, progress, nodeData);
+            QuestExecutionContext context = new(controller, container, progress, nodeData);
             var action = (progress, progress.runVersion, nodeData.Guid);
             executingActionNodes.Add(action);
             try
             {
-                return QuestMethodInvoker.InvokeMethod(binding, executionContext, MethodKind.Action, out _);
+                return QuestMethodInvoker.InvokeMethod(bindingData, context, MethodKind.Action, out _);
             }
             finally
             {
@@ -328,14 +329,14 @@ namespace UniversalGraph
         private static void ProcessAndGate(QuestProgress progress, QuestGraphIndex index, Queue<FlowStep> queue, QuestAndGateNodeData gateData, string sourceNodeGuid)
         {
             string key = $"{gateData.Guid}|{sourceNodeGuid}";
-            if (!progress.CompletedGateInputs.Contains(key))
+            if (!progress.CompletedANDGateInputs.Contains(key))
             {
-                progress.CompletedGateInputs.Add(key);
+                progress.CompletedANDGateInputs.Add(key);
             }
 
             string prefix = gateData.Guid + "|";
 
-            int arrivedCount = progress.CompletedGateInputs.Count(key => key.StartsWith(prefix, StringComparison.Ordinal));
+            int arrivedCount = progress.CompletedANDGateInputs.Count(key => key.StartsWith(prefix, StringComparison.Ordinal));
             int requiredCount = index.StartNodeCountByTargetNode[gateData.Guid];
             if (arrivedCount < requiredCount)
             {
@@ -343,7 +344,7 @@ namespace UniversalGraph
             }
 
             CompleteNode(progress, gateData.Guid);
-            EnqueueNextNode(index, queue, gateData.Guid, null);
+            EnqueueNextNodes(index, queue, gateData.Guid, null);
         }
     }
 }

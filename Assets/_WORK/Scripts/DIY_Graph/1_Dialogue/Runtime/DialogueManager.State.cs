@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace UniversalGraph
 {
-    /// <summary>DialogueManager가 공유하는 런타임 상태와 싱글턴 초기화를 담당</summary>
+    /// <summary>DialogueManager의 인스턴스별 런타임 상태와 기본 인스턴스 초기화를 담당</summary>
     public sealed partial class DialogueManager
     {
         private enum BlockKind
@@ -25,7 +25,8 @@ namespace UniversalGraph
 
         private static DialogueManager instance;
 
-        private DialogueManager() { }
+        /// <summary>다른 대화 실행기와 상태를 공유하지 않는 실행기를 만듭니다.</summary>
+        public DialogueManager() { }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticState()
@@ -165,7 +166,7 @@ namespace UniversalGraph
         //===========================현재 대화================================
 
         private DialogueContainer currentContainer;
-        private DialogueExecutionContext currentExecutionContext;
+        private DialogueExecutionContext currentContext;
         private NodeBaseData currentNodeData;
 
         /// <summary>새 대화마다 증가하는 대화 ID 발급 번호</summary>
@@ -211,13 +212,13 @@ namespace UniversalGraph
         private void FailConversation(string message)
         {
             Debug.LogError(message, currentContainer);
-            FinishConversation(DialogueEndReason.Faulted);
+            EndConversation(DialogueEndReason.Faulted);
         }
 
         /// <summary>
         /// 현재 대화를 종료하고 사용한 상태를 정리
         /// </summary>
-        private void FinishConversation(DialogueEndReason reason)
+        private void EndConversation(DialogueEndReason reason)
         {
             if (!IsConversationActive)
             {
@@ -262,7 +263,7 @@ namespace UniversalGraph
 
         //===========================대화 완료 콜백================================
 
-        /// <summary>EndNode가 끝난 후 실행할 콜백</summary>
+        /// <summary>대화가 정상 완료되고 정리된 뒤 실행할 콜백</summary>
         private Action completionCallback;
 
         /// <summary>completionCallback을 미뤄둘 곳</summary>
@@ -314,7 +315,7 @@ namespace UniversalGraph
         private void ClearConversationData()
         {
             currentContainer = null;
-            currentExecutionContext = null;
+            currentContext = null;
             currentNodeData = null;
             completionCallback = null;
             activeConversationId = 0;

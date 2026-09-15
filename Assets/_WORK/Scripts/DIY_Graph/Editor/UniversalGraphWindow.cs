@@ -364,7 +364,7 @@ namespace UniversalGraph.Editor
             if (!CanSaveLoadedGraph())
             {
                 validationIssues = Array.Empty<GraphValidationIssue>();
-                toolbar?.UpdateValidation(validationIssues);
+                toolbar?.UpdateValidationDisplay(validationIssues);
                 return;
             }
 
@@ -383,8 +383,8 @@ namespace UniversalGraph.Editor
             }
 
             nextIssueIndex = 0;
-            toolbar?.UpdateValidation(validationIssues);
-            inspectorPanel?.RefreshValidation();
+            toolbar?.UpdateValidationDisplay(validationIssues);
+            inspectorPanel?.RefreshValidationDisplay();
         }
 
         /// <summary>검증 문제가 있는 다음 노드를 선택하고 화면 중앙에 표시합니다.</summary>

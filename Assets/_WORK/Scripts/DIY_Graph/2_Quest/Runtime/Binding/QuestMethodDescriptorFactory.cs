@@ -125,7 +125,7 @@ namespace UniversalGraph
                 }
 
                 //인수타입 결정
-                if (!MethodArgumentCodec.TryGetArgumentKind(parameterType, out MethodArgumentKind argumentKind))
+                if (!MethodArgumentCodec.GetArgumentKind(parameterType, out MethodArgumentKind argumentKind))
                 {
                     error = $"'{key}' ({name})의 파라미터 '{displayName}' 타입 '{parameterType.FullName}'은 그래프 코덱에서 지원하지 않습니다.";
                     return false;

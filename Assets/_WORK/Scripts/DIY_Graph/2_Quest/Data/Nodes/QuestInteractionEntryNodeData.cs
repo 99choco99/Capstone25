@@ -3,10 +3,10 @@ using UnityEngine;
 
 namespace UniversalGraph
 {
-	/// <summary>
-    /// Interaction 시 퀘스트의 진행 여부를 제안 하는 노드의 데이터
-	/// </summary>
-	[Serializable]
+    /// <summary>
+    /// 상호작용 조회 시작점과 반응할 대상 ID를 저장하는 데이터
+    /// </summary>
+    [Serializable]
 	public sealed class QuestInteractionEntryNodeData : NodeBaseData
 	{
 		[SerializeField]

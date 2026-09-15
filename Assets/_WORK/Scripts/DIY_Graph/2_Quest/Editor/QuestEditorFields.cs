@@ -11,10 +11,10 @@ namespace UniversalGraph.Quest.Editor
     internal static class QuestEditorFields
     {
         /// <summary>퀘스트 그래프에서 DialogueEntryPoint를 사용해야 할 때 참조시켜줄 필드를 생성하는 함수</summary>
-        public static VisualElement CreateDialogueEntryPointField(DialogueEntryPoint current, NodeInspectorEditHandler editHandler, Action<DialogueEntryPoint> apply)
+        public static VisualElement CreateDialogueEntryPointField(DialogueEntryPoint currentEntryPoint, NodeInspectorEditHandler editHandler, Action<DialogueEntryPoint> apply)
         {
             VisualElement root = new ();
-            DialogueEntryPoint entryPoint = current;
+            DialogueEntryPoint entryPoint = currentEntryPoint;
 
             //Dialogue Graph 넣을 곳
             ObjectField graphField = new ("Graph Asset")
@@ -106,17 +106,16 @@ namespace UniversalGraph.Quest.Editor
         /// <summary>
         /// DialogueEntry 의 후보군을 리스트로 반환
         /// </summary>
-        private static List<string> GetDialogueEntryList(DialogueContainer graph)
+        private static List<string> GetDialogueEntryList(DialogueContainer container)
         {
-            List<string> entries = graph?.Nodes?
+            return container?.Nodes?
                 .OfType<DialogueEntryNodeData>()
-                .Select(entry => entry.EntryId)
+                .Select(entryData => entryData.EntryId)
                 .Distinct()
                 .OrderByDescending(id => id == DialogueEntryNodeData.DefaultEntryId)
                 .ThenBy(id => id, StringComparer.Ordinal)
                 .ToList() ?? new();
 
-            return entries;
         }
 
         /// <summary>

@@ -43,27 +43,27 @@ namespace UniversalGraph
                     throw new InvalidOperationException($"'{container.name}'에 중복된 노드 GUID '{nodeData.Guid}'가 있습니다.");
                 }
 
-                if (nodeData is QuestObjectiveNodeData objective && objective.RequiredAmount < 1)
+                if (nodeData is QuestObjectiveNodeData objectiveData && objectiveData.RequiredAmount < 1)
                 {
                     throw new InvalidOperationException($"'{container.name}'의 목표 노드 '{nodeData.Guid}' 수량은 1 이상이어야 합니다.");
                 }
 
-                if (nodeData is WaitForQuestNodeData waitForQuest && waitForQuest.RequiredState == QuestState.ExecutionError)
+                if (nodeData is QuestStateWaitNodeData stateWaitData && stateWaitData.RequiredState == QuestState.ExecutionError)
                 {
                     throw new InvalidOperationException($"'{container.name}'의 대기 노드 '{nodeData.Guid}'는 ExecutionError를 기다릴 수 없습니다.");
                 }
 
-                if (nodeData is QuestActionNodeData action && action.Action == null)
+                if (nodeData is QuestActionNodeData actionData && actionData.Action == null)
                 {
                     throw new InvalidOperationException($"'{container.name}'의 Action 노드 '{nodeData.Guid}'에 호출 정보가 없습니다.");
                 }
 
-                if (nodeData is QuestConditionNodeData condition && condition.Condition == null)
+                if (nodeData is QuestConditionNodeData conditionData && conditionData.Condition == null)
                 {
                     throw new InvalidOperationException($"'{container.name}'의 Condition 노드 '{nodeData.Guid}'에 호출 정보가 없습니다.");
                 }
 
-                if (nodeData is QuestRewardNodeData reward && reward.RewardAction == null)
+                if (nodeData is QuestRewardNodeData rewardData && rewardData.RewardAction == null)
                 {
                     throw new InvalidOperationException($"'{container.name}'의 Reward 노드 '{nodeData.Guid}'에 호출 정보가 없습니다.");
                 }

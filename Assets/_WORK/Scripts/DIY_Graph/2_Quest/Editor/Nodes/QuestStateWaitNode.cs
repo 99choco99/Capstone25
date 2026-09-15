@@ -8,7 +8,7 @@ namespace UniversalGraph.Quest.Editor
 {
     /// <summary>참조한 Quest가 지정 상태가 될 때까지 현재 흐름을 기다리는 노드</summary>
     [GraphNodeEditor(typeof(QuestContainer), "Quest/Flow/Wait For Quest")]
-    public sealed class WaitForQuestNode : QuestFlowNode<WaitForQuestNodeData>
+    public sealed class QuestStateWaitNode : QuestFlowNode<QuestStateWaitNodeData>
     {
         public override Vector2 DefaultSize => new(200f, 100f);
 

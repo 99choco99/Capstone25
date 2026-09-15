@@ -16,7 +16,7 @@ namespace UniversalGraph.Quest.Editor
         {
             RefreshTitle();
 
-            Port input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Single, typeof(float));
+            Port input = InstantiatePort(Orientation.Horizontal, Direction.Input, Port.Capacity.Multi, typeof(float));
             input.portName = QuestPortNames.Input;
             inputContainer.Add(input);
 

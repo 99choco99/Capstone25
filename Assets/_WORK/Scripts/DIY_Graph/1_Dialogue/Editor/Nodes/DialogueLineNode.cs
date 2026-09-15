@@ -26,7 +26,6 @@ namespace UniversalGraph.Dialogue.Editor
             outputContainer.Add(next);
 
             fullTextLabel = new Label();
-            fullTextLabel.AddToClassList("node-full-text");
             extensionContainer.Add(fullTextLabel);
 
             RefreshPreview();
@@ -78,7 +77,6 @@ namespace UniversalGraph.Dialogue.Editor
                 value = NodeData.DialogueText ?? string.Empty,
                 multiline = true
             };
-            dialogueField.AddToClassList("dialogue-field");
 
             dialogueField.RegisterValueChangedCallback(change =>
             {

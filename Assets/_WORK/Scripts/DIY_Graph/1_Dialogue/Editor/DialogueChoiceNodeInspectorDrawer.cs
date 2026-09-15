@@ -17,9 +17,7 @@ namespace UniversalGraph.Dialogue.Editor
             //선택지 추가 버튼과 선택지들이 들어갈 공간을 생성
             VisualElement section = new();
             root.Add(section);
-            Label title = new("Choices");
-            title.AddToClassList("choice-title");
-            section.Add(title);
+            section.Add(new Label("Choices"));
 
             VisualElement choicesContainer = new();
             section.Add(choicesContainer);
@@ -40,7 +38,6 @@ namespace UniversalGraph.Dialogue.Editor
             {
                 text = "+ Add Choice"
             };
-            addButton.AddToClassList("add-choice-btn");
             section.Add(addButton);
 
             RedrawChoices();
@@ -64,7 +61,6 @@ namespace UniversalGraph.Dialogue.Editor
         private static Box CreateChoiceField(DialogueChoiceNode selectedNode, DialogueChoiceData choice, NodeInspectorEditHandler editHandler, Action redrawChoices)
         {
             Box box = new();
-            box.AddToClassList("choice-box");
 
             //삭제 버튼 추가
             Button deleteButton = new(() =>

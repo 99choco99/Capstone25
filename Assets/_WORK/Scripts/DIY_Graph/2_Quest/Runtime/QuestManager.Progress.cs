@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace UniversalGraph
@@ -9,7 +10,6 @@ namespace UniversalGraph
     /// </summary>
     public static partial class QuestManager
     {
-
         //==================================진행도 초기화================================
 
         /// <summary>
@@ -19,9 +19,9 @@ namespace UniversalGraph
         {
             progress.runVersion++;
             progress.ActiveNodeGuids.Clear();
-            progress.NodeProgressCounts.Clear();
+            progress.ObjectiveAmounts.Clear();
             progress.CompletedNodeGuids.Clear();
-            progress.CompletedGateInputs.Clear();
+            progress.CompletedANDGateInputs.Clear();
         }
 
         //================================= 유효성 검사 =================================
@@ -43,35 +43,29 @@ namespace UniversalGraph
         
         //=============================== 진행 ===================================
 
-        /// <summary>목표 진행량을 반영하고 완료되면 연결된 Quest 흐름을 계속 실행합니다.</summary>
-        private static bool ApplyObjectiveProgress(
-            IQuestController controller,
-            QuestContainer container,
-            QuestProgress progress,
+        /// <summary>목표 진행량을 반영하고 완료되면 연결된 Quest 흐름을 계속 실행</summary>
+        private static bool ProcessObjectiveProgress(
+            IQuestController controller,QuestContainer container, QuestProgress progress,
             QuestGraphIndex index, QuestObjectiveNodeData objectiveData, int amount, out bool executionSucceeded)
         {
             executionSucceeded = true;
+
             int requiredAmount = objectiveData.RequiredAmount;
-            progress.NodeProgressCounts.TryGetValue(objectiveData.Guid, out int currentAmount);
-            int nextAmount = (int)Math.Min(requiredAmount, (long)currentAmount + amount);
+            progress.ObjectiveAmounts.TryGetValue(objectiveData.Guid, out int currentAmount);
+            int nextAmount = (int)Math.Min(requiredAmount, (long)currentAmount + amount); //오버플로우 방지
             if (nextAmount == currentAmount)
             {
                 return false;
             }
 
-            progress.NodeProgressCounts[objectiveData.Guid] = nextAmount;
+            progress.ObjectiveAmounts[objectiveData.Guid] = nextAmount;
             if (nextAmount < requiredAmount)
             {
                 return true;
             }
 
             CompleteNode(progress, objectiveData.Guid);
-            executionSucceeded = ExecuteNextNode(
-                controller,
-                container,
-                progress,
-                index,
-                objectiveData.Guid);
+            executionSucceeded = ExecuteNextNode(controller, container, progress, index, objectiveData.Guid);
             return true;
         }
 
@@ -80,13 +74,16 @@ namespace UniversalGraph
         {
             QuestContainerRegistry registry = QuestContainerRegistry.Instance;
 
+            controller.QuestProgress.TryGetValue(questId, out QuestProgress changedProgress);
+            QuestState changedState = changedProgress?.state ?? QuestState.NotStarted;
             // 실행 오류일 때
-            if (controller.QuestProgress.TryGetValue(questId, out QuestProgress changedProgress)
-                && changedProgress?.state == QuestState.ExecutionError)
+            if (changedState == QuestState.ExecutionError)
             {
                 return;
             }
 
+            // 후속 Action이 상태를 또 바꾸기 전에, 이번 도달 순간에 조건을 만족한 대기만 확정
+            var waitingQuests = new List<(QuestProgress Progress, int RunVersion, QuestContainer Container, QuestGraphIndex Index, string[] NodeGuids)>();
             foreach (QuestProgress progress in controller.QuestProgress.Values
                          .Where(progress => progress != null && progress.state == QuestState.InProgress)
                          .ToArray())
@@ -96,31 +93,31 @@ namespace UniversalGraph
                     continue;
                 }
 
-                int runVersion = progress.runVersion;
+                string[] nodeGuids = progress.ActiveNodeGuids
+                    .Where(guid => index.Nodes.TryGetValue(guid, out NodeBaseData data)
+                        && data is QuestStateWaitNodeData waitData
+                        && waitData.TargetQuestId == questId && waitData.RequiredState == changedState)
+                    .ToArray();
+                if (nodeGuids.Length > 0)
+                {
+                    waitingQuests.Add((progress, progress.runVersion, container, index, nodeGuids));
+                }
+            }
+
+            foreach (var waiting in waitingQuests)
+            {
+                QuestProgress progress = waiting.Progress;
+                int runVersion = waiting.RunVersion;
                 bool resumed = false;
-                foreach (string activeGuid in progress.ActiveNodeGuids.ToArray())
+                foreach (string activeGuid in waiting.NodeGuids)
                 {
                     if (!CanContinueQuest(controller, progress, runVersion))
                     {
                         break;
                     }
 
-                    //현재 activeNode 중인 WaitForQuestNode를 찾기
-                    if (!progress.ActiveNodeGuids.Contains(activeGuid)
-                        || !index.Nodes.TryGetValue(activeGuid, out NodeBaseData nodeData)
-                        || nodeData is not WaitForQuestNodeData waitForQuestData)
-                    {
-                        continue;
-                    }
-
-                    if (waitForQuestData.TargetQuestId != questId)
-                    {
-                        continue;
-                    }
-
-                    //현재 상태를 다시 읽고 원하는 상태 변화인지 체크
-                    controller.QuestProgress.TryGetValue(questId, out QuestProgress targetProgress);
-                    if ((targetProgress?.state ?? QuestState.NotStarted) != waitForQuestData.RequiredState)
+                    // 다른 후속 흐름에서 이미 처리한 대기는 중복 실행하지 않습니다.
+                    if (!progress.ActiveNodeGuids.Contains(activeGuid))
                     {
                         continue;
                     }
@@ -128,7 +125,7 @@ namespace UniversalGraph
                     CompleteNode(progress, activeGuid);
                     resumed = true;
 
-                    if (!ExecuteNextNode(controller, container, progress, index, nodeData.Guid))
+                    if (!ExecuteNextNode(controller, waiting.Container, progress, waiting.Index, activeGuid))
                     {
                         break;
                     }
@@ -136,7 +133,7 @@ namespace UniversalGraph
 
                 if (resumed && IsCurrentRun(controller, progress, runVersion))
                 {
-                    controller.OnQuestProgressChanged(container, progress);
+                    controller.OnQuestProgressChanged(waiting.Container, progress);
                 }
             }
         }

@@ -6,7 +6,7 @@ namespace UniversalGraph.Quest.Editor
 {
     /// <summary>현재 Quest를 완료 보고 대기, 완료 또는 실패 상태로 바꾸고 그래프 진행을 끝냅니다.</summary>
     [GraphNodeEditor(typeof(QuestContainer), "Quest/Flow/Change State")]
-    public sealed class QuestStateChangeNode : QuestFlowNode<QuestStateChangeNodeData>
+    public sealed class QuestFlowEndNode : QuestFlowNode<QuestFlowEndNodeData>
     {
         protected override string NodeTitle => $"STATE: {NodeData.NewState}";
         protected override bool HasOutput => false;

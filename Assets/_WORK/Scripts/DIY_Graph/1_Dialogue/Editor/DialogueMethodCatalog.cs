@@ -7,7 +7,7 @@ using UnityEditor.Compilation;
 namespace UniversalGraph.Dialogue.Editor
 {
     /// <summary>
-    /// Dialogue 노드에서 선택할 수 있는 메서드의 드롭다운을 만들기
+    /// 에디터에서 선택할 수 있는 Dialogue 메서드를 찾아 설명서 목록과 키별 조회 정보를 제공
     /// </summary>
     internal static class DialogueMethodCatalog
     {
@@ -46,13 +46,13 @@ namespace UniversalGraph.Dialogue.Editor
         /// </summary>
         private static void BuildCatalog()
         {
-            HashSet<string> playerAssemblyNames = new();
-            foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player))
+            HashSet<string> runtimeAssemblyNames = new();
+            foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.PlayerWithoutTestAssemblies))
             {
-                playerAssemblyNames.Add(assembly.name);
+                runtimeAssemblyNames.Add(assembly.name);
                 foreach (string reference in assembly.compiledAssemblyReferences)
                 {
-                    playerAssemblyNames.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
+                    runtimeAssemblyNames.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
                 }
             }
 
@@ -61,7 +61,7 @@ namespace UniversalGraph.Dialogue.Editor
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<DialogueActionAttribute>())
             {
                 var attribute = method.GetCustomAttribute<DialogueActionAttribute>(inherit: false);
-                if (attribute != null && IsPlayerMethod(method, playerAssemblyNames))
+                if (attribute != null && IsRuntimeMethod(method, runtimeAssemblyNames))
                 {
                     AddCandidate(method, MethodKind.Action, attribute.Key, attribute.Owner, actionCandidates);
                 }
@@ -72,7 +72,7 @@ namespace UniversalGraph.Dialogue.Editor
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<DialogueConditionAttribute>())
             {
                 var attribute = method.GetCustomAttribute<DialogueConditionAttribute>(inherit: false);
-                if (attribute != null && IsPlayerMethod(method, playerAssemblyNames))
+                if (attribute != null && IsRuntimeMethod(method, runtimeAssemblyNames))
                 {
                     AddCandidate(method, MethodKind.Condition, attribute.Key, attribute.Owner, conditionCandidates);
                 }
@@ -85,10 +85,10 @@ namespace UniversalGraph.Dialogue.Editor
         /// <summary>
         /// 플레이어 어셈블리인지 ?
         /// </summary>
-        private static bool IsPlayerMethod(MethodInfo method, HashSet<string> playerAssemblyNames)
+        private static bool IsRuntimeMethod(MethodInfo method, HashSet<string> runtimeAssemblyNames)
         {
             string assemblyName = method.DeclaringType?.Assembly.GetName().Name;
-            return !string.IsNullOrEmpty(assemblyName) && playerAssemblyNames.Contains(assemblyName);
+            return !string.IsNullOrEmpty(assemblyName) && runtimeAssemblyNames.Contains(assemblyName);
         }
 
         /// <summary>

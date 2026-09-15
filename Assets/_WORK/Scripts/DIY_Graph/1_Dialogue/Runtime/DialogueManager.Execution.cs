@@ -48,7 +48,7 @@ namespace UniversalGraph
                             break;
 
                         case DialogueEndNodeData:
-                            FinishConversation(DialogueEndReason.Completed);
+                            EndConversation(DialogueEndReason.Completed);
                             break;
 
                         case DialogueWaitNodeData waitData:
@@ -90,7 +90,7 @@ namespace UniversalGraph
         private void ProcessCondition(DialogueConditionNodeData data)
         {
             int conversationId = activeConversationId;
-            bool evaluated = DialogueMethodInvoker.InvokeMethod(data.Condition, currentExecutionContext, MethodKind.Condition, out bool result);
+            bool evaluated = DialogueMethodInvoker.InvokeMethod(data.Condition, currentContext, MethodKind.Condition, out bool result);
 
             if (!IsCurrentConversation(conversationId, data))
             {
@@ -99,7 +99,7 @@ namespace UniversalGraph
 
             if (!evaluated)
             {
-                FinishConversation(DialogueEndReason.Faulted);
+                EndConversation(DialogueEndReason.Faulted);
                 return;
             }
 
@@ -113,7 +113,7 @@ namespace UniversalGraph
         private void ProcessAction(DialogueActionNodeData data)
         {
             int conversationId = activeConversationId;
-            bool executed = DialogueMethodInvoker.InvokeMethod(data.Action, currentExecutionContext, MethodKind.Action, out _);
+            bool executed = DialogueMethodInvoker.InvokeMethod(data.Action, currentContext, MethodKind.Action, out _);
 
             if (!IsCurrentConversation(conversationId, data))
             {
@@ -122,7 +122,7 @@ namespace UniversalGraph
 
             if (!executed)
             {
-                FinishConversation(DialogueEndReason.Faulted);
+                EndConversation(DialogueEndReason.Faulted);
                 return;
             }
 
@@ -151,8 +151,6 @@ namespace UniversalGraph
             blockKind = BlockKind.Time;
             waitTimeLeft = duration;
             useUnscaledTime = data.UseUnscaledTime;
-
-            DialogueTickDriver.Ensure();
         }
 
 
@@ -189,7 +187,7 @@ namespace UniversalGraph
         {
             int conversationId = activeConversationId;
 
-            if (!BuildChoices(data, conversationId))
+            if (!CollectVisibleChoices(data, conversationId))
             {
                 return;
             }
@@ -208,7 +206,7 @@ namespace UniversalGraph
         }
 
         /// <summary>선택지별 조건을 평가하고 현재 진입에서 사용할 수 있는 선택지만 보관</summary>
-        private bool BuildChoices(DialogueChoiceNodeData data, int conversationId)
+        private bool CollectVisibleChoices(DialogueChoiceNodeData data, int conversationId)
         {
             visibleChoices.Clear();
             foreach (DialogueChoiceData choiceData in data.Choices)
@@ -220,7 +218,7 @@ namespace UniversalGraph
                     continue;
                 }
 
-                bool evaluated = DialogueMethodInvoker.InvokeMethod(choiceData.VisibilityCondition, currentExecutionContext, MethodKind.Condition, out bool visible);
+                bool evaluated = DialogueMethodInvoker.InvokeMethod(choiceData.VisibilityCondition, currentContext, MethodKind.Condition, out bool visible);
                 if (!IsCurrentConversation(conversationId, data))
                 {
                     return false;
@@ -228,7 +226,7 @@ namespace UniversalGraph
 
                 if (!evaluated)
                 {
-                    FinishConversation(DialogueEndReason.Faulted);
+                    EndConversation(DialogueEndReason.Faulted);
                     return false;
                 }
 
@@ -264,7 +262,7 @@ namespace UniversalGraph
                     Debug.LogError($"[Dialogue] {notificationName} 콜백 실행 중 예외가 발생했습니다.\n{exception}");
                     if (IsCurrentConversation(conversationId, null))
                     {
-                        FinishConversation(DialogueEndReason.Faulted);
+                        EndConversation(DialogueEndReason.Faulted);
                     }
                     return;
                 }
@@ -296,7 +294,7 @@ namespace UniversalGraph
                     Debug.LogError($"[Dialogue] {notificationName} 콜백 실행 중 예외가 발생했습니다.\n{exception}");
                     if (IsCurrentConversation(conversationId, nodeData))
                     {
-                        FinishConversation(DialogueEndReason.Faulted);
+                        EndConversation(DialogueEndReason.Faulted);
                     }
                     return;
                 }

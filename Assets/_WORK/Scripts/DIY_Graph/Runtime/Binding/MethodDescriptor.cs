@@ -53,7 +53,7 @@ namespace UniversalGraph
         /// <summary>메서드의 전체 파라미터 정보</summary>
         public IReadOnlyList<MethodParameterDescriptor> Parameters { get; }
 
-        /// <summary>그래프에서 입력한 파라미터 정보</summary>
+        /// <summary>그래프에서 값을 입력하고 저장할 파라미터의 설명서 목록</summary>
         public IReadOnlyList<MethodParameterDescriptor> SerializedParameters { get; }
 
 

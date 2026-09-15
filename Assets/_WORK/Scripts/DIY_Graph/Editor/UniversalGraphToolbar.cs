@@ -72,7 +72,7 @@ namespace UniversalGraph.Editor
 
 
         /// <summary>현재 검증 결과에 맞춰 상태 글자와 관련 버튼을 갱신</summary>
-        public void UpdateValidation(IReadOnlyList<GraphValidationIssue> issues)
+        public void UpdateValidationDisplay(IReadOnlyList<GraphValidationIssue> issues)
         {
             issues ??= Array.Empty<GraphValidationIssue>();
             int errors = issues.Count(issue => issue.Severity == GraphValidationSeverity.Error);

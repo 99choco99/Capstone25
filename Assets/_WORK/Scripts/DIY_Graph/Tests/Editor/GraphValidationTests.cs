@@ -447,6 +447,74 @@ namespace UniversalGraph.Tests
                 Is.True);
         }
 
+        [TestCase("Typo")]
+        [TestCase("input")]
+        [TestCase("Next")]
+        public void GraphViewSerializer_RejectsUnknownInputPortWhenLoading(string portName)
+        {
+            DialogueContainer graph = CreateValidDialogue();
+            graph.NodeLinks[0].TargetPortName = portName;
+
+            var graphView = new UniversalGraphView();
+            System.InvalidOperationException exception = Assert.Throws<System.InvalidOperationException>(
+                () => GraphViewSerializer.LoadGraph(graphView, graph));
+            Assert.That(exception.Message, Does.Contain("입력 포트"));
+        }
+
+        [TestCase("Typo")]
+        [TestCase("next")]
+        [TestCase("Input")]
+        public void GraphViewSerializer_RejectsExtraUnknownOutputPortWhenLoading(string portName)
+        {
+            DialogueContainer graph = CreateValidDialogue();
+            // 정상 Next 연결이 남아 있어도 별도의 잘못된 출력 포트는 허용하지 않습니다.
+            graph.NodeLinks.Add(Link("line", portName, "end"));
+
+            var graphView = new UniversalGraphView();
+            System.InvalidOperationException exception = Assert.Throws<System.InvalidOperationException>(
+                () => GraphViewSerializer.LoadGraph(graphView, graph));
+            Assert.That(exception.Message, Does.Contain("출력 포트"));
+        }
+
+        [Test]
+        public void GraphViewSerializer_RejectsPortsThatEntryAndEndDoNotHave()
+        {
+            DialogueContainer graph = CreateValidDialogue();
+            graph.NodeLinks.Add(Link("end", DialoguePortNames.Next, "entry"));
+
+            Assert.Throws<System.InvalidOperationException>(() => GraphViewSerializer.LoadGraph(new UniversalGraphView(), graph));
+        }
+
+        [Test]
+        public void GraphViewSerializer_AcceptsChoiceIdsAndDefaultButRejectsRemovedChoicePort()
+        {
+            DialogueContainer graph = CreateAsset<DialogueContainer>();
+            var choice = new DialogueChoiceNodeData
+            {
+                Guid = "choice",
+                Choices = new List<DialogueChoiceData>
+                {
+                    new() { PortName = "accept", ChoiceText = "Accept" },
+                    new() { PortName = "98292ac91819450f9d9355e785fa0d51", ChoiceText = "Decline" }
+                }
+            };
+            graph.Nodes.Add(new DialogueEntryNodeData { Guid = "entry", EntryId = "Default" });
+            graph.Nodes.Add(choice);
+            graph.Nodes.Add(new DialogueEndNodeData { Guid = "end" });
+            graph.NodeLinks.Add(Link("entry", DialoguePortNames.Next, "choice"));
+            foreach (string portName in choice.Choices.Select(item => item.PortName).Append(DialoguePortNames.Default))
+            {
+                graph.NodeLinks.Add(Link("choice", portName, "end"));
+            }
+
+            Assert.That(GraphValidator.Validate(graph).Any(issue => issue.Severity == GraphValidationSeverity.Error), Is.False);
+            Assert.DoesNotThrow(() => GraphViewSerializer.LoadGraph(new UniversalGraphView(), graph));
+
+            choice.Choices.RemoveAt(0);
+
+            Assert.Throws<System.InvalidOperationException>(() => GraphViewSerializer.LoadGraph(new UniversalGraphView(), graph));
+        }
+
         [Test]
         public void GraphViewSerializer_RejectsMultipleLinksFromSingleOutput()
         {
@@ -497,7 +565,7 @@ namespace UniversalGraph.Tests
             graph.NodeLinks.Add(Link("a", "Next", "b"));
             graph.NodeLinks.Add(Link("b", "Next", "a"));
 
-            HashSet<string> cycleNodes = new GraphValidationIndex(graph).FindCycleNodes(_ => true);
+            HashSet<string> cycleNodes = new GraphValidationIndex(graph).FindCycleNodeGuids(_ => true);
 
             Assert.That(cycleNodes, Is.EquivalentTo(new[] { "a", "b" }));
         }
@@ -522,7 +590,7 @@ namespace UniversalGraph.Tests
                 graph.NodeLinks.Reverse();
             }
 
-            HashSet<string> cycleNodes = new GraphValidationIndex(graph).FindCycleNodes(_ => true);
+            HashSet<string> cycleNodes = new GraphValidationIndex(graph).FindCycleNodeGuids(_ => true);
 
             Assert.That(cycleNodes, Is.EquivalentTo(new[] { "a", "b", "c" }));
         }
@@ -535,7 +603,7 @@ namespace UniversalGraph.Tests
             graph.Nodes.Add(new DialogueActionNodeData { Guid = "isolated" });
             graph.NodeLinks.Add(Link("self", "Next", "self"));
 
-            HashSet<string> cycleNodes = new GraphValidationIndex(graph).FindCycleNodes(_ => true);
+            HashSet<string> cycleNodes = new GraphValidationIndex(graph).FindCycleNodeGuids(_ => true);
 
             Assert.That(cycleNodes, Is.EquivalentTo(new[] { "self" }));
         }
@@ -552,9 +620,72 @@ namespace UniversalGraph.Tests
             graph.NodeLinks.Add(Link("b", "Next", "a"));
             var index = new GraphValidationIndex(graph);
 
-            Assert.That(index.FindCycleNodes(_ => true), Is.EquivalentTo(new[] { "a", "wait", "b" }));
-            Assert.That(index.FindCycleNodes(node => node is DialogueActionNodeData), Is.Empty);
-            Assert.That(index.FindCycleNodes(_ => false), Is.Empty);
+            Assert.That(index.FindCycleNodeGuids(_ => true), Is.EquivalentTo(new[] { "a", "wait", "b" }));
+            Assert.That(index.FindCycleNodeGuids(node => node is DialogueActionNodeData), Is.Empty);
+            Assert.That(index.FindCycleNodeGuids(_ => false), Is.Empty);
+        }
+
+        [Test]
+        public void CycleFinder_DoesNotTreatMergingBranchesAsCycle()
+        {
+            DialogueContainer graph = CreateAsset<DialogueContainer>();
+            foreach (string guid in new[] { "start", "left", "right", "end" })
+            {
+                graph.Nodes.Add(new DialogueActionNodeData { Guid = guid });
+            }
+            graph.NodeLinks.Add(Link("start", "Left", "left"));
+            graph.NodeLinks.Add(Link("start", "Right", "right"));
+            graph.NodeLinks.Add(Link("left", "Next", "end"));
+            graph.NodeLinks.Add(Link("right", "Next", "end"));
+
+            Assert.That(new GraphValidationIndex(graph).FindCycleNodeGuids(_ => true), Is.Empty);
+        }
+
+        [Test]
+        public void CycleFinder_FindsSeparateCyclesWithoutIncludingConnectingNodes()
+        {
+            DialogueContainer graph = CreateAsset<DialogueContainer>();
+            foreach (string guid in new[] { "a", "b", "bridge", "c", "d", "separate", "isolated" })
+            {
+                graph.Nodes.Add(new DialogueActionNodeData { Guid = guid });
+            }
+            graph.NodeLinks.Add(Link("a", "Next", "b"));
+            graph.NodeLinks.Add(Link("b", "Next", "a"));
+            graph.NodeLinks.Add(Link("b", "Bridge", "bridge"));
+            graph.NodeLinks.Add(Link("bridge", "Next", "c"));
+            graph.NodeLinks.Add(Link("c", "Next", "d"));
+            graph.NodeLinks.Add(Link("d", "Next", "c"));
+            graph.NodeLinks.Add(Link("separate", "Next", "separate"));
+
+            HashSet<string> cycleNodes = new GraphValidationIndex(graph).FindCycleNodeGuids(_ => true);
+
+            Assert.That(cycleNodes, Is.EquivalentTo(new[] { "a", "b", "c", "d", "separate" }));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void CycleFinder_HandlesEmptyGraphAndLongPath(bool closeCycle)
+        {
+            DialogueContainer graph = CreateAsset<DialogueContainer>();
+            Assert.That(new GraphValidationIndex(graph).FindCycleNodeGuids(_ => true), Is.Empty);
+
+            const int nodeCount = 10000;
+            for (int i = 0; i < nodeCount; i++)
+            {
+                graph.Nodes.Add(new DialogueActionNodeData { Guid = i.ToString() });
+                if (i > 0)
+                {
+                    graph.NodeLinks.Add(Link((i - 1).ToString(), "Next", i.ToString()));
+                }
+            }
+            if (closeCycle)
+            {
+                graph.NodeLinks.Add(Link((nodeCount - 1).ToString(), "Next", "0"));
+            }
+
+            HashSet<string> cycleNodes = new GraphValidationIndex(graph).FindCycleNodeGuids(_ => true);
+
+            Assert.That(cycleNodes.Count, Is.EqualTo(closeCycle ? nodeCount : 0));
         }
 
         [Test]
@@ -577,6 +708,40 @@ namespace UniversalGraph.Tests
                 Is.EquivalentTo(new[] { "a", "b", "c" }));
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void DialogueValidator_ChecksDefaultConnectionWithoutPredictingCycles(bool connectDefault)
+        {
+            DialogueContainer graph = CreateAsset<DialogueContainer>();
+            graph.Nodes.Add(new DialogueEntryNodeData { Guid = "entry" });
+            graph.Nodes.Add(new DialogueChoiceNodeData
+            {
+                Guid = "choice",
+                Choices = new List<DialogueChoiceData>
+                {
+                    new()
+                    {
+                        PortName = "visible",
+                        ChoiceText = "Continue",
+                        VisibilityCondition = new MethodBindingData { Key = "None" }
+                    }
+                }
+            });
+            graph.Nodes.Add(new DialogueEndNodeData { Guid = "end" });
+            graph.NodeLinks.Add(Link("entry", DialoguePortNames.Next, "choice"));
+            graph.NodeLinks.Add(Link("choice", "visible", "end"));
+            if (connectDefault)
+            {
+                graph.NodeLinks.Add(Link("choice", DialoguePortNames.Default, "choice"));
+            }
+
+            IReadOnlyList<GraphValidationIssue> issues = GraphValidator.Validate(graph);
+
+            Assert.That(issues.Any(issue => issue.IssueKind == "DIALOGUE_DEFAULT_CYCLE"), Is.False);
+            Assert.That(issues.Any(issue => issue.IssueKind == "DIALOGUE_IMMEDIATE_CYCLE"), Is.False);
+            Assert.That(issues.Any(issue => issue.IssueKind == "DIALOGUE_OUTPUT_COUNT"), Is.EqualTo(!connectDefault));
+        }
+
         [Test]
         public void GraphValidationIndex_IndexesStructurallyValidNodesAndLinks()
         {
@@ -591,7 +756,7 @@ namespace UniversalGraph.Tests
 
             Assert.That(index.GetLinkInStartPort("entry"), Has.Count.EqualTo(1));
             Assert.That(index.GetLinkInTargetPorts("end"), Has.Count.EqualTo(1));
-            Assert.That(index.GetReachableNode(new[] { "entry" }), Is.EquivalentTo(new[] { "entry", "end" }));
+            Assert.That(index.GetReachableNodeGuids(new[] { "entry" }), Is.EquivalentTo(new[] { "entry", "end" }));
         }
 
         [TestCase("NULL_NODE")]
@@ -712,7 +877,7 @@ namespace UniversalGraph.Tests
             QuestContainer container = CreateAsset<QuestContainer>();
             container.QuestId = 990013;
             container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "end", NewState = QuestState.CanComplete });
+            container.Nodes.Add(new QuestFlowEndNodeData { Guid = "end", NewState = QuestState.CanComplete });
             foreach (string guid in new[] { "objective-a", "objective-b" })
             {
                 container.Nodes.Add(new QuestObjectiveNodeData { Guid = guid, EventKey = "Collect", RequiredAmount = 1 });
@@ -723,6 +888,7 @@ namespace UniversalGraph.Tests
 
             ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
 
+            Assert.That(GraphValidator.ValidateStructure(container), Is.Empty);
             Assert.That(issues.Any(issue => issue.Severity == GraphValidationSeverity.Error), Is.False);
         }
 
@@ -738,8 +904,8 @@ namespace UniversalGraph.Tests
                 : new QuestStateConditionNodeData { QuestId = container.QuestId };
             data.Guid = "condition";
             container.Nodes.Add(data);
-            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "first" });
-            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "second" });
+            container.Nodes.Add(new QuestFlowEndNodeData { Guid = "first" });
+            container.Nodes.Add(new QuestFlowEndNodeData { Guid = "second" });
             container.NodeLinks.Add(Link("start", QuestPortNames.Next, "condition"));
             foreach (string port in new[] { QuestPortNames.True, QuestPortNames.False })
             {
@@ -750,6 +916,7 @@ namespace UniversalGraph.Tests
 
             ((IGraphValidator)new QuestGraphValidator()).Validate(new GraphValidationIndex(container), issues);
 
+            Assert.That(GraphValidator.ValidateStructure(container), Is.Empty);
             Assert.That(issues.Any(issue => issue.IssueKind == "QUEST_CONDITION_OUTPUT"
                 || issue.IssueKind == "QUEST_CONDITION_DEAD_END"), Is.False);
         }
@@ -768,7 +935,7 @@ namespace UniversalGraph.Tests
             }
             else
             {
-                container.Nodes.Add(new QuestStateChangeNodeData { Guid = "end" });
+                container.Nodes.Add(new QuestFlowEndNodeData { Guid = "end" });
                 container.Nodes.Add(new QuestInteractionEntryNodeData { Guid = "interaction" });
                 container.NodeLinks.Add(Link("start", QuestPortNames.Next, "end"));
                 container.NodeLinks.Add(Link("interaction", QuestPortNames.Next, "condition"));
@@ -790,7 +957,7 @@ namespace UniversalGraph.Tests
             QuestContainer container = CreateAsset<QuestContainer>();
             container.QuestId = 990016;
             container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "state", NewState = state });
+            container.Nodes.Add(new QuestFlowEndNodeData { Guid = "state", NewState = state });
             container.NodeLinks.Add(Link("start", QuestPortNames.Next, "state"));
             var issues = new List<GraphValidationIssue>();
 
@@ -806,8 +973,8 @@ namespace UniversalGraph.Tests
             QuestContainer container = CreateAsset<QuestContainer>();
             container.QuestId = 990018;
             container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            container.Nodes.Add(new WaitForQuestNodeData { Guid = "wait", TargetQuestId = container.QuestId, RequiredState = state });
-            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "end", NewState = QuestState.TurnedIn });
+            container.Nodes.Add(new QuestStateWaitNodeData { Guid = "wait", TargetQuestId = container.QuestId, RequiredState = state });
+            container.Nodes.Add(new QuestFlowEndNodeData { Guid = "end", NewState = QuestState.TurnedIn });
             container.NodeLinks.Add(Link("start", QuestPortNames.Next, "wait"));
             container.NodeLinks.Add(Link("wait", QuestPortNames.Next, "end"));
             var issues = new List<GraphValidationIssue>();
@@ -827,8 +994,8 @@ namespace UniversalGraph.Tests
             QuestContainer container = CreateAsset<QuestContainer>();
             container.QuestId = 990017;
             container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "state", NewState = state });
-            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "after", NewState = QuestState.Failed });
+            container.Nodes.Add(new QuestFlowEndNodeData { Guid = "state", NewState = state });
+            container.Nodes.Add(new QuestFlowEndNodeData { Guid = "after", NewState = QuestState.Failed });
             container.NodeLinks.Add(Link("start", QuestPortNames.Next, "state"));
             container.NodeLinks.Add(Link("state", portName, "after"));
             var issues = new List<GraphValidationIssue>();
@@ -874,13 +1041,13 @@ namespace UniversalGraph.Tests
             foreach (QuestContainer container in new[] { firstContainer, secondContainer })
             {
                 container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-                container.Nodes.Add(new WaitForQuestNodeData
+                container.Nodes.Add(new QuestStateWaitNodeData
                 {
                     Guid = "wait",
                     TargetQuestId = container == firstContainer && !waitsForSelf ? secondContainer.QuestId : firstContainer.QuestId,
                     RequiredState = QuestState.InProgress
                 });
-                container.Nodes.Add(new QuestStateChangeNodeData { Guid = "end", NewState = QuestState.TurnedIn });
+                container.Nodes.Add(new QuestFlowEndNodeData { Guid = "end", NewState = QuestState.TurnedIn });
                 container.NodeLinks.Add(Link("start", QuestPortNames.Next, "wait"));
                 container.NodeLinks.Add(Link("wait", QuestPortNames.Next, "end"));
             }
@@ -974,7 +1141,7 @@ namespace UniversalGraph.Tests
             QuestContainer container = CreateAsset<QuestContainer>();
             container.QuestId = 990014;
             container.Nodes.Add(new QuestStartNodeData { Guid = "start" });
-            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "end", NewState = QuestState.TurnedIn });
+            container.Nodes.Add(new QuestFlowEndNodeData { Guid = "end", NewState = QuestState.TurnedIn });
             container.Nodes.Add(new QuestInteractionEntryNodeData { Guid = "interaction" });
             container.Nodes.Add(new DialogueCandidateNodeData
             {

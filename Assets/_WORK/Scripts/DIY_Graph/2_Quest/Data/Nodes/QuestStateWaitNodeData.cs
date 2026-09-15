@@ -5,7 +5,7 @@ namespace UniversalGraph
 {
     /// <summary>다른 Quest가 지정한 상태가 될 때까지 현재 흐름을 멈추는 노드의 데이터</summary>
     [Serializable]
-    public class WaitForQuestNodeData : NodeBaseData
+    public class QuestStateWaitNodeData : NodeBaseData
     {
         /// <summary>
         /// 현재 흐름이 기다릴 Quest ID

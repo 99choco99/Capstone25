@@ -2,7 +2,7 @@ using System;
 
 namespace UniversalGraph.Editor
 {
-	/// <summary>사용할 그래프 컨테이너 타입에 어트리뷰트를 선언해 메뉴에 띄우기 위함</summary>
+	/// <summary>사용할 노드 클래스에 어트리뷰트를 선언해 메뉴에 띄우기 위함</summary>
 	[AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
 	public sealed class GraphNodeEditorAttribute : Attribute
 	{

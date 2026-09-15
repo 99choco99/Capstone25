@@ -9,9 +9,9 @@ namespace UniversalGraph
         /// <summary>
         /// entryId로 시작점을 찾기
         /// </summary>
-        public bool FindEntryNode(string entryId, out DialogueEntryNodeData entryNode, out string error)
+        public bool FindEntryNode(string entryId, out DialogueEntryNodeData entryData, out string error)
         {
-            entryNode = null;
+            entryData = null;
             if (Nodes == null || Nodes.Count == 0)
             {
                 error = $"대화 그래프 '{name}'에 노드가 없습니다.";
@@ -20,10 +20,10 @@ namespace UniversalGraph
 
             //시작점 찾기
             Dictionary<string, DialogueEntryNodeData> entries = new ();
-            foreach (DialogueEntryNodeData candidate in Nodes.OfType<DialogueEntryNodeData>())
+            foreach (DialogueEntryNodeData candidateData in Nodes.OfType<DialogueEntryNodeData>())
             {
-                string candidateId = candidate.EntryId;
-                if (!entries.TryAdd(candidateId, candidate))
+                string candidateId = candidateData.EntryId;
+                if (!entries.TryAdd(candidateId, candidateData))
                 {
                     error = $"대화 그래프 '{name}'에 중복된 진입점 ID '{candidateId}'가 있습니다.";
                     return false;
@@ -31,7 +31,7 @@ namespace UniversalGraph
             }
 
             string requestedId = string.IsNullOrWhiteSpace(entryId)? DialogueEntryNodeData.DefaultEntryId : entryId.Trim();
-            if (!entries.TryGetValue(requestedId, out entryNode))
+            if (!entries.TryGetValue(requestedId, out entryData))
             {
                 error = $"대화 그래프 '{name}'에 진입점 '{requestedId}'가 없습니다.";
                 return false;

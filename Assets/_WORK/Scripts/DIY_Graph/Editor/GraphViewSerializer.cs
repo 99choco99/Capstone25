@@ -165,7 +165,7 @@ namespace UniversalGraph.Editor
             List<GraphNode> nodes = new();
             foreach (NodeBaseData data in container.Nodes)
             {
-                GraphNode node = GraphNodeCatalog.CreateNode(container, data);
+                GraphNode node = GraphNodeCatalog.CreateNodeFromData(container, data);
 
                 Rect position = node.GetPosition();
                 position.position = data.Position;
@@ -263,8 +263,7 @@ namespace UniversalGraph.Editor
             }
 
             string details = string.Join(Environment.NewLine, errors.Select(issue => issue.ToString()));
-            throw new InvalidOperationException(
-                $"'{container.name}'의 그래프 데이터가 올바르지 않아 불러올 수 없습니다.{Environment.NewLine}{details}");
+            throw new InvalidOperationException($"'{container.name}'의 그래프 데이터가 올바르지 않아 불러올 수 없습니다.{Environment.NewLine}{details}");
         }
     }
 }

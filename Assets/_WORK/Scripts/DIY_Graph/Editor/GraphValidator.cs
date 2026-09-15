@@ -100,19 +100,19 @@ namespace UniversalGraph.Editor
 
             //그래프 노드 검사
             HashSet<string> guids = new() ;
-            foreach (NodeBaseData node in container.Nodes)
+            foreach (NodeBaseData nodeData in container.Nodes)
             {
-                if (node == null)
+                if (nodeData == null)
                 {
                     AddError("NULL_NODE", "그래프에 null 노드 항목이 있습니다.");
                 }
-                else if (string.IsNullOrWhiteSpace(node.Guid))
+                else if (string.IsNullOrWhiteSpace(nodeData.Guid))
                 {
-                    AddError("EMPTY_NODE_GUID", $"{node.GetType().Name}에 고정 GUID가 없습니다.");
+                    AddError("EMPTY_NODE_GUID", $"{nodeData.GetType().Name}에 고정 GUID가 없습니다.");
                 }
-                else if (!guids.Add(node.Guid))
+                else if (!guids.Add(nodeData.Guid))
                 {
-                    AddError("DUPLICATE_NODE_GUID", $"노드 GUID '{node.Guid}'가 중복되었습니다.", node.Guid);
+                    AddError("DUPLICATE_NODE_GUID", $"노드 GUID '{nodeData.Guid}'가 중복되었습니다.", nodeData.Guid);
                 }
             }
 
@@ -145,6 +145,7 @@ namespace UniversalGraph.Editor
                 {
                     AddError("MISSING_TARGET_PORT", "연결선에 대상 입력 포트 ID가 없습니다.", sourceGuid);
                 }
+
                 //중복검사
                 string edgeKey = $"{sourceGuid}\u001F{link.StartPortName}\u001F{targetGuid}\u001F{link.TargetPortName}";
                 if (!edgeKeys.Add(edgeKey))

@@ -3,16 +3,18 @@ namespace UniversalGraph
     /// <summary>퀘스트 제안 정보</summary>
     public sealed class QuestSuggestion
     {
-        internal QuestSuggestion(QuestContainer container, DialogueEntryPoint dialogueEntryPoint, int priority, bool isAvailable, string blockReason, string sourceQuestEntryGuid, string sourceNodeGuid)
+        internal QuestSuggestion(QuestContainer container, DialogueEntryPoint dialogueEntryPoint, int priority, bool isAvailable, string blockReason, string interactionEntryGuid, string suggestionNodeGuid)
         {
             Container = container;
 			DialogueEntryPoint = dialogueEntryPoint;
             Priority = priority;
             IsAvailable = isAvailable;
             BlockReason = blockReason ?? string.Empty;
-            SourceQuestEntryGuid = sourceQuestEntryGuid;
-            SourceNodeGuid = sourceNodeGuid;
+            InteractionEntryGuid = interactionEntryGuid;
+            SuggestionNodeGuid = suggestionNodeGuid;
         }
+
+        //=================================== 퀘스트에 대한 정보 =================================
 
         /// <summary>Quest 정의</summary>
         public QuestContainer Container { get; }
@@ -26,25 +28,25 @@ namespace UniversalGraph
         /// <summary>Quest 목록에 표시할 설명</summary>
         public string Description => Container.description;
 
-
-
         /// <summary>우선순위</summary>
         public int Priority { get; }
 
-        /// <summary>현재 이 Quest를 표시할 수 있는지</summary>
+        /// <summary>조회 시점에 이 퀘스트를 수락할 수 있는지</summary>
         public bool IsAvailable { get; }
 
-        /// <summary>표시할 수 없을 때 UI에 표시할 이유</summary>
+        /// <summary>수락할 수 없는 이유를 UI에 표시하기 위한 설명</summary>
         public string BlockReason { get; }
 
 
-        /// <summary>Quest 선택 시 재생할 선택적인 Dialogue 참조</summary>
+        //===================================노드의 참조값들=================================
+
+        /// <summary>게임에서 필요에 따라 재생할 선택적인 대화 시작점</summary>
         public DialogueEntryPoint DialogueEntryPoint { get; }
 
-        /// <summary>선택 항목을 만든 상호작용 시작점입니다. 수락 직전 조건을 다시 검사할 때 사용합니다.</summary>
-        internal string SourceQuestEntryGuid { get; }
+        /// <summary>상호작용 시작점 노드 guid</summary>
+        internal string InteractionEntryGuid { get; }
 
-        /// <summary>선택 항목을 만든 Quest Suggestion 노드입니다. 수락 직전 같은 경로인지 확인할 때 사용합니다.</summary>
-        internal string SourceNodeGuid { get; }
+        /// <summary>Quest Suggestion 노드 guid</summary>
+        internal string SuggestionNodeGuid { get; }
     }
 }

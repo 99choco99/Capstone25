@@ -5,7 +5,7 @@ using UniversalGraph.Editor;
 
 namespace UniversalGraph.Quest.Editor
 {
-    /// <summary>Interaction 시 퀘스트의 진행 여부를 제안 하는 노드</summary>
+    /// <summary>상호작용 대상에 제공할 대화 후보와 퀘스트 제안을 조회하는 시작 노드</summary>
     [GraphNodeEditor(typeof(QuestContainer), "Quest/Start/InteractionEntry")]
     public sealed class QuestInteractionEntryNode : GraphNode<QuestInteractionEntryNodeData>
     {

@@ -7,6 +7,7 @@ namespace UniversalGraph
     /// <summary>게임 코드에서 Dialogue 그래프를 제어할 때 사용하는 공개 API</summary>
     public sealed partial class DialogueManager
     {
+        /// <summary>대화를 하나만 사용하는 게임을 위한 기본 실행기입니다. Tick은 게임 코드에서 호출합니다.</summary>
         public static DialogueManager Instance => instance ??= new DialogueManager();
 
         //============================== 대화 상태들 ============================
@@ -21,7 +22,7 @@ namespace UniversalGraph
         /// </summary>
         public bool IsConversationActive => currentContainer != null;
 
-        /// <summary>현재 화면을 표시할 때 저장하고 Continue 또는 SelectChoice에 다시 전달할 ID입니다.</summary>
+        /// <summary>현재 화면을 표시할 때 실행기와 함께 저장하고 같은 실행기의 Continue 또는 SelectChoice에 다시 전달할 ID입니다.</summary>
         public int CurrentPromptId => currentPromptId;
 
 
@@ -61,7 +62,7 @@ namespace UniversalGraph
         /// 지정한 Dialogue 그래프의 Entry에서 대화를 시작합니다.<para></para>
         /// 반환값은 요청이 정상적으로 실행되었는지를 나타내며, 시작 직후 종료된 대화도 true를 반환합니다.
         /// </summary>
-        public bool StartConversation(DialogueEntryPoint entryPoint, DialogueExecutionContext executionContext = null, Action onComplete = null)
+        public bool StartConversation(DialogueEntryPoint entryPoint, DialogueExecutionContext context = null, Action onComplete = null)
         {
             DialogueContainer container = entryPoint.Container;
 
@@ -104,7 +105,7 @@ namespace UniversalGraph
 
             //데이터 세팅
             currentContainer = container;
-            currentExecutionContext = executionContext;
+            currentContext = context;
             completionCallback = onComplete;
             LastEndReason = null;
 
@@ -129,15 +130,15 @@ namespace UniversalGraph
         }
 
         /// <summary>현재 대화를 정상 완료하고 완료 콜백을 호출</summary>
-        public void EndConversation()
+        public void CompleteConversation()
         {
-            FinishConversation(DialogueEndReason.Completed);
+            EndConversation(DialogueEndReason.Completed);
         }
 
         /// <summary>완료 콜백을 호출하지 않고 현재 대화를 취소</summary>
         public void CancelConversation()
         {
-            FinishConversation(DialogueEndReason.Cancelled);
+            EndConversation(DialogueEndReason.Cancelled);
         }
 
         /// <summary>
@@ -190,8 +191,10 @@ namespace UniversalGraph
             return true;
         }
 
-        /// <summary>Wait 노드처럼 노드에서 시간을 계산할 때 쓰는 함수</summary>
-        internal void Tick(float scaledDeltaTime, float unscaledDeltaTime)
+        /// <summary>Wait 노드처럼 노드에서 시간을 계산할 때 쓰는 함수<para></para>
+        /// 게임 코드가 실행기마다 프레임당 한 번 호출합니다. 호출하지 않으면 시간 대기는 진행하지 않습니다.
+        /// 현재 Wait가 선택한 시간만 사용하며, 남은 시간은 다음 Wait로 넘기지 않습니다.</summary>
+        public void Tick(float scaledDeltaTime, float unscaledDeltaTime)
         {
             if (blockKind != BlockKind.Time)
             {

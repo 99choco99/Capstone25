@@ -47,13 +47,13 @@ namespace UniversalGraph
 
 #if UNITY_EDITOR
             // 테스트용 DialogueAction이 게임 메서드로 등록되지 않도록 플레이어에 포함되는 어셈블리만 선별
-            HashSet<string> playerAssemblies = new();
-			foreach (UnityEditor.Compilation.Assembly playerAssembly in UnityEditor.Compilation.CompilationPipeline.GetAssemblies(UnityEditor.Compilation.AssembliesType.PlayerWithoutTestAssemblies))
+            HashSet<string> runtimeAssemblyNames = new();
+			foreach (UnityEditor.Compilation.Assembly runtimeAssembly in UnityEditor.Compilation.CompilationPipeline.GetAssemblies(UnityEditor.Compilation.AssembliesType.PlayerWithoutTestAssemblies))
 			{
-				playerAssemblies.Add(playerAssembly.name);
-				foreach (string reference in playerAssembly.compiledAssemblyReferences)
+				runtimeAssemblyNames.Add(runtimeAssembly.name);
+				foreach (string reference in runtimeAssembly.compiledAssemblyReferences)
 				{
-					playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
+					runtimeAssemblyNames.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
 				}
 			}
 #endif
@@ -61,7 +61,7 @@ namespace UniversalGraph
 			foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
 			{
 #if UNITY_EDITOR
-				if (!playerAssemblies.Contains(assembly.GetName().Name))
+				if (!runtimeAssemblyNames.Contains(assembly.GetName().Name))
 				{
 					continue;
 				}
@@ -198,7 +198,7 @@ namespace UniversalGraph
 		}
 
 		/// <summary>메서드 종류에 맞는 등록 정보를 찾아 인수를 복원하고 호출</summary>
-		public static bool InvokeMethod(MethodBindingData binding, DialogueExecutionContext context, MethodKind kind, out bool conditionResult)
+		public static bool InvokeMethod(MethodBindingData bindingData, DialogueExecutionContext context, MethodKind kind, out bool conditionResult)
 		{
 			conditionResult = false;
 			if (kind != MethodKind.Action && kind != MethodKind.Condition)
@@ -206,8 +206,8 @@ namespace UniversalGraph
 				Debug.LogError("[Dialogue] 메서드 종류가 올바르지 않습니다.");
 				return false;
 			}
-			string key = binding?.Key;
-			if (binding == null || !binding.HasKey)
+			string key = bindingData?.Key;
+			if (string.IsNullOrEmpty(key))
 			{
 				Debug.LogError($"[Dialogue] {kind} 키가 비어 있습니다.");
 				return false;
@@ -223,22 +223,22 @@ namespace UniversalGraph
 				return false;
 			}
 			//argument 복원
-			if (!MethodArgumentCodec.TryCreateDialogueRuntimeArguments(binding.Arguments, descriptor, context, out object[] arguments, out string error))
+			if (!MethodArgumentCodec.CreateDialogueRuntimeArguments(bindingData.Arguments, descriptor, context, out object[] arguments, out string error))
 			{
 				Debug.LogError($"[Dialogue] {error}");
 				return false;
 			}
 
 			//메서드 타겟 가져오기
-			object target = GetTargetInstance(descriptor, context);
-			if (!descriptor.IsStatic && target == null)
+			object ownerInstance = GetMethodOwnerInstance(descriptor, context);
+			if (!descriptor.IsStatic && ownerInstance == null)
 			{
 				return false;
 			}
 			try
 			{
 				//메서드 실행 후 결과 반환
-				object methodResult = descriptor.MethodInfo.Invoke(target, arguments);
+				object methodResult = descriptor.MethodInfo.Invoke(ownerInstance, arguments);
 				if (kind == MethodKind.Condition)
 				{
 					conditionResult = (bool)methodResult;
@@ -247,12 +247,12 @@ namespace UniversalGraph
 			}
 			catch (TargetInvocationException ex)
 			{
-				Debug.LogError($"[Dialogue] {kind} '{key}' 실행 중 예외가 발생했습니다.\n{ex.InnerException ?? ex}", target as UnityEngine.Object);
+				Debug.LogError($"[Dialogue] {kind} '{key}' 실행 중 예외가 발생했습니다.\n{ex.InnerException ?? ex}", ownerInstance as UnityEngine.Object);
 				return false;
 			}
 			catch (Exception exception)
 			{
-				Debug.LogError($"[Dialogue] {kind} '{key}' 실행 중 예외가 발생했습니다.\n{exception}", target as UnityEngine.Object);
+				Debug.LogError($"[Dialogue] {kind} '{key}' 실행 중 예외가 발생했습니다.\n{exception}", ownerInstance as UnityEngine.Object);
 				return false;
 			}
 		}
@@ -261,7 +261,7 @@ namespace UniversalGraph
 		/// <summary>
 		/// 주어진 설명서 에 해당하는 메서드를 가지고 있는 Instance를 가져오는 함수
 		/// </summary>
-        private static object GetTargetInstance(DialogueMethodDescriptor descriptor, DialogueExecutionContext context)
+        private static object GetMethodOwnerInstance(DialogueMethodDescriptor descriptor, DialogueExecutionContext context)
         {
             if (descriptor.IsStatic)
             {
@@ -273,23 +273,23 @@ namespace UniversalGraph
                 return null;
             }
 			//어떤 object가 해당 메서드를 가지고 있는지
-            GameObject target = descriptor.Owner == DialogueMethodOwner.Speaker ? context.Speaker : context.Interactor;
-            if (target == null)
+            GameObject ownerObject = descriptor.Owner == DialogueMethodOwner.Speaker ? context.Speaker : context.Interactor;
+            if (ownerObject == null)
             {
                 Debug.LogWarning($"[Dialogue] DialogueExecutionContext의 대상 '{descriptor.Owner}'이 null입니다.");
                 return null;
             }
 
 			//실제 컴포넌트 찾기
-            Component[] components = target.GetComponents(descriptor.DeclaringType);
+            Component[] components = ownerObject.GetComponents(descriptor.DeclaringType);
             if (components.Length == 0)
             {
-                Debug.LogWarning($"[Dialogue] '{target.name}'에 '{descriptor.DeclaringType.Name}' 컴포넌트가 없습니다.", target);
+                Debug.LogWarning($"[Dialogue] '{ownerObject.name}'에 '{descriptor.DeclaringType.Name}' 컴포넌트가 없습니다.", ownerObject);
                 return null;
             }
             if (components.Length > 1)
             {
-                Debug.LogError($"[Dialogue] '{target.name}'에 '{descriptor.DeclaringType.Name}' 컴포넌트가 {components.Length}개 있어 호출 대상을 결정할 수 없습니다.", target);
+                Debug.LogError($"[Dialogue] '{ownerObject.name}'에 '{descriptor.DeclaringType.Name}' 컴포넌트가 {components.Length}개 있어 호출 대상을 결정할 수 없습니다.", ownerObject);
                 return null;
             }
 

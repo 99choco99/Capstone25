@@ -238,8 +238,8 @@ namespace UniversalGraph.Tests
         [Test]
         public void WaitForQuest_KeepsItsTitleSizeAndMultiPorts()
         {
-            var node = new WaitForQuestNode();
-            node.BindNodeData(new WaitForQuestNodeData { Guid = "wait", TargetQuestId = 101 });
+            var node = new QuestStateWaitNode();
+            node.BindNodeData(new QuestStateWaitNodeData { Guid = "wait", TargetQuestId = 101 });
 
             Assert.That(node.DefaultSize, Is.EqualTo(new Vector2(200f, 100f)));
             Assert.That(node.title, Is.EqualTo("WAIT QUEST: 101 (TurnedIn)"));
@@ -280,7 +280,7 @@ namespace UniversalGraph.Tests
             Assert.That(inspector.Children().OfType<TextField>().Count(), Is.EqualTo(2));
             TextField dialogueField = inspector.Query<TextField>().ToList().Single(field => field.label == "Dialogue");
             Assert.That(dialogueField.multiline, Is.True);
-            Assert.That(dialogueField.ClassListContains("dialogue-field"), Is.True);
+            Assert.That(dialogueField.value, Is.EqualTo("Old line"));
 
             inspector.Query<TextField>().ToList().Single(field => field.label == label).value = value;
 
@@ -288,7 +288,7 @@ namespace UniversalGraph.Tests
             Assert.That(node.NodeData.SpeakerName, Is.EqualTo(label == "Speaker" ? value : "Before"));
             Assert.That(node.NodeData.DialogueText, Is.EqualTo(label == "Dialogue" ? value : "Old line"));
             Assert.That(node.title, Is.EqualTo(expectedTitle));
-            Assert.That(node.extensionContainer.Q<Label>(className: "node-full-text").text,
+            Assert.That(node.extensionContainer.Children().OfType<Label>().Single().text,
                 Is.EqualTo(label == "Dialogue" ? value : "Old line"));
 
             Undo.FlushUndoRecordObjects();
@@ -303,7 +303,7 @@ namespace UniversalGraph.Tests
             var redone = new DialogueLineNode();
             redone.BindNodeData(container.Nodes.Single());
             Assert.That(redone.title, Is.EqualTo(expectedTitle));
-            Assert.That(redone.extensionContainer.Q<Label>(className: "node-full-text").text,
+            Assert.That(redone.extensionContainer.Children().OfType<Label>().Single().text,
                 Is.EqualTo(label == "Dialogue" ? value : "Old line"));
         }
 
@@ -447,10 +447,12 @@ namespace UniversalGraph.Tests
             window.rootVisualElement.Add(inspector);
             Assert.That(inspector.childCount, Is.EqualTo(2));
             Assert.That(inspector.ElementAt(0), Is.TypeOf<HelpBox>());
-            Assert.That(inspector.ElementAt(1).Q<Label>(className: "choice-title").text, Is.EqualTo("Choices"));
+            VisualElement choicesSection = inspector.ElementAt(1);
+            Assert.That(choicesSection.Children().OfType<Label>().Single().text, Is.EqualTo("Choices"));
+            VisualElement choicesContainer = choicesSection.ElementAt(1);
             Button button = deleteChoice
-                ? inspector.Query<Button>(className: "choice-delete-btn").ToList().First()
-                : inspector.Q<Button>(className: "add-choice-btn");
+                ? choicesContainer.Children().OfType<Box>().First().Children().OfType<Button>().Single()
+                : choicesSection.Children().OfType<Button>().Single(candidate => candidate.text == "+ Add Choice");
             MethodInfo invokeClick = typeof(Clickable).GetMethod("Invoke", BindingFlags.Instance | BindingFlags.NonPublic);
             invokeClick.Invoke(button.clickable, new object[] { null });
 
@@ -459,7 +461,7 @@ namespace UniversalGraph.Tests
             Assert.That(node.title, Is.EqualTo($"CHOICE: {expectedCount}"));
             Assert.That(node.NodeData.Choices.Count, Is.EqualTo(expectedCount));
             Assert.That(node.outputContainer.Children().OfType<Port>().Count(), Is.EqualTo(expectedCount + 1));
-            Assert.That(inspector.Query<Box>(className: "choice-box").ToList().Count, Is.EqualTo(expectedCount));
+            Assert.That(choicesContainer.Children().OfType<Box>().Count(), Is.EqualTo(expectedCount));
             Assert.That(view.edges.Single(edge => edge.output.portName == "second"), Is.SameAs(keptEdge));
             Assert.That(container.NodeLinks.Count, Is.EqualTo(deleteChoice ? 3 : 4));
             string[] editedPorts = node.outputContainer.Children().OfType<Port>().Select(port => port.portName).ToArray();
@@ -488,13 +490,13 @@ namespace UniversalGraph.Tests
         [TestCase(QuestState.Failed)]
         public void WaitForQuest_EditingRequiredStateRefreshesItsTitle(QuestState state)
         {
-            var data = new WaitForQuestNodeData
+            var data = new QuestStateWaitNodeData
             {
                 Guid = "wait",
                 TargetQuestId = 101,
                 RequiredState = QuestState.InProgress
             };
-            var node = new WaitForQuestNode();
+            var node = new QuestStateWaitNode();
             node.BindNodeData(data);
             var editNames = new List<string>();
             VisualElement inspector = node.CreateInspector(new NodeInspectorEditHandler(
@@ -514,8 +516,8 @@ namespace UniversalGraph.Tests
         [Test]
         public void WaitForQuest_OpeningExecutionErrorDoesNotChangeDataOrOfferIt()
         {
-            var data = new WaitForQuestNodeData { Guid = "wait", RequiredState = QuestState.ExecutionError };
-            var node = new WaitForQuestNode();
+            var data = new QuestStateWaitNodeData { Guid = "wait", RequiredState = QuestState.ExecutionError };
+            var node = new QuestStateWaitNode();
             node.BindNodeData(data);
             VisualElement inspector = node.CreateInspector(new NodeInspectorEditHandler(
                 (_, _) => Assert.Fail("인스펙터를 여는 것만으로 데이터를 수정하면 안 됩니다."),
@@ -595,8 +597,8 @@ namespace UniversalGraph.Tests
             try
             {
                 containersField.SetValue(null, new[] { firstContainer, secondContainer });
-                var node = new WaitForQuestNode();
-                node.BindNodeData(new WaitForQuestNodeData { Guid = "wait", TargetQuestId = 101 });
+                var node = new QuestStateWaitNode();
+                node.BindNodeData(new QuestStateWaitNodeData { Guid = "wait", TargetQuestId = 101 });
                 VisualElement inspector = node.CreateInspector(new NodeInspectorEditHandler(
                     (_, edit) => edit(), (_, edit) => edit()));
                 window.rootVisualElement.Add(inspector);
@@ -732,8 +734,8 @@ namespace UniversalGraph.Tests
             try
             {
                 containersField.SetValue(null, hasQuest ? new[] { container } : System.Array.Empty<QuestContainer>());
-                var data = new WaitForQuestNodeData { Guid = "wait", TargetQuestId = 999 };
-                var node = new WaitForQuestNode();
+                var data = new QuestStateWaitNodeData { Guid = "wait", TargetQuestId = 999 };
+                var node = new QuestStateWaitNode();
                 node.BindNodeData(data);
                 int dataEdits = 0;
                 VisualElement inspector = node.CreateInspector(new NodeInspectorEditHandler(
@@ -871,8 +873,8 @@ namespace UniversalGraph.Tests
         [TestCase(QuestState.Failed)]
         public void StateChange_OnlyOffersTerminalStatesAndHasNoOutput(QuestState state)
         {
-            var node = new QuestStateChangeNode();
-            node.BindNodeData(new QuestStateChangeNodeData { Guid = "state", NewState = state });
+            var node = new QuestFlowEndNode();
+            node.BindNodeData(new QuestFlowEndNodeData { Guid = "state", NewState = state });
 
             Assert.That(node.inputContainer.Children().OfType<Port>().Count(), Is.EqualTo(1));
             Assert.That(node.outputContainer.Children().OfType<Port>(), Is.Empty);
@@ -892,8 +894,8 @@ namespace UniversalGraph.Tests
         [TestCase((QuestState)999)]
         public void StateChange_OpeningInvalidStateDoesNotAddItToChoicesOrChangeData(QuestState stored)
         {
-            var data = new QuestStateChangeNodeData { Guid = "state", NewState = stored };
-            var node = new QuestStateChangeNode();
+            var data = new QuestFlowEndNodeData { Guid = "state", NewState = stored };
+            var node = new QuestFlowEndNode();
             node.BindNodeData(data);
             int dataEdits = 0;
             var field = (PopupField<QuestState>)node.CreateInspector(new NodeInspectorEditHandler(
@@ -922,9 +924,9 @@ namespace UniversalGraph.Tests
 
             var start = new QuestStartNode();
             start.BindNodeData(new QuestStartNodeData { Guid = "start" });
-            var node = new QuestStateChangeNode();
+            var node = new QuestFlowEndNode();
             QuestState previous = state == QuestState.CanComplete ? QuestState.TurnedIn : QuestState.CanComplete;
-            node.BindNodeData(new QuestStateChangeNodeData { Guid = "state", NewState = previous });
+            node.BindNodeData(new QuestFlowEndNodeData { Guid = "state", NewState = previous });
             view.AddElement(start);
             view.AddElement(node);
             Port input = node.inputContainer.Children().OfType<Port>().Single();
@@ -961,25 +963,25 @@ namespace UniversalGraph.Tests
             Undo.FlushUndoRecordObjects();
             Undo.PerformUndo();
 
-            Assert.That(container.Nodes.OfType<QuestStateChangeNodeData>().Single().NewState,
+            Assert.That(container.Nodes.OfType<QuestFlowEndNodeData>().Single().NewState,
                 Is.EqualTo(previous));
             Assert.That(container.NodeLinks.Count, Is.EqualTo(1));
             view.ApplyWithoutSaveRequest(() => GraphViewSerializer.LoadGraph(view, container));
             Assert.That(view.edges.Count(), Is.EqualTo(1));
-            QuestStateChangeNode restored = view.nodes.OfType<QuestStateChangeNode>().Single();
+            QuestFlowEndNode restored = view.nodes.OfType<QuestFlowEndNode>().Single();
             Assert.That(restored.inputContainer.Children().OfType<Port>().Single().connected, Is.True);
             Assert.That(restored.outputContainer.Children().OfType<Port>(), Is.Empty);
             Assert.That(restored.title, Is.EqualTo($"STATE: {previous}"));
 
             Undo.PerformRedo();
-            Assert.That(container.Nodes.OfType<QuestStateChangeNodeData>().Single().NewState, Is.EqualTo(state));
+            Assert.That(container.Nodes.OfType<QuestFlowEndNodeData>().Single().NewState, Is.EqualTo(state));
             Assert.That(container.NodeLinks.Count, Is.EqualTo(1));
         }
 
         [Test]
         public void StateChange_DefaultsToCanComplete()
         {
-            Assert.That(new QuestStateChangeNodeData().NewState, Is.EqualTo(QuestState.CanComplete));
+            Assert.That(new QuestFlowEndNodeData().NewState, Is.EqualTo(QuestState.CanComplete));
         }
 
         [TestCase(false)]
@@ -996,8 +998,8 @@ namespace UniversalGraph.Tests
             data.Guid = "condition";
             data.Position = new Vector2(220f, 80f);
             container.Nodes.Add(data);
-            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "first", NewState = QuestState.Failed });
-            container.Nodes.Add(new QuestStateChangeNodeData { Guid = "second", NewState = QuestState.Failed });
+            container.Nodes.Add(new QuestFlowEndNodeData { Guid = "first", NewState = QuestState.Failed });
+            container.Nodes.Add(new QuestFlowEndNodeData { Guid = "second", NewState = QuestState.Failed });
             container.NodeLinks.Add(new NodeLinkData
             {
                 StartNodeGuid = "start",

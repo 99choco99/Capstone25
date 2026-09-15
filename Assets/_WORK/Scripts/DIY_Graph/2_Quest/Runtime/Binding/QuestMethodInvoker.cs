@@ -41,20 +41,20 @@ namespace UniversalGraph
 
 #if UNITY_EDITOR
             // Editor 전용 어셈블리는 게임 메서드 검색에서 제외
-            HashSet<string> playerAssemblies = new();
-            foreach (UnityEditor.Compilation.Assembly playerAssembly in UnityEditor.Compilation.CompilationPipeline.GetAssemblies(UnityEditor.Compilation.AssembliesType.PlayerWithoutTestAssemblies))
+            HashSet<string> runtimeAssemblyNames = new();
+            foreach (UnityEditor.Compilation.Assembly runtimeAssembly in UnityEditor.Compilation.CompilationPipeline.GetAssemblies(UnityEditor.Compilation.AssembliesType.PlayerWithoutTestAssemblies))
             {
-                playerAssemblies.Add(playerAssembly.name);
-                foreach (string reference in playerAssembly.compiledAssemblyReferences)
+                runtimeAssemblyNames.Add(runtimeAssembly.name);
+                foreach (string reference in runtimeAssembly.compiledAssemblyReferences)
                 {
-                    playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
+                    runtimeAssemblyNames.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
                 }
             }
 #endif
             foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
 #if UNITY_EDITOR
-                if (!playerAssemblies.Contains(assembly.GetName().Name))
+                if (!runtimeAssemblyNames.Contains(assembly.GetName().Name))
                 {
                     continue;
                 }
@@ -130,9 +130,19 @@ namespace UniversalGraph
                     continue;
                 }
 
-                //현재 타입에 직접 선언된 메서드라면, 공개 여부와 static 여부에 관계없이 전부 가져온다
-                foreach (MethodInfo method in type.GetMethods(
-                             BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+                MethodInfo[] methods;
+                try
+                {
+                    //현재 타입에 직접 선언된 메서드라면, 공개 여부와 static 여부에 관계없이 전부 가져온다
+                    methods = type.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogWarning($"[Quest] '{type.FullName}'의 메서드를 검사하지 못했습니다: {exception.Message}");
+                    continue;
+                }
+
+                foreach (MethodInfo method in methods)
                 {
                     QuestActionAttribute action = method.GetCustomAttribute<QuestActionAttribute>(false);
                     if (action != null)
@@ -190,7 +200,7 @@ namespace UniversalGraph
 
 
         /// <summary>호출 키 조회, 인수 복원과 대상 결정을 마친 뒤 메서드를 실행</summary>
-        public static bool InvokeMethod(MethodBindingData binding, QuestExecutionContext context, MethodKind kind, out bool conditionResult)
+        public static bool InvokeMethod(MethodBindingData bindingData, QuestExecutionContext context, MethodKind kind, out bool conditionResult)
         {
             conditionResult = false;
             if (kind != MethodKind.Action && kind != MethodKind.Condition)
@@ -202,8 +212,8 @@ namespace UniversalGraph
             Initialize();
 
             //Key 가져오기
-            string key = binding?.Key;
-            if (binding == null || !binding.HasKey)
+            string key = bindingData?.Key;
+            if (string.IsNullOrEmpty(key))
             {
                 Debug.LogError($"[Quest] {kind} 키가 비어 있습니다.");
                 return false;
@@ -218,15 +228,15 @@ namespace UniversalGraph
             }
 
             //descriptor로 인수 생성
-            if (!MethodArgumentCodec.TryCreateQuestRuntimeArguments(binding.Arguments, descriptor, context, out object[] arguments, out string error))
+            if (!MethodArgumentCodec.CreateQuestRuntimeArguments(bindingData.Arguments, descriptor, context, out object[] arguments, out string error))
             {
                 Debug.LogError($"[Quest] {error}");
                 return false;
             }
 
             //메서드를 가지고 있는 객체를 찾기
-            object target = GetTargetInstance(descriptor, context?.Controller);
-            if (!descriptor.IsStatic && target == null)
+            object ownerInstance = GetMethodOwnerInstance(descriptor, context?.Controller);
+            if (!descriptor.IsStatic && ownerInstance == null)
             {
                 return false;
             }
@@ -234,7 +244,7 @@ namespace UniversalGraph
             //실제 실행 부분
             try
             {
-                object methodResult = descriptor.MethodInfo.Invoke(target, arguments);
+                object methodResult = descriptor.MethodInfo.Invoke(ownerInstance, arguments);
 
                 if (kind == MethodKind.Condition)
                 {
@@ -258,7 +268,7 @@ namespace UniversalGraph
         /// <summary>
         /// 주어진 설명서에 해당하는 메서드를 가지고 있는 Instance를 가져오는 함수
         /// </summary>
-        private static object GetTargetInstance(QuestMethodDescriptor descriptor, IQuestController controller)
+        private static object GetMethodOwnerInstance(QuestMethodDescriptor descriptor, IQuestController controller)
         {
             if (descriptor.Owner == QuestMethodOwner.Global)
             {

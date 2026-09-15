@@ -328,7 +328,7 @@ namespace UniversalGraph.Editor
                     nodeData.Guid = newId;
                     nodeData.Position += offset;
 
-                    GraphNode node = GraphNodeCatalog.CreateNode(container, nodeData);
+                    GraphNode node = GraphNodeCatalog.CreateNodeFromData(container, nodeData);
 
                     Rect rect = node.GetPosition();
                     rect.position = nodeData.Position;

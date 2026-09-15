@@ -127,7 +127,7 @@ namespace UniversalGraph.Editor
         /// 기존 직렬화 데이터 타입에 등록된 실제 화면 노드를 만들고 데이터를 연결<para></para>
         /// 노드를 컨테이너로부터 복원할 때 사용하는 함수 
         /// </summary>
-        public static GraphNode CreateNode(GraphContainer container, NodeBaseData data)
+        public static GraphNode CreateNodeFromData(GraphContainer container, NodeBaseData data)
         {
             if (container == null)
             {

@@ -70,7 +70,7 @@ namespace UniversalGraph
 				for (int i = 0; i < existingArguments.Count; i++)
 				{
 					MethodArgumentData candidate = existingArguments[i];
-					if (TryDecodeArgumentData(candidate, parameterDescriptor, out _, out _))
+					if (DecodeArgumentData(candidate, parameterDescriptor, out _, out _))
 					{
 						repairedArgumentData[parameterIndex] = candidate;
 						break;
@@ -85,7 +85,7 @@ namespace UniversalGraph
         //==================== 메서드 정의를 보고 지원 타입 판별 ====================
 
         /// <summary>정의된 파라미터 타입에 따라 인수의 타입을 결정</summary>
-        public static bool TryGetArgumentKind(Type type, out MethodArgumentKind kind)
+        public static bool GetArgumentKind(Type type, out MethodArgumentKind kind)
         {
             if (type == typeof(string))
             {
@@ -99,6 +99,14 @@ namespace UniversalGraph
             }
             if (type != null && type.IsEnum)
             {
+                // EnumFlagsField가 지원하지 않는 64비트 Flags는 공통 지원 타입에서 제외합니다.
+                Type underlyingType = Enum.GetUnderlyingType(type);
+                if (type.IsDefined(typeof(FlagsAttribute), inherit: false)
+                    && (underlyingType == typeof(long) || underlyingType == typeof(ulong)))
+                {
+                    kind = MethodArgumentKind.String;
+                    return false;
+                }
                 kind = MethodArgumentKind.Enum;
                 return true;
             }
@@ -121,7 +129,9 @@ namespace UniversalGraph
             return false;
         }
 
-        //==================== Editor 입력값(ArgumentData)을 문자열(string)로 변환(Encode) ====================
+        //==================== 입력한 인수를 MethodArgumentData에 저장(Encode) ====================
+        //========입력한 숫자 100을 저장용 문자열 "100"으로 바꿔 MethodArgumentData에 담음.===========
+
 
         /// <summary>에디터에서 인수 하나를 수정할 때<para></para>
         /// 에디터에서 입력한 실제 C# 값을 그래프에 저장할 ArgumentData 로 변환</summary>
@@ -199,6 +209,14 @@ namespace UniversalGraph
                 object underlyingValue = Convert.ChangeType(value, underlyingType, CultureInfo.InvariantCulture);
                 return Convert.ToString(underlyingValue, CultureInfo.InvariantCulture);
             }
+            if (value is float floatValue)
+            {
+                return floatValue.ToString("R", CultureInfo.InvariantCulture);
+            }
+            if (value is double doubleValue)
+            {
+                return doubleValue.ToString("R", CultureInfo.InvariantCulture);
+            }
             if (value is bool booleanValue)
             {
                 return booleanValue ? "true" : "false";
@@ -206,10 +224,11 @@ namespace UniversalGraph
             return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
         }
 
-        //==================== 문자열로 저장된 값(string)을 Editor 입력값(ArgumentData)로 변환(Decode) ====================
+        //==================== 저장된 인수를 파라미터 타입에 맞게 복원(Decode) ====================
+        //==============MethodArgumentData에서 문자열 "100"을 꺼내, 파라미터가 요구하는 int 값 100으로 복원. =========
 
         /// <summary>MethodArgumentData 하나 복원</summary>
-        public static bool TryDecodeArgumentData(MethodArgumentData data, MethodParameterDescriptor descriptor, out object value, out string error)
+        public static bool DecodeArgumentData(MethodArgumentData data, MethodParameterDescriptor descriptor, out object value, out string error)
         {
             value = null;
 
@@ -319,7 +338,7 @@ namespace UniversalGraph
                     return false;
                 }
 
-                if (!TryDecodeArgumentData(argument, parameterDescriptor, out object value, out error))
+                if (!DecodeArgumentData(argument, parameterDescriptor, out object value, out error))
                 {
                     error = "'" + descriptor.Key + "' " + error;
                     return false;
@@ -336,20 +355,20 @@ namespace UniversalGraph
         //==================== Runtime 메서드 호출 인수 준비 ====================
 
         /// <summary>Dialogue 메서드를 실행할 최종 object[] 생성</summary>
-        public static bool TryCreateDialogueRuntimeArguments(IReadOnlyList<MethodArgumentData> argumentData, DialogueMethodDescriptor descriptor, DialogueExecutionContext context, out object[] result, out string error)
+        public static bool CreateDialogueRuntimeArguments(IReadOnlyList<MethodArgumentData> argumentData, DialogueMethodDescriptor descriptor, DialogueExecutionContext context, out object[] result, out string error)
 		{
-			return TryBuildRuntimeArguments(argumentData, descriptor, out result, out error, dialogueContext: context);
+			return CreateRuntimeArguments(argumentData, descriptor, out result, out error, dialogueContext: context);
 		}
 
         /// <summary>Quest 메서드를 실행할 최종 object[] 생성</summary>
-        public static bool TryCreateQuestRuntimeArguments(IReadOnlyList<MethodArgumentData> argumentData, QuestMethodDescriptor descriptor, QuestExecutionContext context, out object[] result, out string error)
+        public static bool CreateQuestRuntimeArguments(IReadOnlyList<MethodArgumentData> argumentData, QuestMethodDescriptor descriptor, QuestExecutionContext context, out object[] result, out string error)
 		{
-			return TryBuildRuntimeArguments(argumentData, descriptor, out result, out error, questContext: context);
+			return CreateRuntimeArguments(argumentData, descriptor, out result, out error, questContext: context);
 		}
 
 
         /// <summary>복원 결과에 Context를 추가해 최종 object[] 배열 완성</summary>
-		private static bool TryBuildRuntimeArguments(
+		private static bool CreateRuntimeArguments(
             IReadOnlyList<MethodArgumentData> argumentData,
             MethodDescriptor descriptor, 
             out object[] result, 

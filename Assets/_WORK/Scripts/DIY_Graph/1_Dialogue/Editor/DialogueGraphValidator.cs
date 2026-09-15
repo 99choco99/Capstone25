@@ -17,88 +17,90 @@ namespace UniversalGraph.Dialogue.Editor
             }
             //시작 노드 id 중복검사
             foreach (IGrouping<string, DialogueEntryNodeData> duplicates in entries
-                         .GroupBy(entry => entry.EntryId)
+                         .GroupBy(entryData => entryData.EntryId)
                          .Where(group => group.Count() > 1))
             {
-                foreach (DialogueEntryNodeData entry in duplicates)
+                foreach (DialogueEntryNodeData entryData in duplicates)
                 {
-                    AddError("DIALOGUE_DUPLICATE_ENTRY", $"Entry ID '{duplicates.Key}'를 둘 이상의 Entry 노드가 사용하고 있습니다.", entry.Guid);
+                    AddError("DIALOGUE_DUPLICATE_ENTRY", $"Entry ID '{duplicates.Key}'를 둘 이상의 Entry 노드가 사용하고 있습니다.", entryData.Guid);
                 }
             }
 
             //노드 종류별 오류 검사
-            foreach (NodeBaseData node in index.Nodes)
+            foreach (NodeBaseData nodeData in index.Nodes)
             {
-                switch (node)
+                switch (nodeData)
                 {
-                    case DialogueEntryNodeData entry:
-                        OutputValidation(entry.Guid, DialoguePortNames.Next);
+                    case DialogueEntryNodeData entryData:
+                        OutputValidation(entryData.Guid, DialoguePortNames.Next);
                         break;
 
-                    case DialogueLineNodeData line:
-                        if (string.IsNullOrWhiteSpace(line.DialogueText))
+                    case DialogueLineNodeData lineData:
+                        if (string.IsNullOrWhiteSpace(lineData.DialogueText))
                         {
-                            AddWarning("DIALOGUE_EMPTY_TEXT", "대화문이 비어 있습니다.", line.Guid);
+                            AddWarning("DIALOGUE_EMPTY_TEXT", "대화문이 비어 있습니다.", lineData.Guid);
                         }
 
-                        OutputValidation(line.Guid, DialoguePortNames.Next);
+                        OutputValidation(lineData.Guid, DialoguePortNames.Next);
                         break;
 
-                    case DialogueChoiceNodeData choiceNode:
-                        ValidateChoiceNode(choiceNode);
+                    case DialogueChoiceNodeData choiceNodeData:
+                        ValidateChoiceNode(choiceNodeData);
                         break;
 
-                    case DialogueConditionNodeData condition:
-                        ValidateMethodBinding(condition.Guid, MethodKind.Condition, condition.Condition, "condition", required: true);
-                        OutputValidation(condition.Guid, DialoguePortNames.True);
-                        OutputValidation(condition.Guid, DialoguePortNames.False);
+                    case DialogueConditionNodeData conditionData:
+                        ValidateMethodBinding(conditionData.Guid, MethodKind.Condition, conditionData.Condition, "condition", required: true);
+                        OutputValidation(conditionData.Guid, DialoguePortNames.True);
+                        OutputValidation(conditionData.Guid, DialoguePortNames.False);
                         break;
 
-                    case DialogueActionNodeData action:
-                        ValidateMethodBinding(action.Guid, MethodKind.Action, action.Action, "action", required: true);
-                        OutputValidation(action.Guid, DialoguePortNames.Next);
+                    case DialogueActionNodeData actionData:
+                        ValidateMethodBinding(actionData.Guid, MethodKind.Action, actionData.Action, "action", required: true);
+                        OutputValidation(actionData.Guid, DialoguePortNames.Next);
                         break;
 
-                    case DialogueWaitNodeData wait:
-                        if (wait.DurationSeconds < 0f || float.IsNaN(wait.DurationSeconds) || float.IsInfinity(wait.DurationSeconds))
+                    case DialogueWaitNodeData waitData:
+                        if (waitData.DurationSeconds < 0f || float.IsNaN(waitData.DurationSeconds) || float.IsInfinity(waitData.DurationSeconds))
                         {
-                            AddError("DIALOGUE_WAIT_DURATION", "Wait 시간은 0 이상의 유한한 값이어야 합니다.", wait.Guid);
+                            AddError("DIALOGUE_WAIT_DURATION", "Wait 시간은 0 이상의 유한한 값이어야 합니다.", waitData.Guid);
                         }
-                        OutputValidation(wait.Guid, DialoguePortNames.Next);
+                        OutputValidation(waitData.Guid, DialoguePortNames.Next);
                         break;
 
-                    case DialogueWaitSignalNodeData signal:
-                        if (string.IsNullOrEmpty(signal.SignalKey))
+                    case DialogueWaitSignalNodeData waitSignalData:
+                        if (string.IsNullOrEmpty(waitSignalData.SignalKey))
                         {
-                            AddError("DIALOGUE_SIGNAL_KEY", "Wait Signal에는 비어 있지 않은 Signal 키가 필요합니다.", signal.Guid);
+                            AddError("DIALOGUE_SIGNAL_KEY", "Wait Signal에는 비어 있지 않은 Signal 키가 필요합니다.", waitSignalData.Guid);
                         }
-                        OutputValidation(signal.Guid, DialoguePortNames.Next);
+                        OutputValidation(waitSignalData.Guid, DialoguePortNames.Next);
                         break;
 
-                    case DialogueEndNodeData end:
-                        if (index.GetLinkInStartPort(end.Guid).Count > 0)
+                    case DialogueEndNodeData endData:
+                        if (index.GetLinkInStartPort(endData.Guid).Count > 0)
                         {
-                            AddError("DIALOGUE_END_OUTPUT", "End 노드에는 나가는 연결선이 있을 수 없습니다.", end.Guid);
+                            AddError("DIALOGUE_END_OUTPUT", "End 노드에는 나가는 연결선이 있을 수 없습니다.", endData.Guid);
                         }
                         break;
 
                     default:
-                        AddError("DIALOGUE_UNSUPPORTED_NODE", $"DialogueManager가 노드 타입 '{node.GetType().Name}'을 지원하지 않습니다.", node.Guid);
+                        AddError("DIALOGUE_UNSUPPORTED_NODE", $"DialogueManager가 노드 타입 '{nodeData.GetType().Name}'을 지원하지 않습니다.", nodeData.Guid);
                         break;
                 }
             }
 
-            HashSet<string> reachable = index.GetReachableNode(entries.Select(entry => entry.Guid));
+            HashSet<string> reachable = index.GetReachableNodeGuids(entries.Select(entryData => entryData.Guid));
             if (reachable.Count > 0)
             {
-                foreach (NodeBaseData node in index.Nodes.Where(node => !reachable.Contains(node.Guid)))
+                foreach (NodeBaseData nodeData in index.Nodes.Where(nodeData => !reachable.Contains(nodeData.Guid)))
                 {
-                    AddWarning("DIALOGUE_UNREACHABLE", "Entry에서 도달할 수 없는 노드입니다.", node.Guid);
+                    AddWarning("DIALOGUE_UNREACHABLE", "Entry에서 도달할 수 없는 노드입니다.", nodeData.Guid);
                 }
             }
 
-            HashSet<string> immediateCycleNodes = index.FindCycleNodes(node => node is DialogueActionNodeData || node is DialogueConditionNodeData || node is DialogueWaitNodeData wait && wait.DurationSeconds <= 0f);
-            foreach (string nodeGuid in immediateCycleNodes)
+            foreach (string nodeGuid in index.FindCycleNodeGuids(nodeData =>
+                         nodeData is DialogueActionNodeData
+                         || nodeData is DialogueConditionNodeData
+                         || nodeData is DialogueWaitNodeData waitData && waitData.DurationSeconds <= 0f))
             {
                 AddError("DIALOGUE_IMMEDIATE_CYCLE", "이 노드는 실행을 멈출 대사, Signal 또는 양수 Wait가 없는 순환에 포함되어 있습니다.", nodeGuid);
             }
@@ -107,60 +109,60 @@ namespace UniversalGraph.Dialogue.Editor
             //===========================내부 함수 ================================
 
             //선택지 노드가 유효한지 검사
-            void ValidateChoiceNode(DialogueChoiceNodeData choiceNode)
+            void ValidateChoiceNode(DialogueChoiceNodeData choiceNodeData)
             {
-                if (choiceNode.Choices == null)
+                if (choiceNodeData.Choices == null)
                 {
-                    AddError("DIALOGUE_NULL_CHOICES", "Choice 노드의 선택지 목록이 null입니다.", choiceNode.Guid);
+                    AddError("DIALOGUE_NULL_CHOICES", "Choice 노드의 선택지 목록이 null입니다.", choiceNodeData.Guid);
                     return;
                 }
 
-                if (choiceNode.Choices.Count == 0)
+                if (choiceNodeData.Choices.Count == 0)
                 {
-                    AddError("DIALOGUE_EMPTY_CHOICES", "Choice 노드에는 선택지를 하나 이상 추가해야 합니다.", choiceNode.Guid);
+                    AddError("DIALOGUE_EMPTY_CHOICES", "Choice 노드에는 선택지를 하나 이상 추가해야 합니다.", choiceNodeData.Guid);
                     return;
                 }
 
                 //포트(선택지) 하나씩 꺼내서 검사
                 HashSet<string> portIds = new () { DialoguePortNames.Default };
-                for (int i = 0; i < choiceNode.Choices.Count; i++)
+                for (int i = 0; i < choiceNodeData.Choices.Count; i++)
                 {
-                    DialogueChoiceData choice = choiceNode.Choices[i];
+                    DialogueChoiceData choice = choiceNodeData.Choices[i];
                     string label = $"선택지 {i + 1}";
                     if (choice == null || string.IsNullOrWhiteSpace(choice.PortName))
                     {
-                        AddError("DIALOGUE_INVALID_CHOICE", $"{label}: 데이터 또는 포트 ID가 없습니다.", choiceNode.Guid);
+                        AddError("DIALOGUE_INVALID_CHOICE", $"{label}: 데이터 또는 포트 ID가 없습니다.", choiceNodeData.Guid);
                         continue;
                     }
 
                     if (!portIds.Add(choice.PortName))
                     {
-                        AddError("DIALOGUE_DUPLICATE_CHOICE", $"{label}: 포트 '{choice.PortName}'이 중복되었거나 예약된 이름입니다.", choiceNode.Guid);
+                        AddError("DIALOGUE_DUPLICATE_CHOICE", $"{label}: 포트 '{choice.PortName}'이 중복되었거나 예약된 이름입니다.", choiceNodeData.Guid);
                     }
 
                     if (string.IsNullOrWhiteSpace(choice.ChoiceText))
                     {
-                        AddWarning("DIALOGUE_EMPTY_CHOICE", $"{label}: 표시할 문장이 없습니다.", choiceNode.Guid);
+                        AddWarning("DIALOGUE_EMPTY_CHOICE", $"{label}: 표시할 문장이 없습니다.", choiceNodeData.Guid);
                     }
 
-                    ValidateMethodBinding(choiceNode.Guid, MethodKind.Condition, choice.VisibilityCondition, $"{label} Condition");
+                    ValidateMethodBinding(choiceNodeData.Guid, MethodKind.Condition, choice.VisibilityCondition, $"{label} Condition");
 
-                    OutputValidation(choiceNode.Guid, choice.PortName, label);
+                    OutputValidation(choiceNodeData.Guid, choice.PortName, label);
                 }
 
                 //혹시 선택지가 없어서 default 포트를 사용하는 경우 default가 연결되어 있는지 확인
-                bool needsDefault = choiceNode.Choices.All(choice => choice?.VisibilityCondition?.HasKey == true);
+                bool needsDefault = choiceNodeData.Choices.All(choice => choice?.VisibilityCondition?.HasKey == true);
 
                 if (needsDefault)
                 {
-                    OutputValidation(choiceNode.Guid, DialoguePortNames.Default);
+                    OutputValidation(choiceNodeData.Guid, DialoguePortNames.Default);
                 }
                 else
                 {
-                    int defaultCount = index.GetLinkInStartPort(choiceNode.Guid, DialoguePortNames.Default).Count;
+                    int defaultCount = index.GetLinkInStartPort(choiceNodeData.Guid, DialoguePortNames.Default).Count;
                     if (defaultCount > 1)
                     {
-                        AddError("DIALOGUE_OUTPUT_COUNT", $"{DialoguePortNames.Default}: 최대 1개 연결 가능 (현재 {defaultCount}개)", choiceNode.Guid);
+                        AddError("DIALOGUE_OUTPUT_COUNT", $"{DialoguePortNames.Default}: 최대 1개 연결 가능 (현재 {defaultCount}개)", choiceNodeData.Guid);
                     }
                 }
 

@@ -26,9 +26,9 @@ namespace UniversalGraph.Editor
             Nodes = container.Nodes;
             Links = container.NodeLinks;
 
-            foreach (NodeBaseData node in Nodes)
+            foreach (NodeBaseData nodeData in Nodes)
             {
-                nodesByGuid.Add(node.Guid, node);
+                nodesByGuid.Add(nodeData.Guid, nodeData);
             }
 
             foreach (NodeLinkData link in Links)
@@ -51,10 +51,10 @@ namespace UniversalGraph.Editor
 
 
         /// <summary>guid로 노드 데이터 가져오기</summary>
-        public bool GetNodeData(string guid, out NodeBaseData node)
+        public bool GetNodeData(string guid, out NodeBaseData nodeData)
         {
-            node = null;
-            return !string.IsNullOrWhiteSpace(guid) && nodesByGuid.TryGetValue(guid, out node);
+            nodeData = null;
+            return !string.IsNullOrWhiteSpace(guid) && nodesByGuid.TryGetValue(guid, out nodeData);
         }
 
         /// <summary>출발 포트랑 연결된 링크 정보를 다 반환</summary>
@@ -75,7 +75,7 @@ namespace UniversalGraph.Editor
         }
 
         /// <summary>주어진 시작 노드들에서 도달 가능한 모든 유효 노드를 찾기 BFS 사용</summary>
-        public HashSet<string> GetReachableNode(IEnumerable<string> rootGuids)
+        public HashSet<string> GetReachableNodeGuids(IEnumerable<string> rootGuids)
         {
             HashSet<string> reachedNode = new ();
 
@@ -108,47 +108,79 @@ namespace UniversalGraph.Editor
             return reachedNode;
         }
 
-        /// <summary>선택한 노드 집합 안에서 단방향 순환에 포함된 노드를 찾습니다.</summary>
-        public HashSet<string> FindCycleNodes(Func<NodeBaseData, bool> includeNode)
+        /// <summary>선택한 노드 집합 안에서 단방향 순환에 포함된 노드를 찾기 Kosaraju SCC 방식</summary>
+        public HashSet<string> FindCycleNodeGuids(Func<NodeBaseData, bool> includeNode)
         {
-            HashSet<string> includedGuids = new(Nodes.Where(includeNode).Select(node => node.Guid));
+            HashSet<string> includedGuids = new(Nodes.Where(includeNode).Select(nodeData => nodeData.Guid));
             HashSet<string> cycleNodes = new();
+            Stack<string> path = new();
+            Stack<string> finishOrder = new();
+            Dictionary<string, int> nextLinkIndices = new();
 
+            // Kosaraju 1단계: 정방향 DFS를 끝낸 순서대로 노드를 쌓음
             foreach (string startGuid in includedGuids)
             {
-                HashSet<string> reachedNode = new();
-                Queue<string> q = new();
-
-                // 시작 노드 자체는 순환의 증거가 아니므로 연결된 다음 노드부터 탐색
-                foreach (NodeLinkData link in GetLinkInStartPort(startGuid))
+                if (nextLinkIndices.ContainsKey(startGuid))
                 {
-                    if (includedGuids.Contains(link.TargetNodeGuid))
-                    {
-                        q.Enqueue(link.TargetNodeGuid);
-                    }
+                    continue;
                 }
 
-                while (q.Count > 0)
+                nextLinkIndices.Add(startGuid, 0);
+                path.Push(startGuid);
+                while (path.Count > 0)
                 {
-                    string guid = q.Dequeue();
-                    if (guid == startGuid)
+                    string guid = path.Peek();
+                    IReadOnlyList<NodeLinkData> links = GetLinkInStartPort(guid);
+                    int linkIndex = nextLinkIndices[guid];
+                    if (linkIndex == links.Count)
                     {
-                        cycleNodes.Add(startGuid);
-                        break;
+                        finishOrder.Push(path.Pop());
+                        continue;
                     }
 
-                    if (!reachedNode.Add(guid))
+                    // 다음 연결 번호를 기억해 자식 탐색 후 이어서 처리
+                    nextLinkIndices[guid] = linkIndex + 1;
+                    string nextGuid = links[linkIndex].TargetNodeGuid;
+                    if (!includedGuids.Contains(nextGuid) || nextLinkIndices.ContainsKey(nextGuid))
                     {
                         continue;
                     }
 
-                    foreach (NodeLinkData link in GetLinkInStartPort(guid))
+                    nextLinkIndices.Add(nextGuid, 0);
+                    path.Push(nextGuid);
+                }
+            }
+
+            // Kosaraju 2단계: 종료 순서의 역순으로 진입 연결을 따라가면 하나의 SCC가 모임
+            HashSet<string> reachedNode = new();
+            List<string> component = new();
+            while (finishOrder.Count > 0)
+            {
+                string startGuid = finishOrder.Pop();
+                if (!reachedNode.Add(startGuid))
+                {
+                    continue;
+                }
+
+                component.Clear();
+                path.Push(startGuid);
+                while (path.Count > 0)
+                {
+                    string guid = path.Pop();
+                    component.Add(guid);
+                    foreach (NodeLinkData link in GetLinkInTargetPorts(guid))
                     {
-                        if (includedGuids.Contains(link.TargetNodeGuid))
+                        if (includedGuids.Contains(link.StartNodeGuid) && reachedNode.Add(link.StartNodeGuid))
                         {
-                            q.Enqueue(link.TargetNodeGuid);
+                            path.Push(link.StartNodeGuid);
                         }
                     }
+                }
+
+                // 서로 왕복 가능한 노드가 둘 이상이거나, 자기 자신으로 연결되면 순환
+                if (component.Count > 1 || GetLinkInStartPort(startGuid).Any(link => link.TargetNodeGuid == startGuid))
+                {
+                    cycleNodes.UnionWith(component);
                 }
             }
 

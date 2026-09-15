@@ -41,13 +41,13 @@ namespace UniversalGraph.Quest.Editor
         private static void BuildCatalog()
         {
             //플레이어 어셈블리만 가져오기
-            HashSet<string> playerAssemblies = new ();
-            foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.Player))
+            HashSet<string> runtimeAssemblyNames = new ();
+            foreach (UnityEditor.Compilation.Assembly assembly in CompilationPipeline.GetAssemblies(AssembliesType.PlayerWithoutTestAssemblies))
             {
-                playerAssemblies.Add(assembly.name);
+                runtimeAssemblyNames.Add(assembly.name);
                 foreach (string reference in assembly.compiledAssemblyReferences)
                 {
-                    playerAssemblies.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
+                    runtimeAssemblyNames.Add(System.IO.Path.GetFileNameWithoutExtension(reference));
                 }
             }
 
@@ -56,7 +56,7 @@ namespace UniversalGraph.Quest.Editor
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<QuestActionAttribute>())
             {
                 QuestActionAttribute attribute = method.GetCustomAttribute<QuestActionAttribute>(false);
-                if (attribute != null && IsPlayerMethod(method, playerAssemblies))
+                if (attribute != null && IsRuntimeMethod(method, runtimeAssemblyNames))
                 {
                     AddCandidate(method, MethodKind.Action, attribute.Key, attribute.Owner, actionCandidates);
                 }
@@ -67,7 +67,7 @@ namespace UniversalGraph.Quest.Editor
             foreach (MethodInfo method in TypeCache.GetMethodsWithAttribute<QuestConditionAttribute>())
             {
                 QuestConditionAttribute attribute = method.GetCustomAttribute<QuestConditionAttribute>(false);
-                if (attribute != null && IsPlayerMethod(method, playerAssemblies))
+                if (attribute != null && IsRuntimeMethod(method, runtimeAssemblyNames))
                 {
                     AddCandidate(method, MethodKind.Condition, attribute.Key, attribute.Owner, conditionCandidates);
                 }
@@ -81,10 +81,10 @@ namespace UniversalGraph.Quest.Editor
         /// <summary>
         /// 플레이어 어셈블리의 메서드인지?
         /// </summary>
-        private static bool IsPlayerMethod(MethodInfo method, ISet<string> playerAssemblies)
+        private static bool IsRuntimeMethod(MethodInfo method, ISet<string> runtimeAssemblyNames)
         {
             string assemblyName = method.DeclaringType?.Assembly.GetName().Name;
-            return !string.IsNullOrWhiteSpace(assemblyName) && playerAssemblies.Contains(assemblyName);
+            return !string.IsNullOrWhiteSpace(assemblyName) && runtimeAssemblyNames.Contains(assemblyName);
         }
         
 

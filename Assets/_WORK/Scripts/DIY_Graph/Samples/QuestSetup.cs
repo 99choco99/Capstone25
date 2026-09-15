@@ -4,11 +4,7 @@ using UnityEngine;
 namespace UniversalGraph.Samples
 {
     /// <summary>Quest 목록 등록과 플레이어 진행 기록을 한곳에 연결하는 최소 사용 예제.</summary>
-    /// <remarks>
-    /// 게임 초기화용 GameObject 하나에 붙이고, Inspector의 Quest Containers에 사용할 그래프 에셋들을 넣습니다.
-    /// 등록만 하므로 시작은 QuestManager.StartQuest(this, questId) 또는 TryAcceptQuest로 요청합니다.
-    /// Registry는 공유되므로 NPC마다 붙이지 않습니다. 씬 전환 시 유지와 저장·복원은 게임에 맞게 연결합니다.
-    /// </remarks>
+
     [AddComponentMenu("Universal/Samples/Quest Setup")]
     // 기본 실행 순서(0)의 컴포넌트가 Quest API를 사용하기 전에 목록을 등록합니다.
     [DefaultExecutionOrder(-100)]
