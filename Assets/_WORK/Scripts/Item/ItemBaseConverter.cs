@@ -36,6 +36,7 @@ public class ItemBaseConverter : JsonConverter
             baseData = new ItemBase();
         }
 
+        serializer.Populate(jo.CreateReader(), baseData);
         return baseData;
     }
 

@@ -62,30 +62,6 @@ public class PlayerCombat : MonoBehaviour, IWeaponOwner, IDefenser
 
 
     /// <summary>
-    /// 피격 시 애니메이션 결정
-    /// </summary>
-    public int DecideHitReaction(in DamageResult result)
-    {
-        ForceResetAttackState();
-
-        if (result.DefenseType == DefenseType.Parry) return AnimHash.Parry;
-        if (result.DefenseType == DefenseType.NormalGuard) return AnimHash.GuardHit;
-
-        float hitAngle = Vector3.SignedAngle(transform.forward,result.HitDirection, Vector3.up);
-
-        if (Mathf.Abs(hitAngle) <= 45f)
-            return Random.Range(0, 2) == 0 ? AnimHash.BackHit1 : AnimHash.BackHit2;
-
-        if (hitAngle > 45f && hitAngle <= 135f)
-            return AnimHash.HitLeft;
-
-        if (hitAngle >= -135f && hitAngle < -45f)
-            return AnimHash.HitRight;
-
-        return AnimHash.HitFront;
-    }
-
-    /// <summary>
     /// 방어 유형 최종 결정
     /// </summary>
     public DefenseType DecideDefense(in DamageRequest request)

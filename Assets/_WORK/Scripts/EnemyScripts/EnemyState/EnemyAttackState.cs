@@ -1,5 +1,6 @@
 using UnityEngine;
 
+using SoundEffectManager;
 /// <summary>
 /// AI가 선택한 공격 데이터를 소비 후 WindUp -> Active -> Recovery 순으로 실행
 /// </summary>
@@ -70,12 +71,12 @@ public class EnemyAttackState : EnemyState
                 currentPhase = AttackPhase.Recovery;
             }
         }
-        else if (currentPhase == AttackPhase.Active && normalizedTime >= currentAttack.RecoveryStartTime)
+        if (currentPhase == AttackPhase.Active && normalizedTime >= currentAttack.RecoveryStartTime)
         {
             currentPhase = AttackPhase.Recovery;
             enemy.Combat.CloseAttackHitWindow();
         }
-        else if (currentPhase == AttackPhase.Recovery && normalizedTime >= 1f)
+        if (currentPhase == AttackPhase.Recovery && normalizedTime >= 1f)
         {
             if (currentAttack.NextComboAttack != null)
                 ReadyAttack(currentAttack.NextComboAttack);
@@ -99,7 +100,7 @@ public class EnemyAttackState : EnemyState
         enemy.Combat.SetAttackData(currentAttack);
 
         if (currentAttack.Type == AttackType.Special && SoundManager.Instance != null)
-            SoundManager.Instance.PlaySFXAtPoint(SfxKeys.SpecialAttackWarning, enemy.transform.position);
+            SoundManager.Instance.Play(SfxKeys.SpecialAttackWarning, enemy.transform.position);
     }
 
     /// <summary>공격이 상대에게 닿아 결과가 확정됐을 때</summary>
@@ -155,7 +156,7 @@ public class EnemyAttackState : EnemyState
     public override void Exit()
     {
         enemy.Combat.CancelAttack();
-        enemy.AIController.NotifyActtackCompleted();
+        enemy.AIController.ResetActionTimer();
         currentAttack = null;
         currentPhase = AttackPhase.WindUp;
         isRebounding = false;

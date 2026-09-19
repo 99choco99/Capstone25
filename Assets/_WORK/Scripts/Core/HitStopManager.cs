@@ -47,6 +47,12 @@ public class HitStopManager : MonoBehaviour
         else
             duration = directHitStopDuration;
 
+        TriggerHitStop(duration);
+    }
+
+    /// <summary>인살처럼 일반 피해 판정을 거치지 않는 연출에도 같은 히트 스톱을 사용합니다.</summary>
+    public void TriggerHitStop(float duration)
+    {
         if (duration <= 0f) return;
 
         bool wasAlreadyStopping = hitStopRoutine != null;

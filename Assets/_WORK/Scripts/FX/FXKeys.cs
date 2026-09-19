@@ -10,6 +10,7 @@ public static class SfxKeys
     public const string GuardHit = "GuardHit";
     public const string SpecialAttackWarning = "HeavyAttack";
     public const string Execute = "ExecuteBGM";
+    public const string DeathblowImpact = "Execute";
     public const string LevelUp = "LevelUp";
     public const string MissionComplete = "missionComplete";
 }

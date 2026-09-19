@@ -55,6 +55,12 @@ public class Enemy : MonoBehaviour, ITargetable, ILockOnCameraProfileProvider
         StateMachine = new EnemyStateMachine(this);
     }
 
+    private void Start()
+    {
+        if (StateMachine.CurrentState == null)
+            StateMachine.TransitionTo(StateMachine.EnemyGroundedState);
+    }
+
     private void OnEnable()
     {
         Stats.OnDamage += HandleDamage;

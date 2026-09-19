@@ -13,6 +13,9 @@ public class EnemyAttackData : AttackData
     [Tooltip("선택 가중치")]
     [SerializeField, Range(0f, 100f)] private float weight = 50f;
 
+    [Tooltip("패링 후 반격으로 선택할 수 있는 행동인지")]
+    [SerializeField] private bool canUseAsCounter = true;
+
     [Header("공격별 쿨다운")]
     [SerializeField, Min(0f)] private float minAttackCooldown = 1f;
     [SerializeField, Min(0f)] private float maxAttackCooldown = 2f;
@@ -20,6 +23,7 @@ public class EnemyAttackData : AttackData
     public float MinimumRange => minDistance;
     public float MaximumRange => maxDistance;
     public float SelectionWeight => weight;
+    public bool CanUseAsCounter => canUseAsCounter;
 
     /// <summary>
     /// 거리안에 있는지

@@ -26,6 +26,10 @@ public class EnemyMotor : MonoBehaviour
     [Tooltip("strafe 목적지 계산 간격, 작을수록 촘촘한 원형")]
     [SerializeField, Min(0.05f)] private float strafeRefreshTime = 0.25f;
 
+    [Header("공격 Root Motion")]
+    [Tooltip("공격 전진 중 플레이어 중심과 유지할 최소 거리")]
+    [SerializeField, Min(0f)] private float minimumCombatDistance = 1.35f;
+
     private NavMeshAgent navAgent;
 
 
@@ -174,6 +178,42 @@ public class EnemyMotor : MonoBehaviour
         return new Vector2(localVelocity.x / safeSpeed, localVelocity.z / safeSpeed);
     }
 
+
+
+    /// <summary>루트 모션의 이동, 회전을 적용. 공격 중에는 대상과의 최소 간격을 유지</summary>
+    public void ApplyRootMotion(Vector3 deltaPosition, Quaternion deltaRotation, Transform attackTarget)
+    {
+        if (!CanUseAgent()) return;
+
+        if (attackTarget != null)
+            deltaPosition = ClampAttackAdvance(deltaPosition, attackTarget);
+
+        navAgent.Move(deltaPosition);
+        transform.rotation *= deltaRotation;
+    }
+
+    /// <summary>
+    /// 실제 이동량과 허용 이동량을 구해서 루트모션시 대상과의 최소 간격을 유지
+    /// </summary>
+    private Vector3 ClampAttackAdvance(Vector3 deltaPosition, Transform target)
+    {
+        Vector3 TargetDir = target.position - transform.position;
+        TargetDir.y = 0f;
+
+        float currentDistance = TargetDir.magnitude;
+        if (minimumCombatDistance <= 0f || currentDistance < 0.0001f)
+            return deltaPosition;
+
+        TargetDir /= currentDistance;
+        float forwardDistance = Vector3.Dot(deltaPosition, TargetDir);
+        float allowedForwardDistance = Mathf.Max(0f, currentDistance - minimumCombatDistance);
+        float excessForwardDistance = Mathf.Max(0f, forwardDistance - allowedForwardDistance);
+
+        return deltaPosition - TargetDir * excessForwardDistance;
+    }
+
+    //=============================넉백 코드==============================
+
     /// <summary>
     /// 방향과 최종 넉백 사양을 받아 NavMeshAgent 이동을 시작
     /// </summary>
@@ -190,6 +230,8 @@ public class EnemyMotor : MonoBehaviour
         knockbackMotion.Stop();
     }
 
+
+    //==============================Agent 코드 ========================
     /// <summary>Navagent 종료</summary>
     public void DisableAgent()
     {
@@ -203,6 +245,6 @@ public class EnemyMotor : MonoBehaviour
     /// </summary>
     private bool CanUseAgent()
     {
-        return navAgent.enabled && navAgent.isOnNavMesh;
+        return navAgent != null && navAgent.enabled && navAgent.isOnNavMesh;
     }
 }

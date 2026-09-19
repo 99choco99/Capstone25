@@ -9,12 +9,11 @@ using UnityEngine.UI;
 
 
 public enum UIPanelType { 
-    Quest,
-    Market,
-    Inventory,
-    Profile,
-    Setting,
-    Dialogue
+    Quest = 0,
+    Inventory = 2,
+    Profile = 3,
+    Setting = 4,
+    Dialogue = 5
 }
 public class MainUIManager : MonoBehaviour
 {

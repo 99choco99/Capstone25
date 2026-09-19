@@ -139,7 +139,7 @@ public class EnemyAIController : MonoBehaviour
 
 
         //반격
-        if (canCounter && Time.time >= counterDelayTime && ChooseAttack(perception.Distance, out EnemyAttackData counter, ignoreCooldown: true))
+        if (canCounter && Time.time >= counterDelayTime && ChooseAttack(perception.Distance, out EnemyAttackData counter, isCounter: true))
         {
             canCounter = false;
             return EnemyIntent.Attack(counter);
@@ -295,7 +295,7 @@ public class EnemyAIController : MonoBehaviour
     /// <summary>
     /// 공격하기로 선택
     /// </summary>
-    private bool ChooseAttack(float distance, out EnemyAttackData chosenAttack, bool ignoreCooldown = false)
+    private bool ChooseAttack(float distance, out EnemyAttackData chosenAttack, bool isCounter = false)
     {
         chosenAttack = null;
         validAttacks.Clear();
@@ -306,9 +306,10 @@ public class EnemyAIController : MonoBehaviour
             if (attack == null) continue;
             if (attack.SelectionWeight <= 0f) continue;
             if (!attack.IsInRange(distance)) continue;
+            if (isCounter && !attack.CanUseAsCounter) continue;
 
             // 반격은 쿨다운 무시
-            if (!ignoreCooldown && coolTimes.TryGetValue(attack, out float cool) && cool > Time.time)
+            if (!isCounter && coolTimes.TryGetValue(attack, out float cool) && cool > Time.time)
                 continue;
 
             validAttacks.Add(attack);
@@ -349,7 +350,7 @@ public class EnemyAIController : MonoBehaviour
     /// <summary>
     /// 행동 한번한번의 쿨타임
     /// </summary>
-    private void ResetActionTimer()
+    public void ResetActionTimer()
     {
         float min = Mathf.Min(minActionDelay, maxActionDelay);
         float max = Mathf.Max(minActionDelay, maxActionDelay);
@@ -357,14 +358,6 @@ public class EnemyAIController : MonoBehaviour
     }
 
 
-    /// <summary>
-    /// 행동 후 호출. 다음 의사결정의 쿨타임 주입
-    /// </summary>
-    public void NotifyActtackCompleted()
-    {
-        ResetActionTimer();
-
-    }
     private void OnValidate()
     {
         if(parryChance + blockChance >= 1f)

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class PlayerSpawner
 {
@@ -9,21 +8,15 @@ public class PlayerSpawner
 
     private GameObject playerPrefab;
     private List<Transform> SpawnPoints = new();
-    private PlayerRepository repository;
 
-    public static void Init(GameObject prefab, SocketManager socket)
+    public static void Init(GameObject prefab)
     {
-        if (Instance == null) Instance = new PlayerSpawner(prefab, socket);
+        if (Instance == null) Instance = new PlayerSpawner(prefab);
     }
 
-    private PlayerSpawner(GameObject playerPrefab, SocketManager socket)
+    private PlayerSpawner(GameObject playerPrefab)
     {
         this.playerPrefab = playerPrefab;
-        repository = new PlayerRepository();
-
-        socket.OnCurrentPlayersReceived += SpawnCurrentPlayers;
-        socket.OnRemotePlayerJoined += RemotePlayerSpawn;
-        socket.OnRemotePlayerLeft += RemotePlayerDespawn;
     }
     public void RegisterSpawnPoint(Transform point)
     {
@@ -42,16 +35,9 @@ public class PlayerSpawner
     }
 
     //플레이어 스폰
-    public void LocalPlayerSpawn(PlayerData data)
+    public void LocalPlayerSpawn()
     {
-        if (repository.HasPlayer(data.id)) { return; }
-        GameObject PlayerObj = GameObject.Instantiate(playerPrefab);
-
-        if (PlayerObj.TryGetComponent<Player>(out Player playerComponent))
-        {
-            playerComponent.Init(true);
-        }
-
+        if (Player.LocalPlayer != null) { return; }
         Vector3 finalPoistion = Vector3.zero;
         Quaternion finalRotation = Quaternion.identity;
 
@@ -63,50 +49,17 @@ public class PlayerSpawner
             finalRotation = selectedPoint.rotation;
         }
 
-        PlayerObj.transform.SetLocalPositionAndRotation(finalPoistion, finalRotation);
-        repository.AddPlayer(data.id, PlayerObj);
-    }
-
-    //다른 플레이어 스폰
-    public void RemotePlayerSpawn(NetworkPlayerData data)
-    {
-        if (repository.HasPlayer(data.id)) { return; }
-        GameObject newPlayer = GameObject.Instantiate(playerPrefab);
-
-        if (newPlayer.TryGetComponent(out Player playerComponent))
+        GameObject PlayerObj = GameObject.Instantiate(playerPrefab, finalPoistion, finalRotation);
+        if (PlayerObj.TryGetComponent<Player>(out Player playerComponent))
         {
-            playerComponent.Init(false);
+            playerComponent.Init(true);
         }
-
-        newPlayer.transform.SetLocalPositionAndRotation(data.position.ToVector3(), data.rotation.ToQuaternion());
-        repository.AddPlayer(data.id, newPlayer);
     }
 
-    //다른 플레이어 디스폰
-    public void RemotePlayerDespawn(string id)
+    /// <summary>씬 이동 전에 현재 로컬 플레이어를 제거합니다.</summary>
+    public void ClearLocalPlayer()
     {
-        repository.RemovePlayer(id);
-    }
-
-    public void ClearAllPlayers()
-    {
-        repository.ClearAllPlayers();
-    }
-
-    public GameObject GetPlayer(string id)
-    {
-        return repository.GetPlayer(id);
-    }
-
-    //현재 들어와있는 PlayerObj 스폰
-    public void SpawnCurrentPlayers(List<NetworkPlayerData> RemotePlayers)
-    {
-        foreach (NetworkPlayerData RemotePlayer in RemotePlayers)
-        {
-            if (RemotePlayer.id != DataManager.Instance.Server_PlayerData.id)
-            {
-                RemotePlayerSpawn(RemotePlayer);
-            }
-        }
+        if (Player.LocalPlayer != null)
+            GameObject.Destroy(Player.LocalPlayer.gameObject);
     }
 }

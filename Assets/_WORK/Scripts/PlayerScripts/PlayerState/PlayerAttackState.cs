@@ -1,4 +1,5 @@
 using UnityEngine;
+using SoundEffectManager;
 public enum AttackPhase { WindUp,Active, Recovery}
 
 public class PlayerAttackState : PlayerState
@@ -106,14 +107,14 @@ public class PlayerAttackState : PlayerState
             player.Combat.PlayerAttackStart();
 
             if (SoundManager.Instance != null)
-                SoundManager.Instance.PlaySFXAtPoint(SfxKeys.Attack, player.Combat.CurrentWeapon.transform.position);
+                SoundManager.Instance.Play(SfxKeys.Attack, player.Combat.CurrentWeapon.transform.position);
         }
-        else if (currentPhase == AttackPhase.Active && nTime >= currentAttackData.RecoveryStartTime)
+        if (currentPhase == AttackPhase.Active && nTime >= currentAttackData.RecoveryStartTime)
         {
             currentPhase = AttackPhase.Recovery;
             player.Combat.PlayerAttackEnd();
         }
-        else if (currentPhase == AttackPhase.Recovery && nTime >= 1.0f)
+        if (currentPhase == AttackPhase.Recovery && nTime >= 1.0f)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
         }

@@ -15,7 +15,7 @@ public class PlayerDataAPI
     public PlayerDataAPI(string userId) { this.userId = userId; }
 
     // 플레이어 데이터 요청
-    public async Awaitable<PlayerData> LoadPlayerData()
+    public async Awaitable<ServerPlayerData> LoadPlayerData()
     {
         string url = $"{APIConstants.BASE_API_URL}/playerData/{userId}";
 
@@ -29,7 +29,7 @@ public class PlayerDataAPI
                 {
                     string jsonText = webRequest.downloadHandler.text;
                     Debug.Log(jsonText);
-                    return JsonConvert.DeserializeObject<PlayerData>(jsonText); 
+                    return JsonConvert.DeserializeObject<ServerPlayerData>(jsonText);
                 }
                 catch (JsonException ex)
                 {
@@ -46,7 +46,7 @@ public class PlayerDataAPI
     }
 
     //플레이어 데이터 저장
-     public async Awaitable<bool> SavePlayerData(PlayerData data)
+     public async Awaitable<bool> SavePlayerData(ServerPlayerData data)
     {
         string url = $"{APIConstants.BASE_API_URL}/playerData/{userId}";
         string json = JsonConvert.SerializeObject(data);

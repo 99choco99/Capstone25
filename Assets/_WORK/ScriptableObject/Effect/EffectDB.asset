@@ -11,14 +11,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dce461282737aeb4a92a7178936ca41c, type: 3}
   m_Name: EffectDB
-  m_EditorClassIdentifier: Assembly-CSharp::EffectDB
-  effectList:
-  - Name: Blood
-    Prefab: {fileID: 4932157595147607544, guid: 5c61af34ec761824ebc3c207297344c8,
-      type: 3}
-  - Name: GuardHit
-    Prefab: {fileID: 8460667080445658512, guid: 073e075c4a0aee8488be5ca633888096,
-      type: 3}
-  - Name: Parry
-    Prefab: {fileID: 5024009746357069194, guid: c4de03a1ac9206a4ab6f11bd7941a6cc,
-      type: 3}
+  m_EditorClassIdentifier: SoundEffectManager.Runtime::SoundEffectManager.EffectDB
+  effects:
+  - {fileID: 11400000, guid: a229ca579cf24b7d8477e461727a3122, type: 2}
+  - {fileID: 11400000, guid: 30c389bba68c4b01acf9af78c6c8765a, type: 2}
+  - {fileID: 11400000, guid: b807d8d96a204ad38ffdd2141546066f, type: 2}

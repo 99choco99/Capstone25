@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 
+using SoundEffectManager;
 public class PlayerJumpState : PlayerState
 {
     public override bool UseRootMotion => false;
@@ -8,7 +9,7 @@ public class PlayerJumpState : PlayerState
     public override void Enter()
     {
         player.AnimatorController.PlayAction(AnimHash.Jump);
-        SoundManager.Instance.PlaySFX(SfxKeys.Jump);
+        SoundManager.Instance.Play(SfxKeys.Jump);
         player.Motor.Jump();
     }
 

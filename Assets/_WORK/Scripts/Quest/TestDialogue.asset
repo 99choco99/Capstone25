@@ -1,0 +1,157 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ca347d3ba80a0b44b795bb276b934cd, type: 3}
+  m_Name: TestDialogue
+  m_EditorClassIdentifier: UniversalGraph.Runtime::UniversalGraph.DialogueContainer
+  schemaVersion: 1
+  NodeLinks:
+  - StartNodeGuid: a24d94b5-3399-45d2-9be0-1cc3ec2518e0
+    StartPortName: Next
+    TargetNodeGuid: 390ffd46-6be4-4151-942e-18d0ffe1cca9
+    TargetPortName: Input
+  - StartNodeGuid: 3115fcf7-375e-4773-8330-519096cafc35
+    StartPortName: Next
+    TargetNodeGuid: 390ffd46-6be4-4151-942e-18d0ffe1cca9
+    TargetPortName: Input
+  - StartNodeGuid: 655ad724-72ae-4081-9048-7934e6d830f8
+    StartPortName: Default
+    TargetNodeGuid: 3115fcf7-375e-4773-8330-519096cafc35
+    TargetPortName: Input
+  - StartNodeGuid: 655ad724-72ae-4081-9048-7934e6d830f8
+    StartPortName: ee70a866-1038-4bad-bd03-d245a93af3eb
+    TargetNodeGuid: 3115fcf7-375e-4773-8330-519096cafc35
+    TargetPortName: Input
+  - StartNodeGuid: 655ad724-72ae-4081-9048-7934e6d830f8
+    StartPortName: 60d01e44-d59b-4ab1-a216-e2ddfca6c2b8
+    TargetNodeGuid: 904666af-df32-438c-9339-345f62273b18
+    TargetPortName: Input
+  - StartNodeGuid: 904666af-df32-438c-9339-345f62273b18
+    StartPortName: Next
+    TargetNodeGuid: a24d94b5-3399-45d2-9be0-1cc3ec2518e0
+    TargetPortName: Input
+  - StartNodeGuid: cb0184ff-51c9-4dba-badf-f09209aec184
+    StartPortName: Next
+    TargetNodeGuid: 9fccffd1-1054-4d04-aa12-10b24e15e9a6
+    TargetPortName: Input
+  - StartNodeGuid: 9fccffd1-1054-4d04-aa12-10b24e15e9a6
+    StartPortName: Next
+    TargetNodeGuid: 655ad724-72ae-4081-9048-7934e6d830f8
+    TargetPortName: Input
+  - StartNodeGuid: 06ef0549-2b64-4614-8c30-5b2b559ba104
+    StartPortName: Next
+    TargetNodeGuid: 1ed52ba2-00bc-4f23-82d4-3b0ae4d33359
+    TargetPortName: Input
+  - StartNodeGuid: 1ed52ba2-00bc-4f23-82d4-3b0ae4d33359
+    StartPortName: Next
+    TargetNodeGuid: aafc15d1-76eb-4659-bb6f-ad789112719e
+    TargetPortName: Input
+  - StartNodeGuid: aafc15d1-76eb-4659-bb6f-ad789112719e
+    StartPortName: Next
+    TargetNodeGuid: 490c867c-e03c-4b0d-b564-aac862b1d42e
+    TargetPortName: Input
+  Nodes:
+  - rid: 1081365723174928702
+  - rid: 1081365723174928704
+  - rid: 1081365723174928703
+  - rid: 1081365723174928701
+  - rid: 1081365723174928705
+  - rid: 1081365723174928700
+  - rid: 1081365723174928717
+  - rid: 1081365723174928706
+  - rid: 1081365723174928718
+  - rid: 1081365723174928719
+  - rid: 1081365723174928716
+  references:
+    version: 2
+    RefIds:
+    - rid: 1081365723174928700
+      type: {class: DialogueEntryNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: cb0184ff-51c9-4dba-badf-f09209aec184
+        Position: {x: -366, y: 370}
+        entryId: Entry
+    - rid: 1081365723174928701
+      type: {class: DialogueChoiceNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 655ad724-72ae-4081-9048-7934e6d830f8
+        Position: {x: -25, y: 347}
+        Choices:
+        - PortId: ee70a866-1038-4bad-bd03-d245a93af3eb
+          ChoiceText: New Choice
+          VisibilityCondition:
+            key: 
+            Arguments: []
+        - PortId: 60d01e44-d59b-4ab1-a216-e2ddfca6c2b8
+          ChoiceText: New Choice
+          VisibilityCondition:
+            key: 
+            Arguments: []
+    - rid: 1081365723174928702
+      type: {class: DialogueEndNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 390ffd46-6be4-4151-942e-18d0ffe1cca9
+        Position: {x: 659, y: 347}
+    - rid: 1081365723174928703
+      type: {class: DialogueActionNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: a24d94b5-3399-45d2-9be0-1cc3ec2518e0
+        Position: {x: 385, y: 472}
+        Action:
+          key: 
+          Arguments: []
+    - rid: 1081365723174928704
+      type: {class: DialogueLineNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 3115fcf7-375e-4773-8330-519096cafc35
+        Position: {x: 310, y: 301}
+        SpeakerName: 
+        DialogueText: 
+    - rid: 1081365723174928705
+      type: {class: DialogueLineNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 904666af-df32-438c-9339-345f62273b18
+        Position: {x: 203, y: 472}
+        SpeakerName: 
+        DialogueText: 
+    - rid: 1081365723174928706
+      type: {class: DialogueLineNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 9fccffd1-1054-4d04-aa12-10b24e15e9a6
+        Position: {x: -210, y: 370}
+        SpeakerName: 
+        DialogueText: 
+    - rid: 1081365723174928716
+      type: {class: DialogueEntryNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 06ef0549-2b64-4614-8c30-5b2b559ba104
+        Position: {x: -361, y: 193}
+        entryId: END
+    - rid: 1081365723174928717
+      type: {class: DialogueLineNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 1ed52ba2-00bc-4f23-82d4-3b0ae4d33359
+        Position: {x: -210, y: 193}
+        SpeakerName: npc
+        DialogueText: "\uC218\uACE0\uD588\uB124"
+    - rid: 1081365723174928718
+      type: {class: DialogueEndNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 490c867c-e03c-4b0d-b564-aac862b1d42e
+        Position: {x: 203, y: 193}
+    - rid: 1081365723174928719
+      type: {class: DialogueActionNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: aafc15d1-76eb-4659-bb6f-ad789112719e
+        Position: {x: -14, y: 193}
+        Action:
+          key: 
+          Arguments: []

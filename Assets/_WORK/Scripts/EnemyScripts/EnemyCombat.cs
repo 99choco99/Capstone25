@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using static UnityEngine.EventSystems.EventTrigger;
-using Random = UnityEngine.Random;
+using SoundEffectManager;
 
 /// <summary>
 /// 적의 무기 판정과 방어 판정을 담당
@@ -80,26 +80,6 @@ public class EnemyCombat : MonoBehaviour, IWeaponOwner, IDefenser
         return CurrentDefense;
     }
 
-    /// <summary>피해 결과에 맞는 피격 애니메이션 선택</summary>
-    public int DecideHitReaction(in DamageResult result)
-    {
-        CancelAttack();
-
-        if (result.DefenseType == DefenseType.Parry) return AnimHash.Parry;
-        if (result.DefenseType == DefenseType.NormalGuard) return AnimHash.GuardHit;
-
-        float hitAngle = Vector3.SignedAngle(transform.forward, result.HitDirection, Vector3.up);
-
-        if (Mathf.Abs(hitAngle) <= 45f)
-            return Random.Range(0, 2) == 0 ? AnimHash.BackHit1 : AnimHash.BackHit2;
-        if (hitAngle > 45f && hitAngle <= 135f)
-            return AnimHash.HitLeft;
-        if (hitAngle >= -135f && hitAngle < -45f)
-            return AnimHash.HitRight;
-
-        return AnimHash.HitFront;
-    }
-
 
     /// <summary>
     /// 현재 방어 타입 세팅
@@ -127,7 +107,7 @@ public class EnemyCombat : MonoBehaviour, IWeaponOwner, IDefenser
         foreach (Weapon weapon in weapons)
             weapon.EnableWeaponCollider();
         if (SoundManager.Instance != null)
-            SoundManager.Instance.PlaySFXAtPoint(SfxKeys.Attack, transform.position);
+            SoundManager.Instance.Play(SfxKeys.Attack, transform.position);
     }
 
 

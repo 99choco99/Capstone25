@@ -97,13 +97,17 @@ public class EnemyGuardState : EnemyState
     {
         if (result.DefenseType == DefenseType.Parry)
         {
-            enemy.AIController.canCounter = true;
             enemy.AnimationController.PlayReaction(AnimHash.Parry, 0.03f);
             enemy.Motor.StopKnockback();
             enemy.Combat.ClearDefense();
             enemy.AIController.DecideCounterAttack();
             guardAnimTime = Time.time + ParryReactionDuration;
             guardHoldTime = guardAnimTime;
+            return;
+        }
+        if(result.DefenseType == DefenseType.None)
+        {
+            base.OnHit(result);
             return;
         }
 

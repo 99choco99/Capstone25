@@ -11,7 +11,7 @@ public class PlayerGuardState : PlayerState
 
     private float guardTimer;
     private float currentParryTime;   // 연타 페널티가 반영된 실제 패링 창
-    private float lastGuardPressTime = -10f;
+    private float lastGuardPressTime = float.NegativeInfinity;
     private int spamCount = 0;             // 연타 횟수
 
 
@@ -31,8 +31,7 @@ public class PlayerGuardState : PlayerState
                 player.AnimatorController.PlayReaction(AnimHash.Parry, 0.03f);
                 player.Motor.StopKnockback();
                 HitReactionTimer = 0f;
-                spamCount = 0;
-                lastGuardPressTime = -10f;
+                spamCount = -1; // 다음 새 입력은 첫 패링 창을 사용합니다. 이전 입력 시각은 재사용하지 않습니다.
                 guardTimer = currentParryTime + 0.001f;
                 return;
             case DefenseType.NormalGuard:
@@ -52,17 +51,25 @@ public class PlayerGuardState : PlayerState
         HitReactionTimer = 0f;
         player.Motor.StopKnockback();
 
-        if (Time.unscaledTime - lastGuardPressTime > SpamResetTime) spamCount = 0;
-        else spamCount++;
-        lastGuardPressTime = Time.unscaledTime;
-
-        currentParryTime = spamCount switch
+        currentParryTime = 0f;
+        float pressedTime = player.InputHandler.LastGuardPressedTime;
+        if (pressedTime > lastGuardPressTime)
         {
-            0 => ParryTime,
-            1 => SecondParryTime,
-            2 => MinParryTime,
-            _ => 0f
-        };
+            if (pressedTime - lastGuardPressTime > SpamResetTime) spamCount = 0;
+            else spamCount++;
+            lastGuardPressTime = pressedTime;
+
+            float parryTime = spamCount switch
+            {
+                0 => ParryTime,
+                1 => SecondParryTime,
+                2 => MinParryTime,
+                _ => 0f
+            };
+
+            // 복귀 시점이 아닌 실제 입력 시점부터 계산합니다. 오래 누른 가드는 일반 가드입니다.
+            currentParryTime = Mathf.Max(0f, parryTime - (Time.unscaledTime - pressedTime));
+        }
 
         player.Motor.SetMovement(Vector3.zero);
         player.AnimatorController.ForceStopLocomotion();

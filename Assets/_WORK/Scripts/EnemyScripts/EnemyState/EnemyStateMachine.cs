@@ -27,8 +27,6 @@ public class EnemyStateMachine
         EnemyGroggyState = new EnemyGroggyState(enemy, this);
         EnemyBeingExecuteState = new EnemyBeingExecuteState(enemy, this);
         EnemyDeadState = new EnemyDeadState(enemy, this);
-
-        TransitionTo(EnemyGroundedState);
     }
 
     public void Tick()

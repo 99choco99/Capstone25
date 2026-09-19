@@ -22,7 +22,7 @@ public class TargetingSystem : MonoBehaviour
 
     [Header("타겟 전환")]
     [SerializeField, Min(0f)] private float targetSwitchCooldown = 0.25f;
-    [SerializeField, Min(0f)] private float minimumSwitchAngle = 25f;
+    [SerializeField, Min(0f)] private float minimumSwitchAngle = 2f;
     [Tooltip("스틱/마우스가 이 값을 넘을 때 한 번만 타깃을 전환")]
     [SerializeField, Range(0f, 1f)] private float targetSwitchThreshold = 0.5f;
     [Tooltip("다음 타깃 전환을 허용하기 위해 입력이 돌아와야 하는 값")]
@@ -171,6 +171,14 @@ public class TargetingSystem : MonoBehaviour
         cameraForward.y = 0f;
         cameraForward.Normalize();
 
+        float currentAngle = 0f;
+        if (searchDirection != 0f && CurrentTarget != null)
+        {
+            Vector3 currentDirection = CurrentTarget.TargetTransform.position - cameraTransform.position;
+            currentDirection.y = 0f;
+            currentAngle = Vector3.SignedAngle(cameraForward, currentDirection, Vector3.up);
+        }
+
         foreach (ITargetable target in validTargets)
         {
             if (target == CurrentTarget) continue;
@@ -179,6 +187,10 @@ public class TargetingSystem : MonoBehaviour
             direction.y = 0f;
             float distance = direction.magnitude;
             float angle = Vector3.SignedAngle(cameraForward, direction, Vector3.up);
+
+            // 전환할 때는 카메라 중앙이 아니라 현재 대상의 좌우를 기준으로 고릅니다.
+            if (searchDirection != 0f)
+                angle = Mathf.DeltaAngle(currentAngle, angle);
 
             if (searchDirection > 0f && angle < minimumSwitchAngle) continue;
             if (searchDirection < 0f && angle > -minimumSwitchAngle) continue;
@@ -223,7 +235,7 @@ public class TargetingSystem : MonoBehaviour
     /// <summary>
     /// 락온 타겟으로 선택
     /// </summary>
-    private void SelectTarget(ITargetable target)
+    public void SelectTarget(ITargetable target)
     {
         if (target == null || target.IsDead || CurrentTarget == target) return;
 

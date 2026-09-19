@@ -18,7 +18,7 @@ public class PlayerGroundedState : PlayerState
     {
         base.HandleInput();
         if (stateMachine.CurrentState != this) return;
-        if (player.InputHandler.GuardInput) { stateMachine.TransitionTo(stateMachine.PlayerGuardState); } //dodge, jump 동안 선입력된 가드 처리
+        if (player.InputHandler.GuardInput) { stateMachine.TransitionTo(stateMachine.PlayerGuardState); return; } //dodge, jump 동안 선입력된 가드 처리
 
 
         Vector3 moveDir = player.GetDesiredMoveDirection();

@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UniversalGraph;
 
 
 public class NPC : MonoBehaviour, IInteractable
@@ -9,7 +10,7 @@ public class NPC : MonoBehaviour, IInteractable
     protected Animator anim;
 
     [Header("Data Identifiers")]
-    public int id;
+    public string id;
     public string NPC_Name;
     public string InteractionPrompt => NPCName.text;
 
@@ -22,6 +23,9 @@ public class NPC : MonoBehaviour, IInteractable
 
     public virtual void Interact(GameObject interactor)
     {
+        QuestSuggestion[] suggestions = QuestManager.GetQuestSuggestions(GameManager.Instance.QuestController, id);
+        DialogueCandidate[] candidates = QuestManager.GetDialogueCandidates(GameManager.Instance.QuestController, id);
+
         StartCoroutine(LookAtPlayer(interactor.transform));
     }
 

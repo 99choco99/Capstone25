@@ -15,6 +15,7 @@ public class PlayerInputHandler : MonoBehaviour
     public float Scroll { get; private set; }
     public bool SprintInput { get; private set; }
     public bool GuardInput { get; private set; }
+    public float LastGuardPressedTime { get; private set; } = float.NegativeInfinity;
 
 
     public event Action OnInteractionPressed;
@@ -56,6 +57,8 @@ public class PlayerInputHandler : MonoBehaviour
         MoveInput = Vector3.zero;
         MoveAmount = 0f;
         SprintInput = false; GuardInput = false;
+        LastGuardPressedTime = float.NegativeInfinity;
+        Buffer.Clear();
     }
 
 
@@ -84,6 +87,7 @@ public class PlayerInputHandler : MonoBehaviour
         if (context.started)
         {
             GuardInput = true;
+            LastGuardPressedTime = Time.unscaledTime;
             Buffer.AddCommand(ActionCommand.Guard);
         }
         else if (context.canceled)

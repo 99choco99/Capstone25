@@ -20,7 +20,7 @@ public class SocketManager : MonoBehaviour
     public event Action<bool> OnServerConnected;                //서버 연결 여부
     public event Action<bool> OnServerDisconnected;
 
-    public event Action<PlayerData> OnLocalPlayerJoined;                    //내 플레이어 참석
+    public event Action<ServerPlayerData> OnLocalPlayerJoined;                    //내 플레이어 참석
     public event Action<List<NetworkPlayerData>> OnCurrentPlayersReceived;  //현재 접속된 플레이어 목록 받음.
     public event Action<NetworkPlayerData> OnRemotePlayerJoined;            //플레이어 참석
     public event Action<string> OnRemotePlayerLeft;                         //플레이어 나감
@@ -160,7 +160,7 @@ public class SocketManager : MonoBehaviour
     // ========== 서버로 데이터를 보내는 함수들 ==========
 
     //씬 참여 요청
-    public void EmitJoinScene(PlayerData data, string SceneName)
+    public void EmitJoinScene(ServerPlayerData data, string SceneName)
     {
         var json = new
         {

@@ -55,8 +55,6 @@ public class EnemyAttackObserver : MonoBehaviour
         if (localPlayer == null || !localPlayer.IsLocalPlayer) return;
         if (player == localPlayer) return;
 
-        player = localPlayer;
-
         UnbindPlayer();
 
         player = localPlayer;
@@ -66,7 +64,7 @@ public class EnemyAttackObserver : MonoBehaviour
 
     private void UnbindPlayer()
     {
-        if (player.Combat != null)
+        if (player != null && player.Combat != null)
         {
             player.Combat.AttackStarted -= HandleAttackStart;
             player.Combat.AttackEnded -= HandleAttackEnd;

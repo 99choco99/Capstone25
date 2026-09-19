@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(SocketManager))]
 public class NetworkManager : MonoBehaviour
@@ -9,6 +10,7 @@ public class NetworkManager : MonoBehaviour
     [HideInInspector] public SocketManager socket;
 
     [SerializeField] private GameObject playerPrefab;
+    private readonly PlayerRepository repository = new();
 
     private void Awake()
     {
@@ -20,7 +22,9 @@ public class NetworkManager : MonoBehaviour
             API = new APIManager();
             socket = GetComponent<SocketManager>();
 
-            PlayerSpawner.Init(playerPrefab, socket);
+            socket.OnCurrentPlayersReceived += SpawnCurrentPlayers;
+            socket.OnRemotePlayerJoined += RemotePlayerSpawn;
+            socket.OnRemotePlayerLeft += RemotePlayerDespawn;
 
         } else
         {
@@ -29,22 +33,52 @@ public class NetworkManager : MonoBehaviour
     }
 
     //Scene 상태 업데이트
-    public async void JoinRoom(PlayerData data, string targetSceneName = null)
+    public async void JoinRoom(ServerPlayerData data, string targetSceneName = null)
     {
         string targetScene = string.IsNullOrEmpty(targetSceneName) ? SceneName.Main : targetSceneName;
-        if (PlayerSpawner.Instance != null)
-        {
-            PlayerSpawner.Instance.ClearAllPlayers();
-        }
+        repository.ClearAllPlayers();
+        await GameManager.Instance.ChangeScene(targetScene);
 
-        await LoadingScene.LoadScene(targetScene);
-
-        if (PlayerSpawner.Instance != null)
-        {
-            data.currentSceneName = targetScene;
-            PlayerSpawner.Instance.LocalPlayerSpawn(data);
-        }
-
+        data.currentSceneName = targetScene;
+        Player.LocalPlayer.gameObject.name = data.nickname;
         socket.EmitJoinScene(data, targetScene);
+    }
+
+    //다른 플레이어 스폰
+    public void RemotePlayerSpawn(NetworkPlayerData data)
+    {
+        if (repository.HasPlayer(data.id)) { return; }
+        GameObject newPlayer = GameObject.Instantiate(playerPrefab);
+
+        if (newPlayer.TryGetComponent(out Player playerComponent))
+        {
+            playerComponent.Init(false);
+        }
+
+        newPlayer.transform.SetLocalPositionAndRotation(data.position.ToVector3(), data.rotation.ToQuaternion());
+        repository.AddPlayer(data.id, newPlayer);
+    }
+
+    //다른 플레이어 디스폰
+    public void RemotePlayerDespawn(string id)
+    {
+        repository.RemovePlayer(id);
+    }
+
+    public GameObject GetPlayer(string id)
+    {
+        return id == API.userId ? Player.LocalPlayer?.gameObject : repository.GetPlayer(id);
+    }
+
+    //현재 들어와있는 PlayerObj 스폰
+    public void SpawnCurrentPlayers(List<NetworkPlayerData> RemotePlayers)
+    {
+        foreach (NetworkPlayerData RemotePlayer in RemotePlayers)
+        {
+            if (RemotePlayer.id != API.userId)
+            {
+                RemotePlayerSpawn(RemotePlayer);
+            }
+        }
     }
 }

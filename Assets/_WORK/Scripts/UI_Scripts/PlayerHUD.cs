@@ -22,6 +22,12 @@ public class PlayerHUD : MonoBehaviour
     private void OnDestroy()
     {
         Player.OnLocalPlayerSpawned -= Init;
+        if (playerStats != null)
+        {
+            playerStats.OnHpChanged -= UpdateHp;
+            playerStats.OnPostureChanged -= UpdatePostureGauge;
+            playerStats.OnExpChanged -= UpdateExp;
+        }
     }
 
     public void Init(Player player)
@@ -30,7 +36,11 @@ public class PlayerHUD : MonoBehaviour
 
         if (playerStats != null)
         {
-            UnsubscribeFromStats();
+            playerStats.OnHpChanged -= UpdateHp;
+            playerStats.OnPostureChanged -= UpdatePostureGauge;
+            playerStats.OnExpChanged -= UpdateExp;
+
+
             playerStats.OnHpChanged += UpdateHp;
             playerStats.OnPostureChanged += UpdatePostureGauge;
             playerStats.OnExpChanged += UpdateExp;
@@ -57,13 +67,4 @@ public class PlayerHUD : MonoBehaviour
         PostureGauge.value = currentPosture;
     }
 
-    private void UnsubscribeFromStats()
-    {
-        if (playerStats != null)
-        {
-            playerStats.OnHpChanged -= UpdateHp;
-            playerStats.OnPostureChanged -= UpdatePostureGauge;
-            playerStats.OnExpChanged -= UpdateExp;
-        }
-    }
 }

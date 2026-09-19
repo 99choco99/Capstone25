@@ -1,0 +1,168 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24fa05a18eae07643aaa18840f0e3456, type: 3}
+  m_Name: TestQuest
+  m_EditorClassIdentifier: UniversalGraph.Runtime::UniversalGraph.QuestContainer
+  schemaVersion: 1
+  NodeLinks:
+  - StartNodeGuid: ba7dd399-8be4-4531-b9e3-bbe24c04b130
+    StartPortName: Next
+    TargetNodeGuid: da8049b3-8d4f-4112-8fec-0b7e301efd75
+    TargetPortName: Input
+  - StartNodeGuid: 1edf0ee0-3b10-4d28-845d-37efe721d548
+    StartPortName: Next
+    TargetNodeGuid: ca6cd50f-e686-4306-b0b5-4c990fcb80bf
+    TargetPortName: Input
+  - StartNodeGuid: ba7dd399-8be4-4531-b9e3-bbe24c04b130
+    StartPortName: Next
+    TargetNodeGuid: b05ff430-b0db-4176-a839-7e9f85b8ab85
+    TargetPortName: Input
+  - StartNodeGuid: da8049b3-8d4f-4112-8fec-0b7e301efd75
+    StartPortName: Next
+    TargetNodeGuid: 6d22036c-98ed-4357-8133-1ddd150b5a09
+    TargetPortName: Input
+  - StartNodeGuid: b05ff430-b0db-4176-a839-7e9f85b8ab85
+    StartPortName: Next
+    TargetNodeGuid: 6d22036c-98ed-4357-8133-1ddd150b5a09
+    TargetPortName: Input
+  - StartNodeGuid: 97d18e23-3697-451f-8d87-28d8598fef24
+    StartPortName: Next
+    TargetNodeGuid: 46297611-e67d-4a5a-a364-b45033cffa5b
+    TargetPortName: Input
+  - StartNodeGuid: 6d22036c-98ed-4357-8133-1ddd150b5a09
+    StartPortName: Next
+    TargetNodeGuid: 4189f0e8-66b8-4270-9bc8-c927d14f4d83
+    TargetPortName: Input
+  - StartNodeGuid: 4189f0e8-66b8-4270-9bc8-c927d14f4d83
+    StartPortName: Next
+    TargetNodeGuid: 97d18e23-3697-451f-8d87-28d8598fef24
+    TargetPortName: Input
+  - StartNodeGuid: 1a3c827a-1709-4807-b037-7683593cf5c5
+    StartPortName: Next
+    TargetNodeGuid: d05cd43e-b130-45e2-ad0e-07ac335094a1
+    TargetPortName: Input
+  - StartNodeGuid: 6d22036c-98ed-4357-8133-1ddd150b5a09
+    StartPortName: Next
+    TargetNodeGuid: 19d37706-354f-4864-9c4b-ef397461987a
+    TargetPortName: Input
+  Nodes:
+  - rid: 1081365723174928708
+  - rid: 1081365653724332359
+  - rid: 1081365723174928707
+  - rid: 1081365723174928684
+  - rid: 1081365723174928683
+  - rid: 1081365723174928715
+  - rid: 1081365723174928685
+  - rid: 1081365723174928710
+  - rid: 1081365723174928721
+  - rid: 1081365723174928686
+  - rid: 1081365723174928713
+  - rid: 1081365723174928725
+  QuestId: 1
+  questName: TestQuest
+  description: 
+  references:
+    version: 2
+    RefIds:
+    - rid: 1081365653724332359
+      type: {class: QuestStartNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: ba7dd399-8be4-4531-b9e3-bbe24c04b130
+        Position: {x: 31, y: 398}
+    - rid: 1081365723174928683
+      type: {class: QuestInteractionEntryNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 1edf0ee0-3b10-4d28-845d-37efe721d548
+        Position: {x: 93, y: 106}
+        targetId: 
+    - rid: 1081365723174928684
+      type: {class: QuestObjectiveNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: da8049b3-8d4f-4112-8fec-0b7e301efd75
+        Position: {x: 220, y: 321}
+        eventKey: kill
+        TargetId: 111
+        TargetReference: {fileID: 0}
+        RequiredAmount: 1
+        ObjectiveDescription: "\uBCF4\uC2A4"
+    - rid: 1081365723174928685
+      type: {class: QuestRewardNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 97d18e23-3697-451f-8d87-28d8598fef24
+        Position: {x: 796, y: 396}
+        RewardAction:
+          key: 
+          Arguments: []
+    - rid: 1081365723174928686
+      type: {class: QuestSuggestionNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: ca6cd50f-e686-4306-b0b5-4c990fcb80bf
+        Position: {x: 322, y: 106}
+        DialogueEntryPoint:
+          Container: {fileID: 11400000, guid: d8538b3cae947d341add0ba6e8b2751e, type: 2}
+          entryId: Entry
+        Priority: 0
+        IsAvailable: 1
+        BlockReason: 
+    - rid: 1081365723174928707
+      type: {class: QuestObjectiveNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: b05ff430-b0db-4176-a839-7e9f85b8ab85
+        Position: {x: 218, y: 486}
+        eventKey: kill
+        TargetId: 100
+        TargetReference: {fileID: 0}
+        RequiredAmount: 5
+        ObjectiveDescription: "\uBAAC\uC2A4\uD130"
+    - rid: 1081365723174928708
+      type: {class: QuestAndGateNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 6d22036c-98ed-4357-8133-1ddd150b5a09
+        Position: {x: 408, y: 398}
+    - rid: 1081365723174928710
+      type: {class: QuestStateChangeNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 46297611-e67d-4a5a-a364-b45033cffa5b
+        Position: {x: 957, y: 396}
+        NewState: 3
+    - rid: 1081365723174928713
+      type: {class: QuestObjectiveNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 4189f0e8-66b8-4270-9bc8-c927d14f4d83
+        Position: {x: 588, y: 398}
+        eventKey: report
+        TargetId: 1
+        TargetReference: {fileID: 0}
+        RequiredAmount: 1
+        ObjectiveDescription: "\uBCF4\uACE0"
+    - rid: 1081365723174928715
+      type: {class: QuestInteractionEntryNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 1a3c827a-1709-4807-b037-7683593cf5c5
+        Position: {x: 93, y: 196}
+        targetId: 
+    - rid: 1081365723174928721
+      type: {class: DialogueCandidateNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: d05cd43e-b130-45e2-ad0e-07ac335094a1
+        Position: {x: 284, y: 196}
+        EntryPoint:
+          Container: {fileID: 11400000, guid: d8538b3cae947d341add0ba6e8b2751e, type: 2}
+          entryId: END
+        DisplayName: "\uBCF5\uADC0"
+        Priority: 0
+    - rid: 1081365723174928725
+      type: {class: QuestStateChangeNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 19d37706-354f-4864-9c4b-ef397461987a
+        Position: {x: 604, y: 499}
+        NewState: 2

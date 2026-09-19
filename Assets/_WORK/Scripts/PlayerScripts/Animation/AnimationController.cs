@@ -26,6 +26,7 @@ public static class AnimHash
     public static readonly int HitFront = Animator.StringToHash("HitFront");
     public static readonly int HitLeft = Animator.StringToHash("HitLeft");
     public static readonly int HitRight = Animator.StringToHash("HitRight");
+    public static readonly int BackHit = Animator.StringToHash("BackHit");
     public static readonly int BackHit1 = Animator.StringToHash("HitBack1");
     public static readonly int BackHit2 = Animator.StringToHash("HitBack2");
 

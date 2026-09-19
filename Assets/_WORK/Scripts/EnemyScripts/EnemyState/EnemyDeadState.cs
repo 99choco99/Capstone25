@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UniversalGraph;
 
 /// <summary>
 /// 적의 사망 상태
@@ -23,6 +24,8 @@ public class EnemyDeadState : EnemyState
         enemy.Combat.CancelAttack();
         enemy.Combat.ClearDefense();
 
+
+        QuestManager.ProcessObjectivesByEvent(GameManager.Instance.QuestController, "kill", enemy.Stats.EnemyId, 1);
 
         foreach (Collider col in enemy.GetComponentsInChildren<Collider>())
             col.enabled = false;

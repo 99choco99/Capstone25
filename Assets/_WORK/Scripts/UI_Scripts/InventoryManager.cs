@@ -64,7 +64,8 @@ public class InventoryManager
             }
             OnSlotDataChanged?.Invoke(data.slotType, data.slotIndex);
         }
-        
+
+        NotifyEquipmentChanged();
     }
 
 
@@ -205,51 +206,6 @@ public class InventoryManager
     }
 
     //===================================================
-
-    //마켓에 아이템을 등록했을 때
-    public void RegisterItemToMarket(SlotData saleSlotData, int saleCount)
-    {
-        SlotType originalSlotType = saleSlotData.itemData.BaseData.type;
-        int originalSlotIndex = saleSlotData.slotIndex;
-
-        SlotData originalSlotData = SlotDict[originalSlotType][originalSlotIndex];
-
-        originalSlotData.itemCount -= saleCount;
-
-        if (originalSlotData.itemCount <= 0)
-        {
-            originalSlotData.Clear();
-        }
-
-        OnSlotDataChanged?.Invoke(originalSlotType, originalSlotIndex);
-    }
-
-
-    //마켓에 아이템을 취소했을 때
-    public void ReturnItemFromMarket(CancelRegistResponse response)
-    {
-
-    }
-
-    // 아이템을 구매하는 로직
-    public void AddPurchasedItem(BuyItemResponse response)
-    {
-        ItemBase data = ItemManager.Instance.GetItem(response.ItemId);
-        SlotData emptySlotData = FindEmptySlot(data.type);
-
-        if (emptySlotData == null)
-        {
-            Debug.LogWarning("인벤토리 공간 없음");
-            return;
-        }
-
-        //emptySlotData.itemData = data.;
-        emptySlotData.itemCount = response.purchasedItemCount;
-
-
-        SlotDict[emptySlotData.slotType][emptySlotData.slotIndex] = emptySlotData;
-        OnSlotDataChanged?.Invoke(data.type, emptySlotData.slotIndex);
-    }
 
     public ItemInstance CreateItemInstance(int itemId)
     {

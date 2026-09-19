@@ -53,14 +53,13 @@ public class PlayerStats : LivingEntity
     //게임 데이터 불러오기
     public void LoadPlayerData(PlayerData data)
     {
-        gameObject.name = data.nickname;
 
         float maxHp = data.maxHp > 0f ? data.maxHp : 100f;
         // 구버전 저장 데이터에는 attackPower가 없으므로 0이면 프리팹의 기본 공격력을 유지합니다.
         float attackPower = data.attackPower > 0f ? data.attackPower : AttackPower.GetBaseValue();
 
         MaxHp = new Stat(maxHp);
-        MaxPosture = new Stat(100f);
+        MaxPosture = new Stat(data.maxPosture);
         AttackPower = new Stat(attackPower);
 
         CurrentHp = Mathf.Clamp(data.currentHp, 0f, maxHp);
@@ -106,9 +105,9 @@ public class PlayerStats : LivingEntity
         {
             Exp -= maxExp;
             Level++;
+            maxExp = DataManager.Instance.GetMaxExpForLevel(Level);
             AbilityPoint += 1;
             OnLevelUp?.Invoke(Level);
-            SoundManager.Instance.PlaySFX("LevelUp");
         }
 
         OnExpChanged?.Invoke(Exp, Level);

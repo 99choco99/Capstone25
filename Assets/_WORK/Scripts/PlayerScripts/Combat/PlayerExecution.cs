@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 using UnityEngine.UIElements;
+using SoundEffectManager;
 
 
 /// <summary>
@@ -84,7 +85,7 @@ public class PlayerExecution : MonoBehaviour
     private Player player;
     private Enemy enemy;
     private CharacterController characterController;
-    private Coroutine alignRoutine;
+    private Coroutine executionRoutine;
 
 
     private void Awake()
@@ -94,17 +95,10 @@ public class PlayerExecution : MonoBehaviour
         DeathblowDirector = GetComponent<PlayableDirector>();
     }
 
-    private void OnEnable()
-    {
-        DeathblowDirector.stopped += HandleDirectorStopped;
-    }
-
     private void OnDisable()
     {
-        DeathblowDirector.stopped -= HandleDirectorStopped;
-
-        if (IsExecuting)
-            CompleteDeathblow();
+        // 비활성화는 인살 성공이 아니므로 목숨을 차감하지 않고 정리합니다.
+        FinishDeathblow(completed: false);
     }
 
     //==================== 인살 검사용 코드들 ============================
@@ -291,11 +285,26 @@ public class PlayerExecution : MonoBehaviour
     /// </summary>
     public bool StartDeathblow(in DeathblowPlan requestedPlan)
     {
+        if (!isActiveAndEnabled || !DeathblowDirector.isActiveAndEnabled) return false;
         if (!requestedPlan.IsValid || IsExecuting) return false;
 
         // 판정 당시의 위치가 아닌 현재 프레임의 위치와 상태로 갱신
         if (!CreateDeathblowPlan(requestedPlan.Target, out DeathblowPlan newPlan))
             return false;
+
+        if (newPlan.Timeline.duration <= 0d)
+        {
+            Debug.LogError("인살 Timeline의 재생 길이가 0입니다.", newPlan.Timeline);
+            return false;
+        }
+
+        //타임라인 장착 후 실행
+        DeathblowDirector.playableAsset = newPlan.Timeline;
+        if (!BindAnimationTracks(newPlan.Timeline, newPlan.Target))
+        {
+            Debug.LogError("인살 Timeline의 AttackerAnimation 또는 VictimAnimation 트랙이 없습니다.", newPlan.Timeline);
+            return false;
+        }
 
         if (!newPlan.Target.SelectExecuted()) return false;
 
@@ -303,7 +312,7 @@ public class PlayerExecution : MonoBehaviour
         IsExecuting = true;
 
         OnExecuteStart?.Invoke(newPlan);
-        alignRoutine = StartCoroutine(AlignAndPlayTimeline(newPlan));
+        executionRoutine = StartCoroutine(AlignAndPlayTimeline(newPlan));
         return true;
     }
 
@@ -319,12 +328,6 @@ public class PlayerExecution : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < alignDuration)
         {
-            if (enemy == null)
-            {
-                CompleteDeathblow();
-                yield break;
-            }
-
             elapsed += Time.deltaTime;
             float t = alignDuration <= 0f ? 1f : Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / alignDuration));
 
@@ -342,22 +345,25 @@ public class PlayerExecution : MonoBehaviour
         enemy.transform.rotation = plan.VictimRotation;
 
 
-        //타임라인 장착 후 실행
-        DeathblowDirector.playableAsset = plan.Timeline;
-        if (!BindAnimationTracks(plan.Timeline, plan.Target))
-        {
-            CompleteDeathblow();
-            yield break;
-        }
-
         OnExecuteTimelineReady?.Invoke(plan.Timeline);
 
         //인살 실행
-        alignRoutine = null;
+        // 인살 중에는 양쪽 상태와 Director를 외부에서 변경하지 않습니다.
+        // 끝 프레임을 유지해 Timeline의 완료 시간을 확인합니다.
+        DeathblowDirector.extrapolationMode = DirectorWrapMode.Hold;
+        DeathblowDirector.time = 0d;
         DeathblowDirector.Play();
 
         if (SoundManager.Instance != null)
-            SoundManager.Instance.PlaySFX("ExecuteBGM");
+            SoundManager.Instance.Play("ExecuteBGM");
+
+        while (DeathblowDirector.time < DeathblowDirector.duration)
+        {
+            yield return null;
+        }
+
+        executionRoutine = null;
+        FinishDeathblow(completed: true);
     }
 
     /// <summary>
@@ -365,8 +371,6 @@ public class PlayerExecution : MonoBehaviour
     /// </summary>
     private bool BindAnimationTracks(TimelineAsset timeline, Enemy enemy)
     {
-        if (timeline == null) return false;
-
         AnimationTrack attackerTrack = null;
         AnimationTrack victimTrack = null;
 
@@ -392,34 +396,38 @@ public class PlayerExecution : MonoBehaviour
 
     //==================== 인살 마무리 코드들 ============================
 
-    /// <summary>
-    /// Timeline 끝나면 실행하는 
-    /// </summary>
-    private void HandleDirectorStopped(PlayableDirector director)
+    /// <summary>Timeline의 DeathblowImpact Signal이 실제 타격 순간의 연출만 재생합니다.</summary>
+    public void PlayDeathblowImpact()
     {
-        if (director == DeathblowDirector)
-            CompleteDeathblow();
+        if (!IsExecuting || enemy == null) return;
+
+        if (enemy.TryGetComponent(out CombatFeedback feedback))
+            feedback.PlayDeathblowImpact(transform.forward);
     }
 
     /// <summary>
     /// 인살 후 양쪽 상태 머신을 복귀
     /// </summary>
-    private void CompleteDeathblow()
+    private void FinishDeathblow(bool completed)
     {
         if (!IsExecuting) return;
+        // 완료 후 비활성화되더라도 종료 처리는 한 번만 합니다.
         IsExecuting = false;
 
-        if (alignRoutine != null)
+        if (executionRoutine != null)
         {
-            StopCoroutine(alignRoutine);
-            alignRoutine = null;
+            StopCoroutine(executionRoutine);
+            executionRoutine = null;
         }
 
         Enemy completedTarget = enemy;
         enemy = null;
 
+        if (DeathblowDirector != null)
+            DeathblowDirector.Stop();
+
         if (completedTarget != null)
-            completedTarget.StateMachine.EnemyBeingExecuteState.ExecutionFinished();
+            completedTarget.StateMachine.EnemyBeingExecuteState.ExecutionFinished(completed);
 
         OnExecuteEnd?.Invoke();
     }

@@ -4,6 +4,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using SoundEffectManager;
 
 public class TitleScreenManager : MonoBehaviour
 {
@@ -15,10 +16,34 @@ public class TitleScreenManager : MonoBehaviour
 
     private readonly string TEST_STEAM_ID = "DEV_TEST_USER_001";
 
+    /// <summary>서버에 접속하지 않고 로컬 저장 데이터로 게임을 시작합니다.</summary>
+    public async void OnStartButtonClick()
+    {
+        if (!StartButton.interactable) return;
+        StartButton.interactable = false;
+
+        try
+        {
+            if (!LoadLocalStaticData())
+            {
+                StartButton.interactable = true;
+                return;
+            }
+
+            await GameManager.Instance.StartGame();
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception);
+            SetStatus($"게임 시작 실패: {exception.Message}");
+            StartButton.interactable = true;
+        }
+    }
+
 
     private void Start()
     {
-        SoundManager.Instance.PlayBGM("BGM_Login");
+        SoundManager.Instance.PlayBGM("BGM_Login", 0f);
     }
 
 
@@ -26,7 +51,7 @@ public class TitleScreenManager : MonoBehaviour
     public async void OnConnectButtonClick()
     {
         string userId = TEST_STEAM_ID;
-        LoadLocalStaticData();
+        if (!LoadLocalStaticData()) return;
 
 
         //API ���� �õ�
@@ -67,13 +92,13 @@ public class TitleScreenManager : MonoBehaviour
         SetStatus("������ ���� ��...");
         NetworkManager.Instance.socket.ConnectToServer(userId);
 
-        DataManager.Instance.Server_PlayerData = playerData;
-        DataManager.Instance.Server_InventoryData = inventoryData;
+        DataManager.Instance.PlayerData = playerData;
+        DataManager.Instance.InventoryData = inventoryData;
 
         NetworkManager.Instance.JoinRoom(playerData, playerData.currentSceneName);
     }
 
-    private void LoadLocalStaticData()
+    private bool LoadLocalStaticData()
     {
         // Assets/Resources/Data/itemData.json
         TextAsset itemJson = Resources.Load<TextAsset>("Data/itemData");
@@ -87,6 +112,7 @@ public class TitleScreenManager : MonoBehaviour
             Debug.LogError("[����] ���� ������ �ε� ����!");
             SetStatus("���� ���Ͽ� �ջ��� �ֽ��ϴ�.");
         }
+        return itemJson != null;
     }
 
 

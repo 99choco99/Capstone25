@@ -5,6 +5,9 @@ using UnityEngine;
 /// </summary>
 public class PlayerExecuteState : PlayerState
 {
+    private Enemy executedTarget;
+    private bool restoreLockOn;
+
     public PlayerExecuteState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 
     public override bool UseRootMotion => true;
@@ -20,6 +23,8 @@ public class PlayerExecuteState : PlayerState
             return;
         }
 
+        executedTarget = requested.Value.Target;
+        restoreLockOn = player.TargetingSystem.CurrentTarget is Enemy target && target == executedTarget;
         player.SetInvincible(true);
         player.Combat.ForceResetAttackState();
         player.Motor.SetMovement(Vector3.zero);
@@ -46,12 +51,19 @@ public class PlayerExecuteState : PlayerState
     private void HandleExecutionCompleted()
     {
         if (stateMachine.CurrentState == this)
+        {
+            // 인살 전에 락온했던 적이 살아남은 경우에만 전투 시점을 복원합니다.
+            if (restoreLockOn && executedTarget != null && !executedTarget.IsDead)
+                player.TargetingSystem.SelectTarget(executedTarget);
             stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
+        }
     }
 
     public override void Exit()
     {
         player.Execution.OnExecuteEnd -= HandleExecutionCompleted;
+        executedTarget = null;
+        restoreLockOn = false;
         player.SetInvincible(false);
     }
 }

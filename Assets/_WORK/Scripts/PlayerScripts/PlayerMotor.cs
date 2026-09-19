@@ -28,7 +28,6 @@ public class PlayerMotor : MonoBehaviour
 
     // 내부 계산용 변수
     public float Gravity { get; private set; }
-    public float InitialJumpVelocity { get; private set; }
     private Vector3 verticalVelocity;
     private Vector3 inputVelocity;
 
@@ -42,56 +41,39 @@ public class PlayerMotor : MonoBehaviour
     private void Awake()
     {
         Controller = GetComponent<CharacterController>();
-
         Gravity = -(2 * jumpHeight) / (timeToJump * timeToJump);
-        InitialJumpVelocity = Mathf.Abs(Gravity) * timeToJump;
-    }
-
-    private void Update()
-    {
-        HandleGroundCheck();
-        ApplyMovement();
-    }
-
-    /// <summary>
-    /// 움직임 최종 적용
-    /// </summary>
-    public void ApplyMovement()
-    {
-        float deltaTime = Time.deltaTime;
-        Vector3 velocity = inputVelocity + CalculateGravity();
-        Vector3 frameDisplacement = velocity * deltaTime;
-
-        frameDisplacement += knockbackMotion.Start(deltaTime);
-        Controller.Move(frameDisplacement);
-
-        inputVelocity = Vector3.zero;
     }
 
     /// <summary>
     /// 중력
     /// </summary>
-    private Vector3 CalculateGravity()
+    private Vector3 UpdateVerticalVelocity()
     {
-        // 땅에 닿으면 경사로 고정용 적용
-        if (IsGrounded && verticalVelocity.y < 0)
+        if (IsGrounded && verticalVelocity.y < 0f)
         {
             verticalVelocity.y = groundedGravity;
         }
         else
         {
-            if (verticalVelocity.y < 0)
-            {
-                verticalVelocity.y += Gravity * fallMultiplier * Time.deltaTime;
-            }
-            else
-            {
-                verticalVelocity.y += Gravity * Time.deltaTime;
-            }
+            float multiplier = verticalVelocity.y < 0f ? fallMultiplier : 1f;
+            verticalVelocity.y += Gravity * multiplier * Time.deltaTime;
         }
 
-         return verticalVelocity;
+        return verticalVelocity;
     }
+
+
+    /// <summary>
+    /// 점프
+    /// </summary>
+    public void Jump()
+    {
+        if (IsGrounded)
+        {
+            verticalVelocity.y = Mathf.Abs(Gravity) * timeToJump;
+        }
+    }
+
 
     /// <summary>
     /// 지면 체크
@@ -110,6 +92,21 @@ public class PlayerMotor : MonoBehaviour
             }
         }
         IsGrounded = false;
+    }
+
+    /// <summary>
+    /// 움직임 최종 적용
+    /// </summary>
+    public void ApplyMovement()
+    {
+        float deltaTime = Time.deltaTime;
+        Vector3 velocity = inputVelocity + UpdateVerticalVelocity();
+        Vector3 frameDisplacement = velocity * deltaTime;
+
+        frameDisplacement += knockbackMotion.Start(deltaTime);
+        Controller.Move(frameDisplacement);
+
+        inputVelocity = Vector3.zero;
     }
 
 
@@ -157,17 +154,6 @@ public class PlayerMotor : MonoBehaviour
         transform.SetPositionAndRotation(position, rotation);
 
         Controller.enabled = true;
-    }
-
-    /// <summary>
-    /// 점프
-    /// </summary>
-    public void Jump()
-    {
-        if (IsGrounded)
-        {
-            verticalVelocity.y = InitialJumpVelocity;
-        }
     }
 
     /// <summary>

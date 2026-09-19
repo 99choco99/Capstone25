@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class PlayerInteraction : MonoBehaviour
 {
-    [Header("?곹샇?묒슜 踰붿쐞")]
+    [Header("상호작용 범위")]
     [SerializeField] private float interactRange = 3f;
     [SerializeField] private LayerMask layerMask;
 
@@ -34,7 +34,7 @@ public class PlayerInteraction : MonoBehaviour
 
 
     /// <summary>
-    /// ?곹샇?묒슜 媛?ν븳 紐⑸줉??珥덇린??
+    /// 상호작용 가능한 목록들 초기화
     /// </summary>
     public void ClearInteraction()
     {
@@ -46,13 +46,13 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// ?곹샇?묒슜
+    /// 상호작용
     /// </summary>
     public void ExecuteInteraction() => CurrentSelection?.Interact(gameObject);
 
 
     /// <summary>
-    /// 留??꾨젅?꾨쭏?ㅺ? ?꾨땲??0.1珥덉뿉 ?쒕쾲??寃?ы븯?꾨줉
+    /// 매 프레임마다가 아니라 0.1초에 한번씩 검사하도록
     /// </summary>
     void Update()
     {
@@ -67,7 +67,7 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// 媛?ν븳 ?곹샇?묒슜 ?붿냼???먯깋
+    /// 가능한 상호작용 요소들 탐색
     /// </summary>
     private void DetectInteractables()
     {
@@ -98,7 +98,7 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// ?좏깮???붿냼 蹂寃?
+    /// 선택한 요소 변경
     /// </summary>
     void UpdateSelection()
     {
@@ -116,7 +116,7 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     /// <summary>
-    /// null?몄? ?꾨땶吏
+    /// null인지 아닌지
     /// </summary>
     private static bool IsNull(IInteractable interactable) => (interactable as UnityEngine.Object) == null;
 }

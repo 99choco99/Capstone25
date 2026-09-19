@@ -75,6 +75,11 @@ public class Player : MonoBehaviour
             InjectBasicStats();
             WireSystem();
 
+            Inventory.LoadInventory(DataManager.Instance.InventoryData);
+            // 장비로 늘어난 최대 체력이 적용된 뒤 저장된 체력의 나머지를 복원합니다.
+            if (DataManager.Instance.PlayerData != null)
+                Stats.RestoreHealth(DataManager.Instance.PlayerData.currentHp - Stats.CurrentHp);
+
             OnLocalPlayerSpawned?.Invoke(this);
         }
     }
@@ -88,7 +93,7 @@ public class Player : MonoBehaviour
 
     private void InjectBasicStats()
     {
-        PlayerData playerData = DataManager.Instance.Server_PlayerData;
+        PlayerData playerData = DataManager.Instance.PlayerData;
         if (playerData != null)
         {
             Stats.LoadPlayerData(playerData);
@@ -165,7 +170,9 @@ public class Player : MonoBehaviour
             TargetingSystem.UpdateTargetSwitch(InputHandler.LookInput.x);
         }
 
+        Motor.HandleGroundCheck();
         StateMachine?.Update();
+        Motor.ApplyMovement();
     }
 
     private void OnDestroy()

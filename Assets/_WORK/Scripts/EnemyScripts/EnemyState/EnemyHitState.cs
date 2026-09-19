@@ -29,21 +29,39 @@ public class EnemyHitState : EnemyState
     {
         stateTimer = 0f;
         enemy.Motor.Stop();
+        enemy.Combat.CancelAttack();
 
         KnockbackSpec knockback = KnockBackPolicy.DefenderKnockBack(currentHitData);
 
         enemy.Motor.StartKnockback(currentHitData.HitDirection, knockback);
 
-        int animHash = enemy.Combat.DecideHitReaction(currentHitData);
+        int animHash = DecideHitReaction(currentHitData);
         if (animHash != 0)
             enemy.AnimationController.PlayReaction(animHash);
+    }
+
+    /// <summary>피해 결과에 맞는 피격 애니메이션 선택</summary>
+    public int DecideHitReaction(in DamageResult result)
+    {
+        if (result.DefenseType == DefenseType.Parry) return AnimHash.Parry;
+        if (result.DefenseType == DefenseType.NormalGuard) return AnimHash.GuardHit;
+
+        float hitAngle = Vector3.SignedAngle(enemy.transform.forward, result.HitDirection, Vector3.up);
+
+        if (Mathf.Abs(hitAngle) <= 45f)
+            return AnimHash.BackHit;
+        if (hitAngle > 45f && hitAngle <= 135f)
+            return AnimHash.HitLeft;
+        if (hitAngle >= -135f && hitAngle < -45f)
+            return AnimHash.HitRight;
+
+        return AnimHash.HitFront;
     }
 
 
     /// <summary>
     /// Hit중에 또 Hit당하면
     /// </summary>
-    /// <param name="result"></param>
     public void RestartHit(in DamageResult result)
     {
         SetHitData(result);

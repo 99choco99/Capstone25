@@ -11,6 +11,7 @@ public class EnemyStats : LivingEntity
     public override Faction TargetFaction => Faction.EnemyTeam;
     [SerializeField] private EnemyData enemyData;
 
+    public int EnemyId => enemyData.id;
     public int ExpReward => enemyData.exp;
 
     public event Action<int, int> OnLifeChanged;
