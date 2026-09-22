@@ -12,17 +12,18 @@ public class PanelUI : MonoBehaviour
     public List<UIPanelType> currentOpenUI = new();
 
 
-    public void Init()
+    public void InitPanels()
     {
         // 딕셔너리에 UI 패널들을 등록
         panelDictionary = new Dictionary<UIPanelType, UIBase>();
+
         foreach (var panel in uiPanels)
         {
             if (!panelDictionary.ContainsKey(panel.panelType))
             {
                 panelDictionary.Add(panel.panelType, panel);
                 panel.Init();
-                panel.gameObject.SetActive(false);
+                panel.Close();
             }
             else
             {
@@ -31,6 +32,9 @@ public class PanelUI : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 모든 패널들의 Setup을 실행
+    /// </summary>
     public void SetUpPanels(Player player)
     {
         foreach (var panel in panelDictionary.Values)
@@ -75,7 +79,6 @@ public class PanelUI : MonoBehaviour
         if (panelDictionary.TryGetValue(type, out UIBase panel))
         {
             panel.Close();
-            TooltipManager.Instance.HideTooltip();
             currentOpenUI.Remove(type);
 
             if (currentOpenUI.Count > 0)
@@ -99,7 +102,6 @@ public class PanelUI : MonoBehaviour
             }
         }
         currentOpenUI.Clear();
-        TooltipManager.Instance.HideTooltip();
     }
 
     public void CloseLastUI()

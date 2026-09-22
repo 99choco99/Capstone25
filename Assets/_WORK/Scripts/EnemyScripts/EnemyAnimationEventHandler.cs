@@ -31,6 +31,9 @@ public class EnemyAnimationEventHandler : MonoBehaviour
         if (currentState == null || !currentState.UseRootMotion) return;
 
         Transform attackTarget = currentState is EnemyAttackState && Player.LocalPlayer != null ? Player.LocalPlayer.transform : null;
-        enemy.Motor.ApplyRootMotion(anim.deltaPosition, anim.deltaRotation, attackTarget);
+        Vector3 deltaPosition = anim.deltaPosition;
+        if (currentState is EnemyAttackState attack && attack.CurrentAttackData != null)
+            deltaPosition = attack.CurrentAttackData.ScaleAttackAdvance(deltaPosition, enemy.transform.forward);
+        enemy.Motor.ApplyRootMotion(deltaPosition, anim.deltaRotation, attackTarget);
     }
 }

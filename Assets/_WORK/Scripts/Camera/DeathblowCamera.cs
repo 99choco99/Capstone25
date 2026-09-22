@@ -31,7 +31,7 @@ public class DeathblowCamera : MonoBehaviour
     [Tooltip("공격 진행축의 옆으로 떨어지는 거리")]
     [SerializeField, Min(0f)] private float distanceSide = 2.2f;
     [Tooltip("두 캐릭터의 중심점보다 카메라를 올리는 높이")]
-    [SerializeField] private float height = 1.35f;
+    [SerializeField] private float height = 0.65f;
     [Tooltip("피격자 쪽 시선 기준점의 높이")]
     [SerializeField, Min(0f)] private float lookHeight = 1.2f;
     [Tooltip("공격자 쪽 시선 기준점의 높이")]
@@ -41,8 +41,14 @@ public class DeathblowCamera : MonoBehaviour
     [SerializeField, Range(1f, 179f)] private float executionFieldOfView = 42f;
 
     [Header("카메라 움직임")]
-    [Tooltip("인살 중 초당 전진하는 거리")]
-    [SerializeField, Min(0f)] private float pushInPerSecond = 0.35f;
+    [Tooltip("정면 인살 진행률(0~1)에 따른 접근 강도. 찌를 때 접근하고 끝나기 전에 물러납니다.")]
+    [SerializeField] private AnimationCurve frontPushIn = new AnimationCurve(
+        new Keyframe(0f, 0f), new Keyframe(0.12f, 1f),
+        new Keyframe(0.55f, 1f), new Keyframe(1f, 0f));
+    [Tooltip("후방 인살 진행률(0~1)에 따른 접근 강도. 정면보다 작은 움직임을 사용합니다.")]
+    [SerializeField] private AnimationCurve behindPushIn = new AnimationCurve(
+        new Keyframe(0f, 0f), new Keyframe(0.13f, 0.65f),
+        new Keyframe(0.65f, 0.65f), new Keyframe(1f, 0f));
     [SerializeField, Min(0f)] private float maximumPushIn = 0.65f;
     [Tooltip("인살 샷 위치를 따라가는 반응 속도")]
     [SerializeField, Min(0f)] private float positionResponse = 8f;
@@ -66,7 +72,9 @@ public class DeathblowCamera : MonoBehaviour
     private Vector3 shotForward;
     private float shotSideSign = 1f;
     private bool active;
-    private float elapsed;
+    private DeathblowDirection direction;
+    private bool timelineReady;
+    private float startFieldOfView;
 
     private void Awake()
     {
@@ -86,7 +94,10 @@ public class DeathblowCamera : MonoBehaviour
     private void OnEnable()
     {
         Player.OnLocalPlayerSpawned += TryBindFromPlayer;
-        Subscribe();
+        if (Player.LocalPlayer != null)
+            TryBindFromPlayer(Player.LocalPlayer);
+        else
+            Subscribe();
     }
 
     private void Start()
@@ -112,13 +123,12 @@ public class DeathblowCamera : MonoBehaviour
 
     private void TryBindFromPlayer(Player localPlayer)
     {
-        if (execution != null
-            || localPlayer == null
-            || !localPlayer.IsLocalPlayer)
+        if (localPlayer == null || !localPlayer.IsLocalPlayer)
         {
             return;
         }
 
+        Unsubscribe();
         execution = localPlayer.Execution;
         Subscribe();
     }
@@ -148,6 +158,7 @@ public class DeathblowCamera : MonoBehaviour
         if (!plan.IsValid || execution == null)
             return;
 
+        direction = plan.Direction;
         BeginShot(
             execution.transform,
             plan.Target.transform,
@@ -164,13 +175,14 @@ public class DeathblowCamera : MonoBehaviour
 
         attacker = attackerTransform;
         victim = victimTransform;
-        elapsed = 0f;
+        timelineReady = false;
         timelinePivot.SetLocalPositionAndRotation(
             Vector3.zero,
             Quaternion.identity);
 
         // 현재 Brain 출력을 복사하므로 우선순위가 바뀌는 첫 프레임에 점프하지 않는다.
         CaptureCurrentOutputPose();
+        startFieldOfView = cam.Lens.FieldOfView;
 
         // 실제 시작 위치는 곧 정렬되므로, 정렬 전 attacker 위치가 아니라
         // DeathblowPlan의 최종 PlayerPose로 연출의 action axis를 고정한다.
@@ -208,9 +220,7 @@ public class DeathblowCamera : MonoBehaviour
         if (!active || attacker == null || victim == null)
             return;
 
-        float deltaTime = Time.deltaTime;
-        elapsed += deltaTime;
-        UpdateCamera(deltaTime);
+        UpdateCamera(Time.deltaTime);
     }
 
     private void CaptureCurrentOutputPose()
@@ -302,7 +312,7 @@ public class DeathblowCamera : MonoBehaviour
             Vector3.Cross(Vector3.up, shotForward) * shotSideSign;
 
         // Timeline은 양수 Yaw 곡선만 제공합니다. 진입한 쪽의 바깥 방향으로
-        // 부호를 적용해야 기존 +60도 곡선이 action axis 반대편을 가로지르지 않는다.
+        // 부호를 적용해야 회전 곡선이 action axis 반대편을 가로지르지 않는다.
         float authoredYaw = Mathf.DeltaAngle(
             0f,
             timelinePivot.localEulerAngles.y);
@@ -312,9 +322,14 @@ public class DeathblowCamera : MonoBehaviour
         Vector3 currentShotForward = timelineOrbit * shotForward;
         Vector3 currentShotRight = timelineOrbit * baseShotRight;
 
-        float pushIn = Mathf.Min(
-            maximumPushIn,
-            pushInPerSecond * elapsed);
+        // 정렬 대기나 프레임 수가 아니라 실제 Timeline 진행에 맞춰 접근·복귀한다.
+        float progress = 0f;
+        if (timelineReady && execution.DeathblowDirector.duration > 0)
+            progress = Mathf.Clamp01((float)(execution.DeathblowDirector.time / execution.DeathblowDirector.duration));
+
+        AnimationCurve curve = direction == DeathblowDirection.Front ? frontPushIn : behindPushIn;
+        float emphasis = Mathf.Clamp01(curve.Evaluate(progress));
+        float pushIn = maximumPushIn * emphasis;
         float front = Mathf.Max(0.5f, distanceFront - pushIn * 0.5f);
         float side = Mathf.Max(0.5f, distanceSide - pushIn);
 
@@ -355,7 +370,7 @@ public class DeathblowCamera : MonoBehaviour
         LensSettings lens = cam.Lens;
         lens.FieldOfView = Mathf.Lerp(
             lens.FieldOfView,
-            executionFieldOfView,
+            Mathf.Lerp(startFieldOfView, executionFieldOfView, emphasis),
             lensBlend);
         cam.Lens = lens;
     }
@@ -455,6 +470,7 @@ public class DeathblowCamera : MonoBehaviour
         if (timeline == null || execution == null)
             return;
 
+        timelineReady = true;
         foreach (TrackAsset track in timeline.GetOutputTracks())
         {
             if (track is not AnimationTrack animationTrack
@@ -476,6 +492,7 @@ public class DeathblowCamera : MonoBehaviour
         Transform attackerTransform,
         Transform victimTransform)
     {
+        direction = DeathblowDirection.Front;
         Vector3 plannedAttackerPosition = attackerTransform != null
             ? attackerTransform.position
             : Vector3.zero;

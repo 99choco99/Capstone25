@@ -13,7 +13,7 @@ public class PlayerInteractUI : MonoBehaviour
     [SerializeField] private PromptUIItem promptPrefab;  // 각 상호작용 대상들의 prompt
     [SerializeField] private Transform promptParent;  // prompt 부모
 
-    private List<PromptUIItem> promptPool = new List<PromptUIItem>();
+    private List<PromptUIItem> promptPool = new();
 
     private int currentActivePromptCount = 0;
 
@@ -38,12 +38,13 @@ public class PlayerInteractUI : MonoBehaviour
 
     public void Init(Player localPlayer)
     {
-        playerInteraction = localPlayer.Interaction;
+
         if (playerInteraction != null)
         {
             playerInteraction.OnInteractableChanged -= UpdateInteractablesList;
             playerInteraction.OnSelectionChanged -= UpdateSelection;
         }
+        playerInteraction = localPlayer.Interaction;
 
         playerInteraction.OnInteractableChanged += UpdateInteractablesList;
         playerInteraction.OnSelectionChanged += UpdateSelection;

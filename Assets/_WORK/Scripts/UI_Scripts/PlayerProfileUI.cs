@@ -22,8 +22,8 @@ public class PlayerProfileUI : UIBase
         PlayerStats Stats = localPlayer.Stats;
         healthUpButton.onClick.RemoveAllListeners();
         postureUpbutton.onClick.RemoveAllListeners();
-        if (attackPowerUpButton != null)
-            attackPowerUpButton.onClick.RemoveAllListeners();
+        attackPowerUpButton.onClick.RemoveAllListeners();
+
 
         if (stats != null)
         {
@@ -35,8 +35,8 @@ public class PlayerProfileUI : UIBase
 
         healthUpButton.onClick.AddListener(() => { stats.UpAbility(PlayerStatType.Health); });
         postureUpbutton.onClick.AddListener(() => stats.UpAbility(PlayerStatType.MaxPosture));
-        if (attackPowerUpButton != null)
-            attackPowerUpButton.onClick.AddListener(() => stats.UpAbility(PlayerStatType.AttackPower));
+        attackPowerUpButton.onClick.AddListener(() => stats.UpAbility(PlayerStatType.AttackPower));
+
 
         UpdateUI(stats);
     }
@@ -61,8 +61,8 @@ public class PlayerProfileUI : UIBase
         bool canUpgrade = playerStats.AbilityPoint > 0;
         healthUpButton.interactable = canUpgrade;
         postureUpbutton.interactable = canUpgrade;
-        if (attackPowerUpButton != null)
-            attackPowerUpButton.interactable = canUpgrade;
+        attackPowerUpButton.interactable = canUpgrade;
+
     }
 
 

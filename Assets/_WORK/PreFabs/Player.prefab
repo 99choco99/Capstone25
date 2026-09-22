@@ -1483,19 +1483,7 @@ MonoBehaviour:
     m_ActionId: 32b35790-4ed0-4e9a-aa41-69ac6d629449
     m_ActionName: 'UI/Point[/Mouse/position]'
   - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1522985824110387632}
-        m_TargetAssemblyTypeName: PlayerInputHandler, Assembly-CSharp
-        m_MethodName: OnDialogueNext
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
     m_ActionId: 3c7022bf-7922-4f7c-a998-c437916075ad
     m_ActionName: 'UI/Click[/Mouse/leftButton]'
   - m_PersistentCalls:
@@ -1554,22 +1542,6 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1522985824110387632}
         m_TargetAssemblyTypeName: PlayerInputHandler, Assembly-CSharp
-        m_MethodName: OnInventory
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: 1b4bf015-49ef-4c62-a895-ab0535355537
-    m_ActionName: Player/Inventory
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1522985824110387632}
-        m_TargetAssemblyTypeName: PlayerInputHandler, Assembly-CSharp
         m_MethodName: OnPlayerProfile
         m_Mode: 0
         m_Arguments:
@@ -1582,22 +1554,6 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: 1aa51e17-ba9b-47b5-b781-5218cd79ce58
     m_ActionName: 'Player/PlayerProfile[/Keyboard/e]'
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: QuickSlot, Assembly-CSharp
-        m_MethodName: RequestUseItem
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: 777486b2-a65f-4450-9ce1-b20a1141d582
-    m_ActionName: 'Player/UseItem[/Keyboard/e,/Mouse/rightButton]'
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1522985824110387632}
@@ -1650,22 +1606,6 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: 223ff003-df7c-4bbd-a25d-d274555da20d
     m_ActionName: 'UI/Interaction[/Keyboard/f]'
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1522985824110387632}
-        m_TargetAssemblyTypeName: PlayerInputHandler, Assembly-CSharp
-        m_MethodName: OnInventory
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: c43dc0cf-e7d5-49f1-949a-adb9bb05547d
-    m_ActionName: UI/Inventory
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1522985824110387632}
@@ -1786,9 +1726,8 @@ MonoBehaviour:
   SprintSpeed: 6
   GuardSpeed: 2.5
   rotationSpeed: 15
-  attackRotationSpeed: 720
   jumpHeight: 2
-  timeToJumpApex: 0.4
+  timeToJump: 0.4
   fallMultiplier: 2.5
   groundedGravity: -5
   groundLayer:
@@ -1807,7 +1746,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd1212b8e8e628d418a480de2a46e78f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
-  baseAttackPower: 10
   postureRecoveryDelay: 1
   postureRecoveryRateRatio: 0.25
   guardPostureRecoveryMultiplier: 2
@@ -1953,24 +1891,6 @@ PlayableDirector:
   m_SceneBindings: []
   m_ExposedReferences:
     m_References: []
---- !u!114 &2605632592775004397
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3837476945414656877}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 04f6e497d35db5c489ae6960ad3d365b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CombatFeedback
-  entity: {fileID: 1236270409340426741}
-  guardEffectPoint: {fileID: 5147418073367837758}
-  directHitStrength: 0.1
-  guardStrength: 0.08
-  parryStrength: 0.18
-  specialStrength: 0.22
 --- !u!114 &919200002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1981,7 +1901,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e52de21a22b6dd44c9cc19f810c65059, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.Timeline::UnityEngine.Timeline.SignalReceiver
   m_Events:
     m_Signals:
@@ -1998,9 +1918,25 @@ MonoBehaviour:
             m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
             m_IntArgument: 0
             m_FloatArgument: 0
-            m_StringArgument:
+            m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+--- !u!114 &2605632592775004397
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3837476945414656877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04f6e497d35db5c489ae6960ad3d365b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CombatFeedback
+  entity: {fileID: 1236270409340426741}
+  guardEffectPoint: {fileID: 5147418073367837758}
+  guardEffectOffset: {x: 0, y: 1.2, z: 0.6}
+  deathblowEffectOffset: {x: 0, y: 1.1, z: 0.1}
 --- !u!114 &919200001
 MonoBehaviour:
   m_ObjectHideFlags: 0

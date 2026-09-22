@@ -545,9 +545,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9360cdfc880bf04da0348774a90c168, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPC
+  questContainer: {fileID: 11400000, guid: 01790a89c3455cf4d895dc3a3c5d157d, type: 2}
+  acceptEntryPoint:
+    Container: {fileID: 11400000, guid: d8538b3cae947d341add0ba6e8b2751e, type: 2}
+    entryId: Entry
+  reportEntryPoint:
+    Container: {fileID: 11400000, guid: d8538b3cae947d341add0ba6e8b2751e, type: 2}
+    entryId: END
   NPCName: {fileID: 7331628040617289397}
   id: 1
-  NPC_Name: 
+  NPC_Name: "\uAD00\uB9AC\uC790"
 --- !u!1 &2223320458900171690
 GameObject:
   m_ObjectHideFlags: 0

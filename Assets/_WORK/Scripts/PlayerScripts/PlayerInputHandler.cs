@@ -24,11 +24,9 @@ public class PlayerInputHandler : MonoBehaviour
 
     //UI EnterAction
     public event Action OnEscapePressed;
-    public event Action OnInventoryPressed;
     public event Action OnProfilePressed;
     public event Action OnSettingPressed;
     public event Action OnQuestPressed;
-    public event Action OnDialogueNextPressed;
 
     private void Awake()
     {
@@ -37,6 +35,7 @@ public class PlayerInputHandler : MonoBehaviour
 
     public void SwitchToGameplayMode()
     {
+        if (!PlayerInput.isActiveAndEnabled) return;
         PlayerInput.SwitchCurrentActionMap("Player");
         OnCursorStateChanged?.Invoke(false);
         ClearAllInputs();
@@ -134,10 +133,8 @@ public class PlayerInputHandler : MonoBehaviour
 
     /* ==================== UI Events =================*/
     public void OnEscape(InputAction.CallbackContext context) { if (context.performed) OnEscapePressed?.Invoke(); }
-    public void OnInventory(InputAction.CallbackContext context) { if (context.performed) OnInventoryPressed?.Invoke(); }
     public void OnPlayerProfile(InputAction.CallbackContext context) { if (context.performed) OnProfilePressed?.Invoke(); }
     public void OnSetting(InputAction.CallbackContext context) { if (context.performed) OnSettingPressed?.Invoke(); }
     public void OnQuestList(InputAction.CallbackContext context) { if (context.performed) OnQuestPressed?.Invoke(); }
 
-    public void OnDialogueNext(InputAction.CallbackContext context) { if (context.performed) OnDialogueNextPressed?.Invoke(); }
 }

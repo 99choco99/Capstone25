@@ -1,13 +1,13 @@
-
+ï»¿
 
 /// <summary>
-/// ¹æ¾î°¡ °¡´ÉÇÑ °´Ã¼µé
+/// ë°©ì–´ê°€ ê°€ëŠ¥í•œ ê°ì²´ë“¤
 /// </summary>
 public interface IDefenser
 {
 
     /// <summary>
-    /// ÇÇÇØ¸¦ Àû¿ëÇÏ±â Àü¿¡ ¹æ¾î °¡´ÉÇÑÁö È®ÀÎÇÏ´Â ÇÔ¼ö
+    /// í”¼í•´ë¥¼ ì ìš©í•˜ê¸° ì „ì— ë°©ì–´ ê°€ëŠ¥í•œì§€ í™•ì¸í•˜ëŠ” í•¨ìˆ˜
     /// </summary>
     DefenseType DecideDefense(in DamageRequest request);
 }

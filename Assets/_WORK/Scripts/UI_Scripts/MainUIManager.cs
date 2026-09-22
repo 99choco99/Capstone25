@@ -1,16 +1,10 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using TMPro;
+﻿using System.Linq;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.UI;
 
 
 
 public enum UIPanelType { 
     Quest = 0,
-    Inventory = 2,
     Profile = 3,
     Setting = 4,
     Dialogue = 5
@@ -37,6 +31,11 @@ public class MainUIManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+
+        if(panels != null)
+        {
+            panels.InitPanels();
+        }
     }
 
     private void Start()
@@ -49,18 +48,17 @@ public class MainUIManager : MonoBehaviour
         UnsubscribeInputEvents();
     }
 
-    private void SetUp(Player localPlayer)
+    private void SetUp(Player player)
     {
-        currentInput = localPlayer.InputHandler;
-
-        if (panels != null) { 
-            panels.Init();
-            panels.SetUpPanels(localPlayer);
-        }
-
         if (currentInput != null) UnsubscribeInputEvents();
 
-        currentInput.OnInventoryPressed += OnInventoryInput;
+        currentInput = player.InputHandler;
+
+        if (panels != null) {
+            panels.CloseAllPanels();
+            panels.SetUpPanels(player);
+        }
+
         currentInput.OnProfilePressed += OnProfileInput;
         currentInput.OnSettingPressed += OnSettingInput;
         currentInput.OnQuestPressed += OnQuestInput;
@@ -71,7 +69,6 @@ public class MainUIManager : MonoBehaviour
     }
 
 
-    private void OnInventoryInput() => ToggleUI(UIPanelType.Inventory);
     private void OnProfileInput() => ToggleUI(UIPanelType.Profile);
     private void OnSettingInput() => ToggleUI(UIPanelType.Setting);
     private void OnQuestInput() => ToggleUI(UIPanelType.Quest);
@@ -112,7 +109,6 @@ public class MainUIManager : MonoBehaviour
     {
         if (currentInput == null) return;
 
-        currentInput.OnInventoryPressed -= OnInventoryInput;
         currentInput.OnProfilePressed -= OnProfileInput;
         currentInput.OnSettingPressed -= OnSettingInput;
         currentInput.OnQuestPressed -= OnQuestInput;

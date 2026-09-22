@@ -38,7 +38,6 @@ public class Player : MonoBehaviour
 
 
     public PlayerStateMachine StateMachine { get; private set; }
-    public InventoryManager Inventory { get; private set; }
 
 
 
@@ -75,8 +74,6 @@ public class Player : MonoBehaviour
             InjectBasicStats();
             WireSystem();
 
-            Inventory.LoadInventory(DataManager.Instance.InventoryData);
-            // 장비로 늘어난 최대 체력이 적용된 뒤 저장된 체력의 나머지를 복원합니다.
             if (DataManager.Instance.PlayerData != null)
                 Stats.RestoreHealth(DataManager.Instance.PlayerData.currentHp - Stats.CurrentHp);
 
@@ -88,7 +85,6 @@ public class Player : MonoBehaviour
     private void CreateSystem()
     {
         StateMachine = new PlayerStateMachine(this);
-        Inventory = new InventoryManager();
     }
 
     private void InjectBasicStats()
@@ -110,15 +106,12 @@ public class Player : MonoBehaviour
         Stats.OnPostureBroken += HandlePostureBroken;
         Stats.OnDeath += HandleDeath;
 
-        Inventory.OnEquipmentChanged += Stats.UpdateEquipmentStats;
-
     }
 
 
     /// <summary>
     /// 실제로 데미지를 입었을 때
     /// </summary>
-    /// <param name="result"></param>
     private void HandleDamageReceived(DamageResult result)
     {
         if (Stats.IsDead || Stats.IsInvincible) return;
@@ -148,7 +141,6 @@ public class Player : MonoBehaviour
     /// <summary>
     /// 카메라를 기준으로 이동방향 가져오기
     /// </summary>
-    /// <returns></returns>
     public Vector3 GetDesiredMoveDirection()
     {
         Transform camTransform = Camera.main.transform;
@@ -197,9 +189,6 @@ public class Player : MonoBehaviour
             Stats.OnPostureBroken -= HandlePostureBroken;
 
         }
-
-        if (Inventory != null)
-            Inventory.OnEquipmentChanged -= Stats.UpdateEquipmentStats;
 
     }
 }

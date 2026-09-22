@@ -28,8 +28,9 @@ public class PlayerExecuteState : PlayerState
         player.SetInvincible(true);
         player.Combat.ForceResetAttackState();
         player.Motor.SetMovement(Vector3.zero);
-
         player.Motor.StopKnockback();
+
+
         player.Execution.OnExecuteEnd -= HandleExecutionCompleted;
         player.Execution.OnExecuteEnd += HandleExecutionCompleted;
 
@@ -52,7 +53,6 @@ public class PlayerExecuteState : PlayerState
     {
         if (stateMachine.CurrentState == this)
         {
-            // 인살 전에 락온했던 적이 살아남은 경우에만 전투 시점을 복원합니다.
             if (restoreLockOn && executedTarget != null && !executedTarget.IsDead)
                 player.TargetingSystem.SelectTarget(executedTarget);
             stateMachine.TransitionTo(stateMachine.PlayerGroundedState);

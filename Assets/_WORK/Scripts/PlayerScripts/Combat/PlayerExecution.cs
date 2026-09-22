@@ -396,7 +396,7 @@ public class PlayerExecution : MonoBehaviour
 
     //==================== 인살 마무리 코드들 ============================
 
-    /// <summary>Timeline의 DeathblowImpact Signal이 실제 타격 순간의 연출만 재생합니다.</summary>
+    /// <summary>Timeline의 DeathblowImpact Signal이 실제 타격 순간의 연출만 재생</summary>
     public void PlayDeathblowImpact()
     {
         if (!IsExecuting || enemy == null) return;
@@ -411,7 +411,7 @@ public class PlayerExecution : MonoBehaviour
     private void FinishDeathblow(bool completed)
     {
         if (!IsExecuting) return;
-        // 완료 후 비활성화되더라도 종료 처리는 한 번만 합니다.
+
         IsExecuting = false;
 
         if (executionRoutine != null)
@@ -422,12 +422,11 @@ public class PlayerExecution : MonoBehaviour
 
         Enemy completedTarget = enemy;
         enemy = null;
+        if (completedTarget != null)
+            completedTarget.StateMachine.EnemyBeingExecuteState.ExecutionFinished(completed);
 
         if (DeathblowDirector != null)
             DeathblowDirector.Stop();
-
-        if (completedTarget != null)
-            completedTarget.StateMachine.EnemyBeingExecuteState.ExecutionFinished(completed);
 
         OnExecuteEnd?.Invoke();
     }

@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using UnityEngine;
 using UnityEngine.Timeline;
 
@@ -20,9 +20,9 @@ public class BossRoomTrigger : MonoBehaviour
 
         SetBlocking();
 
-        if (other.TryGetComponent<Player>(out Player player))
+        if (other.TryGetComponent(out Player player))
         {
-            player.Motor.SetTransform(spawnPoint.position, default);
+            player.Motor.SetTransform(spawnPoint.position, spawnPoint.rotation);
         }
 
         Boss.Stats.OnDeath += ClearBossRoom;
@@ -32,7 +32,7 @@ public class BossRoomTrigger : MonoBehaviour
 
     private void SetBlocking()
     {
-        if(Boundaries == null || Boundaries.Length == 0) { Debug.LogError("¼³Á¤µÈ ºí·ÏÀÌ ¾øÀ½"); return; }
+        if(Boundaries == null || Boundaries.Length == 0) { Debug.LogError("ì„¤ì •ëœ ë¸”ë¡ì´ ì—†ìŒ"); return; }
         foreach (var boundary in Boundaries)
         {
             boundary.SetActive(isLocked);

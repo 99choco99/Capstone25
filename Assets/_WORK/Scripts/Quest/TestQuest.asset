@@ -62,11 +62,11 @@ MonoBehaviour:
   - rid: 1081365723174928683
   - rid: 1081365723174928715
   - rid: 1081365723174928685
-  - rid: 1081365723174928710
   - rid: 1081365723174928721
   - rid: 1081365723174928686
   - rid: 1081365723174928713
   - rid: 1081365723174928725
+  - rid: 1081365723174928710
   QuestId: 1
   questName: TestQuest
   description: 
@@ -100,8 +100,12 @@ MonoBehaviour:
         Guid: 97d18e23-3697-451f-8d87-28d8598fef24
         Position: {x: 796, y: 396}
         RewardAction:
-          key: 
-          Arguments: []
+          key: AddExp
+          Arguments:
+          - ParameterId: arg0
+            TypeSignature: System.Int32, mscorlib
+            SerializedValue: 10
+            ObjectValue: {fileID: 0}
     - rid: 1081365723174928686
       type: {class: QuestSuggestionNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
       data:
@@ -132,7 +136,7 @@ MonoBehaviour:
       type: {class: QuestStateChangeNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
       data:
         Guid: 46297611-e67d-4a5a-a364-b45033cffa5b
-        Position: {x: 957, y: 396}
+        Position: {x: 959, y: 396}
         NewState: 3
     - rid: 1081365723174928713
       type: {class: QuestObjectiveNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}

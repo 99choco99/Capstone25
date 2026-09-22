@@ -20,10 +20,6 @@ public readonly struct KnockbackSpec
 /// </summary>
 public static class KnockBackPolicy
 {
-    private const float DirectHitDuration = 0.26f;
-    private const float GuardDuration = 0.20f;
-    private const float ParryDuration = 0.24f;
-
     /// <summary>
     /// 수비자의 최종 넉백량을 반환
     /// </summary>
@@ -33,10 +29,12 @@ public static class KnockBackPolicy
             return default;
 
         KnockBackLevel level = result.Request.KnockBackLevel;
+        CombatSettings settings = CombatSettings.Current;
+        CombatSettings.Reaction reaction = settings.GetReaction(level);
         return result.DefenseType switch
         {
-            DefenseType.None => new KnockbackSpec(GetDirectHitDistance(level), DirectHitDuration),
-            DefenseType.NormalGuard => new KnockbackSpec(GetGuardDistance(level), GuardDuration),
+            DefenseType.None => new KnockbackSpec(level == KnockBackLevel.None ? 0f : reaction.DirectHitDistance, settings.DirectHitMoveDuration),
+            DefenseType.NormalGuard => new KnockbackSpec(level == KnockBackLevel.None ? 0f : reaction.GuardDistance, settings.GuardMoveDuration),
             DefenseType.Parry => default,
             _ => default
         };
@@ -50,40 +48,10 @@ public static class KnockBackPolicy
         if (!result.IsAccepted)
             return default;
 
-        return result.DefenseType == DefenseType.Parry ? new KnockbackSpec(GetParryDistance(result.Request.KnockBackLevel),ParryDuration) : default;
-    }
-
-    private static float GetDirectHitDistance(KnockBackLevel level)
-    {
-        return level switch
-        {
-            KnockBackLevel.Light => 0.40f,
-            KnockBackLevel.Medium => 0.65f,
-            KnockBackLevel.Heavy => 0.95f,
-            _ => 0f
-        };
-    }
-
-    private static float GetGuardDistance(KnockBackLevel level)
-    {
-        return level switch
-        {
-            KnockBackLevel.Light => 0.15f,
-            KnockBackLevel.Medium => 0.27f,
-            KnockBackLevel.Heavy => 0.42f,
-            _ => 0f
-        };
-    }
-
-    private static float GetParryDistance(KnockBackLevel level)
-    {
-        return level switch
-        {
-            KnockBackLevel.Light => 0.18f,
-            KnockBackLevel.Medium => 0.30f,
-            KnockBackLevel.Heavy => 0.46f,
-            _ => 0f
-        };
+        CombatSettings settings = CombatSettings.Current;
+        KnockBackLevel level = result.Request.KnockBackLevel;
+        float distance = level == KnockBackLevel.None ? 0f : settings.GetReaction(level).ParriedDistance;
+        return result.DefenseType == DefenseType.Parry ? new KnockbackSpec(distance, settings.ParriedMoveDuration) : default;
     }
 }
 

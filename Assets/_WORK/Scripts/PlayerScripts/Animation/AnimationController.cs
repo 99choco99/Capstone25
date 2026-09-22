@@ -22,6 +22,8 @@ public static class AnimHash
     public static readonly int Death = Animator.StringToHash("Death");
 
     public static readonly int GuardHit = Animator.StringToHash("GuardHit");
+    public static readonly int GuardHit2 = Animator.StringToHash("GuardHit2");
+    public static readonly int GuardHit3 = Animator.StringToHash("GuardHit3");
     public static readonly int AttackRebound = Animator.StringToHash("AttackRebound");
     public static readonly int HitFront = Animator.StringToHash("HitFront");
     public static readonly int HitLeft = Animator.StringToHash("HitLeft");

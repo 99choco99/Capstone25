@@ -16,6 +16,7 @@ public enum EnemyTacticalMode
 public enum EnemyIntentType
 {
     HoldPosition,
+    Patrol,
     Chase,
     Strafe,
     Attack,
@@ -41,6 +42,7 @@ public readonly struct EnemyIntent
     }
 
     public static EnemyIntent Hold() => new(EnemyIntentType.HoldPosition);
+    public static EnemyIntent Patrol() => new(EnemyIntentType.Patrol);
     public static EnemyIntent Chase(Vector3 position) => new(EnemyIntentType.Chase, position);
     public static EnemyIntent Strafe(Vector3 position) => new(EnemyIntentType.Strafe, position);
     public static EnemyIntent Attack(EnemyAttackData attack) => new(EnemyIntentType.Attack, default, attack);
@@ -117,14 +119,15 @@ public class EnemyAIController : MonoBehaviour
     /// <summary>
     /// 현재 감지 값을 읽고 이번 프레임의 행동 의도를 반환
     /// </summary>
-    public EnemyIntent SelectIntent(in EnemyTargetInfo perception)
+    public EnemyIntent SelectIntent(in EnemyTargetInfo perception, bool canPatrol)
     {
         if (!perception.HasTarget)
         {
             hasPendingDefense = false;
             canCounter = false;
             SetTacticalMode(EnemyTacticalMode.Idle);
-            return EnemyIntent.Hold();
+
+            return canPatrol ? EnemyIntent.Patrol() : EnemyIntent.Hold();
         }
 
         if (!perception.CanSeeTarget)
@@ -136,6 +139,7 @@ public class EnemyAIController : MonoBehaviour
         }
 
         UpdateTacticalModeByDistance(perception.Distance);
+
 
 
         //반격

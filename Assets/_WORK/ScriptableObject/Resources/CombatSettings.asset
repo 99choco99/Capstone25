@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b155d8a064244b6aef8c8880bd10264, type: 3}
+  m_Name: CombatSettings
+  m_EditorClassIdentifier:
+  DirectHitMoveDuration: 0.26
+  GuardMoveDuration: 0.2
+  ParriedMoveDuration: 0.24
+  GuardRecoveryDuration: 0.2
+  ParriedRecoveryDuration: 0.35
+  ParryWindow: 0.2
+  SecondParryWindow: 0.1
+  ThirdParryWindow: 0.067
+  ParrySpamResetTime: 0.5
+  GuardInputLockTime: 0.12
+  EnemyGuardDuration: 0.3
+  EnemyParryReactionDuration: 0.22
+  EnemyAttackMinimumDistance: 1.35
+  HitStopTimeScale: 0.05
+  DeathblowHitStopDuration: 0.06
+  DeathblowShakeStrength: 0.25
+  Light:
+    DirectHitDistance: 0.4
+    GuardDistance: 0.15
+    ParriedDistance: 0.18
+    HitRecoveryDuration: 0.4
+    DirectHitStop: 0.025
+    GuardHitStop: 0.03
+    ParryHitStop: 0.055
+    SpecialHitStop: 0.04
+    DirectHitShake: 0.1
+    GuardShake: 0.08
+    ParryShake: 0.18
+    SpecialHitShake: 0.22
+  Medium:
+    DirectHitDistance: 0.65
+    GuardDistance: 0.27
+    ParriedDistance: 0.3
+    HitRecoveryDuration: 0.5
+    DirectHitStop: 0.02875
+    GuardHitStop: 0.0345
+    ParryHitStop: 0.06325
+    SpecialHitStop: 0.046
+    DirectHitShake: 0.12
+    GuardShake: 0.096
+    ParryShake: 0.216
+    SpecialHitShake: 0.264
+  Heavy:
+    DirectHitDistance: 0.95
+    GuardDistance: 0.42
+    ParriedDistance: 0.46
+    HitRecoveryDuration: 0.6
+    DirectHitStop: 0.0325
+    GuardHitStop: 0.039
+    ParryHitStop: 0.0715
+    SpecialHitStop: 0.052
+    DirectHitShake: 0.14
+    GuardShake: 0.112
+    ParryShake: 0.252
+    SpecialHitShake: 0.308

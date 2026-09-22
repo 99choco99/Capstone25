@@ -15,14 +15,6 @@ public class CombatFeedback : MonoBehaviour
 
     [Header("인살 타격")]
     [SerializeField] private Vector3 deathblowEffectOffset = new Vector3(0f, 1.1f, 0.1f);
-    [SerializeField, Min(0f)] private float deathblowStrength = 0.25f;
-    [SerializeField, Min(0f)] private float deathblowHitStopDuration = 0.06f;
-
-    [Header("Cinemachine Impulse")]
-    [SerializeField, Min(0f)] private float directHitStrength = 0.1f;
-    [SerializeField, Min(0f)] private float guardStrength = 0.08f;
-    [SerializeField, Min(0f)] private float parryStrength = 0.18f;
-    [SerializeField, Min(0f)] private float specialStrength = 0.22f;
 
     private CinemachineImpulseSource impulseSource;
 
@@ -48,6 +40,7 @@ public class CombatFeedback : MonoBehaviour
     /// </summary>
     private void PlayDamageFeedback(DamageResult result)
     {
+        CombatSettings.Reaction reaction = CombatSettings.Current.GetReaction(result.Request.KnockBackLevel);
         float strength;
         Vector3 effectPoint = result.HitPoint;
         // 몸에 맞은 위치는 그대로 사용하고, 검으로 막았을 때만 방어 지점에서 스파크를 냅니다.
@@ -61,13 +54,13 @@ public class CombatFeedback : MonoBehaviour
         {
             PlaySound(SfxKeys.Parry, effectPoint);
             PlayEffect(VfxKeys.Parry, effectPoint, effectRotation);
-            strength = parryStrength;
+            strength = reaction.ParryShake;
         }
         else if (result.DefenseType == DefenseType.NormalGuard)
         {
             PlaySound(SfxKeys.GuardHit, effectPoint);
             PlayEffect(VfxKeys.GuardHit, effectPoint, effectRotation);
-            strength = guardStrength;
+            strength = reaction.GuardShake;
         }
         else
         {
@@ -76,9 +69,11 @@ public class CombatFeedback : MonoBehaviour
             PlaySound(SfxKeys.Hit, effectPoint);
             PlaySound(SfxKeys.CuttingFlesh, effectPoint);
             PlayEffect(VfxKeys.Blood, effectPoint, effectRotation);
-            strength = result.Request.CanGuard ? directHitStrength : specialStrength;
+            strength = result.Request.CanGuard ? reaction.DirectHitShake : reaction.SpecialHitShake;
         }
 
+        // 같은 피격·가드·패링이라도 묵직한 공격은 화면 충격을 더 크게 줍니다.
+        // 등급별 최종 강도는 CombatSettings에 저장되어 있습니다.
         if (strength > 0f)
             impulseSource.GenerateImpulseAtPositionWithVelocity(effectPoint, Vector3.down * strength);
     }
@@ -89,10 +84,10 @@ public class CombatFeedback : MonoBehaviour
         Vector3 point = transform.TransformPoint(deathblowEffectOffset);
         PlaySound(SfxKeys.DeathblowImpact, point);
         PlayEffect(VfxKeys.Blood, point, Quaternion.LookRotation(hitDirection));
-        impulseSource.GenerateImpulseAtPositionWithVelocity(point, Vector3.down * deathblowStrength);
+        impulseSource.GenerateImpulseAtPositionWithVelocity(point, Vector3.down * CombatSettings.Current.DeathblowShakeStrength);
 
         if (HitStopManager.Instance != null)
-            HitStopManager.Instance.TriggerHitStop(deathblowHitStopDuration);
+            HitStopManager.Instance.TriggerHitStop(CombatSettings.Current.DeathblowHitStopDuration);
     }
 
     private static void PlaySound(string key, Vector3 worldPosition)

@@ -50,14 +50,14 @@ public class Stat
     }
 
 
-    public void AddModifier(float value ,ItemSpec source)
+    public void AddModifier(float value ,object source)
     {
         if(value == 0) { return; }
         modifiers.Add(new StatModifier(value, source));
         isDirty = true;
     }
 
-    public void RemoveModifier(ItemSpec source)
+    public void RemoveModifier(object source)
     {
         for (int i = modifiers.Count - 1; i >= 0; i--)
         {

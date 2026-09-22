@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     [SerializeField] private QuestSetup questSetup;
+    [SerializeField] private QuestContainer combatQuest;
     public IQuestController QuestController => questSetup;
 
     [SerializeField] private GameObject playerPrefab;
@@ -29,7 +30,7 @@ public class GameManager : MonoBehaviour
         PlayerSpawner.Init(playerPrefab);
     }
 
-    /// <summary>저장된 성장·인벤토리를 불러와 Main에서 시작합니다. 전투 도중 이어하기는 하지 않습니다.</summary>
+    /// <summary>저장된 성장, 인벤토리를 불러와 Main에서 시작합니다. 전투 도중 이어하기는 하지 않습니다.</summary>
     public async Awaitable StartGame()
     {
         DataManager.Instance.LoadLocalData();
@@ -39,7 +40,43 @@ public class GameManager : MonoBehaviour
         SaveGame();
     }
 
-    /// <summary>현재 기록을 유지하며 씬을 바꾸고, 새 씬의 SpawnPoint에 플레이어를 생성합니다.</summary>
+    public async Awaitable Retry()
+    {
+        QuestManager.ResetQuest(Instance.QuestController, combatQuest.QuestId);
+        await ChangeScene(SceneName.Main);
+        Player.LocalPlayer.Stats.RestoreHealth(Player.LocalPlayer.Stats.MaxHp.GetValue());
+        SaveGame();
+
+    }
+
+
+    [DialogueAction("SceneChagne")]
+    public static void ChangeSceneAttribute(string sceneName)
+    {
+        ChangeSceneFromDialogue(sceneName);
+    }
+
+
+    [QuestAction("AddExp", Owner = QuestMethodOwner.Global)]
+    public static void GiveQuestExp(int amount)
+    {
+        Player.LocalPlayer.Stats.AddExp(amount);
+    }
+
+
+    private static async void ChangeSceneFromDialogue(string sceneName)
+    {
+        try
+        {
+            await Instance.ChangeScene(sceneName);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception);
+        }
+    }
+
+    /// <summary>현재 기록을 유지하며 씬을 바꾸고, 새 씬의 SpawnPoint에 플레이어를 생성</summary>
     public async Awaitable ChangeScene(string sceneName)
     {
         if (isChangingScene)
@@ -65,7 +102,7 @@ public class GameManager : MonoBehaviour
         if (isLocalGame) SaveGame();
     }
 
-    /// <summary>현재 플레이어·인벤토리를 저장합니다. 퀘스트 저장은 게임 연동 단계에서 추가합니다.</summary>
+    /// <summary>현재 플레이어와 인벤토리를 저장</summary>
     public bool SaveGame()
     {
         if (!isLocalGame) return false;

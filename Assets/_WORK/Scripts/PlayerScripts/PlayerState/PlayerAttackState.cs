@@ -5,7 +5,7 @@ public enum AttackPhase { WindUp,Active, Recovery}
 public class PlayerAttackState : PlayerState
 {
     // 적에게 패링당했을 때 반동 시간
-    private const float DeflectReboundDuration = 0.35f;
+    private float DeflectReboundDuration => Mathf.Max(CombatSettings.Current.ParriedRecoveryDuration, CombatSettings.Current.ParriedMoveDuration);
 
     private AttackData currentAttackData;
     private AttackPhase currentPhase;
@@ -16,6 +16,7 @@ public class PlayerAttackState : PlayerState
     private bool hasBufferedGuard;
 
     public override bool UseRootMotion => !isRebounding;
+    public AttackData CurrentAttackData => currentAttackData;
 
     public PlayerAttackState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
 

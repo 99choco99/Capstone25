@@ -26,12 +26,12 @@ public class EnemyMotor : MonoBehaviour
     [Tooltip("strafe 목적지 계산 간격, 작을수록 촘촘한 원형")]
     [SerializeField, Min(0.05f)] private float strafeRefreshTime = 0.25f;
 
-    [Header("공격 Root Motion")]
-    [Tooltip("공격 전진 중 플레이어 중심과 유지할 최소 거리")]
-    [SerializeField, Min(0f)] private float minimumCombatDistance = 1.35f;
+    private float minimumCombatDistance => CombatSettings.Current.EnemyAttackMinimumDistance;
 
     private NavMeshAgent navAgent;
-
+    [SerializeField] private Transform[] patrolPoint;
+    private int currentPoint = 0;
+    public bool HasPatrolPoints => patrolPoint != null && patrolPoint.Length > 0;
 
     //strafe
     private int strafeDirection = 1;
@@ -74,6 +74,16 @@ public class EnemyMotor : MonoBehaviour
         navAgent.isStopped = false;
         navAgent.updateRotation = true;
         navAgent.SetDestination(destination);
+    }
+
+    public void Patrol()
+    {
+        if(patrolPoint == null) { return; }
+        if (!navAgent.pathPending && navAgent.remainingDistance < 0.5f)
+        {
+            MoveTo(patrolPoint[currentPoint].position);
+            currentPoint = (currentPoint + 1) % patrolPoint.Length;
+        }
     }
 
     /// <summary>지정한 방향으로 회전</summary>

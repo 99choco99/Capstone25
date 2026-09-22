@@ -21,7 +21,7 @@ public class EnemyGroundedState : EnemyState
     public override void Update()
     {
         EnemyTargetInfo perception = enemy.Sense.CurrentTargetInfo;
-        EnemyIntent intent = enemy.AIController.SelectIntent(perception);
+        EnemyIntent intent = enemy.AIController.SelectIntent(perception, enemy.Motor.HasPatrolPoints);
 
         if (ExecuteIntent(intent)) return;
 
@@ -38,6 +38,11 @@ public class EnemyGroundedState : EnemyState
                 // 연속 stop 방지
                 if (preIntentType != EnemyIntentType.HoldPosition)
                     enemy.Motor.Stop();
+                preIntentType = intent.Type;
+                return false;
+
+            case EnemyIntentType.Patrol:
+                enemy.Motor.Patrol();
                 preIntentType = intent.Type;
                 return false;
 

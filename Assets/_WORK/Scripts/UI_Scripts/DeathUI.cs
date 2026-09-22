@@ -1,4 +1,4 @@
-﻿using System.Collections;
+﻿
 using TMPro;
 using UnityEngine;
 
@@ -18,38 +18,46 @@ public class DeathUI : MonoBehaviour
     {
         if (canvasGroup != null) canvasGroup.alpha = 0f;
 
-        Player.OnLocalPlayerSpawned += Init;
-        if (Player.LocalPlayer != null) Init(Player.LocalPlayer);
+        Player.OnLocalPlayerSpawned += Setup;
+        if (Player.LocalPlayer != null) Setup(Player.LocalPlayer);
     }
 
     private void OnDestroy()
     {
-        Player.OnLocalPlayerSpawned -= Init;
+        Player.OnLocalPlayerSpawned -= Setup;
         if (player != null && player.Stats != null)
             player.Stats.OnDeath -= StartDeathEffect;
     }
 
-    public void Init(Player localPlayer)
+    public void Setup(Player localPlayer)
     {
         if (localPlayer == null) return;
 
         if (player != null && player.Stats != null)
             player.Stats.OnDeath -= StartDeathEffect;
 
+        canvasGroup.alpha = 0f;
+        backgroundText.characterSpacing = 0f;
+
         player = localPlayer;
         player.Stats.OnDeath += StartDeathEffect;
     }
 
-    public void StartDeathEffect()
+    public async void StartDeathEffect()
     {
 
         backgroundText.characterSpacing = 0;
 
-        StartCoroutine(FadeInEffect());
-        StartCoroutine(StretchTextEffect());
+        Awaitable fade = FadeInEffect();
+        Awaitable stretch = StretchTextEffect();
+
+        await fade;
+        await stretch;
+
+        await GameManager.Instance.Retry();
     }
 
-    private IEnumerator FadeInEffect()
+    private async Awaitable FadeInEffect()
     {
         float timer = 0f;
 
@@ -57,12 +65,12 @@ public class DeathUI : MonoBehaviour
         {
             timer += Time.deltaTime;
             canvasGroup.alpha = Mathf.Lerp(0, 1, timer / fadeInDuration);
-            yield return null;
+            await Awaitable.NextFrameAsync();
         }
         canvasGroup.alpha = 1f;
     }
 
-    private IEnumerator StretchTextEffect()
+    private async Awaitable StretchTextEffect()
     {
         float timer = 0f;
 
@@ -71,7 +79,7 @@ public class DeathUI : MonoBehaviour
             timer += Time.deltaTime;
             backgroundText.characterSpacing = Mathf.Lerp(0, targetCharacterSpacing, timer / textStretchDuration);
             backgroundText.alpha = Mathf.Lerp(backgroundText.alpha, 1, timer / textStretchDuration);
-            yield return null;
+            await Awaitable.NextFrameAsync();
         }
         backgroundText.characterSpacing = targetCharacterSpacing;
     }

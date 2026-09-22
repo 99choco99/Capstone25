@@ -2,7 +2,7 @@
 
 public class PlayerHitState : PlayerState
 {
-    private const float HitRecoveryDuration = 0.5f;
+    private float hitRecoveryDuration;
 
     public override bool UseRootMotion => false;
     public PlayerHitState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
@@ -33,7 +33,7 @@ public class PlayerHitState : PlayerState
     {
         stateTimer += Time.deltaTime;
 
-        if (stateTimer > HitRecoveryDuration)
+        if (stateTimer > hitRecoveryDuration)
         {
             if (player.InputHandler.GuardInput)
             {
@@ -58,6 +58,9 @@ public class PlayerHitState : PlayerState
 
     private void BeginHitReaction()
     {
+        // 넉백 이동과 조작 불가 시간은 별개입니다. 강한 공격일수록 늦게 회복합니다.
+        CombatSettings settings = CombatSettings.Current;
+        hitRecoveryDuration = Mathf.Max(settings.GetReaction(currentHitData.Request.KnockBackLevel).HitRecoveryDuration, settings.DirectHitMoveDuration);
         player.Motor.SetMovement(Vector3.zero);
         player.Combat.ForceResetAttackState();
 

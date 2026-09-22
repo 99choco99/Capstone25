@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UniversalGraph;
 /// <summary>
 /// 포인트로 성장시킬 수 있는 플레이어 스탯
 /// </summary>
@@ -53,9 +54,7 @@ public class PlayerStats : LivingEntity
     //게임 데이터 불러오기
     public void LoadPlayerData(PlayerData data)
     {
-
         float maxHp = data.maxHp > 0f ? data.maxHp : 100f;
-        // 구버전 저장 데이터에는 attackPower가 없으므로 0이면 프리팹의 기본 공격력을 유지합니다.
         float attackPower = data.attackPower > 0f ? data.attackPower : AttackPower.GetBaseValue();
 
         MaxHp = new Stat(maxHp);
@@ -63,14 +62,14 @@ public class PlayerStats : LivingEntity
         AttackPower = new Stat(attackPower);
 
         CurrentHp = Mathf.Clamp(data.currentHp, 0f, maxHp);
-        // 저장 데이터를 다시 불러오는 경우에도 체간 수치와 붕괴 잠금을 함께 초기화합니다.
+
         ResetPosture();
 
         Level = data.level;
         Exp = data.exp;
         AbilityPoint = data.abilityPoint;
 
-        // 저장값으로 Stat 인스턴스를 교체했으므로 성장 테이블도 새 인스턴스를 바라보게 갱신합니다.
+
         RegisterStats();
 
 
@@ -81,8 +80,7 @@ public class PlayerStats : LivingEntity
     //====================스탯 관련 ===========================
 
     /// <summary>
-    /// 성장 종류와 실제 Stat 인스턴스를 연결합니다.
-    /// 저장 데이터가 없어도 능력치 성장 API가 같은 방식으로 동작하도록 Awake에서도 호출합니다.
+    /// 성장 종류와 실제 Stat 인스턴스를 연결
     /// </summary>
     private void RegisterStats()
     {
@@ -129,29 +127,6 @@ public class PlayerStats : LivingEntity
             UpdateTotalStats();
             OnStatsChanged?.Invoke(this);
         }
-    }
-
-    /// <summary>
-    /// 장비 탈부착시 수치 재계산
-    /// </summary>
-    public void UpdateEquipmentStats(List<EquipmentInstance> equippedItems)
-    {
-        MaxHp.ClearModifiers();
-        MaxPosture.ClearModifiers();
-
-        foreach (var item in equippedItems)
-        {
-            if (item != null)
-            {
-                ItemSpec finalStats = item.GetFinalStats();
-                MaxHp.AddModifier(finalStats.maxHp, finalStats);
-                MaxPosture.AddModifier(finalStats.posture, finalStats);
-            }
-        }
-
-        UpdateTotalStats();
-
-        OnStatsChanged?.Invoke(this);
     }
 
     /// <summary>

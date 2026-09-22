@@ -5,7 +5,7 @@ using UnityEngine;
 /// </summary>
 public class EnemyHitState : EnemyState
 {
-    private const float HitRecoveryDuration = 0.5f;
+    private float hitRecoveryDuration;
 
     private DamageResult currentHitData;
 
@@ -28,6 +28,9 @@ public class EnemyHitState : EnemyState
     private void BeginHitReaction()
     {
         stateTimer = 0f;
+        // 적 종류가 아니라 이번에 받은 공격의 강도로 피격 경직을 정합니다.
+        CombatSettings settings = CombatSettings.Current;
+        hitRecoveryDuration = Mathf.Max(settings.GetReaction(currentHitData.Request.KnockBackLevel).HitRecoveryDuration, settings.DirectHitMoveDuration);
         enemy.Motor.Stop();
         enemy.Combat.CancelAttack();
 
@@ -77,7 +80,7 @@ public class EnemyHitState : EnemyState
     {
         stateTimer += Time.deltaTime;
 
-        if (stateTimer >= HitRecoveryDuration)
+        if (stateTimer >= hitRecoveryDuration)
             stateMachine.TransitionTo(stateMachine.EnemyGroundedState);
     }
 

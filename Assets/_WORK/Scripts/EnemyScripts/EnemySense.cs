@@ -124,10 +124,7 @@ public class EnemySense : MonoBehaviour
 
         if (CanSeeTarget)
         {
-            LastTargetPosition = combatTarget.transform.position;
-            loseTargetTimer = loseTargetTime;
-            IsAlerted = true;
-            return;
+            Alert(combatTarget.transform.position);
         }
         else if (IsAlerted)
         {
@@ -135,6 +132,14 @@ public class EnemySense : MonoBehaviour
             if (loseTargetTimer <= 0f)
                 ClearAlert();
         }
+    }
+
+    /// <summary>공격자를 인지하고 위치와 기억 시간을 갱신</summary>
+    public void Alert(Vector3 targetPosition)
+    {
+        IsAlerted = true;
+        LastTargetPosition = targetPosition;
+        loseTargetTimer = loseTargetTime;
     }
 
     /// <summary>

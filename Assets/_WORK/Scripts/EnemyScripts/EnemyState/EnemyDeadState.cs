@@ -17,6 +17,12 @@ public class EnemyDeadState : EnemyState
     {
         if (playDeathAnimation)
             enemy.AnimationController.PlayAction(AnimHash.Death);
+        else
+        {
+            Animator animator = enemy.AnimationController.Animator;
+            animator.writeDefaultValuesOnDisable = false;
+            animator.enabled = false;
+        }
 
         enemy.Motor.Stop();
         enemy.Motor.StopKnockback();

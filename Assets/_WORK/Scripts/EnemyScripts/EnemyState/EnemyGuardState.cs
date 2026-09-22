@@ -2,9 +2,9 @@ using UnityEngine;
 
 public class EnemyGuardState : EnemyState
 {
-    private const float GuardDuration = 0.3f;
-    private const float GuardHitReactionDuration = 0.2f;
-    private const float ParryReactionDuration = 0.22f;
+    private float GuardDuration => CombatSettings.Current.EnemyGuardDuration;
+    private float GuardHitReactionDuration => Mathf.Max(CombatSettings.Current.GuardRecoveryDuration, CombatSettings.Current.GuardMoveDuration);
+    private float ParryReactionDuration => CombatSettings.Current.EnemyParryReactionDuration;
 
     private int lastAttackVersion;
     private float guardHoldTime;            //가드 유지 시간

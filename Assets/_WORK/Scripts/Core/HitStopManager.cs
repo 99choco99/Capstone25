@@ -5,17 +5,6 @@ public class HitStopManager : MonoBehaviour
 {
     public static HitStopManager Instance { get; private set; }
 
-    [Header("히트 스톱")]
-    [Tooltip("히트 스톱 중 적용할 시간 배율")]
-    [SerializeField] private float hitStopTimeScale = 0.05f;
-    [Tooltip("방어하지 못하고 직접 맞았을 때의 실제 정지 시간")]
-    [SerializeField, Min(0f)] private float directHitStopDuration = 0.025f;
-    [Tooltip("가드 불가능한 특수 공격에 직접 맞았을 때의 실제 정지 시간")]
-    [SerializeField, Min(0f)] private float specialHitStopDuration = 0.04f;
-    [Tooltip("일반 가드 충돌이 멈춰 보이는 실제 시간")]
-    [SerializeField, Min(0f)] private float guardHitStopDuration = 0.03f;
-    [Tooltip("패링 충돌이 멈춰 보이는 실제 시간")]
-    [SerializeField, Min(0f)] private float parryHitStopDuration = 0.055f;
     private Coroutine hitStopRoutine;
     private float timeScaleBeforeHitStop = 1f;
 
@@ -37,16 +26,19 @@ public class HitStopManager : MonoBehaviour
     /// </summary>
     public void TriggerHitStop(in DamageResult result)
     {
+        CombatSettings.Reaction reaction = CombatSettings.Current.GetReaction(result.Request.KnockBackLevel);
         float duration;
         if (result.DefenseType == DefenseType.Parry)
-            duration = parryHitStopDuration;
+            duration = reaction.ParryHitStop;
         else if (result.DefenseType == DefenseType.NormalGuard)
-            duration = guardHitStopDuration;
+            duration = reaction.GuardHitStop;
         else if (!result.Request.CanGuard)
-            duration = specialHitStopDuration;
+            duration = reaction.SpecialHitStop;
         else
-            duration = directHitStopDuration;
+            duration = reaction.DirectHitStop;
 
+        // 가드 가능 여부와 별개로 타격 강도를 반영하되, 연타 리듬을 해치지 않게 소폭 늘립니다.
+        // 등급별 최종 시간은 CombatSettings에 저장되어 있습니다.
         TriggerHitStop(duration);
     }
 
@@ -68,7 +60,7 @@ public class HitStopManager : MonoBehaviour
 
     private IEnumerator HitStopRoutine(float duration)
     {
-        Time.timeScale = Mathf.Min(timeScaleBeforeHitStop, Mathf.Clamp01(hitStopTimeScale));
+        Time.timeScale = Mathf.Min(timeScaleBeforeHitStop, Mathf.Clamp01(CombatSettings.Current.HitStopTimeScale));
 
         yield return new WaitForSecondsRealtime(duration);
 

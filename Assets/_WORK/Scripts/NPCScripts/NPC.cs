@@ -6,6 +6,10 @@ using UniversalGraph;
 
 public class NPC : MonoBehaviour, IInteractable
 {
+    [SerializeField] private QuestContainer questContainer;
+    [SerializeField] private DialogueEntryPoint acceptEntryPoint;
+    [SerializeField] private DialogueEntryPoint reportEntryPoint;
+
     [SerializeField] TextMeshProUGUI NPCName;
     protected Animator anim;
 
@@ -23,10 +27,30 @@ public class NPC : MonoBehaviour, IInteractable
 
     public virtual void Interact(GameObject interactor)
     {
-        QuestSuggestion[] suggestions = QuestManager.GetQuestSuggestions(GameManager.Instance.QuestController, id);
-        DialogueCandidate[] candidates = QuestManager.GetDialogueCandidates(GameManager.Instance.QuestController, id);
+        if (DialogueManager.Instance.IsConversationActive || questContainer == null) return;
 
-        StartCoroutine(LookAtPlayer(interactor.transform));
+        GameManager.Instance.QuestController.QuestProgress.TryGetValue(questContainer.QuestId, out QuestProgress progress);
+        QuestState state = progress?.state ?? QuestState.NotStarted;
+        DialogueEntryPoint entryPoint;
+
+        switch (state)
+        {
+            case QuestState.NotStarted:
+                entryPoint = acceptEntryPoint;
+                break;
+            case QuestState.CanComplete:
+                QuestManager.ProcessObjectivesByEvent(GameManager.Instance.QuestController, "report", 1, 1);
+                entryPoint = reportEntryPoint;
+                break;
+            default:
+                return;
+        }
+
+        if (entryPoint.Container != null
+            && DialogueManager.Instance.StartConversation(entryPoint, new DialogueExecutionContext(gameObject, interactor, GameManager.Instance.QuestController)))
+        {
+            StartCoroutine(LookAtPlayer(interactor.transform));
+        }
     }
 
 

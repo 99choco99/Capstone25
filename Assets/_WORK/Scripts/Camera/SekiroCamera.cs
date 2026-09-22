@@ -1,5 +1,6 @@
 ﻿using Unity.Cinemachine;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
 
@@ -110,12 +111,14 @@ public class SekiroCamera : MonoBehaviour
     private void OnDisable()
     {
         Player.OnLocalPlayerSpawned -= BindPlayer;
+        if (player != null)
+            player.InputHandler.OnCursorStateChanged -= HandleCursorState;
 
         // 재활성화 시 현재 타깃을 다시 적용하도록 런타임 모드만 초기화한다.
         activeTarget = null;
         isLockedOn = false;
         hasFramingTarget = false;
-        SetOrbitInputEnabled(true, true);
+        SetOrbitInputEnabled(false, true);
     }
 
     private void OnDestroy()
@@ -132,33 +135,15 @@ public class SekiroCamera : MonoBehaviour
 
     private bool TryBindExistingLocalPlayer()
     {
-        if (player != null)
-            return true;
+        Player localPlayer = Player.LocalPlayer;
+        if (localPlayer == null && targetingSystem != null)
+            localPlayer = targetingSystem.GetComponentInParent<Player>();
 
-        if (targetingSystem != null)
-        {
-            Player owner = targetingSystem.GetComponentInParent<Player>();
-            if (owner != null && owner.IsLocalPlayer)
-            {
-                BindPlayer(owner);
-                return player != null;
-            }
-        }
+        if (localPlayer == null || !localPlayer.IsLocalPlayer)
+            return false;
 
-        Player[] candidates = FindObjectsByType<Player>(
-            FindObjectsInactive.Exclude,
-            FindObjectsSortMode.None);
-
-        for (int i = 0; i < candidates.Length; i++)
-        {
-            if (!candidates[i].IsLocalPlayer)
-                continue;
-
-            BindPlayer(candidates[i]);
-            return player != null;
-        }
-
-        return false;
+        BindPlayer(localPlayer);
+        return true;
     }
 
     private void BindPlayer(Player localPlayer)
@@ -166,7 +151,11 @@ public class SekiroCamera : MonoBehaviour
         if (localPlayer == null || !localPlayer.IsLocalPlayer)
             return;
 
+        if (player != null)
+            player.InputHandler.OnCursorStateChanged -= HandleCursorState;
+
         player = localPlayer;
+        player.InputHandler.OnCursorStateChanged += HandleCursorState;
         targetingSystem = localPlayer.TargetingSystem;
         followTarget = localPlayer.cameraRoot != null
             ? localPlayer.cameraRoot
@@ -181,7 +170,15 @@ public class SekiroCamera : MonoBehaviour
         activeTarget = null;
         isLockedOn = false;
         hasFramingTarget = false;
-        SetOrbitInputEnabled(true, true);
+        // 이미 UI가 열린 뒤 카메라가 연결되는 경우에도 현재 입력 모드를 따른다.
+        HandleCursorState(player.GetComponent<PlayerInput>().currentActionMap?.name == "UI");
+    }
+
+    /// <summary>UI 입력 차단도 카메라의 입력 제어와 같은 곳에서 처리합니다.</summary>
+    private void HandleCursorState(bool isUIOpen)
+    {
+        inputController.enabled = !isUIOpen;
+        SetOrbitInputEnabled(!isLockedOn, true);
     }
 
     private void LateUpdate()
@@ -200,6 +197,9 @@ public class SekiroCamera : MonoBehaviour
         // 대상 변경은 같은 락온 모드 안에서도 프로필 전환을 일으킬 수 있다.
         if (currentTarget != activeTarget || (lockPoint != null) != isLockedOn)
             ApplyTarget(currentTarget, lockPoint != null);
+
+        // 인살 중에는 보이지 않는 FreeCam에 마우스 입력이 누적되지 않게 한다.
+        SetOrbitInputEnabled(!isLockedOn, false);
 
         UpdateSettingsBlend(Time.deltaTime);
         ApplyCameraSettings();
@@ -485,16 +485,19 @@ public class SekiroCamera : MonoBehaviour
 
     private void SetOrbitInputEnabled(bool enabled, bool resetMomentum)
     {
+        enabled = enabled && inputController.enabled
+            && (player == null || !player.Execution.IsExecuting);
+
         for (int i = 0; i < inputController.Controllers.Count; i++)
         {
             var controller = inputController.Controllers[i];
             if (controller == null || controller.Owner != orbitalFollow)
                 continue;
 
-            controller.Enabled = enabled;
-
-            if (!resetMomentum)
+            if (controller.Enabled == enabled && !resetMomentum)
                 continue;
+
+            controller.Enabled = enabled;
 
             var oldDriver = controller.Driver;
             controller.Driver = new DefaultInputAxisDriver

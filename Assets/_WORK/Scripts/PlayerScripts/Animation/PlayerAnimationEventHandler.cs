@@ -16,6 +16,8 @@ public class PlayerAnimationEventHandler : MonoBehaviour
         if (player.StateMachine.CurrentState != null && player.StateMachine.CurrentState.UseRootMotion)
         {
             Vector3 deltaPosition = Anim.deltaPosition;
+            if (player.StateMachine.CurrentState is PlayerAttackState attack && attack.CurrentAttackData != null)
+                deltaPosition = attack.CurrentAttackData.ScaleAttackAdvance(deltaPosition, player.transform.forward);
             player.Motor.ApplyRootMotion(deltaPosition, Anim.deltaRotation);
 
             if (player.StateMachine.CurrentState is PlayerAttackState attackState)

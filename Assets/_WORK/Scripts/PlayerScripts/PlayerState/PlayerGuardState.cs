@@ -3,11 +3,11 @@ using UnityEngine;
 
 public class PlayerGuardState : PlayerState
 {
-    private const float ParryTime = 0.2f;       // 첫 입력의 패링 판정 창: 약 12프레임
-    private const float SecondParryTime = 0.1f; // 빠른 재입력: 약 6프레임
-    private const float MinParryTime = 0.067f;  // 세 번째 재입력: 약 4프레임
-    private const float SpamResetTime = 0.5f;   // 이 시간 동안 재입력이 없으면 첫 창으로 복구
-    private const float GuardLockTime = 0.12f;  // 이 동안 제자리에 멈춘다
+    private float ParryTime => CombatSettings.Current.ParryWindow;       // 첫 입력의 패링 판정 창: 약 12프레임
+    private float SecondParryTime => CombatSettings.Current.SecondParryWindow; // 빠른 재입력: 약 6프레임
+    private float MinParryTime => CombatSettings.Current.ThirdParryWindow;  // 세 번째 재입력: 약 4프레임
+    private float SpamResetTime => CombatSettings.Current.ParrySpamResetTime;   // 이 시간 동안 재입력이 없으면 첫 창으로 복구
+    private float GuardLockTime => CombatSettings.Current.GuardInputLockTime;  // 이 동안 제자리에 멈춘다
 
     private float guardTimer;
     private float currentParryTime;   // 연타 페널티가 반영된 실제 패링 창
@@ -35,7 +35,14 @@ public class PlayerGuardState : PlayerState
                 guardTimer = currentParryTime + 0.001f;
                 return;
             case DefenseType.NormalGuard:
-                player.AnimatorController.PlayReaction(AnimHash.GuardHit, 0.03f);
+                // 공격 강도에 맞춰 작은 가드 반동과 크게 버티는 동작을 구분합니다.
+                int guardAnim = result.Request.KnockBackLevel switch
+                {
+                    KnockBackLevel.Medium => AnimHash.GuardHit2,
+                    KnockBackLevel.Heavy => AnimHash.GuardHit3,
+                    _ => AnimHash.GuardHit
+                };
+                player.AnimatorController.PlayReaction(guardAnim, 0.03f);
                 GuardKnockBack(result);
                 return;
             default:
@@ -121,7 +128,7 @@ public class PlayerGuardState : PlayerState
     {
         KnockbackSpec knockback = KnockBackPolicy.DefenderKnockBack(result);
 
-        HitReactionTimer = knockback.Duration;
+        HitReactionTimer = Mathf.Max(knockback.Duration, CombatSettings.Current.GuardRecoveryDuration);
         player.Motor.StartKnockback(result.HitDirection, knockback);
     }
 

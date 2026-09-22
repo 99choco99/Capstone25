@@ -67,6 +67,11 @@ public class AttackData : ScriptableObject
 
     public float AnimationSpeed => Mathf.Max(0.01f, animationSpeed);
 
+    [Header("공격 전진")]
+    [Tooltip("1은 원본 그대로, 0은 전진 없음, 1.5는 전진량 1.5배. 전진 성분만 바꾸며 후퇴·옆 이동·높이·회전·타격 시점은 유지합니다.")]
+    [SerializeField, Min(0f), InspectorName("공격 전진 배율")] private float attackAdvanceMultiplier = 1f;
+    public float AttackAdvanceMultiplier => attackAdvanceMultiplier;
+
 
     [Header("타이밍 설정 (프레임 단위 입력)")]
     [Tooltip("애니메이션의 전체 프레임 수")]
@@ -102,4 +107,15 @@ public class AttackData : ScriptableObject
     /// 애니메이션 총 재생 시간
     /// </summary>
     public float DurationInSeconds => totalFrames / (60f * AnimationSpeed);
+
+    /// <summary>공격 애니메이션의 이번 프레임 이동 중 캐릭터 앞쪽으로 전진하는 성분에만 배율을 적용합니다.</summary>
+    public Vector3 ScaleAttackAdvance(Vector3 deltaPosition, Vector3 forward)
+    {
+        if (attackAdvanceMultiplier == 1f) return deltaPosition;
+
+        forward.y = 0f;
+        forward.Normalize();
+        float advance = Mathf.Max(0f, Vector3.Dot(deltaPosition, forward));
+        return deltaPosition + forward * (advance * (attackAdvanceMultiplier - 1f));
+    }
 }

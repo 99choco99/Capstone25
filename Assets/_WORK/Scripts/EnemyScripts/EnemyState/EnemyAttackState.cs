@@ -6,7 +6,7 @@ using SoundEffectManager;
 /// </summary>
 public class EnemyAttackState : EnemyState
 {
-    private const float ReboundDuration = 0.35f;
+    private float ReboundDuration => Mathf.Max(CombatSettings.Current.ParriedRecoveryDuration, CombatSettings.Current.ParriedMoveDuration);
 
     private AttackData currentAttack;
     private AttackPhase currentPhase;
@@ -15,6 +15,7 @@ public class EnemyAttackState : EnemyState
     private bool isRebounding;
 
     public override bool UseRootMotion => !isRebounding;
+    public AttackData CurrentAttackData => currentAttack;
 
     /// <summary>
     /// 일반 공격은 끊김. 특수 공격은 windup에서 끊김

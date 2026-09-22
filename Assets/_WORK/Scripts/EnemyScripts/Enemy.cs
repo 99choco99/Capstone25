@@ -91,6 +91,10 @@ public class Enemy : MonoBehaviour, ITargetable, ILockOnCameraProfileProvider
 
         if (Stats.IsDead || Stats.IsHealthDepleted || Stats.IsPostureBroken) return;
 
+        if (result.Request.Attacker != null)
+        {
+            Sense.Alert(result.Request.Attacker.transform.position);
+        }
         StateMachine.CurrentState?.OnHit(result);
     }
 
