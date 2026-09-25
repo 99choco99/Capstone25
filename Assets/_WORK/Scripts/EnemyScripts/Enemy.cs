@@ -4,14 +4,12 @@ using UnityEngine.Playables;
 
 [RequireComponent(typeof(EnemyAIController), typeof(EnemyMotor), typeof(EnemyStats))]
 [RequireComponent(typeof(EnemyCombat), typeof(EnemySense), typeof(EnemyAttackObserver))]
-public class Enemy : MonoBehaviour, ITargetable, ILockOnCameraProfileProvider
+public class Enemy : MonoBehaviour, ITargetable
 {
     public Transform TargetTransform => transform;
 
     [SerializeField] private Transform lockOnPoint;
     public Transform LockOnPoint => lockOnPoint;
-    [SerializeField] private LockOnCameraProfile lockOnCameraProfile;
-    public LockOnCameraProfile LockOnCameraProfile => lockOnCameraProfile;
     public bool IsDead => Stats.IsDead;
 
     [field: Header("Core Systems")]

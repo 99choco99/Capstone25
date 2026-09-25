@@ -54,7 +54,7 @@ public class PlayerCombat : MonoBehaviour, IWeaponOwner, IDefenser
         if (result.IsAccepted)
         {
             if (HitStopManager.Instance != null)
-                HitStopManager.Instance.TriggerHitStop(result);
+                HitStopManager.Instance.HitStop(result);
 
             player.StateMachine?.CurrentState?.HandleAttackAccepted(result);
         }

@@ -8,6 +8,7 @@ public class NPC : MonoBehaviour, IInteractable
 {
     [SerializeField] private QuestContainer questContainer;
     [SerializeField] private DialogueEntryPoint acceptEntryPoint;
+    [SerializeField] private DialogueEntryPoint InprogressEntryPoint;
     [SerializeField] private DialogueEntryPoint reportEntryPoint;
 
     [SerializeField] TextMeshProUGUI NPCName;
@@ -37,6 +38,9 @@ public class NPC : MonoBehaviour, IInteractable
         {
             case QuestState.NotStarted:
                 entryPoint = acceptEntryPoint;
+                break;
+            case QuestState.InProgress:
+                entryPoint = InprogressEntryPoint;
                 break;
             case QuestState.CanComplete:
                 QuestManager.ProcessObjectivesByEvent(GameManager.Instance.QuestController, "report", 1, 1);

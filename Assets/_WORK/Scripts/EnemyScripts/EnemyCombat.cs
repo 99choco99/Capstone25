@@ -62,7 +62,7 @@ public class EnemyCombat : MonoBehaviour, IWeaponOwner, IDefenser
             IsSpecialAttack = false;
 
             if (HitStopManager.Instance != null)
-                HitStopManager.Instance.TriggerHitStop(result);
+                HitStopManager.Instance.HitStop(result);
 
             owner.StateMachine?.CurrentState?.HandleAttackAccepted(result);
         }

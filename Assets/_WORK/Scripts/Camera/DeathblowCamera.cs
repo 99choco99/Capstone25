@@ -1,6 +1,6 @@
 using Unity.Cinemachine;
 using UnityEngine;
-using UnityEngine.Timeline;
+using UnityEngine.Playables;
 
 
 /// <summary>
@@ -13,12 +13,10 @@ using UnityEngine.Timeline;
 [RequireComponent(typeof(CinemachineCamera))]
 public class DeathblowCamera : MonoBehaviour
 {
-    private const string CameraTrackName = "Camera";
-
     [Header("연결")]
-    [Tooltip("인살을 재생하는 PlayerExecution. 비우면 로컬 플레이어에서 찾습니다.")]
-    [SerializeField] private PlayerExecution execution;
-    [Tooltip("인살 종료 자세를 이어받을 게임플레이 카메라. 비우면 같은 CameraSystem에서 찾습니다.")]
+    [Tooltip("같은 CameraSystem에서 실제 화면을 출력하는 Brain")]
+    [SerializeField] private CinemachineBrain brain;
+    [Tooltip("인살 종료 자세를 이어받을 같은 CameraSystem의 게임플레이 카메라")]
     [SerializeField] private SekiroCamera gameplayCamera;
 
     [Header("우선순위")]
@@ -27,13 +25,13 @@ public class DeathblowCamera : MonoBehaviour
 
     [Header("샷 구도")]
     [Tooltip("공격 진행축의 뒤쪽으로 물러나는 거리")]
-    [SerializeField, Min(0.1f)] private float distanceFront = 2f;
+    [SerializeField, Min(0.1f)] private float backDistance = 2f;
     [Tooltip("공격 진행축의 옆으로 떨어지는 거리")]
-    [SerializeField, Min(0f)] private float distanceSide = 2.2f;
+    [SerializeField, Min(0f)] private float sideDistance = 2.2f;
     [Tooltip("두 캐릭터의 중심점보다 카메라를 올리는 높이")]
     [SerializeField] private float height = 0.65f;
     [Tooltip("피격자 쪽 시선 기준점의 높이")]
-    [SerializeField, Min(0f)] private float lookHeight = 1.2f;
+    [SerializeField, Min(0f)] private float victimLookHeight = 1.2f;
     [Tooltip("공격자 쪽 시선 기준점의 높이")]
     [SerializeField, Min(0f)] private float attackerLookHeight = 1.05f;
     [Tooltip("0은 공격자, 1은 피격자를 중심으로 프레이밍합니다.")]
@@ -41,6 +39,10 @@ public class DeathblowCamera : MonoBehaviour
     [SerializeField, Range(1f, 179f)] private float executionFieldOfView = 42f;
 
     [Header("카메라 움직임")]
+    [Tooltip("정면 인살 재생 시간(초)에 따른 회전 각도")]
+    [SerializeField] private AnimationCurve frontYaw = AnimationCurve.EaseInOut(0f, 0f, 0.45f, 25f);
+    [Tooltip("후방 인살 재생 시간(초)에 따른 회전 각도")]
+    [SerializeField] private AnimationCurve behindYaw = AnimationCurve.EaseInOut(0f, 0f, 0.3f, 15f);
     [Tooltip("정면 인살 진행률(0~1)에 따른 접근 강도. 찌를 때 접근하고 끝나기 전에 물러납니다.")]
     [SerializeField] private AnimationCurve frontPushIn = new AnimationCurve(
         new Keyframe(0f, 0f), new Keyframe(0.12f, 1f),
@@ -64,64 +66,37 @@ public class DeathblowCamera : MonoBehaviour
     private readonly RaycastHit[] collisionHits = new RaycastHit[16];
 
     private CinemachineCamera cam;
-    private CinemachineBrain brain;
+    private PlayerExecution execution;
     private Transform attacker;
     private Transform victim;
-    private Transform timelinePivot;
-    private Animator timelinePivotAnimator;
     private Vector3 shotForward;
     private float shotSideSign = 1f;
     private bool active;
     private DeathblowDirection direction;
-    private bool timelineReady;
     private float startFieldOfView;
 
     private void Awake()
     {
         cam = GetComponent<CinemachineCamera>();
         cam.Priority = idlePriority;
-
-        if (gameplayCamera == null && transform.parent != null)
-        {
-            gameplayCamera = transform.parent
-                .GetComponentInChildren<SekiroCamera>(true);
-        }
-
-        CreateTimelinePivot();
-        ResolveBrain();
     }
 
     private void OnEnable()
     {
-        Player.OnLocalPlayerSpawned += TryBindFromPlayer;
-        if (Player.LocalPlayer != null)
-            TryBindFromPlayer(Player.LocalPlayer);
-        else
-            Subscribe();
-    }
-
-    private void Start()
-    {
-        if (execution == null && Player.LocalPlayer != null)
-            TryBindFromPlayer(Player.LocalPlayer);
+        Player.OnLocalPlayerSpawned += BindPlayer;
+        BindPlayer(Player.LocalPlayer);
     }
 
     private void OnDisable()
     {
-        Player.OnLocalPlayerSpawned -= TryBindFromPlayer;
+        Player.OnLocalPlayerSpawned -= BindPlayer;
         Unsubscribe();
 
         active = false;
         cam.Priority = idlePriority;
     }
 
-    private void OnDestroy()
-    {
-        if (timelinePivot != null)
-            Destroy(timelinePivot.gameObject);
-    }
-
-    private void TryBindFromPlayer(Player localPlayer)
+    private void BindPlayer(Player localPlayer)
     {
         if (localPlayer == null || !localPlayer.IsLocalPlayer)
         {
@@ -130,16 +105,7 @@ public class DeathblowCamera : MonoBehaviour
 
         Unsubscribe();
         execution = localPlayer.Execution;
-        Subscribe();
-    }
-
-    private void Subscribe()
-    {
-        if (execution == null)
-            return;
-
         execution.OnExecuteStart += Begin;
-        execution.OnExecuteTimelineReady += BindTimelineCameraTrack;
         execution.OnExecuteEnd += End;
     }
 
@@ -149,46 +115,31 @@ public class DeathblowCamera : MonoBehaviour
             return;
 
         execution.OnExecuteStart -= Begin;
-        execution.OnExecuteTimelineReady -= BindTimelineCameraTrack;
         execution.OnExecuteEnd -= End;
     }
 
     private void Begin(DeathblowPlan plan)
     {
-        if (!plan.IsValid || execution == null)
-            return;
-
         direction = plan.Direction;
-        BeginShot(
-            execution.transform,
-            plan.Target.transform,
-            plan.PlayerPose.position);
-    }
-
-    private void BeginShot(
-        Transform attackerTransform,
-        Transform victimTransform,
-        Vector3 plannedAttackerPosition)
-    {
-        if (attackerTransform == null || victimTransform == null)
-            return;
-
-        attacker = attackerTransform;
-        victim = victimTransform;
-        timelineReady = false;
-        timelinePivot.SetLocalPositionAndRotation(
-            Vector3.zero,
-            Quaternion.identity);
+        attacker = execution.transform;
+        victim = plan.Target.transform;
 
         // 현재 Brain 출력을 복사하므로 우선순위가 바뀌는 첫 프레임에 점프하지 않는다.
-        CaptureCurrentOutputPose();
-        startFieldOfView = cam.Lens.FieldOfView;
+        CameraState state = brain.State;
+        transform.SetPositionAndRotation(state.GetFinalPosition(), state.GetFinalOrientation());
+        startFieldOfView = state.Lens.FieldOfView;
+        LensSettings lens = cam.Lens;
+        lens.FieldOfView = startFieldOfView;
+        cam.Lens = lens;
 
         // 실제 시작 위치는 곧 정렬되므로, 정렬 전 attacker 위치가 아니라
         // DeathblowPlan의 최종 PlayerPose로 연출의 action axis를 고정한다.
-        CacheShotBasis(
-            plannedAttackerPosition,
-            victimTransform.position);
+        shotForward = plan.PlayerPose.rotation * Vector3.forward;
+
+        // 진입 카메라가 있던 쪽을 고정해 연출 중 임의로 180도 선을 넘지 않는다.
+        Vector3 shotRight = Vector3.Cross(Vector3.up, shotForward);
+        float side = Vector3.Dot(transform.position - GetFocusPoint(), shotRight);
+        shotSideSign = Mathf.Abs(side) > 0.001f ? Mathf.Sign(side) : 1f;
 
         active = true;
         cam.Priority = activePriority;
@@ -196,18 +147,13 @@ public class DeathblowCamera : MonoBehaviour
 
     private void End()
     {
+        if (!active)
+            return;
+
         // 우선순위를 내리기 전에 플레이어가 실제로 본 마지막 출력 자세를 읽는다.
         // FreeCam은 이 방향을 자신의 고정 구면 궤도 안으로 Clamp해 이어받는다.
-        if (active
-            && gameplayCamera != null
-            && TryGetCurrentOutputPose(
-                out Vector3 outputPosition,
-                out Quaternion outputRotation))
-        {
-            gameplayCamera.AdoptOutputPose(
-                outputPosition,
-                outputRotation);
-        }
+        CameraState state = brain.State;
+        gameplayCamera.AdoptOutputPose(state.GetFinalPosition(), state.GetFinalOrientation());
 
         active = false;
         cam.Priority = idlePriority;
@@ -220,123 +166,36 @@ public class DeathblowCamera : MonoBehaviour
         if (!active || attacker == null || victim == null)
             return;
 
-        UpdateCamera(Time.deltaTime);
-    }
-
-    private void CaptureCurrentOutputPose()
-    {
-        if (ResolveBrain())
-        {
-            CameraState state = brain.State;
-            transform.SetPositionAndRotation(
-                state.GetFinalPosition(),
-                state.GetFinalOrientation());
-
-            LensSettings lens = cam.Lens;
-            lens.FieldOfView = state.Lens.FieldOfView;
-            cam.Lens = lens;
-            return;
-        }
-
-        Camera mainCamera = Camera.main;
-        if (mainCamera != null)
-        {
-            transform.SetPositionAndRotation(
-                mainCamera.transform.position,
-                mainCamera.transform.rotation);
-        }
-    }
-
-    private bool TryGetCurrentOutputPose(
-        out Vector3 position,
-        out Quaternion rotation)
-    {
-        if (ResolveBrain())
-        {
-            CameraState state = brain.State;
-            position = state.GetFinalPosition();
-            rotation = state.GetFinalOrientation();
-            return true;
-        }
-
-        Camera mainCamera = Camera.main;
-        if (mainCamera != null)
-        {
-            position = mainCamera.transform.position;
-            rotation = mainCamera.transform.rotation;
-            return true;
-        }
-
-        position = default;
-        rotation = default;
-        return false;
-    }
-
-    private void CacheShotBasis(
-        Vector3 plannedAttackerPosition,
-        Vector3 plannedVictimPosition)
-    {
-        Vector3 focus = GetFocusPoint();
-        shotForward = plannedVictimPosition - plannedAttackerPosition;
-        shotForward.y = 0f;
-
-        if (shotForward.sqrMagnitude < 0.0001f)
-        {
-            shotForward = victim.position - attacker.position;
-            shotForward.y = 0f;
-        }
-
-        if (shotForward.sqrMagnitude < 0.0001f)
-        {
-            shotForward = victim.forward;
-            shotForward.y = 0f;
-        }
-
-        if (shotForward.sqrMagnitude < 0.0001f)
-            shotForward = Vector3.forward;
-
-        shotForward.Normalize();
-
-        // 진입 카메라가 있던 쪽을 고정해 연출 중 임의로 180도 선을 넘지 않는다.
-        Vector3 shotRight = Vector3.Cross(Vector3.up, shotForward);
-        float side = Vector3.Dot(transform.position - focus, shotRight);
-        shotSideSign = Mathf.Abs(side) > 0.001f
-            ? Mathf.Sign(side)
-            : 1f;
-    }
-
-    private void UpdateCamera(float deltaTime)
-    {
+        float deltaTime = Time.deltaTime;
         Vector3 focus = GetFocusPoint();
         Vector3 baseShotRight =
             Vector3.Cross(Vector3.up, shotForward) * shotSideSign;
 
-        // Timeline은 양수 Yaw 곡선만 제공합니다. 진입한 쪽의 바깥 방향으로
+        // 정렬 중에는 이전 재생 시간이 아닌 0을 사용한다.
+        PlayableDirector director = execution.DeathblowDirector;
+        float playTime = director.state == PlayState.Playing ? (float)director.time : 0f;
+
+        // Yaw 곡선은 양수 각도만 제공합니다. 진입한 쪽의 바깥 방향으로
         // 부호를 적용해야 회전 곡선이 action axis 반대편을 가로지르지 않는다.
-        float authoredYaw = Mathf.DeltaAngle(
-            0f,
-            timelinePivot.localEulerAngles.y);
-        float timelineYaw = -authoredYaw * shotSideSign;
-        Quaternion timelineOrbit =
-            Quaternion.AngleAxis(timelineYaw, Vector3.up);
-        Vector3 currentShotForward = timelineOrbit * shotForward;
-        Vector3 currentShotRight = timelineOrbit * baseShotRight;
+        AnimationCurve yawCurve = direction == DeathblowDirection.Front ? frontYaw : behindYaw;
+        float yaw = -yawCurve.Evaluate(playTime) * shotSideSign;
+        Quaternion orbit = Quaternion.AngleAxis(yaw, Vector3.up);
+        Vector3 currentShotForward = orbit * shotForward;
+        Vector3 currentShotRight = orbit * baseShotRight;
 
         // 정렬 대기나 프레임 수가 아니라 실제 Timeline 진행에 맞춰 접근·복귀한다.
-        float progress = 0f;
-        if (timelineReady && execution.DeathblowDirector.duration > 0)
-            progress = Mathf.Clamp01((float)(execution.DeathblowDirector.time / execution.DeathblowDirector.duration));
+        float progress = director.duration > 0 ? Mathf.Clamp01(playTime / (float)director.duration) : 0f;
 
-        AnimationCurve curve = direction == DeathblowDirection.Front ? frontPushIn : behindPushIn;
-        float emphasis = Mathf.Clamp01(curve.Evaluate(progress));
-        float pushIn = maximumPushIn * emphasis;
-        float front = Mathf.Max(0.5f, distanceFront - pushIn * 0.5f);
-        float side = Mathf.Max(0.5f, distanceSide - pushIn);
+        AnimationCurve pushInCurve = direction == DeathblowDirection.Front ? frontPushIn : behindPushIn;
+        float pushInWeight = Mathf.Clamp01(pushInCurve.Evaluate(progress));
+        float pushIn = maximumPushIn * pushInWeight;
+        float backOffset = Mathf.Max(0.5f, backDistance - pushIn * 0.5f);
+        float sideOffset = Mathf.Max(0.5f, sideDistance - pushIn);
 
         Vector3 desiredPosition =
             focus
-            - currentShotForward * front
-            + currentShotRight * side
+            - currentShotForward * backOffset
+            + currentShotRight * sideOffset
             + Vector3.up * height;
 
         float positionBlend =
@@ -367,11 +226,9 @@ public class DeathblowCamera : MonoBehaviour
                 rotationBlend);
         }
 
+        float targetFov = Mathf.Lerp(startFieldOfView, executionFieldOfView, pushInWeight);
         LensSettings lens = cam.Lens;
-        lens.FieldOfView = Mathf.Lerp(
-            lens.FieldOfView,
-            Mathf.Lerp(startFieldOfView, executionFieldOfView, emphasis),
-            lensBlend);
+        lens.FieldOfView = Mathf.Lerp(lens.FieldOfView, targetFov, lensBlend);
         cam.Lens = lens;
     }
 
@@ -380,7 +237,7 @@ public class DeathblowCamera : MonoBehaviour
         Vector3 attackerPoint =
             attacker.position + Vector3.up * attackerLookHeight;
         Vector3 victimPoint =
-            victim.position + Vector3.up * lookHeight;
+            victim.position + Vector3.up * victimLookHeight;
 
         return Vector3.Lerp(
             attackerPoint,
@@ -439,71 +296,4 @@ public class DeathblowCamera : MonoBehaviour
         return focus + offset.normalized * safeDistance;
     }
 
-    private bool ResolveBrain()
-    {
-        if (brain != null)
-            return true;
-
-        Camera mainCamera = Camera.main;
-        if (mainCamera != null)
-            brain = mainCamera.GetComponent<CinemachineBrain>();
-
-        if (brain == null)
-            brain = FindFirstObjectByType<CinemachineBrain>();
-
-        return brain != null;
-    }
-
-    private void CreateTimelinePivot()
-    {
-        GameObject pivotObject = new GameObject("DeathblowTimelinePivot")
-        {
-            hideFlags = HideFlags.DontSave
-        };
-        timelinePivot = pivotObject.transform;
-        timelinePivot.SetParent(transform.parent, false);
-        timelinePivotAnimator = pivotObject.AddComponent<Animator>();
-    }
-
-    private void BindTimelineCameraTrack(TimelineAsset timeline)
-    {
-        if (timeline == null || execution == null)
-            return;
-
-        timelineReady = true;
-        foreach (TrackAsset track in timeline.GetOutputTracks())
-        {
-            if (track is not AnimationTrack animationTrack
-                || track.name != CameraTrackName)
-            {
-                continue;
-            }
-
-            // 현재 Timeline Camera 트랙은 pivot의 Yaw 곡선을 제공하고,
-            // 실제 거리·높이·충돌·LookAt은 이 컴포넌트가 일관되게 담당한다.
-            execution.DeathblowDirector.SetGenericBinding(
-                animationTrack,
-                timelinePivotAnimator);
-            return;
-        }
-    }
-
-    public void Play(
-        Transform attackerTransform,
-        Transform victimTransform)
-    {
-        direction = DeathblowDirection.Front;
-        Vector3 plannedAttackerPosition = attackerTransform != null
-            ? attackerTransform.position
-            : Vector3.zero;
-        BeginShot(
-            attackerTransform,
-            victimTransform,
-            plannedAttackerPosition);
-    }
-
-    public void Stop()
-    {
-        End();
-    }
 }

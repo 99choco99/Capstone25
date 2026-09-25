@@ -76,7 +76,6 @@ public class PlayerExecution : MonoBehaviour
     // 카메라가 정렬 전 현재 위치가 아니라 최종 연출 축을 기준으로 샷을 잡을 수 있도록
     // 실행 대상과 최종 Pose를 함께 전달한다.
     public event Action<DeathblowPlan> OnExecuteStart;
-    public event Action<TimelineAsset> OnExecuteTimelineReady;
     public event Action OnExecuteEnd;
 
     private readonly Collider[] overlapBuffer = new Collider[24];
@@ -344,8 +343,6 @@ public class PlayerExecution : MonoBehaviour
         player.Motor.SetTransform(plan.PlayerPose.position, plan.PlayerPose.rotation);
         enemy.transform.rotation = plan.VictimRotation;
 
-
-        OnExecuteTimelineReady?.Invoke(plan.Timeline);
 
         //인살 실행
         // 인살 중에는 양쪽 상태와 Director를 외부에서 변경하지 않습니다.

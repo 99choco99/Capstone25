@@ -66,6 +66,14 @@ MonoBehaviour:
     StartPortName: Next
     TargetNodeGuid: aafc15d1-76eb-4659-bb6f-ad789112719e
     TargetPortName: Input
+  - StartNodeGuid: 271d91bd-01e4-465f-af16-3707422f0eb1
+    StartPortName: Next
+    TargetNodeGuid: 3048d719-9153-474c-b430-69ca8f403001
+    TargetPortName: Input
+  - StartNodeGuid: 3048d719-9153-474c-b430-69ca8f403001
+    StartPortName: Next
+    TargetNodeGuid: d7048722-92e8-44e9-854c-1b4d08f36df8
+    TargetPortName: Input
   Nodes:
   - rid: 1081365766594888085
   - rid: 1081365766594888086
@@ -73,13 +81,16 @@ MonoBehaviour:
   - rid: 1081365766594888088
   - rid: 1081365766594888089
   - rid: 1081365766594888090
-  - rid: 1081365766594888091
-  - rid: 1081365766594888092
   - rid: 1081365766594888093
   - rid: 1081365766594888094
   - rid: 1081365766594888095
   - rid: 1081365766594888096
   - rid: 1081365766594888097
+  - rid: 1081365766594888092
+  - rid: 1081365831020970125
+  - rid: 1081365766594888091
+  - rid: 1081365831020970126
+  - rid: 1081365831020970127
   references:
     version: 2
     RefIds:
@@ -141,7 +152,7 @@ MonoBehaviour:
       data:
         Guid: 1ed52ba2-00bc-4f23-82d4-3b0ae4d33359
         Position: {x: -323, y: 184}
-        SpeakerName: npc
+        SpeakerName: "\uAD00\uB9AC\uC790"
         DialogueText: "\uC218\uACE0\uD588\uB124"
     - rid: 1081365766594888092
       type: {class: DialogueEntryNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
@@ -200,3 +211,21 @@ MonoBehaviour:
         SpeakerName: "\uAD00\uB9AC\uC790"
         DialogueText: "\uC2B9\uB9AC \uC2DC \uACBD\uD5D8\uCE58\uAC00\n\uD328\uBC30
           \uC2DC \uB2E4\uC2DC \uC774\uACF3\uC73C\uB85C \uC624\uAC8C \uB420 \uAC81\uB2C8\uB2E4."
+    - rid: 1081365831020970125
+      type: {class: DialogueEntryNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 271d91bd-01e4-465f-af16-3707422f0eb1
+        Position: {x: -444, y: 561}
+        entryId: InProgress
+    - rid: 1081365831020970126
+      type: {class: DialogueLineNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 3048d719-9153-474c-b430-69ca8f403001
+        Position: {x: -260, y: 561}
+        SpeakerName: "\uAD00\uB9AC\uC790"
+        DialogueText: "\uC544\uC9C1 \uC794\uB2F9\uC774 \uB0A8\uC544\uC788\uC5B4."
+    - rid: 1081365831020970127
+      type: {class: DialogueEndNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: d7048722-92e8-44e9-854c-1b4d08f36df8
+        Position: {x: 56, y: 566}

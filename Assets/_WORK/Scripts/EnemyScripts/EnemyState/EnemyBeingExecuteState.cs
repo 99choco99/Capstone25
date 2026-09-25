@@ -1,7 +1,7 @@
-
 public class EnemyBeingExecuteState : EnemyState
 {
     public EnemyBeingExecuteState(Enemy enemy, EnemyStateMachine stateMachine) : base(enemy, stateMachine) { }
+
 
     public override bool CanInterrupted => false;
 
@@ -25,6 +25,7 @@ public class EnemyBeingExecuteState : EnemyState
     public void ExecutionFinished(bool completed)
     {
         if (completed && enemy.Stats.ProcessDeathblow()) return;
+        bool isFinalDeathblow = enemy.Stats.CurrentLife == 1;
 
         enemy.Sense.Alert(Player.LocalPlayer.transform.position);
 

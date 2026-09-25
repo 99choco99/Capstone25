@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.Timeline;
+using UnityEngine.Playables;
 
 public class BossRoomTrigger : MonoBehaviour
 {
@@ -11,22 +12,32 @@ public class BossRoomTrigger : MonoBehaviour
     [SerializeField] private Enemy Boss;
     [SerializeField] private GameObject[] Boundaries;
     [SerializeField] private Transform spawnPoint;
-    [SerializeField] private TimelineAsset timeline;
+    [SerializeField] private PlayableDirector introDirector;
+    [SerializeField] private PlayableDirector executionDirector;
 
     private void OnTriggerEnter(Collider other)
     {
-        if (isLocked) { return; }
+        if (isLocked || Boss.IsDead || !other.TryGetComponent(out Player player))
+            return;
         isLocked = true;
 
         SetBlocking();
+        introDirector.stopped += OnIntroStopped;
 
-        if (other.TryGetComponent(out Player player))
-        {
-            player.Motor.SetTransform(spawnPoint.position, spawnPoint.rotation);
-        }
-
+        player.InputHandler.SetInputEnabled(false);
+        player.Motor.SetTransform(spawnPoint.position, spawnPoint.rotation);
+        introDirector.Play();
         Boss.Stats.OnDeath += ClearBossRoom;
         OnEnterRoom?.Invoke();
+    }
+
+    private void OnIntroStopped(PlayableDirector director)
+    {
+        director.stopped -= OnIntroStopped;
+
+        Boss.Sense.enabled = true;
+        Boss.Sense.Alert(Player.LocalPlayer.transform.position);
+        Player.LocalPlayer.InputHandler.SetInputEnabled(true);
     }
 
 
@@ -44,6 +55,7 @@ public class BossRoomTrigger : MonoBehaviour
         Boss.Stats.OnDeath -= ClearBossRoom;
         isLocked = false;
         SetBlocking();
+        executionDirector.Play();
     }
 
 }

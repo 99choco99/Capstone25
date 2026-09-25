@@ -48,6 +48,19 @@ public class PlayerInputHandler : MonoBehaviour
         ClearAllInputs();
     }
 
+    public void SetInputEnabled(bool isEnabled)
+    {
+        if (isEnabled)
+        {
+            PlayerInput.ActivateInput();
+        }
+        else
+        {
+            PlayerInput.DeactivateInput();
+            ClearAllInputs();
+        }
+    }
+
     /// <summary>
     ///  입력값 초기화 로직
     /// </summary>

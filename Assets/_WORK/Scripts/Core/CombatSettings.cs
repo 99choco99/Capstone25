@@ -53,10 +53,10 @@ public sealed class CombatSettings : ScriptableObject
 
     [Header("공격 등급별 반응 (숨은 배율 없이 아래 값을 그대로 적용)")]
     [InspectorName("Light - 약한 공격")]
-    public Reaction Light = new Reaction();
+    public Reaction Light = new ();
 
     [InspectorName("Medium - 중간 공격")]
-    public Reaction Medium = new Reaction
+    public Reaction Medium = new()
     {
         DirectHitDistance = 0.65f, GuardDistance = 0.27f, ParriedDistance = 0.30f,
         HitRecoveryDuration = 0.5f,
@@ -65,7 +65,7 @@ public sealed class CombatSettings : ScriptableObject
     };
 
     [InspectorName("Heavy - 강한 공격")]
-    public Reaction Heavy = new Reaction
+    public Reaction Heavy = new()
     {
         DirectHitDistance = 0.95f, GuardDistance = 0.42f, ParriedDistance = 0.46f,
         HitRecoveryDuration = 0.6f,
@@ -84,7 +84,7 @@ public sealed class CombatSettings : ScriptableObject
         };
     }
 
-    /// <summary>한 공격 등급의 밀림·경직·연출 수치. 거리는 충돌로 막히지 않았을 때의 목표 이동량입니다.</summary>
+    /// <summary>한 공격 등급의 밀림, 경직, 연출 수치. 거리는 충돌로 막히지 않았을 때의 목표 이동량</summary>
     [Serializable]
     public sealed class Reaction
     {

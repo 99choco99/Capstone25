@@ -19,18 +19,16 @@ public class SekiroCamera : MonoBehaviour
 {
     [Header("연결")]
     [SerializeField] private TargetingSystem targetingSystem;
-    [Tooltip("대상에 전용 프로필이 없을 때 사용할 공통 락온 프로필")]
-    [SerializeField] private LockOnCameraProfile defaultLockOnProfile;
 
-    [Header("FreeCam · LockOn 공통 구도")]
+    [Header("FreeCam & LockOn 공통 구도")]
     [Tooltip("플레이어 루트에서 위로 올린 고정 LookAt 높이")]
     [SerializeField, Min(0f)] private float aimHeight = 1.3f;
 
     [Header("LockOn 구도")]
-    [Tooltip("전용 프로필이 없을 때 LookAt을 적 쪽으로 옮기는 비율")]
+    [Tooltip("락온 중 LookAt을 적 쪽으로 옮기는 비율")]
     [SerializeField, Range(0f, 1f)] private float lockTargetFramingWeight = 0.15f;
-    [Tooltip("전용 프로필이 없을 때 자유/락온 설정을 보간하는 시간")]
-    [SerializeField, Min(0f)] private float profileBlendDuration = 0.25f;
+    [Tooltip("락온 시작·해제 시 바라볼 지점을 전환하는 시간")]
+    [SerializeField, Min(0f)] private float lockOnBlendDuration = 0.25f;
 
     [Header("LockOn 수평 궤도")]
     [Tooltip("적의 반대편으로 공전하는 최대 각속도")]
@@ -56,20 +54,12 @@ public class SekiroCamera : MonoBehaviour
     private Player player;
     private Transform followTarget;
     private Transform aimTarget;
-    private ITargetable activeTarget;
     private Vector3 framingTargetPosition;
-    private bool hasFramingTarget;
-
-    private float fixedRadius;
-    private float fixedRadialScale;
     private bool isLockedOn;
 
-    private CameraSettings freeSettings;
-    private CameraSettings activeSettings;
-    private CameraSettings blendStartSettings;
-    private CameraSettings blendTargetSettings;
-    private float settingsBlendElapsed;
-    private float settingsBlendDuration;
+    private float framingWeight;
+    private float blendStartWeight;
+    private float blendElapsed;
 
     private void Awake()
     {
@@ -79,19 +69,9 @@ public class SekiroCamera : MonoBehaviour
 
         // 인살 카메라가 Live인 동안에도 복귀할 FreeCam 상태를 매 프레임 계산한다.
         // 그래야 인살 종료 시 오래된 Standby 상태로 되돌아가지 않는다.
-        cinemachineCam.StandbyUpdate =
-            CinemachineVirtualCameraBase.StandbyUpdateMode.Always;
+        cinemachineCam.StandbyUpdate = CinemachineVirtualCameraBase.StandbyUpdateMode.Always;
 
-        fixedRadius = orbitalFollow.Radius;
-        fixedRadialScale = orbitalFollow.RadialAxis.ClampValue(
-            orbitalFollow.RadialAxis.Value);
-
-        freeSettings = CreateFreeSettings();
-        activeSettings = freeSettings;
-        blendStartSettings = freeSettings;
-        blendTargetSettings = freeSettings;
-
-        GameObject aimObject = new GameObject("SekiroCamera_PlayerAim")
+        GameObject aimObject = new("SekiroCamera_PlayerAim")
         {
             hideFlags = HideFlags.DontSave
         };
@@ -103,9 +83,8 @@ public class SekiroCamera : MonoBehaviour
     {
         Player.OnLocalPlayerSpawned += BindPlayer;
 
-        // 카메라가 플레이어보다 늦게 활성화되면 스폰 이벤트를 놓칠 수 있다.
         if (Application.isPlaying)
-            TryBindExistingLocalPlayer();
+            BindExistingLocalPlayer();
     }
 
     private void OnDisable()
@@ -115,10 +94,8 @@ public class SekiroCamera : MonoBehaviour
             player.InputHandler.OnCursorStateChanged -= HandleCursorState;
 
         // 재활성화 시 현재 타깃을 다시 적용하도록 런타임 모드만 초기화한다.
-        activeTarget = null;
         isLockedOn = false;
-        hasFramingTarget = false;
-        SetOrbitInputEnabled(false, true);
+        SetOrbitInputEnabled(enabled: false, resetMomentum: true);
     }
 
     private void OnDestroy()
@@ -130,20 +107,16 @@ public class SekiroCamera : MonoBehaviour
     private void Start()
     {
         if (player == null)
-            TryBindExistingLocalPlayer();
+            BindExistingLocalPlayer();
     }
 
-    private bool TryBindExistingLocalPlayer()
+    private void BindExistingLocalPlayer()
     {
         Player localPlayer = Player.LocalPlayer;
         if (localPlayer == null && targetingSystem != null)
             localPlayer = targetingSystem.GetComponentInParent<Player>();
 
-        if (localPlayer == null || !localPlayer.IsLocalPlayer)
-            return false;
-
         BindPlayer(localPlayer);
-        return true;
     }
 
     private void BindPlayer(Player localPlayer)
@@ -157,19 +130,16 @@ public class SekiroCamera : MonoBehaviour
         player = localPlayer;
         player.InputHandler.OnCursorStateChanged += HandleCursorState;
         targetingSystem = localPlayer.TargetingSystem;
-        followTarget = localPlayer.cameraRoot != null
-            ? localPlayer.cameraRoot
-            : localPlayer.transform;
+        followTarget = localPlayer.cameraRoot != null ? localPlayer.cameraRoot : localPlayer.transform;
 
         cinemachineCam.Follow = followTarget;
 
-        freeSettings = CreateFreeSettings();
-        SetSettingsImmediately(freeSettings);
+        framingWeight = 0f;
+        blendStartWeight = 0f;
+        blendElapsed = 0f;
         aimTarget.position = GetPlayerAimPosition();
 
-        activeTarget = null;
         isLockedOn = false;
-        hasFramingTarget = false;
         // 이미 UI가 열린 뒤 카메라가 연결되는 경우에도 현재 입력 모드를 따른다.
         HandleCursorState(player.GetComponent<PlayerInput>().currentActionMap?.name == "UI");
     }
@@ -178,7 +148,7 @@ public class SekiroCamera : MonoBehaviour
     private void HandleCursorState(bool isUIOpen)
     {
         inputController.enabled = !isUIOpen;
-        SetOrbitInputEnabled(!isLockedOn, true);
+        SetOrbitInputEnabled(!isLockedOn, resetMomentum: true);
     }
 
     private void LateUpdate()
@@ -186,124 +156,39 @@ public class SekiroCamera : MonoBehaviour
         if (player == null || followTarget == null)
             return;
 
-        ITargetable currentTarget = GetCurrentTarget();
+        ITargetable currentTarget = targetingSystem != null ? targetingSystem.CurrentTarget : null;
         Transform lockPoint = GetLockPoint(currentTarget);
         if (lockPoint != null)
         {
+            // 락온 해제 중에도 마지막 적 위치를 사용해 시선을 부드럽게 되돌린다.
             framingTargetPosition = lockPoint.position;
-            hasFramingTarget = true;
         }
 
-        // 대상 변경은 같은 락온 모드 안에서도 프로필 전환을 일으킬 수 있다.
-        if (currentTarget != activeTarget || (lockPoint != null) != isLockedOn)
-            ApplyTarget(currentTarget, lockPoint != null);
+        bool shouldLockOn = lockPoint != null;
+        if (shouldLockOn != isLockedOn)
+        {
+            isLockedOn = shouldLockOn;
+            blendStartWeight = framingWeight;
+            blendElapsed = 0f;
+            SetOrbitInputEnabled(!isLockedOn, resetMomentum: true);
+            orbitalFollow.HorizontalAxis.CancelRecentering();
+            orbitalFollow.VerticalAxis.CancelRecentering();
+        }
 
         // 인살 중에는 보이지 않는 FreeCam에 마우스 입력이 누적되지 않게 한다.
-        SetOrbitInputEnabled(!isLockedOn, false);
+        SetOrbitInputEnabled(!isLockedOn, resetMomentum: false);
 
-        UpdateSettingsBlend(Time.deltaTime);
-        ApplyCameraSettings();
+        // 카메라 설정은 공통값을 쓰고, 적 쪽을 바라보는 비율만 전환한다.
+        blendElapsed = Mathf.Min(blendElapsed + Time.deltaTime, lockOnBlendDuration);
+        float t = lockOnBlendDuration <= 0f ? 1f : blendElapsed / lockOnBlendDuration;
+        float targetWeight = isLockedOn ? lockTargetFramingWeight : 0f;
+        framingWeight = Mathf.Lerp(blendStartWeight, targetWeight, Mathf.SmoothStep(0f, 1f, t));
 
         Vector3 playerAimPosition = GetPlayerAimPosition();
-        aimTarget.position = hasFramingTarget
-            ? Vector3.Lerp(
-                playerAimPosition,
-                framingTargetPosition,
-                activeSettings.TargetFramingWeight)
-            : playerAimPosition;
-
-        if (!isLockedOn
-            && activeSettings.TargetFramingWeight <= 0.0001f)
-        {
-            hasFramingTarget = false;
-        }
+        aimTarget.position = Vector3.Lerp(playerAimPosition, framingTargetPosition, framingWeight);
 
         if (isLockedOn && lockPoint != null)
             UpdateLockOnOrbit(lockPoint.position);
-    }
-
-    private void ApplyTarget(ITargetable target, bool shouldLockOn)
-    {
-        activeTarget = target;
-        isLockedOn = shouldLockOn;
-
-        SetOrbitInputEnabled(!shouldLockOn, true);
-        orbitalFollow.HorizontalAxis.CancelRecentering();
-        orbitalFollow.VerticalAxis.CancelRecentering();
-
-        if (!shouldLockOn)
-        {
-            BeginSettingsBlend(freeSettings, profileBlendDuration);
-            return;
-        }
-
-        LockOnCameraProfile profile = ResolveProfile(target);
-        CameraSettings settings = profile != null
-            ? CameraSettings.FromProfile(profile)
-            : CreateFallbackLockOnSettings();
-        float duration = profile != null
-            ? profile.BlendDuration
-            : profileBlendDuration;
-
-        BeginSettingsBlend(settings, duration);
-    }
-
-    private LockOnCameraProfile ResolveProfile(ITargetable target)
-    {
-        if (target is ILockOnCameraProfileProvider provider
-            && provider.LockOnCameraProfile != null)
-        {
-            return provider.LockOnCameraProfile;
-        }
-
-        return defaultLockOnProfile;
-    }
-
-    private void BeginSettingsBlend(CameraSettings target, float duration)
-    {
-        blendStartSettings = activeSettings;
-        blendTargetSettings = target;
-        settingsBlendElapsed = 0f;
-        settingsBlendDuration = Mathf.Max(0f, duration);
-
-        if (settingsBlendDuration <= 0f)
-            activeSettings = blendTargetSettings;
-    }
-
-    private void UpdateSettingsBlend(float deltaTime)
-    {
-        if (settingsBlendDuration <= 0f
-            || settingsBlendElapsed >= settingsBlendDuration)
-        {
-            activeSettings = blendTargetSettings;
-            return;
-        }
-
-        settingsBlendElapsed += Mathf.Max(0f, deltaTime);
-        float t = Mathf.Clamp01(settingsBlendElapsed / settingsBlendDuration);
-        activeSettings = CameraSettings.Lerp(
-            blendStartSettings,
-            blendTargetSettings,
-            Mathf.SmoothStep(0f, 1f, t));
-    }
-
-    private void SetSettingsImmediately(CameraSettings settings)
-    {
-        activeSettings = settings;
-        blendStartSettings = settings;
-        blendTargetSettings = settings;
-        settingsBlendElapsed = 0f;
-        settingsBlendDuration = 0f;
-        ApplyCameraSettings();
-    }
-
-    private void ApplyCameraSettings()
-    {
-        // LockOn은 FreeCam과 같은 구면 궤도의 부분집합이다.
-        // 프로필은 구도와 추적 반응만 바꾸며 Radius/FOV/축 범위는 바꾸지 않는다.
-        // 따라서 LockOn -> FreeCam 전환 순간에도 현재 궤도 위치가 그대로 유효하다.
-        orbitalFollow.Radius = fixedRadius;
-        orbitalFollow.RadialAxis.Value = fixedRadialScale;
     }
 
     /// <summary>
@@ -322,41 +207,9 @@ public class SekiroCamera : MonoBehaviour
         cinemachineCam.ForceCameraPosition(
             outputPosition,
             outputRotation);
-        orbitalFollow.Radius = fixedRadius;
-        orbitalFollow.RadialAxis.Value = fixedRadialScale;
         orbitalFollow.HorizontalAxis.CancelRecentering();
         orbitalFollow.VerticalAxis.CancelRecentering();
-        SetOrbitInputEnabled(!isLockedOn, true);
-    }
-
-    private CameraSettings CreateFreeSettings()
-    {
-        return new CameraSettings
-        {
-            PlayerAimHeight = aimHeight,
-            TargetFramingWeight = 0f,
-            EnemyAngleAbovePlayer = enemyAngleAbovePlayer,
-            YawPlayAngle = orbitDeadZone,
-            PitchPlayAngle = orbitDeadZone,
-            YawResponse = orbitResponse,
-            PitchResponse = orbitResponse,
-            MaxYawSpeed = maxYawSpeed,
-            MaxPitchSpeed = maxPitchSpeed
-        };
-    }
-
-    private CameraSettings CreateFallbackLockOnSettings()
-    {
-        CameraSettings settings = freeSettings;
-        settings.TargetFramingWeight = lockTargetFramingWeight;
-        settings.EnemyAngleAbovePlayer = enemyAngleAbovePlayer;
-        settings.YawPlayAngle = orbitDeadZone;
-        settings.PitchPlayAngle = orbitDeadZone;
-        settings.YawResponse = orbitResponse;
-        settings.PitchResponse = orbitResponse;
-        settings.MaxYawSpeed = maxYawSpeed;
-        settings.MaxPitchSpeed = maxPitchSpeed;
-        return settings;
+        SetOrbitInputEnabled(!isLockedOn, resetMomentum: true);
     }
 
     private void UpdateLockOnOrbit(Vector3 enemyLockPosition)
@@ -378,9 +231,9 @@ public class SekiroCamera : MonoBehaviour
         float yawError = Mathf.DeltaAngle(currentYaw, targetYaw);
         float yawStep = CalculateOrbitCorrection(
             yawError,
-            activeSettings.YawPlayAngle,
-            activeSettings.YawResponse,
-            activeSettings.MaxYawSpeed,
+            orbitDeadZone,
+            orbitResponse,
+            maxYawSpeed,
             Time.deltaTime);
 
         orbitalFollow.HorizontalAxis.Value =
@@ -401,58 +254,37 @@ public class SekiroCamera : MonoBehaviour
         Quaternion worldToCamera =
             Quaternion.Inverse(cameraState.GetFinalOrientation());
 
-        Vector3 playerView =
-            worldToCamera * (GetPlayerAimPosition() - cameraPosition);
-        Vector3 enemyView =
-            worldToCamera * (enemyLockPosition - cameraPosition);
+        Vector3 playerView = worldToCamera * (GetPlayerAimPosition() - cameraPosition);
+        Vector3 enemyView = worldToCamera * (enemyLockPosition - cameraPosition);
 
         if (playerView.z <= 0.001f || enemyView.z <= 0.001f)
             return;
 
-        float playerAngle =
-            Mathf.Atan2(playerView.y, playerView.z) * Mathf.Rad2Deg;
-        float enemyAngle =
-            Mathf.Atan2(enemyView.y, enemyView.z) * Mathf.Rad2Deg;
+        float playerAngle = Mathf.Atan2(playerView.y, playerView.z) * Mathf.Rad2Deg;
+        float enemyAngle = Mathf.Atan2(enemyView.y, enemyView.z) * Mathf.Rad2Deg;
         float currentSeparation = Mathf.DeltaAngle(playerAngle, enemyAngle);
-        float error =
-            activeSettings.EnemyAngleAbovePlayer - currentSeparation;
+        float pitchError = enemyAngleAbovePlayer - currentSeparation;
 
-        float pitchStep = CalculateOrbitCorrection(
-            error,
-            activeSettings.PitchPlayAngle,
-            activeSettings.PitchResponse,
-            activeSettings.MaxPitchSpeed,
-            Time.deltaTime);
+        float pitchStep = CalculateOrbitCorrection(pitchError, orbitDeadZone, orbitResponse, maxPitchSpeed, Time.deltaTime);
 
-        orbitalFollow.VerticalAxis.Value =
-            orbitalFollow.VerticalAxis.ClampValue(
-                orbitalFollow.VerticalAxis.Value + pitchStep);
+        float currentPitch = orbitalFollow.VerticalAxis.Value;
+        orbitalFollow.VerticalAxis.Value = orbitalFollow.VerticalAxis.ClampValue(currentPitch + pitchStep);
     }
 
     /// <summary>
     /// 락온 축 오차를 이번 프레임에 적용할 각도 변화량으로 변환합니다.
     /// </summary>
-    private static float CalculateOrbitCorrection(
-        float error,
-        float playAngle,
-        float response,
-        float maxSpeed,
-        float deltaTime)
+    private static float CalculateOrbitCorrection(float error, float deadZone, float response, float maxSpeed, float deltaTime)
     {
         float absoluteError = Mathf.Abs(error);
-        if (absoluteError <= playAngle || deltaTime <= 0f)
+        if (absoluteError <= deadZone || deltaTime <= 0f)
             return 0f;
 
-        float remainingError = absoluteError - playAngle;
-        float softZoneScale = playAngle > 0.0001f
-            ? Mathf.SmoothStep(
-                0f,
-                1f,
-                Mathf.Clamp01(remainingError / playAngle))
-            : 1f;
+        float remainingError = absoluteError - deadZone;
+        float softZoneProgress = deadZone > 0.0001f ? Mathf.Clamp01(remainingError / deadZone) : 1f;
+        float softZoneScale = Mathf.SmoothStep(0f, 1f, softZoneProgress);
 
-        float signedError =
-            Mathf.Sign(error) * remainingError * softZoneScale;
+        float signedError = Mathf.Sign(error) * remainingError * softZoneScale;
         float blend = 1f - Mathf.Exp(-Mathf.Max(0f, response) * deltaTime);
         float requestedStep = signedError * blend;
         float maximumStep = Mathf.Max(0f, maxSpeed) * deltaTime;
@@ -460,33 +292,9 @@ public class SekiroCamera : MonoBehaviour
         return Mathf.Clamp(requestedStep, -maximumStep, maximumStep);
     }
 
-    private ITargetable GetCurrentTarget()
-    {
-        return targetingSystem != null
-            ? targetingSystem.CurrentTarget
-            : null;
-    }
-
-    private static Transform GetLockPoint(ITargetable target)
-    {
-        if (target == null)
-            return null;
-
-        return target.LockOnPoint != null
-            ? target.LockOnPoint
-            : target.TargetTransform;
-    }
-
-    private Vector3 GetPlayerAimPosition()
-    {
-        return player.transform.position
-            + Vector3.up * activeSettings.PlayerAimHeight;
-    }
-
     private void SetOrbitInputEnabled(bool enabled, bool resetMomentum)
     {
-        enabled = enabled && inputController.enabled
-            && (player == null || !player.Execution.IsExecuting);
+        enabled = enabled && inputController.enabled && (player == null || !player.Execution.IsExecuting);
 
         for (int i = 0; i < inputController.Controllers.Count; i++)
         {
@@ -509,51 +317,18 @@ public class SekiroCamera : MonoBehaviour
         }
     }
 
-    private struct CameraSettings
+    //================================== 조회 함수 ==========================================
+
+    private static Transform GetLockPoint(ITargetable target)
     {
-        public float PlayerAimHeight;
-        public float TargetFramingWeight;
-        public float EnemyAngleAbovePlayer;
-        public float YawPlayAngle;
-        public float PitchPlayAngle;
-        public float YawResponse;
-        public float PitchResponse;
-        public float MaxYawSpeed;
-        public float MaxPitchSpeed;
+        if (target == null)
+            return null;
 
-        public static CameraSettings FromProfile(LockOnCameraProfile profile)
-        {
-            return new CameraSettings
-            {
-                PlayerAimHeight = profile.PlayerAimHeight,
-                TargetFramingWeight = profile.TargetFramingWeight,
-                EnemyAngleAbovePlayer = profile.EnemyAngleAbovePlayer,
-                YawPlayAngle = profile.YawPlayAngle,
-                PitchPlayAngle = profile.PitchPlayAngle,
-                YawResponse = profile.YawResponse,
-                PitchResponse = profile.PitchResponse,
-                MaxYawSpeed = profile.MaxYawSpeed,
-                MaxPitchSpeed = profile.MaxPitchSpeed
-            };
-        }
+        return target.LockOnPoint != null ? target.LockOnPoint : target.TargetTransform;
+    }
 
-        public static CameraSettings Lerp(
-            CameraSettings from,
-            CameraSettings to,
-            float t)
-        {
-            return new CameraSettings
-            {
-                PlayerAimHeight = Mathf.Lerp(from.PlayerAimHeight, to.PlayerAimHeight, t),
-                TargetFramingWeight = Mathf.Lerp(from.TargetFramingWeight, to.TargetFramingWeight, t),
-                EnemyAngleAbovePlayer = Mathf.Lerp(from.EnemyAngleAbovePlayer, to.EnemyAngleAbovePlayer, t),
-                YawPlayAngle = Mathf.Lerp(from.YawPlayAngle, to.YawPlayAngle, t),
-                PitchPlayAngle = Mathf.Lerp(from.PitchPlayAngle, to.PitchPlayAngle, t),
-                YawResponse = Mathf.Lerp(from.YawResponse, to.YawResponse, t),
-                PitchResponse = Mathf.Lerp(from.PitchResponse, to.PitchResponse, t),
-                MaxYawSpeed = Mathf.Lerp(from.MaxYawSpeed, to.MaxYawSpeed, t),
-                MaxPitchSpeed = Mathf.Lerp(from.MaxPitchSpeed, to.MaxPitchSpeed, t)
-            };
-        }
+    private Vector3 GetPlayerAimPosition()
+    {
+        return player.transform.position + Vector3.up * aimHeight;
     }
 }

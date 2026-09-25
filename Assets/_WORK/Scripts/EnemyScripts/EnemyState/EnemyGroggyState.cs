@@ -47,7 +47,6 @@ public class EnemyGroggyState : EnemyState
         // HP 소진으로 들어온 Groggy
         if (enemy.Stats.IsHealthDepleted)
         {
-            // 남은 목숨이 있으면 인살을 기다립니다. HP 소진만으로 다음 목숨을 건너뛰지 않습니다.
             if (enemy.Stats.CurrentLife <= 1 && stateTimer >= HealthDepletedDeathDelay)
                 enemy.Stats.Die();
 

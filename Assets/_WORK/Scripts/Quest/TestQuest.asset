@@ -54,19 +54,25 @@ MonoBehaviour:
     StartPortName: Next
     TargetNodeGuid: 19d37706-354f-4864-9c4b-ef397461987a
     TargetPortName: Input
+  - StartNodeGuid: 3aadaecf-f91e-4b07-ac53-546146418669
+    StartPortName: Next
+    TargetNodeGuid: 93d8b684-4aa5-43e3-9a91-0acd394208c7
+    TargetPortName: Input
   Nodes:
   - rid: 1081365723174928708
   - rid: 1081365653724332359
   - rid: 1081365723174928707
   - rid: 1081365723174928684
-  - rid: 1081365723174928683
-  - rid: 1081365723174928715
   - rid: 1081365723174928685
-  - rid: 1081365723174928721
-  - rid: 1081365723174928686
   - rid: 1081365723174928713
   - rid: 1081365723174928725
   - rid: 1081365723174928710
+  - rid: 1081365723174928683
+  - rid: 1081365723174928686
+  - rid: 1081365723174928715
+  - rid: 1081365723174928721
+  - rid: 1081365831020970123
+  - rid: 1081365831020970124
   QuestId: 1
   questName: TestQuest
   description: 
@@ -82,7 +88,7 @@ MonoBehaviour:
       type: {class: QuestInteractionEntryNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
       data:
         Guid: 1edf0ee0-3b10-4d28-845d-37efe721d548
-        Position: {x: 93, y: 106}
+        Position: {x: 93, y: -20}
         targetId: 
     - rid: 1081365723174928684
       type: {class: QuestObjectiveNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
@@ -110,7 +116,7 @@ MonoBehaviour:
       type: {class: QuestSuggestionNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
       data:
         Guid: ca6cd50f-e686-4306-b0b5-4c990fcb80bf
-        Position: {x: 322, y: 106}
+        Position: {x: 322, y: -20}
         DialogueEntryPoint:
           Container: {fileID: 11400000, guid: d8538b3cae947d341add0ba6e8b2751e, type: 2}
           entryId: Entry
@@ -152,13 +158,13 @@ MonoBehaviour:
       type: {class: QuestInteractionEntryNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
       data:
         Guid: 1a3c827a-1709-4807-b037-7683593cf5c5
-        Position: {x: 93, y: 196}
+        Position: {x: 93, y: 70}
         targetId: 
     - rid: 1081365723174928721
       type: {class: DialogueCandidateNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
       data:
         Guid: d05cd43e-b130-45e2-ad0e-07ac335094a1
-        Position: {x: 284, y: 196}
+        Position: {x: 284, y: 70}
         EntryPoint:
           Container: {fileID: 11400000, guid: d8538b3cae947d341add0ba6e8b2751e, type: 2}
           entryId: END
@@ -170,3 +176,19 @@ MonoBehaviour:
         Guid: 19d37706-354f-4864-9c4b-ef397461987a
         Position: {x: 604, y: 499}
         NewState: 2
+    - rid: 1081365831020970123
+      type: {class: QuestInteractionEntryNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 3aadaecf-f91e-4b07-ac53-546146418669
+        Position: {x: 93, y: 169}
+        targetId: 
+    - rid: 1081365831020970124
+      type: {class: DialogueCandidateNodeData, ns: UniversalGraph, asm: UniversalGraph.Runtime}
+      data:
+        Guid: 93d8b684-4aa5-43e3-9a91-0acd394208c7
+        Position: {x: 293, y: 169}
+        EntryPoint:
+          Container: {fileID: 11400000, guid: d8538b3cae947d341add0ba6e8b2751e, type: 2}
+          entryId: InProgress
+        DisplayName: "\uBCF5\uADC0"
+        Priority: 0
