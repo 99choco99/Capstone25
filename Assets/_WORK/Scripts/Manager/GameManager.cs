@@ -35,7 +35,6 @@ public class GameManager : MonoBehaviour
     {
         DataManager.Instance.LoadLocalData();
         await ChangeScene(SceneName.Main);
-        Player.LocalPlayer.Stats.RestoreHealth(Player.LocalPlayer.Stats.MaxHp.GetValue());
         isLocalGame = true;
         SaveGame();
     }
@@ -44,11 +43,7 @@ public class GameManager : MonoBehaviour
     {
         QuestManager.ResetQuest(Instance.QuestController, combatQuest.QuestId);
         await ChangeScene(SceneName.Main);
-        Player.LocalPlayer.Stats.RestoreHealth(Player.LocalPlayer.Stats.MaxHp.GetValue());
-        SaveGame();
-
     }
-
 
     [DialogueAction("SceneChagne")]
     public static void ChangeSceneAttribute(string sceneName)
@@ -56,13 +51,11 @@ public class GameManager : MonoBehaviour
         ChangeSceneFromDialogue(sceneName);
     }
 
-
     [QuestAction("AddExp", Owner = QuestMethodOwner.Global)]
     public static void GiveQuestExp(int amount)
     {
         Player.LocalPlayer.Stats.AddExp(amount);
     }
-
 
     private static async void ChangeSceneFromDialogue(string sceneName)
     {
@@ -93,6 +86,7 @@ public class GameManager : MonoBehaviour
             await LoadingScene.LoadScene(sceneName);
 
             PlayerSpawner.Instance.LocalPlayerSpawn();
+            Player.LocalPlayer.Stats.RestoreHealth(Player.LocalPlayer.Stats.MaxHp.GetValue());
         }
         finally
         {

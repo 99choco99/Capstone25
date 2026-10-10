@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.Cinemachine;
 using UnityEngine;
 
 public class HitStopManager : MonoBehaviour
@@ -7,12 +8,14 @@ public class HitStopManager : MonoBehaviour
 
     private Coroutine hitStopRoutine;
     private float timeScaleBeforeHitStop = 1f;
+    private float hitStopEndTime;
 
     private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
+            CinemachineImpulseManager.Instance.IgnoreTimeScale = true;
             DontDestroyOnLoad(gameObject);
         }
         else
@@ -46,31 +49,28 @@ public class HitStopManager : MonoBehaviour
     {
         if (duration <= 0f) return;
 
-        bool wasAlreadyStopping = hitStopRoutine != null;
-        if (wasAlreadyStopping)
+        float endTime = Time.unscaledTime + duration;
+        if (hitStopRoutine != null)
         {
-            StopCoroutine(hitStopRoutine);
-        }
-        else
-        {
-            timeScaleBeforeHitStop = Time.timeScale;
+            hitStopEndTime = Mathf.Max(hitStopEndTime, endTime);
+            return;
         }
 
-        hitStopRoutine = StartCoroutine(HitStopRoutine(duration));
+        timeScaleBeforeHitStop = Time.timeScale;
+        hitStopEndTime = endTime;
+        hitStopRoutine = StartCoroutine(HitStopRoutine());
     }
 
     /// <summary>
     /// 실제 히트스톱을 작동시킬 곳
     /// </summary>
-    private IEnumerator HitStopRoutine(float duration)
+    private IEnumerator HitStopRoutine()
     {
         float targetTimeScale = Mathf.Min(timeScaleBeforeHitStop, Mathf.Clamp01(CombatSettings.Current.HitStopTimeScale));
         Time.timeScale = targetTimeScale;
 
-        float elapsed = 0f;
-        while (elapsed < duration)
+        while (Time.unscaledTime < hitStopEndTime)
         {
-            elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
 

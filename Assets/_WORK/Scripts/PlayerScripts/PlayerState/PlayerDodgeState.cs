@@ -2,14 +2,15 @@
 
 public class PlayerDodgeState : PlayerState
 {
-    public PlayerDodgeState(Player player,PlayerStateMachine stateMachine) : base(player, stateMachine) { }
+    public PlayerDodgeState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine)
+    {
+    }
 
     public override bool UseRootMotion => true;
 
-    private const float iframeDuration = 0.2f;
-    private const float dodgeDuration = 0.74f;
+    private float iframeDuration => CombatSettings.Current.PlayerDodgeInvincibleDuration;
+    private float dodgeDuration => CombatSettings.Current.PlayerDodgeDuration;
     private float stateTimer = 0f;
-
 
     public override void Enter()
     {
@@ -22,7 +23,6 @@ public class PlayerDodgeState : PlayerState
         player.AnimatorController.PlayAction(AnimHash.Dodge, 0.08f);
         player.SetInvincible(true);
     }
-
 
     public override void Update()
     {

@@ -5,6 +5,7 @@ public class PlayerAnimationEventHandler : MonoBehaviour
 {
     Player player;
     Animator Anim;
+
     private void Awake()
     {
         player = GetComponentInParent<Player>();
@@ -15,14 +16,14 @@ public class PlayerAnimationEventHandler : MonoBehaviour
     {
         if (player.StateMachine.CurrentState != null && player.StateMachine.CurrentState.UseRootMotion)
         {
-            Vector3 deltaPosition = Anim.deltaPosition;
-            if (player.StateMachine.CurrentState is PlayerAttackState attack && attack.CurrentAttackData != null)
-                deltaPosition = attack.CurrentAttackData.ScaleAttackAdvance(deltaPosition, player.transform.forward);
-            player.Motor.ApplyRootMotion(deltaPosition, Anim.deltaRotation);
+            player.Motor.ApplyRootMotion(Anim.deltaPosition, Anim.deltaRotation);
 
             if (player.StateMachine.CurrentState is PlayerAttackState attackState)
-                attackState.RotateDuringWindUp();
+            {
+                attackState.UpdateAnimation();
+                if (player.StateMachine.CurrentState == attackState)
+                    attackState.RotateDuringWindUp();
+            }
         }
     }
-
 }

@@ -8,7 +8,9 @@ public class PlayerExecuteState : PlayerState
     private Enemy executedTarget;
     private bool restoreLockOn;
 
-    public PlayerExecuteState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
+    public PlayerExecuteState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine)
+    {
+    }
 
     public override bool UseRootMotion => true;
 
@@ -30,14 +32,17 @@ public class PlayerExecuteState : PlayerState
         player.Motor.SetMovement(Vector3.zero);
         player.Motor.StopKnockback();
 
-
         player.Execution.OnExecuteEnd -= HandleExecutionCompleted;
         player.Execution.OnExecuteEnd += HandleExecutionCompleted;
 
-
         if (!player.Execution.StartDeathblow(requested.Value))
-        {   
+        {
             //인살 실패 시
+            if (!player.Combat.CanStartAttack)
+            {
+                stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
+                return;
+            }
             stateMachine.RequestedAttackData = player.Combat.FirstAttackData;
             stateMachine.TransitionTo(stateMachine.PlayerAttackState);
             return;
@@ -51,6 +56,8 @@ public class PlayerExecuteState : PlayerState
     /// </summary>
     private void HandleExecutionCompleted()
     {
+        if (!player.Execution.isActiveAndEnabled) return;
+
         if (stateMachine.CurrentState == this)
         {
             if (restoreLockOn && executedTarget != null && !executedTarget.IsDead)

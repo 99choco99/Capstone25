@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class PlayerInteraction : MonoBehaviour
@@ -16,10 +14,9 @@ public class PlayerInteraction : MonoBehaviour
     public event Action<List<IInteractable>> OnInteractableChanged;
     public event Action<IInteractable, int> OnSelectionChanged;
 
-
     private IInteractable currentSelection;
-    public IInteractable CurrentSelection 
-    { 
+    public IInteractable CurrentSelection
+    {
         get => IsNull(currentSelection) ? null : currentSelection;
         private set => currentSelection = value;
     }
@@ -31,7 +28,6 @@ public class PlayerInteraction : MonoBehaviour
     public List<IInteractable> interactablesInRange = new();
     private readonly Collider[] hitColliders = new Collider[15];
     private readonly List<IInteractable> currentHits = new();
-
 
     /// <summary>
     /// 상호작용 가능한 목록들 초기화
@@ -50,7 +46,6 @@ public class PlayerInteraction : MonoBehaviour
     /// </summary>
     public void ExecuteInteraction() => CurrentSelection?.Interact(gameObject);
 
-
     /// <summary>
     /// 매 프레임마다가 아니라 0.1초에 한번씩 검사하도록
     /// </summary>
@@ -58,12 +53,11 @@ public class PlayerInteraction : MonoBehaviour
     {
         detectTimer += Time.deltaTime;
 
-        if(detectTimer >= DetectInterval)
+        if (detectTimer >= DetectInterval)
         {
             DetectInteractables();
             detectTimer -= DetectInterval;
         }
-
     }
 
     /// <summary>
@@ -72,12 +66,12 @@ public class PlayerInteraction : MonoBehaviour
     private void DetectInteractables()
     {
         if (IsDetectionPaused) return;
-        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, interactRange,hitColliders,layerMask);
+        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, interactRange, hitColliders, layerMask);
 
         bool isChanged = false;
         currentHits.Clear();
 
-        for (int i  = 0; i < hitCount; i++)
+        for (int i = 0; i < hitCount; i++)
         {
             if (hitColliders[i].TryGetComponent(out IInteractable interactable))
             {
@@ -120,4 +114,3 @@ public class PlayerInteraction : MonoBehaviour
     /// </summary>
     private static bool IsNull(IInteractable interactable) => (interactable as UnityEngine.Object) == null;
 }
-

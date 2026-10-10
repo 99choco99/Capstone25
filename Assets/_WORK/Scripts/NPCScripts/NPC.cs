@@ -3,25 +3,21 @@ using TMPro;
 using UnityEngine;
 using UniversalGraph;
 
-
 public class NPC : MonoBehaviour, IInteractable
 {
     [SerializeField] private QuestContainer questContainer;
     [SerializeField] private DialogueEntryPoint acceptEntryPoint;
     [SerializeField] private DialogueEntryPoint InprogressEntryPoint;
     [SerializeField] private DialogueEntryPoint reportEntryPoint;
+    [SerializeField] private int reportTargetId = 1;
+    [SerializeField, Min(0.01f)] private float rotationDuration = 1f; // 회전 시간
 
     [SerializeField] TextMeshProUGUI NPCName;
-    protected Animator anim;
 
-    [Header("Data Identifiers")]
-    public string id;
-    public string NPC_Name;
     public string InteractionPrompt => NPCName.text;
 
     private void Start()
     {
-        anim = GetComponent<Animator>();
         NPCName = GetComponentInChildren<TextMeshProUGUI>();
         NPCName.text = transform.name;
     }
@@ -43,7 +39,7 @@ public class NPC : MonoBehaviour, IInteractable
                 entryPoint = InprogressEntryPoint;
                 break;
             case QuestState.CanComplete:
-                QuestManager.ProcessObjectivesByEvent(GameManager.Instance.QuestController, "report", 1, 1);
+                QuestManager.ProcessObjectivesByEvent(GameManager.Instance.QuestController, QuestEventKeys.Report, reportTargetId, 1);
                 entryPoint = reportEntryPoint;
                 break;
             default:
@@ -57,7 +53,6 @@ public class NPC : MonoBehaviour, IInteractable
         }
     }
 
-
     //NPC가 player를 바라봄
     IEnumerator LookAtPlayer(Transform target)
     {
@@ -65,16 +60,15 @@ public class NPC : MonoBehaviour, IInteractable
         dir.y = 0;
         Quaternion Targetrot = Quaternion.LookRotation(dir);   // NPC가 바라볼 회전
         float ElapsedTime = 0f; // 경과된 시간
-        float rotationDuration = 0.5f; // 회전 시간
-        float rotationSpeed = 0.5f;  // 회전 속도
 
         while (ElapsedTime < rotationDuration)
         {
-            float time = ElapsedTime / rotationDuration;
+            float time = ElapsedTime / rotationDuration;  // 회전 속도
             transform.rotation = Quaternion.Slerp(transform.rotation, Targetrot, time);
-            ElapsedTime += Time.deltaTime * rotationSpeed;
+            ElapsedTime += Time.deltaTime;
             yield return null;
         }
+
         transform.rotation = Targetrot;
     }
 }

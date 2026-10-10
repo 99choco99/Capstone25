@@ -1,5 +1,4 @@
-﻿using System;
-using TMPro;
+﻿using TMPro;
 using UnityEngine.UI;
 using UnityEngine;
 
@@ -16,14 +15,16 @@ public class PlayerProfileUI : UIBase
 
     private PlayerStats stats;
 
+    public override void Init()
+    {
+        healthUpButton.onClick.AddListener(() => UpgradeStat(PlayerStatType.Health));
+        postureUpbutton.onClick.AddListener(() => UpgradeStat(PlayerStatType.MaxPosture));
+        attackPowerUpButton.onClick.AddListener(() => UpgradeStat(PlayerStatType.AttackPower));
+    }
 
     public override void SetUp(Player localPlayer)
     {
         PlayerStats Stats = localPlayer.Stats;
-        healthUpButton.onClick.RemoveAllListeners();
-        postureUpbutton.onClick.RemoveAllListeners();
-        attackPowerUpButton.onClick.RemoveAllListeners();
-
 
         if (stats != null)
         {
@@ -33,17 +34,18 @@ public class PlayerProfileUI : UIBase
         stats = Stats;
         stats.OnStatsChanged += UpdateUI;
 
-        healthUpButton.onClick.AddListener(() => { stats.UpAbility(PlayerStatType.Health); });
-        postureUpbutton.onClick.AddListener(() => stats.UpAbility(PlayerStatType.MaxPosture));
-        attackPowerUpButton.onClick.AddListener(() => stats.UpAbility(PlayerStatType.AttackPower));
-
-
         UpdateUI(stats);
+    }
+
+    private void UpgradeStat(PlayerStatType statType)
+    {
+        stats.UpAbility(statType);
+        GameManager.Instance.SaveGame();
     }
 
     private void OnDestroy()
     {
-        if(stats != null)
+        if (stats != null)
         {
             stats.OnStatsChanged -= UpdateUI;
         }
@@ -51,7 +53,10 @@ public class PlayerProfileUI : UIBase
 
     public void UpdateUI(PlayerStats playerStats)
     {
-        if(playerStats == null) { return; }
+        if (playerStats == null)
+        {
+            return;
+        }
         abilityText.text = $"Point : {playerStats.AbilityPoint}";
 
         RefreshStatText(healthText, playerStats.MaxHp);
@@ -62,15 +67,11 @@ public class PlayerProfileUI : UIBase
         healthUpButton.interactable = canUpgrade;
         postureUpbutton.interactable = canUpgrade;
         attackPowerUpButton.interactable = canUpgrade;
-
     }
-
 
     private void RefreshStatText(TextMeshProUGUI textUI, Stat stat)
     {
         if (textUI == null || stat == null) return;
-        float bonus = stat.GetValue() - stat.GetBaseValue();
-        string bonusStr = bonus > 0 ? $" (+ {bonus})" : "";
-        textUI.text = $"{stat.GetValue()}{bonusStr}";
+        textUI.text = $"{stat.GetValue()}";
     }
 }

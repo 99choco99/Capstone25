@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public abstract class LivingEntity : MonoBehaviour, IDamageable
 {
@@ -20,27 +18,20 @@ public abstract class LivingEntity : MonoBehaviour, IDamageable
     public bool IsHealthDepleted => CurrentHp <= 0f;
     public bool IsPostureBroken { get; private set; }
 
-
     //==== 이벤트 ====
     public event Action<float, float> OnHpChanged;
     public event Action<float, float> OnPostureChanged;
     public event Action OnHealthDepleted;
     public event Action OnPostureBroken;
-    public event Action<DamageResult>  OnDamage;
+    public event Action<DamageResult> OnDamage;
     public event Action OnDeath;
 
-
-    [Header("체간 회복")]
-    [SerializeField, Min(0f)] protected float postureRecoveryDelay = 2f;
-    [SerializeField, Min(0f)] protected float postureRecoveryRateRatio = 0.25f;
-    [Tooltip("가드일 때 회복 배속")]
-    [SerializeField, Min(1f)] protected float guardPostureRecoveryMultiplier = 2f;
     private float currentRecoveryTimer;
     private int lastPostureDamageFrame = -1;
 
-
     protected virtual IDefenser Defenser => null;
     protected virtual PostureRecoveryMode CurrentPostureRecoveryMode => PostureRecoveryMode.Disabled;
+    protected abstract CombatSettings.PostureRecovery PostureRecovery { get; }
 
     protected virtual void Awake()
     {
@@ -75,11 +66,10 @@ public abstract class LivingEntity : MonoBehaviour, IDamageable
         float maxHp = MaxHp.GetValue();
         float hpPercentage = maxHp > 0f ? CurrentHp / maxHp : 0f;
         float maxPosture = MaxPosture.GetValue();
-        float dynamicRecoveryRate =
-            maxPosture * postureRecoveryRateRatio * GetPostureRecoveryHealthMultiplier(hpPercentage);
+        float dynamicRecoveryRate = maxPosture * PostureRecovery.RateRatio * PostureRecovery.GetHealthMultiplier(hpPercentage);
 
         if (recoveryMode == PostureRecoveryMode.GuardBoosted)
-            dynamicRecoveryRate *= guardPostureRecoveryMultiplier;
+            dynamicRecoveryRate *= PostureRecovery.GuardMultiplier;
 
         if (dynamicRecoveryRate <= 0f) return;
 
@@ -91,17 +81,6 @@ public abstract class LivingEntity : MonoBehaviour, IDamageable
     }
 
     /// <summary>
-    /// hp 비율당 체간 회복률 가져오기
-    /// </summary>
-    protected virtual float GetPostureRecoveryHealthMultiplier(float hpPercentage)
-    {
-        if (hpPercentage > 0.75f) return 1f;
-        if (hpPercentage > 0.50f) return 0.75f;
-        if (hpPercentage > 0.25f) return 0.50f;
-        return 0.25f;
-    }
-
-    /// <summary>
     /// 모든 공격을 계산하고 피해를 입히는 함수
     /// </summary>
     public DamageResult ReceiveDamage(in DamageRequest request)
@@ -109,7 +88,16 @@ public abstract class LivingEntity : MonoBehaviour, IDamageable
         if (!CanReceiveDamage())
             return DamageResult.Ignored(request);
 
-        DefenseType defense = Defenser != null? Defenser.DecideDefense(request): DefenseType.None;
+        DefenseType defense = Defenser != null ? Defenser.DecideDefense(request) : DefenseType.None;
+
+        float contactDistance = float.PositiveInfinity;
+        if (request.Attacker != null)
+        {
+            Vector3 direction = transform.position - request.Attacker.transform.position;
+            direction.y = 0f;
+            contactDistance = direction.magnitude;
+        }
+        DamageResult result = DamageResult.Accepted(request, defense, contactDistance);
 
         DamagePayload payload = DamageCalculator.Calculate(request, defense);
 
@@ -133,8 +121,6 @@ public abstract class LivingEntity : MonoBehaviour, IDamageable
         {
             OnPostureBroken?.Invoke();
         }
-
-        DamageResult result = DamageResult.Accepted(request, defense);
 
         OnDamage?.Invoke(result);
 
@@ -190,7 +176,7 @@ public abstract class LivingEntity : MonoBehaviour, IDamageable
         float previousPosture = CurrentPosture;
         CurrentPosture = Mathf.Min(previousPosture + postureDamage, maxPosture);
 
-        currentRecoveryTimer = postureRecoveryDelay;
+        currentRecoveryTimer = PostureRecovery.Delay;
         lastPostureDamageFrame = Time.frameCount;
         OnPostureChanged?.Invoke(CurrentPosture, maxPosture);
 
@@ -210,7 +196,7 @@ public abstract class LivingEntity : MonoBehaviour, IDamageable
         if (request.Attacker == null)
             return;
 
-        float postureDamage = request.RequestedPayload.PostureDamage * DamageCalculator.DeflectPostureRatio;
+        float postureDamage = request.RequestedPayload.PostureDamage * CombatSettings.Current.DeflectPostureRatio;
         if (postureDamage <= 0f)
             return;
 
@@ -219,7 +205,6 @@ public abstract class LivingEntity : MonoBehaviour, IDamageable
 
         attacker.ReceivePostureDamage(postureDamage);
     }
-
 
     /// <summary>
     /// 죽음 처리
@@ -232,7 +217,6 @@ public abstract class LivingEntity : MonoBehaviour, IDamageable
         OnDeath?.Invoke();
     }
 
-
     /// <summary>
     /// 체력 회복
     /// </summary>
@@ -241,7 +225,6 @@ public abstract class LivingEntity : MonoBehaviour, IDamageable
         CurrentHp = Mathf.Min(CurrentHp + Mathf.Max(0f, heal), MaxHp.GetValue());
         OnHpChanged?.Invoke(CurrentHp, MaxHp.GetValue());
     }
-
 
     /// <summary>
     /// 체간 초기화

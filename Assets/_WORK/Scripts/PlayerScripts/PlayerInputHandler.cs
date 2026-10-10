@@ -5,6 +5,9 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(PlayerInput))]
 public class PlayerInputHandler : MonoBehaviour
 {
+    public const string GameplayActionMapName = "Player";
+    public const string UIActionMapName = "UI";
+
     [SerializeField] PlayerInput PlayerInput;
     public PlayerInputBuffer Buffer { get; } = new PlayerInputBuffer();
 
@@ -12,21 +15,19 @@ public class PlayerInputHandler : MonoBehaviour
     public Vector3 MoveInput { get; private set; }
     public float MoveAmount;
     public Vector2 LookInput { get; private set; }
-    public float Scroll { get; private set; }
     public bool SprintInput { get; private set; }
     public bool GuardInput { get; private set; }
     public float LastGuardPressedTime { get; private set; } = float.NegativeInfinity;
-
 
     public event Action OnInteractionPressed;
     public event Action<bool> OnCursorStateChanged;
     public event Action OnTargetPressed;
 
     //UI EnterAction
+    public event Action OnUIInteractionPressed;
     public event Action OnEscapePressed;
     public event Action OnProfilePressed;
     public event Action OnSettingPressed;
-    public event Action OnQuestPressed;
 
     private void Awake()
     {
@@ -36,14 +37,14 @@ public class PlayerInputHandler : MonoBehaviour
     public void SwitchToGameplayMode()
     {
         if (!PlayerInput.isActiveAndEnabled) return;
-        PlayerInput.SwitchCurrentActionMap("Player");
+        PlayerInput.SwitchCurrentActionMap(GameplayActionMapName);
         OnCursorStateChanged?.Invoke(false);
         ClearAllInputs();
     }
 
     public void SwitchToUIMode()
     {
-        PlayerInput.SwitchCurrentActionMap("UI");
+        PlayerInput.SwitchCurrentActionMap(UIActionMapName);
         OnCursorStateChanged?.Invoke(true);
         ClearAllInputs();
     }
@@ -68,11 +69,11 @@ public class PlayerInputHandler : MonoBehaviour
     {
         MoveInput = Vector3.zero;
         MoveAmount = 0f;
-        SprintInput = false; GuardInput = false;
+        SprintInput = false;
+        GuardInput = false;
         LastGuardPressedTime = float.NegativeInfinity;
         Buffer.Clear();
     }
-
 
     /*=============== Input System Callbacks ===================*/
     public void OnMove(InputAction.CallbackContext context)
@@ -86,14 +87,6 @@ public class PlayerInputHandler : MonoBehaviour
         LookInput = context.ReadValue<Vector2>();
     }
 
-    public void OnWheel(InputAction.CallbackContext context)
-    {
-        Scroll = -context.ReadValue<float>();
-    }
-
-
-
-
     public void OnGuard(InputAction.CallbackContext context)
     {
         if (context.started)
@@ -106,31 +99,35 @@ public class PlayerInputHandler : MonoBehaviour
         {
             GuardInput = false;
         }
-
     }
 
     public void OnAttack(InputAction.CallbackContext context)
     {
         if (context.started) Buffer.AddCommand(ActionCommand.Attack);
     }
+
     public void OnJump(InputAction.CallbackContext context)
     {
         if (context.started) Buffer.AddCommand(ActionCommand.Jump);
     }
-    public void OnInteraction(InputAction.CallbackContext context) { 
+
+    public void OnInteraction(InputAction.CallbackContext context)
+    {
         if (context.started)
         {
-            OnInteractionPressed?.Invoke();
+            // 대화를 시작한 F 입력으로 첫 대사까지 넘기지 않도록, 입력이 발생한 맵으로 구분합니다.
+            if (context.action.actionMap.name == UIActionMapName) OnUIInteractionPressed?.Invoke();
+            else OnInteractionPressed?.Invoke();
         }
     }
-    public void OnChangeTarget(InputAction.CallbackContext context) { 
+
+    public void OnChangeTarget(InputAction.CallbackContext context)
+    {
         if (context.started)
         {
             OnTargetPressed?.Invoke();
         }
-
     }
-
 
     public void OnDodge(InputAction.CallbackContext context)
     {
@@ -143,11 +140,19 @@ public class PlayerInputHandler : MonoBehaviour
         else if (context.canceled) SprintInput = false;
     }
 
-
     /* ==================== UI Events =================*/
-    public void OnEscape(InputAction.CallbackContext context) { if (context.performed) OnEscapePressed?.Invoke(); }
-    public void OnPlayerProfile(InputAction.CallbackContext context) { if (context.performed) OnProfilePressed?.Invoke(); }
-    public void OnSetting(InputAction.CallbackContext context) { if (context.performed) OnSettingPressed?.Invoke(); }
-    public void OnQuestList(InputAction.CallbackContext context) { if (context.performed) OnQuestPressed?.Invoke(); }
+    public void OnEscape(InputAction.CallbackContext context)
+    {
+        if (context.performed) OnEscapePressed?.Invoke();
+    }
 
+    public void OnPlayerProfile(InputAction.CallbackContext context)
+    {
+        if (context.performed) OnProfilePressed?.Invoke();
+    }
+
+    public void OnSetting(InputAction.CallbackContext context)
+    {
+        if (context.performed) OnSettingPressed?.Invoke();
+    }
 }

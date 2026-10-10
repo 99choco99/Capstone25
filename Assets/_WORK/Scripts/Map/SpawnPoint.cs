@@ -2,11 +2,11 @@
 
 public class SpawnPoint : MonoBehaviour
 {
-
     private void OnEnable()
     {
         PlayerSpawner.Instance.RegisterSpawnPoint(transform);
     }
+
     private void OnDisable()
     {
         PlayerSpawner.Instance.UnregisterSpawnPoint(transform);
@@ -20,5 +20,4 @@ public class SpawnPoint : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawRay(transform.position, transform.forward * 2f);
     }
-
 }

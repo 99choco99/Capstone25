@@ -36,19 +36,18 @@ public class DialogueUI : UIBase
     // 플레이어가 재생성되면 입력만 새 플레이어에 다시 연결합니다.
     public override void SetUp(Player player)
     {
-        if (inputHandler != null) inputHandler.OnInteractionPressed -= NextDialogue;
+        if (inputHandler != null) inputHandler.OnUIInteractionPressed -= NextDialogue;
         dialogueManager.CancelConversation();
 
         inputHandler = player.InputHandler;
         playerInteraction = player.Interaction;
 
-        inputHandler.OnInteractionPressed += NextDialogue;
+        inputHandler.OnUIInteractionPressed += NextDialogue;
     }
-
 
     private void OnDestroy()
     {
-        if (inputHandler != null) inputHandler.OnInteractionPressed -= NextDialogue;
+        if (inputHandler != null) inputHandler.OnUIInteractionPressed -= NextDialogue;
         if (dialogueManager == null) return;
 
         dialogueManager.ConversationStart -= OpenDialogue;
@@ -74,7 +73,6 @@ public class DialogueUI : UIBase
 
         MainUIManager.Instance.OpenUI(UIPanelType.Dialogue);
     }
-
 
     private void DisplayLine(DialogueLineNodeData data)
     {
@@ -113,6 +111,7 @@ public class DialogueUI : UIBase
             });
             ui.gameObject.SetActive(true);
         }
+
         choicePanel.gameObject.SetActive(true);
     }
 
@@ -123,6 +122,7 @@ public class DialogueUI : UIBase
             ui.SetClickAction(null);
             ui.gameObject.SetActive(false);
         }
+
         choicePanel.gameObject.SetActive(false);
     }
 

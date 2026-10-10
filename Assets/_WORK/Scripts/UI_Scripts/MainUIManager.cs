@@ -1,14 +1,12 @@
-﻿using System.Linq;
-using UnityEngine;
+﻿using UnityEngine;
 
-
-
-public enum UIPanelType { 
-    Quest = 0,
+public enum UIPanelType
+{
     Profile = 3,
     Setting = 4,
     Dialogue = 5
 }
+
 public class MainUIManager : MonoBehaviour
 {
     public static MainUIManager Instance { get; private set; }
@@ -17,7 +15,6 @@ public class MainUIManager : MonoBehaviour
     [SerializeField] private PanelUI panels;
 
     private PlayerInputHandler currentInput;
-
 
     private void Awake()
     {
@@ -32,7 +29,7 @@ public class MainUIManager : MonoBehaviour
             return;
         }
 
-        if(panels != null)
+        if (panels != null)
         {
             panels.InitPanels();
         }
@@ -42,6 +39,7 @@ public class MainUIManager : MonoBehaviour
     {
         Player.OnLocalPlayerSpawned += SetUp;
     }
+
     private void OnDestroy()
     {
         Player.OnLocalPlayerSpawned -= SetUp;
@@ -50,38 +48,55 @@ public class MainUIManager : MonoBehaviour
 
     private void SetUp(Player player)
     {
-        if (currentInput != null) UnsubscribeInputEvents();
+        UnsubscribeInputEvents();
 
         currentInput = player.InputHandler;
 
-        if (panels != null) {
+        if (panels != null)
+        {
             panels.CloseAllPanels();
             panels.SetUpPanels(player);
         }
 
         currentInput.OnProfilePressed += OnProfileInput;
         currentInput.OnSettingPressed += OnSettingInput;
-        currentInput.OnQuestPressed += OnQuestInput;
 
         currentInput.OnEscapePressed += CloseLastUI;
 
         UpdateCursorState();
     }
 
-
     private void OnProfileInput() => ToggleUI(UIPanelType.Profile);
     private void OnSettingInput() => ToggleUI(UIPanelType.Setting);
-    private void OnQuestInput() => ToggleUI(UIPanelType.Quest);
 
     // UI를 열고 닫을 때 사용하는 통로
-    public void ToggleUI(UIPanelType type){panels?.ToggleUI(type);UpdateCursorState();}
-    public void OpenUI(UIPanelType type) { panels?.OpenUI(type); UpdateCursorState(); }
-    public void CloseUI(UIPanelType type) { panels?.CloseUI(type); UpdateCursorState(); }
-    public void CloseLastUI() {
+    public void ToggleUI(UIPanelType type)
+    {
+        panels?.ToggleUI(type);
+        UpdateCursorState();
+    }
+
+    public void OpenUI(UIPanelType type)
+    {
+        panels?.OpenUI(type);
+        UpdateCursorState();
+    }
+
+    public void CloseUI(UIPanelType type)
+    {
+        panels?.CloseUI(type);
+        UpdateCursorState();
+    }
+
+    public void CloseLastUI()
+    {
         if (panels != null && panels.IsAnyPanelOpen())
         {
-            UIPanelType lastPanelType = panels.currentOpenUI.Last();
-            if (lastPanelType == UIPanelType.Dialogue) { return; }
+            UIPanelType lastPanelType = panels.currentOpenUI[^1];
+            if (lastPanelType == UIPanelType.Dialogue)
+            {
+                return;
+            }
             panels.CloseLastUI();
         }
         UpdateCursorState();
@@ -91,8 +106,7 @@ public class MainUIManager : MonoBehaviour
     {
         if (currentInput != null && panels != null)
         {
-            bool isUIOpen = panels.IsAnyPanelOpen();
-            bool shouldShowCursor = isUIOpen;
+            bool shouldShowCursor = panels.IsAnyPanelOpen();
 
             Cursor.visible = shouldShowCursor;
             Cursor.lockState = shouldShowCursor ? CursorLockMode.Confined : CursorLockMode.Locked;
@@ -104,21 +118,12 @@ public class MainUIManager : MonoBehaviour
         }
     }
 
-
     private void UnsubscribeInputEvents()
     {
         if (currentInput == null) return;
 
         currentInput.OnProfilePressed -= OnProfileInput;
         currentInput.OnSettingPressed -= OnSettingInput;
-        currentInput.OnQuestPressed -= OnQuestInput;
         currentInput.OnEscapePressed -= CloseLastUI;
-
     }
-
-
-
 }
-
-
-

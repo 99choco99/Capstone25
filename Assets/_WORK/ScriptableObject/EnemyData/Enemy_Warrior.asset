@@ -12,8 +12,45 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6064334515f8e24a962028d055fa65d, type: 3}
   m_Name: Enemy_Warrior
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
-  id: 101
+  id: 100
   hp: 240
   posture: 150
+  attackPower: 1
   exp: 5
-  gold: 10
+  combatRange: 3
+  combatExitRangeMultiplier: 1.4
+  strafeDistance: 3
+  minActionDelay: 0.3
+  maxActionDelay: 0.5
+  pattern:
+  - {fileID: 11400000, guid: d6e4afb3beb547028f8a81df7f128ed2, type: 2}
+  - {fileID: 11400000, guid: 60ac9c3975384b690325f99fdff83a7d, type: 2}
+  - {fileID: 11400000, guid: cddf5cfb5dd80e550a4bc7c37aa3d9f4, type: 2}
+  - {fileID: 11400000, guid: 59deff0e23886a5769cb6648401eb7ab, type: 2}
+  - {fileID: 11400000, guid: bd6e7429bbd727e81728d31f86871938, type: 2}
+  - {fileID: 11400000, guid: 148b41db8fdd6094ede19332da938fe1, type: 2}
+  avoidRepeatedPatterns: 1
+  repeatedPatternWeight: 0.35
+  retreatAttack: {fileID: 0}
+  parryChance: 0.1
+  blockChance: 0.75
+  guardLeadTime: 0.11
+  counterChance: 1
+  counterDelay: 0.16
+  combatRotationSpeed: 15
+  chaseAngularSpeed: 400
+  patrolSpeed: 2
+  chaseSpeed: 5.2
+  strafeSpeed: 2.2
+  strafeArcAngle: 30
+  minStrafeTime: 0.6
+  maxStrafeTime: 1.2
+  strafeRefreshTime: 0.25
+  arrivalTolerance: 0.1
+  strafeSampleDistance: 1.5
+  strafeRetryTime: 0.5
+  reactionRange: 2.7
+  threatAngle: 100
+  guardAngle: 120
+  distanceTolerance: 0.2
+  minimumApproachDistance: 1.35

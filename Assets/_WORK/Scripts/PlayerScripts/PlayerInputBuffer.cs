@@ -1,6 +1,13 @@
 ﻿using UnityEngine;
 
-public enum ActionCommand { None, Attack,Guard ,Dodge, Jump, Interact }
+public enum ActionCommand
+{
+    None,
+    Attack,
+    Guard,
+    Dodge,
+    Jump
+}
 
 public struct InputTicket
 {
@@ -12,7 +19,6 @@ public struct InputTicket
 public class PlayerInputBuffer
 {
     private InputTicket currentTicket;
-    private const float bufferTime = 0.25f;
 
     public void AddCommand(ActionCommand cmd)
     {
@@ -22,19 +28,13 @@ public class PlayerInputBuffer
             Timestamp = Time.unscaledTime
         };
     }
+
     public ActionCommand PeekValidCommand()
     {
-        if (currentTicket.IsValid)
-        {
-            if (Time.unscaledTime - currentTicket.Timestamp <= bufferTime)
-            {
-                return currentTicket.Command;
-            }
-            else
-            {
-                Clear();
-            }
-        }
+        if (!currentTicket.IsValid) return ActionCommand.None;
+        if (Time.unscaledTime - currentTicket.Timestamp <= CombatSettings.Current.PlayerInputBufferTime) return currentTicket.Command;
+
+        Clear();
         return ActionCommand.None;
     }
 

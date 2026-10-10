@@ -7,5 +7,4 @@ public class BootStrap : MonoBehaviour
     {
         SceneManager.LoadScene(SceneName.Login);
     }
-
 }

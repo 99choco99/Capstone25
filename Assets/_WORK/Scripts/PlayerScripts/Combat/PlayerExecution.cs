@@ -3,9 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
-using UnityEngine.UIElements;
 using SoundEffectManager;
-
 
 /// <summary>
 /// 인살 시작 방향
@@ -24,7 +22,7 @@ public readonly struct DeathblowPlan
 {
     public Enemy Target { get; }
     public TimelineAsset Timeline { get; }
-    public DeathblowDirection Direction { get; }  //정면 or 후방 인살인지
+    public DeathblowDirection Direction { get; } //정면 or 후방 인살인지
     public Pose PlayerPose { get; }
     public Quaternion VictimRotation { get; }
 
@@ -39,7 +37,6 @@ public readonly struct DeathblowPlan
         VictimRotation = victimRotation;
     }
 }
-
 
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(PlayableDirector))]
@@ -71,7 +68,8 @@ public class PlayerExecution : MonoBehaviour
     [SerializeField, Min(0.1f)] private float groundDistance = 2f;
 
     public PlayableDirector DeathblowDirector { get; private set; }
-    public bool IsExecuting{ get; private set; }
+    public bool IsExecuting { get; private set; }
+    public float MaxExecutionDistance => maxExecutionDistance;
 
     // 카메라가 정렬 전 현재 위치가 아니라 최종 연출 축을 기준으로 샷을 잡을 수 있도록
     // 실행 대상과 최종 Pose를 함께 전달한다.
@@ -85,7 +83,6 @@ public class PlayerExecution : MonoBehaviour
     private Enemy enemy;
     private CharacterController characterController;
     private Coroutine executionRoutine;
-
 
     private void Awake()
     {
@@ -102,7 +99,6 @@ public class PlayerExecution : MonoBehaviour
 
     //==================== 인살 검사용 코드들 ============================
 
-
     /// <summary>
     /// 인살이 가능한지 검사
     /// <para>UI와 입력이 함께 사용</para>
@@ -114,7 +110,6 @@ public class PlayerExecution : MonoBehaviour
 
         if (IsExecuting || DeathblowDirector.state == PlayState.Playing) return false;
         if (enemy == null || enemy.IsDead || enemy.IsBeingExecuted) return false;
-
 
         //거리 체크
         Vector3 enemyToPlayer = transform.position - enemy.transform.position;
@@ -143,6 +138,7 @@ public class PlayerExecution : MonoBehaviour
         }
 
         if (!HasClearPath(enemy)) return false;
+        if (!HasClearAlignmentPath(playerPose.position, enemy)) return false;
         if (!HasSpace(playerPose.position, enemy)) return false;
 
         plan = new DeathblowPlan(enemy, timeline, direction, playerPose, victimRotation);
@@ -173,7 +169,6 @@ public class PlayerExecution : MonoBehaviour
         return true;
     }
 
-
     ///<summary> 땅 좌표값 구하기</summary>
     private bool GetGroundPosition(Vector3 playerPosition, Enemy enemy, out Vector3 groundPosition)
     {
@@ -182,7 +177,6 @@ public class PlayerExecution : MonoBehaviour
         float castDistance = 1f + groundDistance;
 
         int hitCount = Physics.RaycastNonAlloc(origin, Vector3.down, raycastBuffer, castDistance, GroundLayers, QueryTriggerInteraction.Ignore);
-        
 
         //가장 가까운 땅 찾기
         float nearestDistance = float.PositiveInfinity;
@@ -213,7 +207,34 @@ public class PlayerExecution : MonoBehaviour
         float distance = dir.magnitude;
         if (distance < 0.0001f) return true;
 
-        int hitCount = Physics.RaycastNonAlloc(start, dir / distance, raycastBuffer, distance,  CollisionLayers, QueryTriggerInteraction.Ignore);
+        int hitCount = Physics.RaycastNonAlloc(start, dir / distance, raycastBuffer, distance, CollisionLayers, QueryTriggerInteraction.Ignore);
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Collider hit = raycastBuffer[i].collider;
+            if (hit != null && IsObstacle(hit, enemy))
+                return false;
+        }
+
+        return hitCount < raycastBuffer.Length;
+    }
+
+    private bool HasClearAlignmentPath(Vector3 position, Enemy enemy)
+    {
+        Vector3 direction = position - transform.position;
+        float distance = direction.magnitude;
+        if (distance < 0.0001f) return true;
+
+        Vector3 scale = transform.lossyScale;
+        float radius = Mathf.Max(0.05f, characterController.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z)));
+        float height = Mathf.Max(characterController.height * Mathf.Abs(scale.y), radius * 2f);
+        float skinWidth = characterController.skinWidth * Mathf.Abs(scale.y);
+        float halfSegment = Mathf.Max(0f, height * 0.5f - radius - skinWidth);
+        Vector3 center = transform.TransformPoint(characterController.center);
+        Vector3 bottom = center - transform.up * halfSegment;
+        Vector3 top = center + transform.up * halfSegment;
+
+        int hitCount = Physics.CapsuleCastNonAlloc(bottom, top, radius, direction / distance, raycastBuffer, distance, CollisionLayers, QueryTriggerInteraction.Ignore);
 
         for (int i = 0; i < hitCount; i++)
         {
@@ -276,7 +297,6 @@ public class PlayerExecution : MonoBehaviour
         return direction.sqrMagnitude < 0.0001f ? Vector3.forward : direction.normalized;
     }
 
-
     //==================== 인살 시작 코드들 ============================
 
     /// <summary>
@@ -330,19 +350,30 @@ public class PlayerExecution : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = alignDuration <= 0f ? 1f : Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / alignDuration));
 
-            player.Motor.SetTransform(
-                Vector3.Lerp(startPlayerPosition, plan.PlayerPose.position, t),
-                Quaternion.Slerp(startPlayerRotation, plan.PlayerPose.rotation, t)
-            );
+            Vector3 nextPosition = Vector3.Lerp(startPlayerPosition, plan.PlayerPose.position, t);
+            if (!HasClearAlignmentPath(nextPosition, enemy))
+            {
+                executionRoutine = null;
+                FinishDeathblow(completed: false);
+                yield break;
+            }
+
+            player.Motor.SetTransform(nextPosition, Quaternion.Slerp(startPlayerRotation, plan.PlayerPose.rotation, t));
             enemy.transform.rotation = Quaternion.Slerp(startEnemyRotation, plan.VictimRotation, t);
 
             yield return null;
         }
 
         //최종 오차 보정
+        if (!HasClearAlignmentPath(plan.PlayerPose.position, enemy) || !HasSpace(plan.PlayerPose.position, enemy))
+        {
+            executionRoutine = null;
+            FinishDeathblow(completed: false);
+            yield break;
+        }
+
         player.Motor.SetTransform(plan.PlayerPose.position, plan.PlayerPose.rotation);
         enemy.transform.rotation = plan.VictimRotation;
-
 
         //인살 실행
         // 인살 중에는 양쪽 상태와 Director를 외부에서 변경하지 않습니다.
@@ -352,7 +383,7 @@ public class PlayerExecution : MonoBehaviour
         DeathblowDirector.Play();
 
         if (SoundManager.Instance != null)
-            SoundManager.Instance.Play("ExecuteBGM");
+            SoundManager.Instance.Play(SfxKeys.Execute);
 
         while (DeathblowDirector.time < DeathblowDirector.duration)
         {
@@ -384,7 +415,6 @@ public class PlayerExecution : MonoBehaviour
 
         Animator attackerAnimator = player.AnimatorController.Animator;
         Animator victimAnimator = enemy.AnimationController.Animator;
-
 
         DeathblowDirector.SetGenericBinding(attackerTrack, attackerAnimator);
         DeathblowDirector.SetGenericBinding(victimTrack, victimAnimator);

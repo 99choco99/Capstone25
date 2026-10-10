@@ -1,14 +1,20 @@
-﻿using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 
+[DefaultExecutionOrder(-300)]
 public class Weapon : MonoBehaviour
 {
     [SerializeField] private LayerMask targetLayerMask;
     [SerializeField] private float hitCheckRadius = 0.15f; // 검사할 반경
     [SerializeField] private Transform[] hitPoints;    // 검사 중심점
+    [SerializeField, Min(0)] private int hitGroup;
+    [SerializeField] private TrailRenderer attackTrailPrefab;
+
+    public int HitGroup => hitGroup;
 
     private IWeaponOwner owner;
+    private Transform ownerTransform;
     private bool isAttackActive = false;
+    private TrailRenderer attackTrail;
 
     private Vector3[] previousPoints;
     private bool hasValidHitPoints;
@@ -19,7 +25,8 @@ public class Weapon : MonoBehaviour
     private void Awake()
     {
         owner = GetComponentInParent<IWeaponOwner>();
-        if(hitPoints == null || hitPoints.Length == 0)
+        ownerTransform = (owner as Component)?.transform;
+        if (hitPoints == null || hitPoints.Length == 0)
         {
             Debug.LogError("Weapon: 무기에 hitPoint가 설정되지 않아 공격 판정을 비활성화합니다.", this);
             return;
@@ -36,11 +43,15 @@ public class Weapon : MonoBehaviour
 
         previousPoints = new Vector3[hitPoints.Length];
         hasValidHitPoints = true;
+
+        if (attackTrailPrefab != null)
+        {
+            attackTrail = Instantiate(attackTrailPrefab, transform, false);
+            attackTrail.transform.position = (hitPoints[0].position + hitPoints[hitPoints.Length - 1].position) * 0.5f;
+            attackTrail.emitting = false;
+        }
     }
-    /// <summary>
-    /// 플레이어·적 State가 이번 프레임의 공격 취소와 히트윈도 갱신을 먼저 처리한 뒤
-    /// 무기 충돌을 검사해 이미 닫힌 공격이 한 프레임 더 맞히는 현상을 막습니다.
-    /// </summary>
+
     private void LateUpdate()
     {
         if (owner == null || !isAttackActive || !hasValidHitPoints)
@@ -49,6 +60,7 @@ public class Weapon : MonoBehaviour
         }
         PerformHitCheck();
     }
+
     public void EnableWeaponCollider()
     {
         if (!hasValidHitPoints)
@@ -59,6 +71,13 @@ public class Weapon : MonoBehaviour
 
         isAttackActive = true;
 
+        if (attackTrail != null)
+        {
+            attackTrail.Clear();
+            attackTrail.AddPosition(attackTrail.transform.position);
+            attackTrail.emitting = true;
+        }
+
         for (int i = 0; i < hitPoints.Length; i++)
         {
             previousPoints[i] = hitPoints[i].position;
@@ -68,12 +87,30 @@ public class Weapon : MonoBehaviour
     public void DisableWeaponCollider()
     {
         isAttackActive = false;
+        if (attackTrail != null)
+            attackTrail.emitting = false;
+    }
+
+    private void OnDisable()
+    {
+        DisableWeaponCollider();
+        if (attackTrail != null)
+            attackTrail.Clear();
     }
 
     public void PerformHitCheck()
     {
         if (!hasValidHitPoints)
             return;
+
+        if (owner.IsDefensibleAttack)
+        {
+            for (int i = 0; i < hitPoints.Length; i++)
+            {
+                ProcessGuardContacts(previousPoints[i], hitPoints[i].position);
+                if (!isAttackActive) return;
+            }
+        }
 
         for (int i = 0; i < hitPoints.Length; i++)
         {
@@ -83,31 +120,45 @@ public class Weapon : MonoBehaviour
             Vector3 direction = currentPoint - previousPoint;
             float distance = direction.magnitude;
 
-            if(distance > 0.001f)
+            if (distance > 0.001f)
             {
-                // SphereCast는 시작점이 이미 대상 콜라이더 안에 있으면 놓칠 수 있습니다.
-                // 짧은 타격 구간의 첫 프레임도 보존하기 위해 이동 시작점을 함께 검사합니다.
                 ProcessOverlapsAt(previousPoint);
 
-                int hitCount = 
-                    Physics.SphereCastNonAlloc
-                    (previousPoint, hitCheckRadius, direction.normalized, hitResults, distance, targetLayerMask);
+                int hitCount = Physics.SphereCastNonAlloc(previousPoint, hitCheckRadius, direction.normalized, hitResults, distance, targetLayerMask);
                 for (int h = 0; h < hitCount; h++)
                 {
                     RaycastHit hit = hitResults[h];
                     ProcessHit(hit.collider, hit.point);
                 }
+            }
 
-                // 프레임 사이에 칼날이 대상 안으로 들어간 채 끝난 경우를 보완합니다.
-                ProcessOverlapsAt(currentPoint);
-            }
-            else
-            {
-                ProcessOverlapsAt(currentPoint);
-            }
+            // 프레임 사이에 칼날이 대상 안으로 들어간 채 끝난 경우를 보완합니다.
+            ProcessOverlapsAt(currentPoint);
             previousPoints[i] = currentPoint;
+            if (!isAttackActive) return;
         }
+    }
 
+    private void ProcessGuardContacts(Vector3 start, Vector3 end)
+    {
+        float reach = CombatSettings.Current.GuardContactReach;
+        if (reach <= 0f) return;
+
+        int count = Physics.OverlapCapsuleNonAlloc(start, end, hitCheckRadius + reach, overlapResults, targetLayerMask, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++)
+        {
+            Collider body = overlapResults[i];
+            if (!body.TryGetComponent<IDamageable>(out var target) || owner.OwnerFaction == target.TargetFaction) continue;
+            if (!GuardContactPolicy.TryGetContact(body, body.transform.forward, start, end, hitCheckRadius, reach, out Vector3 point)) continue;
+
+            int obstacleMask = Physics.DefaultRaycastLayers & ~targetLayerMask.value & ~(1 << ownerTransform.gameObject.layer);
+            Vector3 origin = ownerTransform.position;
+            origin.y = point.y;
+            if (Physics.Linecast(origin, point, obstacleMask, QueryTriggerInteraction.Ignore)) continue;
+
+            owner.OnWeaponHit(target, body, this, point, defenseOnly: true);
+            if (!isAttackActive) return;
+        }
     }
 
     /// <summary>
@@ -117,22 +168,15 @@ public class Weapon : MonoBehaviour
     /// </summary>
     private void ProcessOverlapsAt(Vector3 point)
     {
-        int hitCount = Physics.OverlapSphereNonAlloc(
-            point,
-            hitCheckRadius,
-            overlapResults,
-            targetLayerMask);
+        int hitCount = Physics.OverlapSphereNonAlloc(point, hitCheckRadius, overlapResults, targetLayerMask);
 
         for (int h = 0; h < hitCount; h++)
         {
             Collider hitCollider = overlapResults[h];
-            Vector3 hitPoint = hitCollider != null
-                ? hitCollider.ClosestPoint(point)
-                : point;
+            Vector3 hitPoint = hitCollider != null ? hitCollider.ClosestPoint(point) : point;
             ProcessHit(hitCollider, hitPoint);
         }
     }
-
 
     private void ProcessHit(Collider hitCollider, Vector3 hitPoint)
     {
@@ -149,6 +193,38 @@ public class Weapon : MonoBehaviour
             }
         }
     }
+
+    public Vector3 GetClosestBladePoint(Vector3 point)
+    {
+        if (!hasValidHitPoints)
+            return transform.position;
+
+        Vector3 closestPoint = hitPoints[0].position;
+        float closestDistance = (point - closestPoint).sqrMagnitude;
+
+        for (int i = 1; i < hitPoints.Length; i++)
+        {
+            Vector3 candidate = hitPoints[i].position;
+            float distance = (point - candidate).sqrMagnitude;
+            if (distance >= closestDistance) continue;
+
+            closestPoint = candidate;
+            closestDistance = distance;
+        }
+
+        return closestPoint;
+    }
+
+    public float GetForwardReach(Transform attacker, Vector3 direction)
+    {
+        if (!hasValidHitPoints) return 0f;
+
+        float reach = 0f;
+        for (int i = 0; i < hitPoints.Length; i++)
+            reach = Mathf.Max(reach, Vector3.Dot(hitPoints[i].position - attacker.position, direction));
+        return reach + hitCheckRadius;
+    }
+
     private void OnDrawGizmosSelected()
     {
         if (hitPoints == null) return;
@@ -168,5 +244,69 @@ public class Weapon : MonoBehaviour
                 }
             }
         }
+    }
+}
+
+public static class GuardContactPolicy
+{
+    public static bool TryGetContact(Collider body, Vector3 forward, Vector3 start, Vector3 end, float weaponRadius, float reach, out Vector3 point)
+    {
+        Bounds bounds = body.bounds;
+        float radius = Mathf.Max(bounds.extents.x, bounds.extents.z);
+        Vector3 center = bounds.center + forward * reach;
+        float halfHeight = Mathf.Max(0f, bounds.extents.y - radius);
+        Vector3 bottom = center - Vector3.up * halfHeight;
+        Vector3 top = center + Vector3.up * halfHeight;
+        GetClosestPoints(start, end, bottom, top, out Vector3 bladePoint, out Vector3 guardPoint);
+
+        Vector3 offset = bladePoint - guardPoint;
+        float distance = offset.magnitude;
+        point = guardPoint + (distance > 0.0001f ? offset / distance : forward) * radius;
+        return distance <= radius + weaponRadius && Vector3.Dot(bladePoint - bounds.center, forward) >= 0f;
+    }
+
+    private static void GetClosestPoints(Vector3 start, Vector3 end, Vector3 bottom, Vector3 top, out Vector3 bladePoint, out Vector3 guardPoint)
+    {
+        Vector3 blade = end - start;
+        Vector3 guard = top - bottom;
+        Vector3 offset = start - bottom;
+        float bladeLength = blade.sqrMagnitude;
+        float guardLength = guard.sqrMagnitude;
+        float bladeTime = 0f;
+        float guardTime = 0f;
+
+        if (bladeLength <= 0.0001f)
+        {
+            if (guardLength > 0.0001f)
+                guardTime = Mathf.Clamp01(Vector3.Dot(guard, offset) / guardLength);
+        }
+        else
+        {
+            float bladeOffset = Vector3.Dot(blade, offset);
+            if (guardLength <= 0.0001f)
+                bladeTime = Mathf.Clamp01(-bladeOffset / bladeLength);
+            else
+            {
+                float alignment = Vector3.Dot(blade, guard);
+                float guardOffset = Vector3.Dot(guard, offset);
+                float denominator = bladeLength * guardLength - alignment * alignment;
+                if (denominator > 0f)
+                    bladeTime = Mathf.Clamp01((alignment * guardOffset - bladeOffset * guardLength) / denominator);
+                guardTime = (alignment * bladeTime + guardOffset) / guardLength;
+                if (guardTime < 0f)
+                {
+                    guardTime = 0f;
+                    bladeTime = Mathf.Clamp01(-bladeOffset / bladeLength);
+                }
+                else if (guardTime > 1f)
+                {
+                    guardTime = 1f;
+                    bladeTime = Mathf.Clamp01((alignment - bladeOffset) / bladeLength);
+                }
+            }
+        }
+
+        bladePoint = start + blade * bladeTime;
+        guardPoint = bottom + guard * guardTime;
     }
 }

@@ -4,13 +4,13 @@ public class PlayerHitState : PlayerState
 {
     private float hitRecoveryDuration;
 
-    public override bool UseRootMotion => false;
-    public PlayerHitState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
+    public PlayerHitState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine)
+    {
+    }
 
     private DamageResult currentHitData;
 
     private float stateTimer = 0f;
-
 
     public void SetHitData(DamageResult data)
     {
@@ -35,14 +35,7 @@ public class PlayerHitState : PlayerState
 
         if (stateTimer > hitRecoveryDuration)
         {
-            if (player.InputHandler.GuardInput)
-            {
-                stateMachine.TransitionTo(stateMachine.PlayerGuardState);
-            }
-            else
-            {
-                stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
-            }
+            stateMachine.TransitionTo(player.InputHandler.GuardInput ? stateMachine.PlayerGuardState : stateMachine.PlayerGroundedState);
         }
     }
 
@@ -50,28 +43,19 @@ public class PlayerHitState : PlayerState
     {
         currentHitData = default;
         stateTimer = 0f;
-        player.Motor.StopKnockback();
     }
-
-
-
 
     private void BeginHitReaction()
     {
         // 넉백 이동과 조작 불가 시간은 별개입니다. 강한 공격일수록 늦게 회복합니다.
-        CombatSettings settings = CombatSettings.Current;
-        hitRecoveryDuration = Mathf.Max(settings.GetReaction(currentHitData.Request.KnockBackLevel).HitRecoveryDuration, settings.DirectHitMoveDuration);
+        hitRecoveryDuration = CombatSettings.Current.GetHitRecoveryTime(currentHitData.Request.KnockBackLevel);
         player.Motor.SetMovement(Vector3.zero);
         player.Combat.ForceResetAttackState();
-
-        KnockbackSpec knockback = KnockBackPolicy.DefenderKnockBack(currentHitData);
-
-        player.Motor.StartKnockback(currentHitData.HitDirection, knockback);
 
         int targetAnim = DecideHitReaction(currentHitData);
         if (targetAnim != 0)
         {
-            player.AnimatorController.PlayReaction(targetAnim, 0.05f);
+            player.AnimatorController.PlayReaction(targetAnim);
         }
     }
 
@@ -80,20 +64,8 @@ public class PlayerHitState : PlayerState
     /// </summary>
     private int DecideHitReaction(in DamageResult result)
     {
-        if (result.DefenseType == DefenseType.Parry) return AnimHash.Parry;
-        if (result.DefenseType == DefenseType.NormalGuard) return AnimHash.GuardHit;
-
-        float hitAngle = Vector3.SignedAngle(player.transform.forward, result.HitDirection, Vector3.up);
-
-        if (Mathf.Abs(hitAngle) <= 45f)
-            return Random.Range(0, 2) == 0 ? AnimHash.BackHit1 : AnimHash.BackHit2;
-
-        if (hitAngle > 45f && hitAngle <= 135f)
-            return AnimHash.HitLeft;
-
-        if (hitAngle >= -135f && hitAngle < -45f)
-            return AnimHash.HitRight;
-
-        return AnimHash.HitFront;
+        int reactionHash = AnimationController.GetHitReactionHash(player.transform.forward, result);
+        if (reactionHash != AnimHash.BackHit) return reactionHash;
+        return Random.Range(0, 2) == 0 ? AnimHash.BackHit1 : AnimHash.BackHit2;
     }
 }

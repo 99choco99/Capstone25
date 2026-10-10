@@ -6,27 +6,33 @@ using UnityEngine;
 public class EnemyGroundedState : EnemyState
 {
     private EnemyIntentType preIntentType;
+    private bool isKeepingReaction;
 
     public EnemyGroundedState(Enemy enemy, EnemyStateMachine stateMachine) : base(enemy, stateMachine) { }
     public override PostureRecoveryMode PostureRecoveryMode => PostureRecoveryMode.Normal;
-
 
     public override void Enter()
     {
         preIntentType = EnemyIntentType.HoldPosition;
         enemy.Motor.Stop();
-        enemy.AnimationController.PlayAction(AnimHash.Locomotion);
+        isKeepingReaction = enemy.AnimationController.IsPlayingReaction;
+        if (!isKeepingReaction)
+            enemy.AnimationController.PlayAction(AnimHash.Locomotion);
     }
 
     public override void Update()
     {
         EnemyTargetInfo perception = enemy.Sense.CurrentTargetInfo;
-        EnemyIntent intent = enemy.AIController.SelectIntent(perception, enemy.Motor.HasPatrolPoints);
+        EnemyIntent intent = enemy.AIController.SelectIntent(perception, enemy.Motor.HasPatrolPoints, !enemy.AnimationController.IsPlayingReaction);
 
         if (ExecuteIntent(intent)) return;
 
+        if (intent.Type == EnemyIntentType.HoldPosition && perception.HasTarget)
+            enemy.Motor.RotateTowards(perception.TargetPosition - enemy.transform.position);
+
         Vector2 currentVelocity = enemy.Motor.GetNormalizedVelocity();
-        enemy.AnimationController.UpdateLocomotion(currentVelocity.x, currentVelocity.y, false);
+        float vertical = intent.Type == EnemyIntentType.Chase && currentVelocity.y > 0f ? currentVelocity.y * 2f : currentVelocity.y;
+        enemy.AnimationController.UpdateLocomotion(currentVelocity.x, vertical, false);
     }
 
     /// <returns>이번 의도가 다른 행동 State로 전환되었다면 true. </returns>
@@ -38,23 +44,27 @@ public class EnemyGroundedState : EnemyState
                 // 연속 stop 방지
                 if (preIntentType != EnemyIntentType.HoldPosition)
                     enemy.Motor.Stop();
-                preIntentType = intent.Type;
-                return false;
+                if (!enemy.AnimationController.IsPlayingReaction)
+                    ResumeLocomotion();
+                break;
 
             case EnemyIntentType.Patrol:
-                enemy.Motor.Patrol();
-                preIntentType = intent.Type;
-                return false;
+                ResumeLocomotion();
+                enemy.Motor.Patrol(preIntentType != EnemyIntentType.Patrol);
+                break;
 
             case EnemyIntentType.Chase:
-                enemy.Motor.Chase(intent.TargetPosition, enemy.AIController.StrafeDistance);
-                preIntentType = intent.Type;
-                return false;
+                ResumeLocomotion();
+                enemy.Motor.Chase(intent.TargetPosition, enemy.AIController.ChaseStoppingDistance);
+                break;
 
+            case EnemyIntentType.Space:
             case EnemyIntentType.Strafe:
-                enemy.Motor.Strafe(intent.TargetPosition, enemy.AIController.StrafeDistance);
-                preIntentType = intent.Type;
-                return false;
+                ResumeLocomotion();
+                if (preIntentType != intent.Type)
+                    enemy.Motor.Stop();
+                enemy.Motor.Strafe(intent.TargetPosition, enemy.AIController.StrafeDistance, intent.Type == EnemyIntentType.Strafe);
+                break;
 
             case EnemyIntentType.Attack:
                 if (intent.AttackData == null)
@@ -75,6 +85,17 @@ public class EnemyGroundedState : EnemyState
             default:
                 return false;
         }
+
+        preIntentType = intent.Type;
+        return false;
+    }
+
+    private void ResumeLocomotion()
+    {
+        if (!isKeepingReaction) return;
+
+        isKeepingReaction = false;
+        enemy.AnimationController.PlayAction(AnimHash.Locomotion);
     }
 
     public override void Exit()

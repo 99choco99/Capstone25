@@ -3,7 +3,8 @@ using UnityEngine;
 public class EnemyGuardState : EnemyState
 {
     private float GuardDuration => CombatSettings.Current.EnemyGuardDuration;
-    private float GuardHitReactionDuration => Mathf.Max(CombatSettings.Current.GuardRecoveryDuration, CombatSettings.Current.GuardMoveDuration);
+    private float GuardHoldPadding => CombatSettings.Current.EnemyGuardHoldPadding;
+    private float GuardHitReactionDuration => CombatSettings.Current.GuardRecoveryDuration;
     private float ParryReactionDuration => CombatSettings.Current.EnemyParryReactionDuration;
 
     private int lastAttackVersion;
@@ -13,19 +14,20 @@ public class EnemyGuardState : EnemyState
 
     private DefenseType pendingDefense;
     private bool hasPendingDefense;
-
+    private bool isGuardHitReaction;
+    private bool isWaitingForAttackContinuation;
 
     public EnemyGuardState(Enemy enemy, EnemyStateMachine stateMachine) : base(enemy, stateMachine) { }
     public override PostureRecoveryMode PostureRecoveryMode => PostureRecoveryMode.Normal;
 
-
     public override void Enter()
     {
+        isGuardHitReaction = false;
         hasPendingDefense = false;
-        enemy.Motor.StopKnockback();
+        isWaitingForAttackContinuation = false;
         enemy.Motor.Stop();
 
-        enemy.AnimationController.PlayReaction(AnimHash.Guard, 0.03f);
+        enemy.AnimationController.PlayReaction(AnimHash.Guard, AnimationController.GuardTransitionDuration);
 
         EnemyAttackObserver observer = enemy.AttackObserver;
         lastAttackVersion = observer.curAttackVersion;
@@ -33,10 +35,9 @@ public class EnemyGuardState : EnemyState
         guardAnimTime = Time.time + GuardDuration;
         guardHoldTime = guardAnimTime;
 
-        if (observer != null && observer.IsPlayerAttacking)
-            guardHoldTime = Mathf.Max(guardHoldTime, observer.ExpectedActiveTime + 0.1f);
+        if (observer.IsPlayerAttacking)
+            guardHoldTime = Mathf.Max(guardHoldTime, observer.ExpectedActiveTime + GuardHoldPadding);
     }
-
 
     public override void Update()
     {
@@ -50,8 +51,8 @@ public class EnemyGuardState : EnemyState
             lastAttackVersion = observer.curAttackVersion;
             pendingDefense = enemy.AIController.GetDefenseDecision(lastAttackVersion);
             hasPendingDefense = true;
-            pendingDefenseStartTime = Mathf.Max(Time.time, observer.ExpectedActiveTime - enemy.AIController.GuardLeadTime);
-            guardHoldTime = Mathf.Max(guardHoldTime, observer.ExpectedActiveTime + 0.1f);
+            pendingDefenseStartTime = observer.DefenseStartTime;
+            guardHoldTime = Mathf.Max(guardHoldTime, observer.ExpectedActiveTime + GuardHoldPadding);
         }
 
         //플레이어가 공격을 멈췄을 때
@@ -77,7 +78,12 @@ public class EnemyGuardState : EnemyState
             }
 
             enemy.Combat.SetDefense(pendingDefense);
-            guardAnimTime = Time.time + GuardDuration;
+            if (!enemy.AnimationController.IsPlayingGuardReaction)
+            {
+                isGuardHitReaction = false;
+                enemy.AnimationController.PlayReaction(AnimHash.Guard, AnimationController.GuardTransitionDuration);
+                guardAnimTime = Time.time + GuardDuration;
+            }
             guardHoldTime = Mathf.Max(guardHoldTime, guardAnimTime);
         }
 
@@ -85,50 +91,56 @@ public class EnemyGuardState : EnemyState
         if (perception.HasTarget)
             enemy.Motor.RotateTowards(perception.TargetPosition - enemy.transform.position);
 
-        if (!hasPendingDefense && Time.time >= guardHoldTime)
+        bool hasAttackContinuation = isWaitingForAttackContinuation && !enemy.AIController.canCounter
+            && (hasCurrentThreat || observer.IsAttackContinuationInRange());
+        if (hasAttackContinuation && isGuardHitReaction && Time.time >= guardAnimTime && !enemy.AnimationController.IsPlayingGuardReaction)
+        {
+            isGuardHitReaction = false;
+            enemy.AnimationController.PlayReaction(AnimHash.Guard, AnimationController.GuardTransitionDuration);
+        }
+
+        if (!hasPendingDefense && !hasAttackContinuation && Time.time >= guardHoldTime)
             stateMachine.TransitionTo(stateMachine.EnemyGroundedState);
     }
-
 
     /// <summary>
     /// 가드상태에서 맞았을 때
     /// </summary>
     public override void OnHit(in DamageResult result)
     {
+        isGuardHitReaction = result.DefenseType != DefenseType.None;
+        isWaitingForAttackContinuation = result.DefenseType == DefenseType.NormalGuard
+            || result.DefenseType == DefenseType.Parry && result.Request.DeflectResponse == DeflectResponse.Continue;
         if (result.DefenseType == DefenseType.Parry)
         {
-            enemy.AnimationController.PlayReaction(AnimHash.Parry, 0.03f);
-            enemy.Motor.StopKnockback();
+            hasPendingDefense = false;
+            enemy.AnimationController.PlayReaction(AnimHash.Parry, AnimationController.GuardTransitionDuration);
             enemy.Combat.ClearDefense();
-            enemy.AIController.DecideCounterAttack();
+            enemy.AIController.canCounter = false;
+            if (result.Request.DeflectResponse == DeflectResponse.Rebound)
+                enemy.AIController.DecideCounterAttack();
             guardAnimTime = Time.time + ParryReactionDuration;
             guardHoldTime = guardAnimTime;
             return;
         }
-        if(result.DefenseType == DefenseType.None)
+        if (result.DefenseType == DefenseType.None)
         {
             base.OnHit(result);
             return;
         }
 
-        enemy.AnimationController.PlayReaction(AnimHash.GuardHit, 0.03f);
-        GuardKnockBack(result);
+        int guardAnim = AnimationController.GetGuardReactionHash(result);
+        enemy.AnimationController.PlayReaction(guardAnim, AnimationController.GuardTransitionDuration);
         hasPendingDefense = false;
         enemy.Combat.ClearDefense();
         guardAnimTime = Time.time + GuardHitReactionDuration;
         guardHoldTime = guardAnimTime;
     }
 
-    private void GuardKnockBack(in DamageResult result)
-    {
-        KnockbackSpec knockback = KnockBackPolicy.DefenderKnockBack(result);
-
-        enemy.Motor.StartKnockback(result.HitDirection, knockback);
-    }
-
     public override void Exit()
     {
-        enemy.Motor.StopKnockback();
+        isGuardHitReaction = false;
+        isWaitingForAttackContinuation = false;
         enemy.Combat.ClearDefense();
     }
 }

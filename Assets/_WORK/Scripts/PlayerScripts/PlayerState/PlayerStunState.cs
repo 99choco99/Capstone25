@@ -5,10 +5,12 @@
 /// </summary>
 public class PlayerStunState : PlayerState
 {
-    public PlayerStunState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
+    public PlayerStunState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine)
+    {
+    }
 
     private float stateTimer = 0f;
-    private const float StunTime = 1f;
+    private float StunTime => CombatSettings.Current.PlayerPostureBreakDuration;
 
     public override void Enter()
     {
@@ -18,13 +20,12 @@ public class PlayerStunState : PlayerState
         player.Motor.StopKnockback();
         player.Combat.ForceResetAttackState();
         player.AnimatorController.PlayAction(AnimHash.Stun);
-        
     }
 
     public override void Update()
     {
         stateTimer += Time.deltaTime;
-        if(stateTimer >= StunTime)
+        if (stateTimer >= StunTime)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
         }
@@ -35,5 +36,4 @@ public class PlayerStunState : PlayerState
         stateTimer = 0f;
         player.Stats.ResetPosture();
     }
-
 }

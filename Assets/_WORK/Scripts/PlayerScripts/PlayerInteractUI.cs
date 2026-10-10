@@ -1,9 +1,5 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
 using System.Collections.Generic;
-using System.Linq;
-
 
 public class PlayerInteractUI : MonoBehaviour
 {
@@ -26,29 +22,36 @@ public class PlayerInteractUI : MonoBehaviour
         uiContainer.SetActive(false);
     }
 
+    private void Start()
+    {
+        if (playerInteraction == null && Player.LocalPlayer != null)
+            Init(Player.LocalPlayer);
+    }
+
     private void OnDestroy()
     {
         Player.OnLocalPlayerSpawned -= Init;
-        if (playerInteraction != null)
-        {
-            playerInteraction.OnInteractableChanged -= UpdateInteractablesList;
-            playerInteraction.OnSelectionChanged -= UpdateSelection;
-        }
+        Unsubscribe();
     }
 
     public void Init(Player localPlayer)
     {
-
-        if (playerInteraction != null)
-        {
-            playerInteraction.OnInteractableChanged -= UpdateInteractablesList;
-            playerInteraction.OnSelectionChanged -= UpdateSelection;
-        }
+        Unsubscribe();
         playerInteraction = localPlayer.Interaction;
 
         playerInteraction.OnInteractableChanged += UpdateInteractablesList;
         playerInteraction.OnSelectionChanged += UpdateSelection;
 
+        UpdateInteractablesList(playerInteraction.interactablesInRange);
+        UpdateSelection(playerInteraction.CurrentSelection, playerInteraction.selectionIndex);
+    }
+
+    private void Unsubscribe()
+    {
+        if (playerInteraction == null) return;
+
+        playerInteraction.OnInteractableChanged -= UpdateInteractablesList;
+        playerInteraction.OnSelectionChanged -= UpdateSelection;
     }
 
     void UpdateInteractablesList(List<IInteractable> interactables)
@@ -58,16 +61,10 @@ public class PlayerInteractUI : MonoBehaviour
 
         for (int i = 0; i < currentActivePromptCount; i++)
         {
-            PromptUIItem promptInstance;
-            if (i < promptPool.Count)
-            {
-                promptInstance = promptPool[i];
-            }
-            else
-            {
-                promptInstance = Instantiate(promptPrefab, promptParent);
-                promptPool.Add(promptInstance);
-            }
+            if (i == promptPool.Count)
+                promptPool.Add(Instantiate(promptPrefab, promptParent));
+
+            PromptUIItem promptInstance = promptPool[i];
 
             promptInstance.gameObject.SetActive(true);
 
@@ -82,17 +79,10 @@ public class PlayerInteractUI : MonoBehaviour
 
     void UpdateSelection(IInteractable newSelection, int selectedIndex)
     {
-        for (int i = 0; i < promptPool.Count; i++)
+        for (int i = 0; i < currentActivePromptCount; i++)
         {
-            if (i < currentActivePromptCount)
-            {
-                Color colorToSet = (i == selectedIndex) ? selectedColor : defaultColor;
-                promptPool[i].SetColor(colorToSet);
-            }
-            else
-            {
-                break;
-            }
+            Color colorToSet = (i == selectedIndex) ? selectedColor : defaultColor;
+            promptPool[i].SetColor(colorToSet);
         }
     }
 }

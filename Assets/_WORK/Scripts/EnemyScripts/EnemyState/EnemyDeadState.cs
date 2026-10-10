@@ -25,13 +25,11 @@ public class EnemyDeadState : EnemyState
         }
 
         enemy.Motor.Stop();
-        enemy.Motor.StopKnockback();
         enemy.Motor.DisableAgent();
         enemy.Combat.CancelAttack();
         enemy.Combat.ClearDefense();
 
-
-        QuestManager.ProcessObjectivesByEvent(GameManager.Instance.QuestController, "kill", enemy.Stats.EnemyId, 1);
+        QuestManager.ProcessObjectivesByEvent(GameManager.Instance.QuestController, QuestEventKeys.Kill, enemy.Stats.EnemyId, 1);
 
         foreach (Collider col in enemy.GetComponentsInChildren<Collider>())
             col.enabled = false;

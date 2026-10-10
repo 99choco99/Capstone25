@@ -11,29 +11,21 @@ public class DataManager
 
     public const string SaveKey = "25Capstone.Save";
 
-    public event Action OnSave;
-
-    public int GetMaxExpForLevel(int level)
-    {
-        return level * 10;
-    }
-
     /// <summary>PlayerPrefs를 읽습니다. 저장 기록이 없거나 Player가 null이면 기본 데이터를 만듭니다.</summary>
     public void LoadLocalData()
     {
-        LocalSaveData data = PlayerPrefs.HasKey(SaveKey)
-            ? JsonConvert.DeserializeObject<LocalSaveData>(PlayerPrefs.GetString(SaveKey))
-            : null;
+        LocalSaveData data = PlayerPrefs.HasKey(SaveKey) ? JsonConvert.DeserializeObject<LocalSaveData>(PlayerPrefs.GetString(SaveKey)) : null;
 
         if (data?.Player == null)
         {
+            PlayerGrowthSettings settings = PlayerGrowthSettings.Current;
             PlayerData = new PlayerData
             {
-                level = 1,
-                maxHp = 100f,
-                currentHp = 100f,
-                maxPosture = 100f,
-                attackPower = 1f
+                level = settings.InitialLevel,
+                maxHp = settings.InitialHealth,
+                currentHp = settings.InitialHealth,
+                maxPosture = settings.InitialPosture,
+                attackPower = settings.InitialAttackPower
             };
             return;
         }
@@ -56,10 +48,10 @@ public class DataManager
         PlayerData.level = stats.Level;
         PlayerData.exp = stats.Exp;
         PlayerData.abilityPoint = stats.AbilityPoint;
-        PlayerData.maxHp = stats.MaxHp.GetBaseValue();
+        PlayerData.maxHp = stats.MaxHp.GetValue();
         PlayerData.currentHp = stats.CurrentHp;
-        PlayerData.maxPosture = stats.MaxPosture.GetBaseValue();
-        PlayerData.attackPower = stats.AttackPower.GetBaseValue();
+        PlayerData.maxPosture = stats.MaxPosture.GetValue();
+        PlayerData.attackPower = stats.AttackPower.GetValue();
     }
 
     /// <summary>현재 데이터를 JSON 문자열로 묶어 PlayerPrefs에 저장합니다.</summary>
@@ -73,13 +65,10 @@ public class DataManager
         string json = JsonConvert.SerializeObject(data);
         PlayerPrefs.SetString(SaveKey, json);
         PlayerPrefs.Save();
-        OnSave?.Invoke();
     }
 
     private class LocalSaveData
     {
         public PlayerData Player;
     }
-
-
 }

@@ -58,7 +58,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 0.49801764, b: 0, a: 1}
+  m_Color: {r: 0.9, g: 0.69, b: 0.31, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -134,7 +134,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.16, g: 0.14, b: 0.115, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -274,6 +274,7 @@ RectTransform:
   - {fileID: 2483803544444420597}
   - {fileID: 3635130840732777182}
   - {fileID: 829689994574974444}
+  - {fileID: 910000000000000002}
   m_Father: {fileID: 6230019752447248638}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -356,12 +357,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 535ba9ed11e9e7f479c111c99b837839, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyUI
-  enemyStats: {fileID: 8989503752787883987}
   postureGauge: {fileID: 4131640277720761328}
   healthGauge: {fileID: 8799863390772132031}
   lifeContainer: {fileID: 829689994574974444}
   lifeIconPrefab: {fileID: 2513647911226318803, guid: b965b0f791b23ba4582f82c7067492a5,
     type: 3}
+  specialAttackMarker: {fileID: 910000000000000001}
 --- !u!1 &3856503215746026129
 GameObject:
   m_ObjectHideFlags: 0
@@ -421,7 +422,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.16, g: 0.14, b: 0.115, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -599,12 +600,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   lockOnPoint: {fileID: 9162990729519399177}
-  <AIController>k__BackingField: {fileID: 5408998168208110510}
-  <Motor>k__BackingField: {fileID: 5463951899529197791}
-  <Stats>k__BackingField: {fileID: 8989503752787883987}
-  <Combat>k__BackingField: {fileID: 3787249293838393026}
-  <Sense>k__BackingField: {fileID: 2520656494155365743}
-  <AttackObserver>k__BackingField: {fileID: 551057146561309445}
   <AnimationController>k__BackingField: {fileID: 950000002}
   frontDeathblowTimeline: {fileID: 11400000, guid: f029f9c862faf7545b9e07c582060aad,
     type: 2}
@@ -622,9 +617,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f6794a259dbf724a9c07af99f744de0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyStats
-  postureRecoveryDelay: 0.5
-  postureRecoveryRateRatio: 0.1
-  guardPostureRecoveryMultiplier: 2
   enemyData: {fileID: 11400000, guid: df7a4f9b135ea2a6c5b050a47c7e6770, type: 2}
   <MaxLife>k__BackingField: 1
 --- !u!114 &5408998168208110510
@@ -639,26 +631,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f021f3a49d52a2419eb45ced3f6ace9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAIController
-  attackObserver: {fileID: 551057146561309445}
-  combatRange: 3
-  combatExitRangeMultiplier: 1.4
-  strafeDistance: 2
-  minActionDelay: 0.8
-  maxActionDelay: 1.3
-  pattern:
-  - {fileID: 11400000, guid: f211cbbcbe9c799d1011f4876f789919, type: 2}
-  - {fileID: 11400000, guid: 1e65c7e517e17c02769e4555f2f375f3, type: 2}
-  - {fileID: 11400000, guid: 35b958c8e8c30339f09ace4dde101fcc, type: 2}
-  - {fileID: 11400000, guid: e34b2bb4d9519fbb0d6c89ccff292e43, type: 2}
-  - {fileID: 11400000, guid: 60ac9c3975384b690325f99fdff83a7d, type: 2}
-  - {fileID: 11400000, guid: 669df67854b853db93333f10000e0c7a, type: 2}
-  - {fileID: 11400000, guid: e1017ae25f4200a2d9501813076a0f65, type: 2}
-  parryChance: 0.1
-  blockChance: 0.75
-  guardLeadTime: 0.11
-  counterChance: 0.45
-  counterDelay: 0.2
-  canCounter: 0
 --- !u!114 &3787249293838393026
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -671,9 +643,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60a4280355c07c143ba59f4ebed70fb0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyCombat
-  guardAngle: 120
-  weapons:
-  - {fileID: 950000003}
 --- !u!114 &5463951899529197791
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -686,15 +655,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b4bc958c9df96844abf8a57b503e189, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyMotor
-  combatRotationSpeed: 15
-  chaseRotationSpeed: 8
-  patrolSpeed: 2
-  chaseSpeed: 2.8
-  strafeSpeed: 0.75
-  strafeArcAngle: 24
-  minStrafeTime: 1.5
-  maxStrafeTime: 3.5
-  strafeRefreshTime: 0.25
   patrolPoint: []
 --- !u!114 &2520656494155365743
 MonoBehaviour:
@@ -728,9 +688,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed3b4d7fe97248746b4d847f61650e78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAttackObserver
-  sense: {fileID: 2520656494155365743}
-  reactionRange: 2.7
-  angle: 100
 --- !u!114 &-747437079279409509
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -744,8 +701,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatFeedback
   entity: {fileID: 8989503752787883987}
-  guardEffectPoint: {fileID: 8197429005734475766}
-  guardEffectOffset: {x: 0, y: 1.2, z: 0.6}
   deathblowEffectOffset: {x: 0, y: 1.1, z: 0.1}
 --- !u!195 &7229995371599756971
 NavMeshAgent:
@@ -1085,7 +1040,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 0, b: 0, a: 1}
+  m_Color: {r: 0.64, g: 0.15, b: 0.12, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2618,6 +2573,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3461696847868479485}
+  - component: {fileID: 951000001}
   m_Layer: 7
   m_Name: Shield 1
   m_TagString: Untagged
@@ -2637,8 +2593,192 @@ Transform:
   m_LocalPosition: {x: 0.0002999685, y: 0.0021331788, z: -0.0010953746}
   m_LocalScale: {x: 0.99999976, y: 0.9999998, z: 0.99999976}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 951000020}
+  - {fileID: 951000021}
+  - {fileID: 951000022}
+  - {fileID: 951000023}
+  - {fileID: 951000024}
   m_Father: {fileID: 1332661233430421426}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &951000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5839352077329555061}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85d7360fb92525c4896323c41c42fedd, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Weapon
+  targetLayerMask:
+    serializedVersion: 2
+    m_Bits: 64
+  hitCheckRadius: 0.1
+  hitPoints:
+  - {fileID: 951000020}
+  - {fileID: 951000021}
+  - {fileID: 951000022}
+  - {fileID: 951000023}
+  - {fileID: 951000024}
+  hitGroup: 1
+  attackTrailPrefab: {fileID: 0}
+--- !u!1 &951000010
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 951000020}
+  m_Layer: 7
+  m_Name: ShieldHitPoint_Top
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &951000020
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 951000010}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.00231270725, y: 0.00333859748, z: 0.000209256585}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3461696847868479485}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &951000011
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 951000021}
+  m_Layer: 7
+  m_Name: ShieldHitPoint_Left
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &951000021
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 951000011}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.00125, y: 0.0005, z: 0.00034}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3461696847868479485}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &951000012
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 951000022}
+  m_Layer: 7
+  m_Name: ShieldHitPoint_Center
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &951000022
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 951000012}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.00025, z: 0.0004}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3461696847868479485}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &951000013
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 951000023}
+  m_Layer: 7
+  m_Name: ShieldHitPoint_Right
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &951000023
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 951000013}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.00125, y: 0.0005, z: 0.00034}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3461696847868479485}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &951000014
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 951000024}
+  m_Layer: 7
+  m_Name: ShieldHitPoint_Bottom
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &951000024
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 951000014}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.002166647, y: -0.00199775654, z: 0.00020926194}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3461696847868479485}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5865060247133541082
 GameObject:
@@ -4004,6 +4144,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 85d7360fb92525c4896323c41c42fedd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Weapon
+  attackTrailPrefab: {fileID: 9600000, guid: b446bc0e8d7440e28a05367758d2d0d8, type: 3}
   targetLayerMask:
     serializedVersion: 2
     m_Bits: 64
@@ -4016,3 +4157,140 @@ MonoBehaviour:
   - {fileID: 135266127317806814}
   - {fileID: 7651577437734765542}
   - {fileID: 2374368389719967923}
+--- !u!1 &910000000000000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 910000000000000002}
+  - component: {fileID: 910000000000000003}
+  - component: {fileID: 910000000000000004}
+  m_Layer: 6
+  m_Name: SpecialAttackMarker
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &910000000000000002
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910000000000000001}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6804614571244727077}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 60}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &910000000000000003
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910000000000000001}
+  m_CullTransparentMesh: 1
+--- !u!114 &910000000000000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910000000000000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.95, g: 0.08, b: 0.04, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: '!'
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4278850802
+  m_fontColor: {r: 0.95, g: 0.08, b: 0.04, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 72
+  m_fontSizeBase: 72
+  m_fontWeight: 700
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 1
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 0
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656b
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}

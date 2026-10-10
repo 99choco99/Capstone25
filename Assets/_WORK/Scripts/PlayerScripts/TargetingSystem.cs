@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 [RequireComponent(typeof(PlayerExecution))]
 public class TargetingSystem : MonoBehaviour
@@ -113,7 +112,6 @@ public class TargetingSystem : MonoBehaviour
             DeselectTarget();
     }
 
-
     /// <summary>
     /// 락온 on/off 함수
     /// </summary>
@@ -154,7 +152,6 @@ public class TargetingSystem : MonoBehaviour
         if (nextTarget != null)
             SelectTarget(nextTarget);
     }
-
 
     /// <summary>
     /// validTarget 중에서 가장 적합한 타겟 선정
@@ -281,7 +278,6 @@ public class TargetingSystem : MonoBehaviour
         return cachedUiPlanValid;
     }
 
-
     /// <summary>
     /// 인살 가능한 녀석들 검색함
     /// </summary>
@@ -324,8 +320,6 @@ public class TargetingSystem : MonoBehaviour
         return found;
     }
 
-
-
     //================유틸리티=======================
 
     /// <summary>
@@ -344,15 +338,9 @@ public class TargetingSystem : MonoBehaviour
 
     private bool IsOccluded(ITargetable target)
     {
-        Transform aimPoint = target.LockOnPoint != null
-            ? target.LockOnPoint
-            : target.TargetTransform;
+        Transform aimPoint = target.LockOnPoint != null ? target.LockOnPoint : target.TargetTransform;
 
-        return Physics.Linecast(
-            cameraTransform.position,
-            aimPoint.position,
-            obstacleLayer,
-            QueryTriggerInteraction.Ignore);
+        return Physics.Linecast(cameraTransform.position, aimPoint.position, obstacleLayer, QueryTriggerInteraction.Ignore);
     }
 
     /// <summary>

@@ -1,24 +1,29 @@
 using UnityEngine;
-using SoundEffectManager;
-public enum AttackPhase { WindUp,Active, Recovery}
 
 public class PlayerAttackState : PlayerState
 {
     // 적에게 패링당했을 때 반동 시간
-    private float DeflectReboundDuration => Mathf.Max(CombatSettings.Current.ParriedRecoveryDuration, CombatSettings.Current.ParriedMoveDuration);
+    private float DeflectReboundDuration => CombatSettings.Current.ParriedRecoveryDuration;
 
-    private AttackData currentAttackData;
+    private PlayerAttackData currentAttackData;
     private AttackPhase currentPhase;
-    private float stateTimer;
     private float reboundTimer;
     private bool isRebounding;
     private bool hasCommittedAttack;
     private bool hasBufferedGuard;
 
     public override bool UseRootMotion => !isRebounding;
-    public AttackData CurrentAttackData => currentAttackData;
+    public bool CanApplyAttackPressure => !isRebounding && currentPhase == AttackPhase.Active;
+    public bool CanMaintainAttackPressure => !isRebounding && currentAttackData != null && currentAttackData.HasHitWindow;
+    public bool CanAssistAttackReach => !isRebounding && currentAttackData != null && currentAttackData.HasHitWindow
+        && player.AnimatorController.TryGetAttackProgress(currentAttackData.AnimationHash, out float frame, out _) && frame < currentAttackData.recoveryStartFrame;
+    public bool HasAttackContinuation => !isRebounding && currentAttackData != null && currentAttackData.HasHitWindow && !hasBufferedGuard
+        && (currentPhase == AttackPhase.WindUp || currentPhase == AttackPhase.Recovery && currentAttackData.NextComboAttack != null
+            && currentAttackData.NextComboAttack.HasHitWindow && player.InputBuffer.PeekValidCommand() == ActionCommand.Attack);
 
-    public PlayerAttackState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
+    public PlayerAttackState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine)
+    {
+    }
 
     public override void Enter()
     {
@@ -50,17 +55,20 @@ public class PlayerAttackState : PlayerState
 
         //공격 취소 시도 검사
         if (CancelAttack()) return;
+    }
 
+    public void UpdateAnimation()
+    {
+        if (isRebounding || currentAttackData == null
+            || !player.AnimatorController.TryGetAttackProgress(currentAttackData.AnimationHash, out float currentFrame, out _))
+            return;
 
-        stateTimer += Time.deltaTime;
-        float normalizedTime = stateTimer / currentAttackData.DurationInSeconds;
+        if (currentFrame < currentAttackData.commitFrame) return;
 
-        if (normalizedTime < currentAttackData.CommitTime) return;
-
-        AttackCommit(normalizedTime);       // 공격을 확정
-        UpdatePhase(normalizedTime);        // 시간에 따른 페이즈 전환
+        AttackCommit(currentFrame); // 공격을 확정
+        UpdatePhase(currentFrame); // 시간에 따른 페이즈 전환
         if (stateMachine.CurrentState != this) return;
-        HandleCombatInput(normalizedTime);  // 현재 페이즈에 따른 유저 입력 처리
+        HandleCombatInput(currentFrame); // 현재 페이즈에 따른 유저 입력 처리
     }
 
     /// <summary>
@@ -79,11 +87,10 @@ public class PlayerAttackState : PlayerState
         return true;
     }
 
-
     /// <summary>
     /// Attack을 확정짓는 순간. Enemy에게 이벤트 발송, 더이상 공격 취소 불가
     /// </summary>
-    private void AttackCommit(float normalizedTime)
+    private void AttackCommit(float currentFrame)
     {
         if (hasCommittedAttack || currentPhase != AttackPhase.WindUp)
         {
@@ -92,7 +99,7 @@ public class PlayerAttackState : PlayerState
 
         hasCommittedAttack = true;
 
-        float remainingUntilActive = Mathf.Max(0f, currentAttackData.DurationInSeconds * (currentAttackData.ActiveStartTime - normalizedTime));
+        float remainingUntilActive = Mathf.Max(0f, (currentAttackData.activeStartFrame - currentFrame) / currentAttackData.FramesPerSecond);
 
         player.Combat.CommitCurrentAttack(Time.time + remainingUntilActive);
     }
@@ -100,22 +107,19 @@ public class PlayerAttackState : PlayerState
     /// <summary>
     /// 시간에 따라 공격 페이즈 변경
     /// </summary>
-    private void UpdatePhase(float nTime)
+    private void UpdatePhase(float currentFrame)
     {
-        if (currentPhase == AttackPhase.WindUp && nTime >= currentAttackData.ActiveStartTime)
+        if (currentPhase == AttackPhase.WindUp && currentFrame >= currentAttackData.activeStartFrame)
         {
             currentPhase = AttackPhase.Active;
             player.Combat.PlayerAttackStart();
-
-            if (SoundManager.Instance != null)
-                SoundManager.Instance.Play(SfxKeys.Attack, player.Combat.CurrentWeapon.transform.position);
         }
-        if (currentPhase == AttackPhase.Active && nTime >= currentAttackData.RecoveryStartTime)
+        if (currentPhase == AttackPhase.Active && currentFrame >= currentAttackData.recoveryStartFrame)
         {
             currentPhase = AttackPhase.Recovery;
-            player.Combat.PlayerAttackEnd();
+            player.Combat.ForceResetAttackState(preservePressure: CanMaintainAttackPressure);
         }
-        if (currentPhase == AttackPhase.Recovery && nTime >= 1.0f)
+        if (currentPhase == AttackPhase.Recovery && currentFrame >= currentAttackData.totalFrames)
         {
             stateMachine.TransitionTo(stateMachine.PlayerGroundedState);
         }
@@ -124,19 +128,26 @@ public class PlayerAttackState : PlayerState
     /// <summary>
     /// attack중 인풋 저장 
     /// </summary>
-    private void HandleCombatInput(float nTime)
+    private void HandleCombatInput(float currentFrame)
     {
         BufferGuardCommand();
 
-        if (currentPhase != AttackPhase.Recovery) { return; }
+        if (currentPhase != AttackPhase.Recovery)
+        {
+            return;
+        }
 
         if (hasBufferedGuard)
         {
+            player.Combat.PreserveAttackRecovery(currentAttackData, currentFrame);
             stateMachine.TransitionTo(stateMachine.PlayerGuardState);
             return;
         }
 
-        if(nTime < currentAttackData.ComboStartTime) { return; }
+        if (currentFrame < currentAttackData.comboStartFrame)
+        {
+            return;
+        }
 
         ActionCommand cmd = player.InputBuffer.PeekValidCommand();
 
@@ -180,7 +191,7 @@ public class PlayerAttackState : PlayerState
     {
         if (currentAttackData != null)
         {
-            stateTimer = 0f;
+            player.Motor.BeginAttackReach(currentAttackData);
             currentPhase = AttackPhase.WindUp;
             hasCommittedAttack = false;
             hasBufferedGuard = false;
@@ -209,15 +220,11 @@ public class PlayerAttackState : PlayerState
 
         //판정 닫기
         player.Combat.ForceResetAttackState();
+        player.Motor.ClearAttackReach();
         player.Motor.SetMovement(Vector3.zero);
 
-        //공격자 넉백
-        KnockbackSpec knockback = KnockBackPolicy.AttackerKnockBack(result);
-        player.Motor.StartKnockback(-result.HitDirection, knockback);
-
-        player.AnimatorController.PlayReaction(AnimHash.AttackRebound, 0.05f);
+        player.AnimatorController.PlayReaction(AnimHash.AttackRebound);
     }
-
 
     /// <summary>
     /// WindUp 동안 공격 방향을 조절
@@ -242,9 +249,9 @@ public class PlayerAttackState : PlayerState
             player.Motor.RotateToDirection(desiredDirection);
     }
 
-
     public override void Exit()
     {
+        player.Motor.StopAttackReach();
         currentAttackData = null;
         currentPhase = AttackPhase.WindUp;
         isRebounding = false;

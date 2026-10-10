@@ -929,6 +929,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 85d7360fb92525c4896323c41c42fedd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Weapon
+  attackTrailPrefab: {fileID: 9600000, guid: b446bc0e8d7440e28a05367758d2d0d8, type: 3}
   targetLayerMask:
     serializedVersion: 2
     m_Bits: 128
@@ -1275,10 +1276,11 @@ GameObject:
   - component: {fileID: 6637452115546161285}
   - component: {fileID: 2322611960060231162}
   - component: {fileID: 8184674505061922039}
-  - component: {fileID: 2902769873250695862}
   - component: {fileID: 3583144350004820185}
   - component: {fileID: 2276565595257403796}
   - component: {fileID: 7324897993767711592}
+  - component: {fileID: 919200003}
+  - component: {fileID: 919200004}
   - component: {fileID: 919200002}
   - component: {fileID: 2605632592775004397}
   - component: {fileID: 919200001}
@@ -1370,22 +1372,6 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1522985824110387632}
         m_TargetAssemblyTypeName: PlayerInputHandler, Assembly-CSharp
-        m_MethodName: OnWheel
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: 97d572ef-b3bf-4384-b650-ea2f42907a70
-    m_ActionName: 'Player/Wheel[/Mouse/scroll/y]'
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1522985824110387632}
-        m_TargetAssemblyTypeName: PlayerInputHandler, Assembly-CSharp
         m_MethodName: OnAttack
         m_Mode: 0
         m_Arguments:
@@ -1398,10 +1384,6 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: 6c2ab1b8-8984-453a-af3d-a3c78ae1679a
     m_ActionName: 'Player/Attack[/Mouse/leftButton,/Keyboard/enter]'
-  - m_PersistentCalls:
-      m_Calls: []
-    m_ActionId: 852140f2-7766-474d-8707-702459ba45f3
-    m_ActionName: 'Player/FreeCam[/Keyboard/alt]'
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1522985824110387632}
@@ -1510,22 +1492,6 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1522985824110387632}
         m_TargetAssemblyTypeName: PlayerInputHandler, Assembly-CSharp
-        m_MethodName: OnQuestList
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: b54a7c9c-e197-49f5-b242-fd1925315877
-    m_ActionName: 'Player/QuestList[/Keyboard/j]'
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1522985824110387632}
-        m_TargetAssemblyTypeName: PlayerInputHandler, Assembly-CSharp
         m_MethodName: OnSetting
         m_Mode: 0
         m_Arguments:
@@ -1622,22 +1588,6 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: 503e9e5f-d844-4797-a2a8-28fdd9949e97
     m_ActionName: UI/Profile
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1522985824110387632}
-        m_TargetAssemblyTypeName: PlayerInputHandler, Assembly-CSharp
-        m_MethodName: OnQuestList
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: 58bbdc59-07d8-40f5-b10b-c20772b3949c
-    m_ActionName: UI/Quest
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1522985824110387632}
@@ -1746,10 +1696,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd1212b8e8e628d418a480de2a46e78f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
-  postureRecoveryDelay: 1
-  postureRecoveryRateRatio: 0.25
-  guardPostureRecoveryMultiplier: 2
-  playerCombat: {fileID: 6637452115546161285}
 --- !u!114 &6637452115546161285
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1762,7 +1708,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2d8a5f018efd5b745a5721b67cb8bba5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCombat
-  player: {fileID: 1099434326387535521}
   FirstAttackData: {fileID: 11400000, guid: 658c923794556d743b180470af576cea, type: 2}
   SprintAttackData: {fileID: 11400000, guid: cd13db0810c9a4d43a3b11a641a010e6, type: 2}
   guardAngle: 120
@@ -1813,18 +1758,6 @@ MonoBehaviour:
   distanceWeight: 1
   angleWeight: 0.2
   deathblowUiRefreshInterval: 0.12
---- !u!114 &2902769873250695862
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3837476945414656877}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 003398e3dc9222748a588f79377cc5a7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NetworkPlayer
 --- !u!143 &3583144350004820185
 CharacterController:
   m_ObjectHideFlags: 0
@@ -1888,9 +1821,207 @@ PlayableDirector:
   m_WrapMode: 2
   m_DirectorUpdateMode: 1
   m_InitialTime: 0
-  m_SceneBindings: []
+  m_SceneBindings:
+  - key: {fileID: -9140030990451839520, guid: 746dd2a78e249b34b890190740495a3d, type: 2}
+    value: {fileID: 919200003}
+  - key: {fileID: -3046337274740835286, guid: 746dd2a78e249b34b890190740495a3d, type: 2}
+    value: {fileID: 919200004}
   m_ExposedReferences:
     m_References: []
+--- !u!82 &919200003
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3837476945414656877}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: -2309814827798711877, guid: 2fa991edb635bbe4ea9ba5edb594d09a, type: 2}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 0
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!82 &919200004
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3837476945414656877}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: -2309814827798711877, guid: 2fa991edb635bbe4ea9ba5edb594d09a, type: 2}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 0
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!114 &919200002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1934,8 +2065,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatFeedback
   entity: {fileID: 1236270409340426741}
-  guardEffectPoint: {fileID: 5147418073367837758}
-  guardEffectOffset: {x: 0, y: 1.2, z: 0.6}
   deathblowEffectOffset: {x: 0, y: 1.1, z: 0.1}
 --- !u!114 &919200001
 MonoBehaviour:

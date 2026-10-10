@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
-
 /// <summary>
 /// FreeCam과 LockOn을 하나의 OrbitalFollow에서 제어합니다.
 /// LockOn은 FreeCam이 허용하는 동일한 Yaw/Pitch 범위와 고정 반경만 사용하므로
@@ -44,12 +43,14 @@ public class SekiroCamera : MonoBehaviour
     [Header("LockOn 수직 구도")]
     [Tooltip("화면에서 적 LockPoint가 플레이어 Aim보다 위에 놓일 목표 각도")]
     [SerializeField, Range(0f, 30f)] private float enemyAngleAbovePlayer = 12f;
+    [SerializeField, Range(0f, 90f)] private float maxLockOnPitch = 30f;
     [Tooltip("Sphere 위를 오르내리는 최대 각속도")]
     [SerializeField, Min(0f)] private float maxPitchSpeed = 90f;
 
     private CinemachineCamera cinemachineCam;
     private CinemachineOrbitalFollow orbitalFollow;
     private CinemachineInputAxisController inputController;
+    private CinemachineImpulseListener impulseListener;
 
     private Player player;
     private Transform followTarget;
@@ -66,6 +67,8 @@ public class SekiroCamera : MonoBehaviour
         cinemachineCam = GetComponent<CinemachineCamera>();
         orbitalFollow = GetComponent<CinemachineOrbitalFollow>();
         inputController = GetComponent<CinemachineInputAxisController>();
+        impulseListener = GetComponent<CinemachineImpulseListener>();
+        inputController.ReadControlValueOverride = ReadCameraInput;
 
         // 인살 카메라가 Live인 동안에도 복귀할 FreeCam 상태를 매 프레임 계산한다.
         // 그래야 인살 종료 시 오래된 Standby 상태로 되돌아가지 않는다.
@@ -141,7 +144,7 @@ public class SekiroCamera : MonoBehaviour
 
         isLockedOn = false;
         // 이미 UI가 열린 뒤 카메라가 연결되는 경우에도 현재 입력 모드를 따른다.
-        HandleCursorState(player.GetComponent<PlayerInput>().currentActionMap?.name == "UI");
+        HandleCursorState(player.GetComponent<PlayerInput>().currentActionMap?.name == PlayerInputHandler.UIActionMapName);
     }
 
     /// <summary>UI 입력 차단도 카메라의 입력 제어와 같은 곳에서 처리합니다.</summary>
@@ -175,7 +178,7 @@ public class SekiroCamera : MonoBehaviour
             orbitalFollow.VerticalAxis.CancelRecentering();
         }
 
-        // 인살 중에는 보이지 않는 FreeCam에 마우스 입력이 누적되지 않게 한다.
+        // 인살 준비·실행 중에는 보이지 않는 FreeCam에 마우스 입력이 누적되지 않게 한다.
         SetOrbitInputEnabled(!isLockedOn, resetMomentum: false);
 
         // 카메라 설정은 공통값을 쓰고, 적 쪽을 바라보는 비율만 전환한다.
@@ -194,9 +197,7 @@ public class SekiroCamera : MonoBehaviour
     /// <summary>
     /// 연출 카메라의 마지막 출력 방향을 FreeCam 궤도에 인계합니다.
     /// </summary>
-    public void AdoptOutputPose(
-        Vector3 outputPosition,
-        Quaternion outputRotation)
+    public void AdoptOutputPose(Vector3 outputPosition, Quaternion outputRotation)
     {
         if (followTarget == null)
             return;
@@ -204,9 +205,7 @@ public class SekiroCamera : MonoBehaviour
         // Sphere OrbitalFollow의 ForceCameraPosition은 전달된 위치에서 Yaw/Pitch를
         // 역산하고 각각의 FreeCam 축 범위로 Clamp한다. 연출 샷이 구면 밖에 있어도
         // 반경을 늘리지 않고, 같은 방향에서 가장 가까운 허용 궤도로 복귀한다.
-        cinemachineCam.ForceCameraPosition(
-            outputPosition,
-            outputRotation);
+        cinemachineCam.ForceCameraPosition(outputPosition, outputRotation);
         orbitalFollow.HorizontalAxis.CancelRecentering();
         orbitalFollow.VerticalAxis.CancelRecentering();
         SetOrbitInputEnabled(!isLockedOn, resetMomentum: true);
@@ -229,15 +228,9 @@ public class SekiroCamera : MonoBehaviour
         float targetYaw = Mathf.Atan2(delta.x, delta.z) * Mathf.Rad2Deg;
         float currentYaw = orbitalFollow.HorizontalAxis.Value;
         float yawError = Mathf.DeltaAngle(currentYaw, targetYaw);
-        float yawStep = CalculateOrbitCorrection(
-            yawError,
-            orbitDeadZone,
-            orbitResponse,
-            maxYawSpeed,
-            Time.deltaTime);
+        float yawStep = CalculateOrbitCorrection(yawError, orbitDeadZone, orbitResponse, maxYawSpeed, Time.deltaTime);
 
-        orbitalFollow.HorizontalAxis.Value =
-            orbitalFollow.HorizontalAxis.ClampValue(currentYaw + yawStep);
+        orbitalFollow.HorizontalAxis.Value = orbitalFollow.HorizontalAxis.ClampValue(currentYaw + yawStep);
     }
 
     private void UpdatePitch(Vector3 enemyLockPosition)
@@ -251,8 +244,10 @@ public class SekiroCamera : MonoBehaviour
 
         CameraState cameraState = cinemachineCam.State;
         Vector3 cameraPosition = cameraState.GetFinalPosition();
-        Quaternion worldToCamera =
-            Quaternion.Inverse(cameraState.GetFinalOrientation());
+        if (impulseListener != null && CinemachineImpulseManager.Instance.GetImpulseAt(cameraPosition, impulseListener.Use2DDistance, impulseListener.ChannelMask, out _, out _))
+            return;
+
+        Quaternion worldToCamera = Quaternion.Inverse(cameraState.GetFinalOrientation());
 
         Vector3 playerView = worldToCamera * (GetPlayerAimPosition() - cameraPosition);
         Vector3 enemyView = worldToCamera * (enemyLockPosition - cameraPosition);
@@ -263,11 +258,16 @@ public class SekiroCamera : MonoBehaviour
         float playerAngle = Mathf.Atan2(playerView.y, playerView.z) * Mathf.Rad2Deg;
         float enemyAngle = Mathf.Atan2(enemyView.y, enemyView.z) * Mathf.Rad2Deg;
         float currentSeparation = Mathf.DeltaAngle(playerAngle, enemyAngle);
-        float pitchError = enemyAngleAbovePlayer - currentSeparation;
-
-        float pitchStep = CalculateOrbitCorrection(pitchError, orbitDeadZone, orbitResponse, maxPitchSpeed, Time.deltaTime);
-
         float currentPitch = orbitalFollow.VerticalAxis.Value;
+
+        Vector3 targetOffset = enemyLockPosition - GetPlayerAimPosition();
+        float horizontalDistance = new Vector2(targetOffset.x, targetOffset.z).magnitude;
+        float targetElevation = Mathf.Atan2(targetOffset.y, horizontalDistance) * Mathf.Rad2Deg;
+        float maximumPitch = Mathf.Clamp(maxLockOnPitch - targetElevation, orbitalFollow.VerticalAxis.Range.x, orbitalFollow.VerticalAxis.Range.y);
+        float pitchError = Mathf.Min(enemyAngleAbovePlayer - currentSeparation, maximumPitch - currentPitch);
+        float deadZone = currentPitch > maximumPitch ? 0f : orbitDeadZone;
+        float pitchStep = CalculateOrbitCorrection(pitchError, deadZone, orbitResponse, maxPitchSpeed, Time.deltaTime);
+
         orbitalFollow.VerticalAxis.Value = orbitalFollow.VerticalAxis.ClampValue(currentPitch + pitchStep);
     }
 
@@ -292,9 +292,19 @@ public class SekiroCamera : MonoBehaviour
         return Mathf.Clamp(requestedStep, -maximumStep, maximumStep);
     }
 
+    /// <summary>마우스 입력에 설정창의 감도를 적용합니다. 기존 축 반전과 게임패드 감도는 유지합니다.</summary>
+    private float ReadCameraInput(InputAction action, IInputAxisOwner.AxisDescriptor.Hints hint, Object context, CinemachineInputAxisController.Reader.ControlValueReader readValue)
+    {
+        float value = readValue(action, hint, context, null);
+        if (action.activeControl?.device is Mouse && SettingManager.Instance != null)
+            value *= SettingManager.Instance.MouseSensitivity / SettingManager.DefaultMouseSensitivity;
+        return value;
+    }
+
     private void SetOrbitInputEnabled(bool enabled, bool resetMomentum)
     {
-        enabled = enabled && inputController.enabled && (player == null || !player.Execution.IsExecuting);
+        enabled = enabled && inputController.enabled && CinemachineCore.IsLive(cinemachineCam)
+            && (player == null || !player.Execution.IsExecuting);
 
         for (int i = 0; i < inputController.Controllers.Count; i++)
         {

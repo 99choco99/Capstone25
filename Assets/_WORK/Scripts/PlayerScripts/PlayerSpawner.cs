@@ -5,7 +5,6 @@ public class PlayerSpawner
 {
     public static PlayerSpawner Instance { get; private set; }
 
-
     private GameObject playerPrefab;
     private List<Transform> SpawnPoints = new();
 
@@ -18,6 +17,7 @@ public class PlayerSpawner
     {
         this.playerPrefab = playerPrefab;
     }
+
     public void RegisterSpawnPoint(Transform point)
     {
         if (!SpawnPoints.Contains(point))
@@ -28,23 +28,24 @@ public class PlayerSpawner
 
     public void UnregisterSpawnPoint(Transform point)
     {
-        if (SpawnPoints.Contains(point))
-        {
-            SpawnPoints.Remove(point);
-        }
+        SpawnPoints.Remove(point);
     }
 
     //플레이어 스폰
     public void LocalPlayerSpawn()
     {
-        if (Player.LocalPlayer != null) { return; }
+        if (Player.LocalPlayer != null)
+        {
+            return;
+        }
         Vector3 finalPoistion = Vector3.zero;
         Quaternion finalRotation = Quaternion.identity;
 
-        if(SpawnPoints.Count > 0) { 
+        if (SpawnPoints.Count > 0)
+        {
             int randomIndex = Random.Range(0, SpawnPoints.Count);
             Transform selectedPoint = SpawnPoints[randomIndex];
-            
+
             finalPoistion = selectedPoint.position;
             finalRotation = selectedPoint.rotation;
         }
@@ -52,7 +53,7 @@ public class PlayerSpawner
         GameObject PlayerObj = GameObject.Instantiate(playerPrefab, finalPoistion, finalRotation);
         if (PlayerObj.TryGetComponent<Player>(out Player playerComponent))
         {
-            playerComponent.Init(true);
+            playerComponent.Init();
         }
     }
 

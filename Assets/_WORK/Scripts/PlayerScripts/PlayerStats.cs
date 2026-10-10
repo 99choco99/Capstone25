@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
-using UniversalGraph;
+
 /// <summary>
 /// 포인트로 성장시킬 수 있는 플레이어 스탯
 /// </summary>
@@ -14,7 +13,7 @@ public enum PlayerStatType
 
 public class PlayerStats : LivingEntity
 {
-    [SerializeField] private PlayerCombat playerCombat;
+    private PlayerCombat playerCombat;
     private Player player;
 
     public override Faction TargetFaction => Faction.PlayerTeam;
@@ -27,19 +26,10 @@ public class PlayerStats : LivingEntity
     public event Action<PlayerStats> OnStatsChanged;
 
     //로직 이벤트
-    public event Action<int> OnLevelUp;
-
-    private readonly Dictionary<PlayerStatType, Stat> statMap = new();
-    private readonly Dictionary<PlayerStatType, float> statGrowthRates = new()
-    {
-        { PlayerStatType.Health, 25f },
-        { PlayerStatType.MaxPosture, 25f },
-        { PlayerStatType.AttackPower, 2f }
-    };
 
     protected override IDefenser Defenser => playerCombat;
-    protected override PostureRecoveryMode CurrentPostureRecoveryMode =>
-        player.StateMachine?.CurrentState?.PostureRecoveryMode ?? PostureRecoveryMode.Disabled;
+    protected override CombatSettings.PostureRecovery PostureRecovery => CombatSettings.Current.PlayerPostureRecovery;
+    protected override PostureRecoveryMode CurrentPostureRecoveryMode => player.StateMachine?.CurrentState?.PostureRecoveryMode ?? PostureRecoveryMode.Disabled;
 
     protected override void Awake()
     {
@@ -47,18 +37,18 @@ public class PlayerStats : LivingEntity
 
         playerCombat = GetComponent<PlayerCombat>();
         player = GetComponent<Player>();
-        RegisterStats();
     }
-
 
     //게임 데이터 불러오기
     public void LoadPlayerData(PlayerData data)
     {
-        float maxHp = data.maxHp > 0f ? data.maxHp : 100f;
-        float attackPower = data.attackPower > 0f ? data.attackPower : AttackPower.GetBaseValue();
+        PlayerGrowthSettings settings = PlayerGrowthSettings.Current;
+        float maxHp = data.maxHp > 0f ? data.maxHp : settings.InitialHealth;
+        float maxPosture = data.maxPosture > 0f ? data.maxPosture : settings.InitialPosture;
+        float attackPower = data.attackPower > 0f ? data.attackPower : settings.InitialAttackPower;
 
         MaxHp = new Stat(maxHp);
-        MaxPosture = new Stat(data.maxPosture);
+        MaxPosture = new Stat(maxPosture);
         AttackPower = new Stat(attackPower);
 
         CurrentHp = Mathf.Clamp(data.currentHp, 0f, maxHp);
@@ -69,24 +59,14 @@ public class PlayerStats : LivingEntity
         Exp = data.exp;
         AbilityPoint = data.abilityPoint;
 
-
-        RegisterStats();
-
-
-        UpdateTotalStats();
         Debug.Log("데이터 불러오기 성공");
     }
 
     //====================스탯 관련 ===========================
 
-    /// <summary>
-    /// 성장 종류와 실제 Stat 인스턴스를 연결
-    /// </summary>
-    private void RegisterStats()
+    public static int GetMaxExpForLevel(int level)
     {
-        statMap[PlayerStatType.Health] = MaxHp;
-        statMap[PlayerStatType.MaxPosture] = MaxPosture;
-        statMap[PlayerStatType.AttackPower] = AttackPower;
+        return level * PlayerGrowthSettings.Current.ExpPerLevel;
     }
 
     /// <summary>
@@ -96,33 +76,41 @@ public class PlayerStats : LivingEntity
     {
         if (IsDead) return;
         Exp += addExp;
-        int maxExp = DataManager.Instance.GetMaxExpForLevel(Level);
+        int maxExp = GetMaxExpForLevel(Level);
 
         // 레벨업 조건 체크
         while (Exp >= maxExp)
         {
             Exp -= maxExp;
             Level++;
-            maxExp = DataManager.Instance.GetMaxExpForLevel(Level);
+            maxExp = GetMaxExpForLevel(Level);
             AbilityPoint += 1;
-            OnLevelUp?.Invoke(Level);
         }
 
         OnExpChanged?.Invoke(Exp, Level);
+        OnStatsChanged?.Invoke(this);
     }
-
 
     /// <summary>
     /// 스텟 증가
+    /// 성장 종류와 실제 Stat 인스턴스를 연결
     /// </summary>
     public void UpAbility(PlayerStatType statType)
     {
         if (AbilityPoint <= 0) return;
 
-        if (statMap.TryGetValue(statType, out Stat targetStat))
+        Stat targetStat = statType switch
+        {
+            PlayerStatType.Health => MaxHp,
+            PlayerStatType.MaxPosture => MaxPosture,
+            PlayerStatType.AttackPower => AttackPower,
+            _ => null
+        };
+
+        if (targetStat != null)
         {
             AbilityPoint--;
-            targetStat.AddBaseValue(statGrowthRates[statType]);
+            targetStat.AddBaseValue(PlayerGrowthSettings.Current.GetStatIncrease(statType));
 
             UpdateTotalStats();
             OnStatsChanged?.Invoke(this);

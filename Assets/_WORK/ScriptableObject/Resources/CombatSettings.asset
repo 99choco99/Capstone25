@@ -12,58 +12,316 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b155d8a064244b6aef8c8880bd10264, type: 3}
   m_Name: CombatSettings
   m_EditorClassIdentifier:
-  DirectHitMoveDuration: 0.26
-  GuardMoveDuration: 0.2
-  ParriedMoveDuration: 0.24
-  GuardRecoveryDuration: 0.2
+  Knockback:
+    Parried:
+      Duration: 0.4
+      LightDistance: 0.6
+      MediumDistance: 0.8
+      HeavyDistance: 1.1
+      MovementCurve:
+        serializedVersion: 2
+        m_Curve:
+        - serializedVersion: 3
+          time: 0
+          value: 0
+          inSlope: 0
+          outSlope: 2.7
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 0.2
+          value: 0.5
+          inSlope: 1.15
+          outSlope: 1.15
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 0.6
+          value: 0.8
+          inSlope: 0.65
+          outSlope: 0.65
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 1
+          value: 1
+          inSlope: 0.2
+          outSlope: 0
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+    MovementCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 3
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    Slash:
+      DirectHit:
+        Distance: 0.9
+        Duration: 0.3
+      Guard:
+        Distance: 0.9
+        Duration: 0.26
+      Parry:
+        Distance: 0.28
+        Duration: 0.18
+      MovementCurve:
+        serializedVersion: 2
+        m_Curve:
+        - serializedVersion: 3
+          time: 0
+          value: 0
+          inSlope: 0
+          outSlope: 2
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 0.2
+          value: 0.45
+          inSlope: 1.25
+          outSlope: 1.25
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 0.6
+          value: 0.8
+          inSlope: 0.75
+          outSlope: 0.75
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 1
+          value: 1
+          inSlope: 0.25
+          outSlope: 0
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+    Pressure:
+      DirectHit:
+        Distance: 1.05
+        Duration: 0.34
+      Guard:
+        Distance: 0.95
+        Duration: 0.32
+      Parry:
+        Distance: 0.85
+        Duration: 0.28
+      MovementCurve:
+        serializedVersion: 2
+        m_Curve:
+        - serializedVersion: 3
+          time: 0
+          value: 0
+          inSlope: 0
+          outSlope: 2.3
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 0.2
+          value: 0.5
+          inSlope: 1.1
+          outSlope: 1.1
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 0.65
+          value: 0.85
+          inSlope: 0.65
+          outSlope: 0.65
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 1
+          value: 1
+          inSlope: 0.2
+          outSlope: 0
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+    Finisher:
+      DirectHit:
+        Distance: 1.5
+        Duration: 0.45
+      Guard:
+        Distance: 1.35
+        Duration: 0.42
+      Parry:
+        Distance: 0.95
+        Duration: 0.32
+      MovementCurve:
+        serializedVersion: 2
+        m_Curve:
+        - serializedVersion: 3
+          time: 0
+          value: 0
+          inSlope: 0
+          outSlope: 2.5
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 0.2
+          value: 0.55
+          inSlope: 0.9
+          outSlope: 0.9
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 0.7
+          value: 0.9
+          inSlope: 0.55
+          outSlope: 0.55
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        - serializedVersion: 3
+          time: 1
+          value: 1
+          inSlope: 0.15
+          outSlope: 0
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0.33333334
+          outWeight: 0.33333334
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+  GuardContactReach: 0.45
+  AttackReachMaxExtraDistance: 0.8
+  AttackReachMaxForwardMultiplier: 2
+  AttackReachContactMemoryDuration: 1
+  GuardRecoveryDuration: 0.24
+  PlayerParryRecoveryDuration: 0.24
+  HeavyGuardReactionDuration: 0.4
   ParriedRecoveryDuration: 0.35
+  EnemyReboundExitProgress: 0.6
+  DeflectPostureRatio: 1
+  ParryPostureRatio: 0.5
+  PlayerInputBufferTime: 0.25
   ParryWindow: 0.2
   SecondParryWindow: 0.1
   ThirdParryWindow: 0.067
   ParrySpamResetTime: 0.5
   GuardInputLockTime: 0.12
+  PlayerDodgeInvincibleDuration: 0.2
+  PlayerDodgeDuration: 0.74
+  PlayerPostureBreakDuration: 1
   EnemyGuardDuration: 0.3
-  EnemyParryReactionDuration: 0.22
-  EnemyAttackMinimumDistance: 1.35
+  EnemyGuardHoldPadding: 0.1
+  EnemyParryReactionDuration: 0.16
+  ReactionCounterApproachDistance: 0.8
+  EnemyAttackInterruptCooldown: 2
+  EnemyPostureBreakRecoveryDelay: 2
+  EnemyGroggyEnterDuration: 0.9
+  EnemyGroggyRecoverDuration: 0.32
+  PlayerPostureRecovery:
+    Delay: 2
+    RateRatio: 0.25
+    GuardMultiplier: 2
+    HighHealthThreshold: 0.75
+    MediumHealthThreshold: 0.5
+    LowHealthThreshold: 0.25
+    FullHealthMultiplier: 1
+    HighHealthMultiplier: 0.75
+    MediumHealthMultiplier: 0.5
+    LowHealthMultiplier: 0.25
+  EnemyPostureRecovery:
+    Delay: 0.5
+    RateRatio: 0.09090909
+    GuardMultiplier: 2
+    HighHealthThreshold: 0.8
+    MediumHealthThreshold: 0.6
+    LowHealthThreshold: 0.4
+    FullHealthMultiplier: 1
+    HighHealthMultiplier: 0.5
+    MediumHealthMultiplier: 0.167
+    LowHealthMultiplier: 0.083
   HitStopTimeScale: 0.05
   DeathblowHitStopDuration: 0.06
   DeathblowShakeStrength: 0.25
+  PostureBreakHitStopDuration: 0.12
+  PostureBreakShakeStrength: 0.36
   Light:
-    DirectHitDistance: 0.4
-    GuardDistance: 0.15
-    ParriedDistance: 0.18
     HitRecoveryDuration: 0.4
     DirectHitStop: 0.025
-    GuardHitStop: 0.03
-    ParryHitStop: 0.055
+    GuardHitStop: 0.025
+    ParryHitStop: 0.065
     SpecialHitStop: 0.04
     DirectHitShake: 0.1
     GuardShake: 0.08
-    ParryShake: 0.18
+    ParryShake: 0.22
     SpecialHitShake: 0.22
   Medium:
-    DirectHitDistance: 0.65
-    GuardDistance: 0.27
-    ParriedDistance: 0.3
     HitRecoveryDuration: 0.5
     DirectHitStop: 0.02875
-    GuardHitStop: 0.0345
-    ParryHitStop: 0.06325
+    GuardHitStop: 0.03
+    ParryHitStop: 0.075
     SpecialHitStop: 0.046
     DirectHitShake: 0.12
     GuardShake: 0.096
-    ParryShake: 0.216
+    ParryShake: 0.26
     SpecialHitShake: 0.264
   Heavy:
-    DirectHitDistance: 0.95
-    GuardDistance: 0.42
-    ParriedDistance: 0.46
     HitRecoveryDuration: 0.6
     DirectHitStop: 0.0325
-    GuardHitStop: 0.039
-    ParryHitStop: 0.0715
+    GuardHitStop: 0.035
+    ParryHitStop: 0.085
     SpecialHitStop: 0.052
     DirectHitShake: 0.14
     GuardShake: 0.112
-    ParryShake: 0.252
+    ParryShake: 0.3
     SpecialHitShake: 0.308

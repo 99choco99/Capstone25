@@ -38,9 +38,13 @@ public readonly struct DamageRequest
 
     public DamagePayload RequestedPayload { get; }
     public KnockBackLevel KnockBackLevel { get; }
+    public AttackReactionType ReactionType { get; }
     public bool CanGuard { get; }
+    public bool CanDeflect { get; }
+    public DeflectResponse DeflectResponse { get; }
+    public bool IsHeavyRebound => (KnockBackLevel == KnockBackLevel.Heavy || ReactionType == AttackReactionType.Finisher) && DeflectResponse == DeflectResponse.Rebound;
 
-    private DamageRequest(GameObject attacker, Weapon sourceWeapon, Vector3 hitPoint, Vector3 hitDirection, in DamagePayload requestedPayload, KnockBackLevel knockBackLevel, bool canGuard)
+    private DamageRequest(GameObject attacker, Weapon sourceWeapon, Vector3 hitPoint, Vector3 hitDirection, in DamagePayload requestedPayload, AttackData attackData)
     {
         hitDirection.y = 0f;
         Attacker = attacker;
@@ -48,8 +52,11 @@ public readonly struct DamageRequest
         HitPoint = hitPoint;
         HitDirection = hitDirection.sqrMagnitude > 0.0001f ? hitDirection.normalized : Vector3.zero;
         RequestedPayload = requestedPayload;
-        KnockBackLevel = knockBackLevel;
-        CanGuard = canGuard;
+        KnockBackLevel = attackData.ImpactLevel;
+        ReactionType = attackData.ReactionType;
+        CanGuard = attackData.Type == AttackType.Normal;
+        CanDeflect = attackData.Type == AttackType.Normal || attackData.Type == AttackType.Thrust;
+        DeflectResponse = attackData.DeflectResponse;
     }
 
     /// <summary>
@@ -63,15 +70,7 @@ public readonly struct DamageRequest
         float healthDamage = Mathf.Max(0f, attackerAttackPower) + attackData.damage;
         DamagePayload requestedPayload = new(healthDamage, attackData.postureDamage);
 
-        return new DamageRequest(
-            attacker,
-            sourceWeapon,
-            hitPoint,
-            hitDirection,
-            requestedPayload,
-            attackData.ImpactLevel,
-            canGuard: attackData.Type == AttackType.Normal
-            );
+        return new DamageRequest(attacker, sourceWeapon, hitPoint, hitDirection, requestedPayload, attackData);
     }
 }
 
@@ -80,15 +79,6 @@ public readonly struct DamageRequest
 /// </summary>
 public static class DamageCalculator
 {
-    /// <summary>
-    /// 패링 성공 시 원래 공격자에게 되돌릴 체간 비율
-    /// </summary>
-    public const float DeflectPostureRatio = 1f;
-    /// <summary>
-    /// 패링시 자기가 받는 체간 비율
-    /// </summary>
-    public const float ParryPostureRatio = 0.50f;
-
     public static DamagePayload Calculate(in DamageRequest request, DefenseType defense)
     {
         DamagePayload requested = request.RequestedPayload;
@@ -99,7 +89,7 @@ public static class DamageCalculator
         {
             case DefenseType.Parry:
                 healthDamage = 0f;
-                postureDamage *= ParryPostureRatio;
+                postureDamage *= CombatSettings.Current.ParryPostureRatio;
                 break;
 
             case DefenseType.NormalGuard:
@@ -125,24 +115,26 @@ public readonly struct DamageResult
 
     /// <summary>수비자가 확정한 방어 결과</summary>
     public DefenseType DefenseType { get; }
+    public float ContactDistance { get; }
 
     public Vector3 HitPoint => Request.HitPoint;
     public Vector3 HitDirection => Request.HitDirection;
 
-    private DamageResult(in DamageRequest request, bool wasAccepted, DefenseType defense)
+    private DamageResult(in DamageRequest request, bool wasAccepted, DefenseType defense, float contactDistance)
     {
         Request = request;
         IsAccepted = wasAccepted;
         DefenseType = defense;
+        ContactDistance = contactDistance;
     }
 
-    public static DamageResult Accepted(in DamageRequest request, DefenseType defense)
+    public static DamageResult Accepted(in DamageRequest request, DefenseType defense, float contactDistance = float.PositiveInfinity)
     {
-        return new DamageResult(request, wasAccepted: true, defense);
+        return new DamageResult(request, wasAccepted: true, defense, contactDistance);
     }
 
     public static DamageResult Ignored(in DamageRequest request)
     {
-        return new DamageResult(request, wasAccepted: false, DefenseType.None);
+        return new DamageResult(request, wasAccepted: false, DefenseType.None, float.PositiveInfinity);
     }
 }

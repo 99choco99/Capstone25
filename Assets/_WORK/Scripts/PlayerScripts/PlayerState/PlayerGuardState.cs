@@ -1,26 +1,26 @@
-using System.Collections;
 using UnityEngine;
 
 public class PlayerGuardState : PlayerState
 {
-    private float ParryTime => CombatSettings.Current.ParryWindow;       // 첫 입력의 패링 판정 창: 약 12프레임
+    private float ParryTime => CombatSettings.Current.ParryWindow; // 첫 입력의 패링 판정 창: 약 12프레임
     private float SecondParryTime => CombatSettings.Current.SecondParryWindow; // 빠른 재입력: 약 6프레임
-    private float MinParryTime => CombatSettings.Current.ThirdParryWindow;  // 세 번째 재입력: 약 4프레임
-    private float SpamResetTime => CombatSettings.Current.ParrySpamResetTime;   // 이 시간 동안 재입력이 없으면 첫 창으로 복구
-    private float GuardLockTime => CombatSettings.Current.GuardInputLockTime;  // 이 동안 제자리에 멈춘다
+    private float MinParryTime => CombatSettings.Current.ThirdParryWindow; // 세 번째 재입력: 약 4프레임
+    private float SpamResetTime => CombatSettings.Current.ParrySpamResetTime; // 이 시간 동안 재입력이 없으면 첫 창으로 복구
+    private float GuardLockTime => CombatSettings.Current.GuardInputLockTime; // 이 동안 제자리에 멈춘다
 
     private float guardTimer;
-    private float currentParryTime;   // 연타 페널티가 반영된 실제 패링 창
+    private float currentParryTime; // 연타 페널티가 반영된 실제 패링 창
     private float lastGuardPressTime = float.NegativeInfinity;
-    private int spamCount = 0;             // 연타 횟수
-
+    private int spamCount = 0; // 연타 횟수
 
     private float HitReactionTimer;
+    private float guardReactionTimer;
+    private bool isGuardHitReaction;
 
+    public PlayerGuardState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine)
+    {
+    }
 
-    public PlayerGuardState(Player player, PlayerStateMachine stateMachine) : base(player, stateMachine) { }
-
-    public override bool UseRootMotion => false;
     public override PostureRecoveryMode PostureRecoveryMode => PostureRecoveryMode.GuardBoosted;
 
     public override void HandleDamage(DamageResult result)
@@ -28,22 +28,14 @@ public class PlayerGuardState : PlayerState
         switch (result.DefenseType)
         {
             case DefenseType.Parry:
-                player.AnimatorController.PlayReaction(AnimHash.Parry, 0.03f);
-                player.Motor.StopKnockback();
-                HitReactionTimer = 0f;
+                PlayGuardReaction(AnimHash.Parry, result, CombatSettings.Current.PlayerParryRecoveryDuration);
                 spamCount = -1; // 다음 새 입력은 첫 패링 창을 사용합니다. 이전 입력 시각은 재사용하지 않습니다.
                 guardTimer = currentParryTime + 0.001f;
                 return;
             case DefenseType.NormalGuard:
                 // 공격 강도에 맞춰 작은 가드 반동과 크게 버티는 동작을 구분합니다.
-                int guardAnim = result.Request.KnockBackLevel switch
-                {
-                    KnockBackLevel.Medium => AnimHash.GuardHit2,
-                    KnockBackLevel.Heavy => AnimHash.GuardHit3,
-                    _ => AnimHash.GuardHit
-                };
-                player.AnimatorController.PlayReaction(guardAnim, 0.03f);
-                GuardKnockBack(result);
+                int guardAnim = AnimationController.GetGuardReactionHash(result);
+                PlayGuardReaction(guardAnim, result, CombatSettings.Current.GuardRecoveryDuration);
                 return;
             default:
                 base.HandleDamage(result);
@@ -51,13 +43,22 @@ public class PlayerGuardState : PlayerState
         }
     }
 
-
     public override void Enter()
     {
-        guardTimer = 0f;
         HitReactionTimer = 0f;
-        player.Motor.StopKnockback();
+        guardReactionTimer = 0f;
+        isGuardHitReaction = player.AnimatorController.IsPlayingReaction;
+        RefreshParryWindow();
 
+        player.Motor.SetMovement(Vector3.zero);
+        player.AnimatorController.ForceStopLocomotion();
+        if (!isGuardHitReaction)
+            player.AnimatorController.PlayReaction(AnimHash.Guard, AnimationController.GuardTransitionDuration);
+    }
+
+    private void RefreshParryWindow()
+    {
+        guardTimer = 0f;
         currentParryTime = 0f;
         float pressedTime = player.InputHandler.LastGuardPressedTime;
         if (pressedTime > lastGuardPressTime)
@@ -78,21 +79,30 @@ public class PlayerGuardState : PlayerState
             currentParryTime = Mathf.Max(0f, parryTime - (Time.unscaledTime - pressedTime));
         }
 
-        player.Motor.SetMovement(Vector3.zero);
-        player.AnimatorController.ForceStopLocomotion();
-        player.AnimatorController.PlayReaction(AnimHash.Guard, 0.03f);
-
         player.Combat.CurrentDefenseType = currentParryTime > 0f ? DefenseType.Parry : DefenseType.NormalGuard;
     }
-
 
     public override void Update()
     {
         guardTimer += Time.unscaledDeltaTime;
+        guardReactionTimer -= Time.deltaTime;
+
+        if (isGuardHitReaction && HitReactionTimer <= 0f && guardReactionTimer <= 0f && !player.AnimatorController.IsPlayingReaction)
+        {
+            isGuardHitReaction = false;
+            player.AnimatorController.PlayReaction(AnimHash.Guard, AnimationController.GuardTransitionDuration);
+        }
 
         if (player.Combat.CurrentDefenseType == DefenseType.Parry && guardTimer > currentParryTime)
         {
             player.Combat.CurrentDefenseType = DefenseType.NormalGuard;
+        }
+
+        if (player.InputHandler.LastGuardPressedTime > lastGuardPressTime)
+        {
+            RefreshParryWindow();
+            if (player.InputBuffer.PeekValidCommand() == ActionCommand.Guard)
+                player.InputBuffer.ConsumeCurrentCommand();
         }
 
         if (HitReactionTimer > 0f)
@@ -122,33 +132,19 @@ public class PlayerGuardState : PlayerState
     }
 
     /// <summary>
-    /// 가드 중 피격시 넉백
-    /// </summary>
-    private void GuardKnockBack(in DamageResult result)
-    {
-        KnockbackSpec knockback = KnockBackPolicy.DefenderKnockBack(result);
-
-        HitReactionTimer = Mathf.Max(knockback.Duration, CombatSettings.Current.GuardRecoveryDuration);
-        player.Motor.StartKnockback(result.HitDirection, knockback);
-    }
-
-    /// <summary>
     /// 가드 중 이동 및 회전 통합 처리
     /// </summary>
     private void HandleGuardMovement(Vector3 moveDir)
     {
+        if (isGuardHitReaction && moveDir != Vector3.zero)
+        {
+            isGuardHitReaction = false;
+            player.AnimatorController.PlayReaction(AnimHash.Guard, AnimationController.GuardTransitionDuration);
+        }
+
         player.Motor.SetMovement(moveDir * player.Motor.GuardSpeed);
 
-        if (player.IsLockOn && player.TargetingSystem.CurrentTarget != null)
-        {
-            Vector3 directionToTarget = player.TargetingSystem.CurrentTarget.TargetTransform.position - player.transform.position;
-            directionToTarget.y = 0;
-            player.Motor.RotateToDirection(directionToTarget);
-        }
-        else if (moveDir != Vector3.zero)
-        {
-            player.Motor.RotateToDirection(moveDir);
-        }
+        RotateToTargetOrMove(moveDir);
 
         UpdateLocomotionAnimation(moveDir);
     }
@@ -162,16 +158,13 @@ public class PlayerGuardState : PlayerState
         {
             player.AnimatorController.UpdateLocomotion(0, 0);
         }
-        else
+        else if (player.IsLockOn)
         {
-            if (player.IsLockOn)
-            {
-                Vector3 localMove = player.transform.InverseTransformDirection(moveDir);
-                player.AnimatorController.UpdateLocomotion(localMove.x, localMove.z);
-            }
-            else
-                player.AnimatorController.UpdateLocomotion(0, player.InputHandler.MoveAmount);
+            Vector3 localMove = player.transform.InverseTransformDirection(moveDir);
+            player.AnimatorController.UpdateLocomotion(localMove.x, localMove.z);
         }
+        else
+            player.AnimatorController.UpdateLocomotion(0, player.InputHandler.MoveAmount);
     }
 
     protected override void OnAttackCommand()
@@ -182,32 +175,19 @@ public class PlayerGuardState : PlayerState
         stateMachine.TransitionTo(stateMachine.PlayerAttackState);
     }
 
-    protected override void OnDodgeCommand()
+    private void PlayGuardReaction(int animationHash, in DamageResult result, float recoveryDuration)
     {
-        stateMachine.TransitionTo(stateMachine.PlayerDodgeState);
-    }
-
-    protected override void OnJumpCommand()
-    {
-        if (player.Motor.IsGrounded)
-        {
-            stateMachine.TransitionTo(stateMachine.PlayerJumpState);
-        }
-    }
-
-    protected override void OnGuardCommand()
-    {
-        if (guardTimer >= GuardLockTime)
-        {
-            stateMachine.TransitionTo(stateMachine.PlayerGuardState);
-        }
+        HitReactionTimer = recoveryDuration;
+        guardReactionTimer = CombatSettings.Current.GetGuardReactionDuration(result, recoveryDuration);
+        isGuardHitReaction = true;
+        player.AnimatorController.PlayReaction(animationHash, AnimationController.GuardTransitionDuration);
     }
 
     public override void Exit()
     {
         HitReactionTimer = 0f;
-        player.Motor.StopKnockback();
+        guardReactionTimer = 0f;
+        isGuardHitReaction = false;
         player.Combat.CurrentDefenseType = DefenseType.None;
     }
-
 }

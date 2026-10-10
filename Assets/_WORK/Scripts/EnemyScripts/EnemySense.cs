@@ -19,7 +19,6 @@ public readonly struct EnemyTargetInfo
     }
 }
 
-
 public class EnemySense : MonoBehaviour
 {
     [Header("시야 기준점")]
@@ -57,7 +56,9 @@ public class EnemySense : MonoBehaviour
     {
         get
         {
-            float distance = IsAlerted ? Vector3.Distance(transform.position, LastTargetPosition) : float.PositiveInfinity;
+            Vector3 direction = LastTargetPosition - transform.position;
+            direction.y = 0f;
+            float distance = IsAlerted ? direction.magnitude : float.PositiveInfinity;
 
             return new EnemyTargetInfo(IsAlerted, LastTargetPosition, distance, CanSeeTarget);
         }
@@ -107,7 +108,6 @@ public class EnemySense : MonoBehaviour
         nextSenseTime = Time.time + senseInterval;
     }
 
-
     private void Update()
     {
         if (combatTarget == null || combatTarget.Stats == null || combatTarget.Stats.IsDead)
@@ -118,7 +118,7 @@ public class EnemySense : MonoBehaviour
 
         if (senseInterval <= 0f || Time.time >= nextSenseTime)
         {
-            EvaluateVisibility();
+            CanSeeTarget = CanSeeCombatTarget();
             nextSenseTime = Time.time + senseInterval;
         }
 
@@ -144,23 +144,6 @@ public class EnemySense : MonoBehaviour
 
     /// <summary>
     /// 플레이어 감지 함수
-    /// </summary>
-    private void EvaluateVisibility()
-    {
-        CanSeeTarget = CanSeeCombatTarget();
-
-        if (!CanSeeTarget)
-            return;
-
-        IsAlerted = true;
-        if (combatTarget != null)
-        {
-            LastTargetPosition = combatTarget.transform.position;
-        }
-        loseTargetTimer = loseTargetTime;
-    }
-
-    /// <summary>
     /// 장애물이 앞에 있는지 검사
     /// </summary>
     private bool CanSeeCombatTarget()
@@ -175,7 +158,6 @@ public class EnemySense : MonoBehaviour
         if (sqrDistance < 0.0001f || sqrDistance > maxSqrDistance)
             return false;
 
-
         if (!IsAlerted)
         {
             float viewDot = Vector3.Dot(transform.forward, direction.normalized);
@@ -189,12 +171,14 @@ public class EnemySense : MonoBehaviour
     /// <summary>
     /// 두 지점 사이에 장애물이 있는지 검사
     /// </summary>
-    public bool IsPathBlocked(Vector3 targetPosition)
+    private bool IsPathBlocked(Vector3 targetPosition)
     {
-        Vector3 origin = eyeTransform != null ? eyeTransform.position: transform.position + Vector3.up;
+        Vector3 origin = eyeTransform != null ? eyeTransform.position : transform.position + Vector3.up;
 
-        return Physics.Linecast(origin,targetPosition, obstacleLayer, QueryTriggerInteraction.Ignore);
+        return Physics.Linecast(origin, targetPosition, obstacleLayer, QueryTriggerInteraction.Ignore);
     }
+
+    public bool HasClearPathTo(Vector3 targetPosition) => !IsPathBlocked(targetPosition);
 
     /// <summary>
     /// 인지상태 초기화
@@ -205,7 +189,6 @@ public class EnemySense : MonoBehaviour
         CanSeeTarget = false;
         loseTargetTimer = 0f;
     }
-
 
     private void OnDrawGizmosSelected()
     {

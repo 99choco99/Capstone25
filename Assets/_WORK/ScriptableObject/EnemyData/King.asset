@@ -13,7 +13,43 @@ MonoBehaviour:
   m_Name: King
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   id: 111
-  hp: 100
-  posture: 100
-  exp: 5
-  gold: 10
+  hp: 360
+  posture: 140
+  attackPower: 1
+  exp: 30
+  combatRange: 3
+  combatExitRangeMultiplier: 1.4
+  strafeDistance: 2.9
+  minActionDelay: 0.18
+  maxActionDelay: 0.35
+  pattern:
+  - {fileID: 11400000, guid: ed06c25395d6df34f9b86c9d83c8cec2, type: 2}
+  - {fileID: 11400000, guid: 47ca284abd5cc4f32201513fb7817b34, type: 2}
+  - {fileID: 11400000, guid: a0dde24625ded3104bdd3b8dd1e867ec, type: 2}
+  - {fileID: 11400000, guid: be2ba40d99736066b45908fc619e9e0f, type: 2}
+  - {fileID: 11400000, guid: cd25001671c0799f35195dbaf6b7948e, type: 2}
+  avoidRepeatedPatterns: 1
+  repeatedPatternWeight: 0.35
+  retreatAttack: {fileID: 11400000, guid: b6252dfd3d4e917670f199871a37d815, type: 2}
+  parryChance: 0.4
+  blockChance: 0.5
+  guardLeadTime: 0.11
+  counterChance: 1
+  counterDelay: 0.16
+  combatRotationSpeed: 15
+  chaseAngularSpeed: 400
+  patrolSpeed: 2
+  chaseSpeed: 5.2
+  strafeSpeed: 2.1
+  strafeArcAngle: 20
+  minStrafeTime: 0.65
+  maxStrafeTime: 1.3
+  strafeRefreshTime: 0.25
+  arrivalTolerance: 0.1
+  strafeSampleDistance: 1.5
+  strafeRetryTime: 0.5
+  reactionRange: 2.7
+  threatAngle: 100
+  guardAngle: 120
+  distanceTolerance: 0.2
+  minimumApproachDistance: 1.15

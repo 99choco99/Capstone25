@@ -3,13 +3,10 @@
 [RequireComponent(typeof(EnemySense))]
 public class EnemyAttackObserver : MonoBehaviour
 {
-
     Player player;
-    [SerializeField] private EnemySense sense;
+    private EnemySense sense;
 
-    [Header("위협 판정")]
-    [SerializeField,Min(0.1f)] private float reactionRange = 2.5f;
-    [SerializeField, Range(0f, 180f)] private float angle = 100f;
+    private EnemyData data;
 
     /// <summary>
     /// player가 공격중인지 아닌지
@@ -25,16 +22,13 @@ public class EnemyAttackObserver : MonoBehaviour
     /// 예상 타격 시간
     /// </summary>
     public float ExpectedActiveTime { get; private set; }
-
-    private float minimumThreatDot;
-
+    public float DefenseStartTime => Mathf.Max(Time.time, ExpectedActiveTime - data.guardLeadTime);
 
     private void Awake()
     {
         sense = GetComponent<EnemySense>();
-        minimumThreatDot = Mathf.Cos(angle * 0.5f *  Mathf.Deg2Rad);
+        data = GetComponent<EnemyStats>().Data;
     }
-
 
     private void OnEnable()
     {
@@ -75,7 +69,6 @@ public class EnemyAttackObserver : MonoBehaviour
         ExpectedActiveTime = 0f;
     }
 
-
     private void HandleAttackStart(float expectedActiveAt)
     {
         IsPlayerAttacking = true;
@@ -89,7 +82,6 @@ public class EnemyAttackObserver : MonoBehaviour
         ExpectedActiveTime = 0f;
     }
 
-
     /// <summary>
     /// player공격이 닿을만한가?
     /// </summary>
@@ -97,19 +89,29 @@ public class EnemyAttackObserver : MonoBehaviour
     {
         if (!IsPlayerAttacking || player == null) return false;
 
+        return IsPlayerInReactionRange();
+    }
+
+    public bool IsAttackContinuationInRange()
+    {
+        return player != null && player.StateMachine?.CurrentState is PlayerAttackState attackState
+            && attackState.HasAttackContinuation && IsPlayerInReactionRange();
+    }
+
+    private bool IsPlayerInReactionRange()
+    {
         if (!sense.CanSeeTarget) return false;
 
         Vector3 playerToEnemy = transform.position - player.transform.position;
         playerToEnemy.y = 0f;
 
         float sqrDistance = playerToEnemy.sqrMagnitude;
-        if (sqrDistance > reactionRange * reactionRange) return false;
+        if (sqrDistance > data.reactionRange * data.reactionRange) return false;
         if (sqrDistance < 0.0001f) return true;
 
         Vector3 attackForward = player.transform.forward;
         attackForward.y = 0f;
 
-        return Vector3.Dot(attackForward.normalized, playerToEnemy.normalized) >= minimumThreatDot;
+        return Vector3.Dot(attackForward.normalized, playerToEnemy.normalized) >= Mathf.Cos(data.threatAngle * 0.5f * Mathf.Deg2Rad);
     }
 }
-

@@ -1,13 +1,13 @@
 ﻿using UnityEngine;
 
-
 /// <summary>
 /// 일반공격, 특수공격 나누는 카테고리 특수공격은 방어 불가
 /// </summary>
 public enum AttackType
 {
-    Normal,
-    Special
+    Normal = 0,
+    Special = 1,
+    Thrust = 2
 }
 
 /// <summary>
@@ -30,9 +30,14 @@ public enum DeflectResponse
     Continue
 }
 
-[CreateAssetMenu(fileName = "AttackData", menuName = "Scriptable Objects/AttackData")]
+public enum AttackPhase { WindUp, Active, Recovery }
+
+public enum AttackReactionType { Slash = 1, Pressure = 2, Finisher = 3 }
+
 public class AttackData : ScriptableObject
 {
+    public const float FrameRate = 60f;
+
     [Header("타격 정보")]
     [Tooltip("피해량")]
     [Min(0f)]
@@ -46,6 +51,9 @@ public class AttackData : ScriptableObject
     [SerializeField] private KnockBackLevel impactLevel = KnockBackLevel.Light;
     public KnockBackLevel ImpactLevel => impactLevel;
 
+    [InspectorName("접촉 반응"), SerializeField] private AttackReactionType reactionType = AttackReactionType.Slash;
+    public AttackReactionType ReactionType => reactionType;
+
     [Header("공격 종류")]
     [SerializeField] private AttackType type = AttackType.Normal;
     public AttackType Type => type;
@@ -54,11 +62,13 @@ public class AttackData : ScriptableObject
     [SerializeField] private DeflectResponse deflectResponse = DeflectResponse.Rebound;
     public DeflectResponse DeflectResponse => deflectResponse;
 
-    [Header("다음 공격 데이터")]
-    public AttackData NextComboAttack;
-
+    [Header("사거리 (0 = 미설정)")]
+    [Tooltip("최대 거리")]
+    [SerializeField, Min(0f)] private float maxDistance;
+    public float MaxDistance => maxDistance;
 
     [Header("애니메이션")]
+    public AnimationClip animationClip;
     public string animationStateName;
     public int AnimationHash => Animator.StringToHash(animationStateName);
 
@@ -67,55 +77,23 @@ public class AttackData : ScriptableObject
 
     public float AnimationSpeed => Mathf.Max(0.01f, animationSpeed);
 
-    [Header("공격 전진")]
-    [Tooltip("1은 원본 그대로, 0은 전진 없음, 1.5는 전진량 1.5배. 전진 성분만 바꾸며 후퇴·옆 이동·높이·회전·타격 시점은 유지합니다.")]
-    [SerializeField, Min(0f), InspectorName("공격 전진 배율")] private float attackAdvanceMultiplier = 1f;
-    public float AttackAdvanceMultiplier => attackAdvanceMultiplier;
-
+    /// <summary>60fps 기준 클립에 재생 속도를 적용한 초당 진행 프레임 수. 게임 FPS와는 별개입니다.</summary>
+    public float FramesPerSecond => FrameRate * AnimationSpeed;
 
     [Header("타이밍 설정 (프레임 단위 입력)")]
     [Tooltip("애니메이션의 전체 프레임 수")]
+    [Min(1f)]
     public float totalFrames = 60f;
-    [Tooltip("공격 방향과 실행을 확정하는 프레임")]
-    public float commitFrame = 10f;
+
     [Tooltip("타격 판정이 켜지는 프레임")]
     public float activeStartFrame = 15f;
     [Tooltip("Recovery 시작 프레임")]
     public float recoveryStartFrame = 45f;
-    [Tooltip("다음 공격으로 전환할 수 있는 프레임")]
-    public float comboStartFrame = 50f;
 
-    [Tooltip("피해 판정이 전혀 없는 동작이면 false")]
     [SerializeField] private bool hasHitWindow = true;
-
 
     /// <summary>
     /// 공격 판정이 있는 동작인가
     /// </summary>
     public bool HasHitWindow => hasHitWindow;
-    public float CommitTime => totalFrames > 0 ? Mathf.Clamp(commitFrame, 0f, activeStartFrame) / totalFrames : 0f;
-    public float ActiveStartTime => totalFrames > 0 ? Mathf.Clamp01(activeStartFrame / totalFrames) : 0f;
-    public float RecoveryStartTime => totalFrames > 0 ? Mathf.Clamp01(recoveryStartFrame / totalFrames) : 0f;
-
-    /// <summary>
-    /// 다음 콤보 전환 시점
-    /// </summary>
-    public float ComboStartTime => totalFrames > 0 ? Mathf.Clamp01(Mathf.Max(recoveryStartFrame, comboStartFrame) / totalFrames) : 0f;
-
-
-    /// <summary>
-    /// 애니메이션 총 재생 시간
-    /// </summary>
-    public float DurationInSeconds => totalFrames / (60f * AnimationSpeed);
-
-    /// <summary>공격 애니메이션의 이번 프레임 이동 중 캐릭터 앞쪽으로 전진하는 성분에만 배율을 적용합니다.</summary>
-    public Vector3 ScaleAttackAdvance(Vector3 deltaPosition, Vector3 forward)
-    {
-        if (attackAdvanceMultiplier == 1f) return deltaPosition;
-
-        forward.y = 0f;
-        forward.Normalize();
-        float advance = Mathf.Max(0f, Vector3.Dot(deltaPosition, forward));
-        return deltaPosition + forward * (advance * (attackAdvanceMultiplier - 1f));
-    }
 }

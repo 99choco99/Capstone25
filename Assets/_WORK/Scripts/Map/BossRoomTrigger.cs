@@ -1,13 +1,9 @@
-﻿using System;
-using UnityEngine;
-using UnityEngine.Timeline;
+﻿using UnityEngine;
 using UnityEngine.Playables;
 
 public class BossRoomTrigger : MonoBehaviour
 {
-    private event Action OnEnterRoom;
     private bool isLocked = false;
-
 
     [SerializeField] private Enemy Boss;
     [SerializeField] private GameObject[] Boundaries;
@@ -25,10 +21,10 @@ public class BossRoomTrigger : MonoBehaviour
         introDirector.stopped += OnIntroStopped;
 
         player.InputHandler.SetInputEnabled(false);
+        player.StateMachine.TransitionTo(player.StateMachine.PlayerGroundedState);
         player.Motor.SetTransform(spawnPoint.position, spawnPoint.rotation);
         introDirector.Play();
         Boss.Stats.OnDeath += ClearBossRoom;
-        OnEnterRoom?.Invoke();
     }
 
     private void OnIntroStopped(PlayableDirector director)
@@ -40,10 +36,13 @@ public class BossRoomTrigger : MonoBehaviour
         Player.LocalPlayer.InputHandler.SetInputEnabled(true);
     }
 
-
     private void SetBlocking()
     {
-        if(Boundaries == null || Boundaries.Length == 0) { Debug.LogError("설정된 블록이 없음"); return; }
+        if (Boundaries == null || Boundaries.Length == 0)
+        {
+            Debug.LogError("설정된 블록이 없음");
+            return;
+        }
         foreach (var boundary in Boundaries)
         {
             boundary.SetActive(isLocked);
@@ -57,5 +56,4 @@ public class BossRoomTrigger : MonoBehaviour
         SetBlocking();
         executionDirector.Play();
     }
-
 }

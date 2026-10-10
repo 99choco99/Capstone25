@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 
-
 [RequireComponent(typeof(PlayerInputHandler), typeof(PlayerMotor), typeof(PlayerStats))]
 [RequireComponent(typeof(PlayerCombat), typeof(PlayerExecution), typeof(TargetingSystem))]
 [RequireComponent(typeof(PlayerInteraction))]
@@ -17,8 +16,6 @@ public class Player : MonoBehaviour
 
     public static event Action<Player> OnLocalPlayerSpawned;
 
-
-
     [field: Header("Core Systems")]
     [field: SerializeField] public PlayerInputHandler InputHandler { get; private set; }
     public PlayerInputBuffer InputBuffer => InputHandler.Buffer;
@@ -27,7 +24,7 @@ public class Player : MonoBehaviour
 
     [field: Header("Combat")]
     [field: SerializeField] public PlayerCombat Combat { get; private set; }
-    [field: SerializeField] public PlayerExecution Execution { get; private set; } 
+    [field: SerializeField] public PlayerExecution Execution { get; private set; }
     [field: SerializeField] public TargetingSystem TargetingSystem { get; private set; }
 
     [field: Header("Animation")]
@@ -36,14 +33,14 @@ public class Player : MonoBehaviour
     [field: Header("Interaction")]
     [field: SerializeField] public PlayerInteraction Interaction { get; private set; }
 
-
     public PlayerStateMachine StateMachine { get; private set; }
-
-
 
     public bool IsLockOn => TargetingSystem.HasTarget;
 
-    public void SetInvincible(bool isInvincible) { Stats.IsInvincible = isInvincible; }
+    public void SetInvincible(bool isInvincible)
+    {
+        Stats.IsInvincible = isInvincible;
+    }
 
     private void Awake()
     {
@@ -56,35 +53,25 @@ public class Player : MonoBehaviour
         Interaction = GetComponent<PlayerInteraction>();
     }
 
-    public void Init(bool isLocal)
+    public void Init()
     {
-        IsLocalPlayer = isLocal;
+        IsLocalPlayer = true;
 
         if (InputHandler.TryGetComponent<UnityEngine.InputSystem.PlayerInput>(out var unityInput))
         {
-            unityInput.enabled = isLocal;
+            unityInput.enabled = true;
         }
 
+        LocalPlayer = this;
 
-        if (IsLocalPlayer)
-        {
-            LocalPlayer = this;
-
-            CreateSystem();
-            InjectBasicStats();
-            WireSystem();
-
-            if (DataManager.Instance.PlayerData != null)
-                Stats.RestoreHealth(DataManager.Instance.PlayerData.currentHp - Stats.CurrentHp);
-
-            OnLocalPlayerSpawned?.Invoke(this);
-        }
-    }
-
-
-    private void CreateSystem()
-    {
         StateMachine = new PlayerStateMachine(this);
+        InjectBasicStats();
+        WireSystem();
+
+        if (DataManager.Instance.PlayerData != null)
+            Stats.RestoreHealth(DataManager.Instance.PlayerData.currentHp - Stats.CurrentHp);
+
+        OnLocalPlayerSpawned?.Invoke(this);
     }
 
     private void InjectBasicStats()
@@ -94,7 +81,6 @@ public class Player : MonoBehaviour
         {
             Stats.LoadPlayerData(playerData);
         }
-
     }
 
     private void WireSystem()
@@ -105,9 +91,7 @@ public class Player : MonoBehaviour
         Stats.OnDamage += HandleDamageReceived;
         Stats.OnPostureBroken += HandlePostureBroken;
         Stats.OnDeath += HandleDeath;
-
     }
-
 
     /// <summary>
     /// 실제로 데미지를 입었을 때
@@ -119,6 +103,7 @@ public class Player : MonoBehaviour
         if (Stats.IsHealthDepleted || Stats.IsPostureBroken) return;
 
         StateMachine.CurrentState.HandleDamage(result);
+        Motor.StartKnockback(result);
     }
 
     /// <summary>
@@ -137,21 +122,20 @@ public class Player : MonoBehaviour
 
     private void HandleDeath() => StateMachine.TransitionTo(StateMachine.PlayerDeadState);
 
-
     /// <summary>
     /// 카메라를 기준으로 이동방향 가져오기
     /// </summary>
     public Vector3 GetDesiredMoveDirection()
     {
         Transform camTransform = Camera.main.transform;
-        Vector3 camForward = camTransform.forward; camForward.y = 0f;
-        Vector3 camRight = camTransform.right; camRight.y = 0f;
+        Vector3 camForward = camTransform.forward;
+        camForward.y = 0f;
+        Vector3 camRight = camTransform.right;
+        camRight.y = 0f;
 
         // 카메라 기준 키보드 입력 방향 계산
         return (camForward.normalized * InputHandler.MoveInput.z + camRight.normalized * InputHandler.MoveInput.x).normalized;
     }
-
-
 
     private void Update()
     {
@@ -174,11 +158,11 @@ public class Player : MonoBehaviour
 
         UnwireSystem();
     }
+
     private void UnwireSystem()
     {
         if (InputHandler != null)
         {
-
             InputHandler.OnTargetPressed -= TargetingSystem.ToggleTarget;
             InputHandler.OnInteractionPressed -= Interaction.ExecuteInteraction;
         }
@@ -187,9 +171,6 @@ public class Player : MonoBehaviour
             Stats.OnDeath -= HandleDeath;
             Stats.OnDamage -= HandleDamageReceived;
             Stats.OnPostureBroken -= HandlePostureBroken;
-
         }
-
     }
 }
-

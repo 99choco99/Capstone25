@@ -1,5 +1,4 @@
-﻿
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 
 public class DeathUI : MonoBehaviour
@@ -11,8 +10,6 @@ public class DeathUI : MonoBehaviour
     [SerializeField] private float fadeInDuration = 4f;
     [SerializeField] private float textStretchDuration = 3f;
     [SerializeField] private float targetCharacterSpacing = 9f;
-
-
 
     private void Awake()
     {
@@ -45,42 +42,31 @@ public class DeathUI : MonoBehaviour
 
     public async void StartDeathEffect()
     {
-
         backgroundText.characterSpacing = 0;
-
-        Awaitable fade = FadeInEffect();
-        Awaitable stretch = StretchTextEffect();
-
-        await fade;
-        await stretch;
-
-        await GameManager.Instance.Retry();
-    }
-
-    private async Awaitable FadeInEffect()
-    {
         float timer = 0f;
 
-        while (timer < fadeInDuration)
+        if (!(timer < fadeInDuration)) canvasGroup.alpha = 1f;
+        if (!(timer < textStretchDuration)) backgroundText.characterSpacing = targetCharacterSpacing;
+
+        while (timer < fadeInDuration || timer < textStretchDuration)
         {
+            bool isFading = timer < fadeInDuration;
+            bool isStretching = timer < textStretchDuration;
             timer += Time.deltaTime;
-            canvasGroup.alpha = Mathf.Lerp(0, 1, timer / fadeInDuration);
+
+            if (isFading)
+                canvasGroup.alpha = Mathf.Lerp(0, 1, timer / fadeInDuration);
+            if (isStretching)
+            {
+                backgroundText.characterSpacing = Mathf.Lerp(0, targetCharacterSpacing, timer / textStretchDuration);
+                backgroundText.alpha = Mathf.Lerp(backgroundText.alpha, 1, timer / textStretchDuration);
+            }
+
             await Awaitable.NextFrameAsync();
         }
+
         canvasGroup.alpha = 1f;
-    }
-
-    private async Awaitable StretchTextEffect()
-    {
-        float timer = 0f;
-
-        while (timer < textStretchDuration)
-        {
-            timer += Time.deltaTime;
-            backgroundText.characterSpacing = Mathf.Lerp(0, targetCharacterSpacing, timer / textStretchDuration);
-            backgroundText.alpha = Mathf.Lerp(backgroundText.alpha, 1, timer / textStretchDuration);
-            await Awaitable.NextFrameAsync();
-        }
         backgroundText.characterSpacing = targetCharacterSpacing;
+        await GameManager.Instance.Retry();
     }
 }

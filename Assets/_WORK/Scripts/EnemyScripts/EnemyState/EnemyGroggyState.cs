@@ -5,13 +5,11 @@
 /// </summary>
 public class EnemyGroggyState : EnemyState
 {
-    private const float HealthDepletedDeathDelay = 3f;
-    private const float PostureBreakRecoveryDelay = 2f;
-
+    private float PostureBreakRecoveryDelay => CombatSettings.Current.EnemyPostureBreakRecoveryDelay;
 
     //애니메이션 이어붙이기
-    private const float GroggyEnterDuration = 0.9f;
-    private const float GroggyRecoverDuration = 0.32f;
+    private float GroggyEnterDuration => CombatSettings.Current.EnemyGroggyEnterDuration;
+    private float GroggyRecoverDuration => CombatSettings.Current.EnemyGroggyRecoverDuration;
     private bool isHoldingGroggyPose;
     private bool isRecovering;
 
@@ -31,7 +29,7 @@ public class EnemyGroggyState : EnemyState
 
         enemy.Motor.Stop();
         enemy.Motor.StopKnockback();
-        enemy.AnimationController.PlayReaction(AnimHash.GroggyEnter, 0.05f);
+        enemy.AnimationController.PlayReaction(AnimHash.GroggyEnter);
     }
 
     public override void Update()
@@ -47,9 +45,6 @@ public class EnemyGroggyState : EnemyState
         // HP 소진으로 들어온 Groggy
         if (enemy.Stats.IsHealthDepleted)
         {
-            if (enemy.Stats.CurrentLife <= 1 && stateTimer >= HealthDepletedDeathDelay)
-                enemy.Stats.Die();
-
             return;
         }
 

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class PanelUI : MonoBehaviour
@@ -7,10 +6,8 @@ public class PanelUI : MonoBehaviour
     [Header("패널 UI")]
     [SerializeField] private List<UIBase> uiPanels;
 
-
     private Dictionary<UIPanelType, UIBase> panelDictionary;
     public List<UIPanelType> currentOpenUI = new();
-
 
     public void InitPanels()
     {
@@ -19,9 +16,8 @@ public class PanelUI : MonoBehaviour
 
         foreach (var panel in uiPanels)
         {
-            if (!panelDictionary.ContainsKey(panel.panelType))
+            if (panelDictionary.TryAdd(panel.panelType, panel))
             {
-                panelDictionary.Add(panel.panelType, panel);
                 panel.Init();
                 panel.Close();
             }
@@ -43,7 +39,6 @@ public class PanelUI : MonoBehaviour
         }
     }
 
-
     public void ToggleUI(UIPanelType type)
     {
         if (panelDictionary.TryGetValue(type, out UIBase panel))
@@ -59,7 +54,6 @@ public class PanelUI : MonoBehaviour
         }
     }
 
-
     public void OpenUI(UIPanelType type)
     {
         if (panelDictionary.TryGetValue(type, out UIBase panel))
@@ -71,7 +65,6 @@ public class PanelUI : MonoBehaviour
                 currentOpenUI.Add(type);
             }
         }
-
     }
 
     public void CloseUI(UIPanelType type)
@@ -83,7 +76,7 @@ public class PanelUI : MonoBehaviour
 
             if (currentOpenUI.Count > 0)
             {
-                UIPanelType lastPanelType = currentOpenUI.Last();
+                UIPanelType lastPanelType = currentOpenUI[^1];
                 if (panelDictionary.TryGetValue(lastPanelType, out UIBase lastPanel))
                 {
                     lastPanel.transform.SetAsLastSibling();
@@ -94,13 +87,14 @@ public class PanelUI : MonoBehaviour
 
     public void CloseAllPanels()
     {
-        foreach (var type in currentOpenUI.ToList())
+        foreach (var type in currentOpenUI)
         {
             if (panelDictionary.TryGetValue(type, out UIBase panel))
             {
                 panel.Close();
             }
         }
+
         currentOpenUI.Clear();
     }
 
@@ -108,11 +102,10 @@ public class PanelUI : MonoBehaviour
     {
         if (currentOpenUI.Count > 0)
         {
-            UIPanelType lastPanel = currentOpenUI.Last();
+            UIPanelType lastPanel = currentOpenUI[^1];
             CloseUI(lastPanel);
         }
     }
-
 
     public bool IsAnyPanelOpen()
     {

@@ -8,17 +8,26 @@ public class SettingUI : UIBase
     [SerializeField] private Slider sfxSlider;
     [SerializeField] private Slider sensitivitySlider;
 
-
-    private void Start()
+    public override void Init()
     {
-        bgmSlider.value = SettingManager.Instance.BGMVolume;
-        sfxSlider.value = SettingManager.Instance.SFXVolume;
-        sensitivitySlider.value = SettingManager.Instance.MouseSensitivity;
         bgmSlider.onValueChanged.AddListener(OnBGMChange);
         sfxSlider.onValueChanged.AddListener(OnSFXChange);
         sensitivitySlider.onValueChanged.AddListener(OnMouseChange);
     }
 
+    public override void Open()
+    {
+        bgmSlider.SetValueWithoutNotify(SettingManager.Instance.BGMVolume);
+        sfxSlider.SetValueWithoutNotify(SettingManager.Instance.SFXVolume);
+        sensitivitySlider.SetValueWithoutNotify(SettingManager.Instance.MouseSensitivity);
+        base.Open();
+    }
+
+    public override void Close()
+    {
+        if (IsOpen) PlayerPrefs.Save();
+        base.Close();
+    }
 
     public void OnBGMChange(float value)
     {

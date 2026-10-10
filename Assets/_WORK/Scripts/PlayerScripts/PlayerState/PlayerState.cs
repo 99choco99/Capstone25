@@ -10,6 +10,7 @@ public abstract class PlayerState : State
         this.player = player;
         this.stateMachine = stateMachine;
     }
+
     public virtual void HandleDamage(DamageResult result)
     {
         if (stateMachine.CurrentState == stateMachine.PlayerHitState)
@@ -26,19 +27,60 @@ public abstract class PlayerState : State
     {
         ActionCommand cmd = player.InputBuffer.PeekValidCommand();
         if (cmd == ActionCommand.None) return;
+        if (cmd == ActionCommand.Attack && !player.Combat.CanStartAttack)
+        {
+            if (RequestDeathblow()) player.InputBuffer.ConsumeCurrentCommand();
+            return;
+        }
         player.InputBuffer.ConsumeCurrentCommand();
         switch (cmd)
         {
-            case ActionCommand.Attack: OnAttackCommand(); break;
-            case ActionCommand.Dodge: OnDodgeCommand(); break;
-            case ActionCommand.Jump: OnJumpCommand(); break;
-            case ActionCommand.Guard: OnGuardCommand(); break;
+            case ActionCommand.Attack:
+                OnAttackCommand();
+                break;
+            case ActionCommand.Dodge:
+                OnDodgeCommand();
+                break;
+            case ActionCommand.Jump:
+                OnJumpCommand();
+                break;
+            case ActionCommand.Guard:
+                OnGuardCommand();
+                break;
         }
     }
-    protected virtual void OnAttackCommand() { }
-    protected virtual void OnDodgeCommand() { }
-    protected virtual void OnJumpCommand() { }
-    protected virtual void OnGuardCommand() { }
+
+    protected virtual void OnAttackCommand()
+    {
+    }
+
+    protected virtual void OnDodgeCommand()
+    {
+        stateMachine.TransitionTo(stateMachine.PlayerDodgeState);
+    }
+
+    protected virtual void OnJumpCommand()
+    {
+        if (player.Motor.IsGrounded)
+        {
+            stateMachine.TransitionTo(stateMachine.PlayerJumpState);
+        }
+    }
+
+    protected virtual void OnGuardCommand()
+    {
+    }
+
+    protected void RotateToTargetOrMove(Vector3 moveDir)
+    {
+        Vector3 direction;
+        if (player.IsLockOn)
+            direction = player.TargetingSystem.CurrentTarget.TargetTransform.position - player.transform.position;
+        else
+            direction = moveDir;
+
+        player.Motor.RotateToDirection(direction);
+    }
 
     /// <summary>
     /// 인살이 가능한 상태일 때 인살로 전환할 수 있도록

@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-public interface IDamageable
+﻿public interface IDamageable
 {
     /// <summary>아군 공격을 걸러내기 위한 팀 표식</summary>
     Faction TargetFaction { get; }
