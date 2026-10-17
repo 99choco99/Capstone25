@@ -1,0 +1,111 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e0378645b1e7f443910ef26c2d70739, type: 3}
+  m_Name: Attack4_Combo1
+  m_EditorClassIdentifier: 
+  damage: 72
+  postureDamage: 18
+  OverrideDefensePostureDamage: 1
+  GuardPostureDamage: 18
+  ParryPostureDamage: 9
+  DeflectedPostureDamage: 30
+  impactLevel: 1
+  impactProfile: {fileID: 11400000, guid: 91d14b997b6b4d459f7ca320cbf33ac2, type: 2}
+  type: 0
+  deflectResponse: 1
+  animationClip: {fileID: 7400000, guid: acd9d26a4db28da4a92f68f9eea60c4a, type: 2}
+  animationStateName: FlurryOpening
+  animationSpeed: 0.8075
+  totalFrames: 49
+  activeStartFrame: 17
+  recoveryStartFrame: 25
+  hasHitWindow: 1
+  NextComboAttack: {fileID: 11400000, guid: fdd2db3f8292728bdf39e126a3a6ad17, type: 2}
+  GuardComboAttack: {fileID: 11400000, guid: fdd2db3f8292728bdf39e126a3a6ad17, type: 2}
+  ParryComboAttack: {fileID: 11400000, guid: 35b958c8e8c30339f09ace4dde101fcc, type: 2}
+  NextComboStartFrame: 29
+  RequireContactForCombo: 1
+  ResistWindUpHit: 0
+  playbackSpeed:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.86
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.285714274
+      value: 0.86
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.367346924
+      value: 1.16
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.489795898
+      value: 1.16
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.571428548
+      value: 0.98
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.938775513
+      value: 0.98
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  maxDistance: 2.2
+  Followup: 1
+  weight: 35
+  selectionContexts: 7
+  attackCooldown: 2.6

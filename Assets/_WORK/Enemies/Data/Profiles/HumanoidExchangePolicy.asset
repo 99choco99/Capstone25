@@ -1,0 +1,498 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88f612ef01d946229102481d09c41fce, type: 3}
+  m_Name: HumanoidExchangePolicy
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAttackPolicy
+  referenceVersion: 710300
+  referenceBindings:
+  - scope: 0
+    action: 1
+    execution: 0
+    role: 2
+    alternativeRole: 0
+    historyKey: 3000
+    adaptation: ""
+  - scope: 0
+    action: 2
+    execution: 0
+    role: 2
+    alternativeRole: 0
+    historyKey: 3004
+    adaptation: ""
+  - scope: 0
+    action: 3
+    execution: 0
+    role: 1
+    alternativeRole: 5
+    historyKey: 3005
+    adaptation: ""
+  - scope: 0
+    action: 5
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3007
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 0
+    action: 6
+    execution: 0
+    role: 3
+    alternativeRole: 0
+    historyKey: 3016
+    adaptation: ""
+  - scope: 0
+    action: 7
+    execution: 2
+    role: 3
+    alternativeRole: 0
+    historyKey: 3038
+    adaptation: "Bow attack replaced by rush"
+  - scope: 0
+    action: 8
+    execution: 2
+    role: 5
+    alternativeRole: 0
+    historyKey: 3038
+    adaptation: "Bow attack replaced by delayed strike"
+  - scope: 0
+    action: 9
+    execution: 2
+    role: 4
+    alternativeRole: 0
+    historyKey: 3092
+    adaptation: "Unmatched special replaced by perilous"
+  - scope: 0
+    action: 10
+    execution: 0
+    role: 3
+    alternativeRole: 0
+    historyKey: 3006
+    adaptation: ""
+  - scope: 0
+    action: 11
+    execution: 0
+    role: 2
+    alternativeRole: 0
+    historyKey: 3037
+    adaptation: ""
+  - scope: 0
+    action: 13
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3031
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 0
+    action: 14
+    execution: 2
+    role: 5
+    alternativeRole: 0
+    historyKey: 3026
+    adaptation: "Bow sequence replaced by delayed strike"
+  - scope: 0
+    action: 15
+    execution: 2
+    role: 2
+    alternativeRole: 0
+    historyKey: 3014
+    adaptation: "Bow sequence replaced by combo"
+  - scope: 0
+    action: 16
+    execution: 2
+    role: 3
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: "Ranged response replaced by rush"
+  - scope: 0
+    action: 17
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3014
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 0
+    action: 18
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3014
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 0
+    action: 19
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 0
+    action: 21
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: "Turn behavior handled by existing facing; pressure motion"
+  - scope: 0
+    action: 22
+    execution: 2
+    role: 6
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: "Lateral step replaced by retreat"
+  - scope: 0
+    action: 23
+    execution: 1
+    role: 0
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: ""
+  - scope: 0
+    action: 24
+    execution: 0
+    role: 6
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: ""
+  - scope: 0
+    action: 25
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 0
+    action: 27
+    execution: 2
+    role: 3
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: "Unmatched movement replaced by rush"
+  - scope: 0
+    action: 28
+    execution: 2
+    role: 3
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: "Chase action replaced by rush"
+  - scope: 0
+    action: 30
+    execution: 0
+    role: 2
+    alternativeRole: 0
+    historyKey: 3009
+    adaptation: ""
+  - scope: 0
+    action: 31
+    execution: 0
+    role: 2
+    alternativeRole: 0
+    historyKey: 3045
+    adaptation: ""
+  - scope: 0
+    action: 32
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3006
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 0
+    action: 34
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3007
+    adaptation: "Unmatched source move replaced by single strike"
+  - scope: 0
+    action: 35
+    execution: 2
+    role: 4
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: "Sakura art replaced by perilous"
+  - scope: 0
+    action: 36
+    execution: 2
+    role: 4
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: "Sakura art replaced by perilous"
+  - scope: 0
+    action: 38
+    execution: 2
+    role: 4
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: "Phase specific special replaced by perilous"
+  - scope: 0
+    action: 39
+    execution: 2
+    role: 4
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: "Phase specific special replaced by perilous"
+  - scope: 0
+    action: 48
+    execution: 2
+    role: 3
+    alternativeRole: 0
+    historyKey: 3013
+    adaptation: "Bow move replaced by rush"
+  - scope: 0
+    action: 49
+    execution: 2
+    role: 5
+    alternativeRole: 0
+    historyKey: 3018
+    adaptation: "Bow attack replaced by delayed strike"
+  - scope: 1
+    action: 1
+    execution: 0
+    role: 7
+    alternativeRole: 0
+    historyKey: 3050
+    adaptation: ""
+  - scope: 1
+    action: 2
+    execution: 0
+    role: 6
+    alternativeRole: 0
+    historyKey: 5201
+    adaptation: ""
+  - scope: 1
+    action: 3
+    execution: 0
+    role: 1
+    alternativeRole: 0
+    historyKey: 3009
+    adaptation: ""
+  - scope: 1
+    action: 4
+    execution: 0
+    role: 7
+    alternativeRole: 0
+    historyKey: 3055
+    adaptation: ""
+  - scope: 1
+    action: 7
+    execution: 0
+    role: 7
+    alternativeRole: 0
+    historyKey: 3060
+    adaptation: ""
+  - scope: 1
+    action: 9
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3018
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 1
+    action: 10
+    execution: 0
+    role: 7
+    alternativeRole: 0
+    historyKey: 3065
+    adaptation: ""
+  - scope: 1
+    action: 11
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3070
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 1
+    action: 12
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3018
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 1
+    action: 13
+    execution: 0
+    role: 5
+    alternativeRole: 0
+    historyKey: 3070
+    adaptation: ""
+  - scope: 1
+    action: 14
+    execution: 0
+    role: 7
+    alternativeRole: 0
+    historyKey: 3076
+    adaptation: ""
+  - scope: 1
+    action: 15
+    execution: 0
+    role: 2
+    alternativeRole: 0
+    historyKey: 3031
+    adaptation: ""
+  - scope: 1
+    action: 16
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3070
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 1
+    action: 17
+    execution: 0
+    role: 7
+    alternativeRole: 0
+    historyKey: 3071
+    adaptation: ""
+  - scope: 1
+    action: 18
+    execution: 0
+    role: 2
+    alternativeRole: 0
+    historyKey: 3004
+    adaptation: ""
+  - scope: 1
+    action: 20
+    execution: 0
+    role: 6
+    alternativeRole: 0
+    historyKey: 5202
+    adaptation: ""
+  - scope: 1
+    action: 22
+    execution: 0
+    role: 2
+    alternativeRole: 0
+    historyKey: 3070
+    adaptation: ""
+  - scope: 1
+    action: 30
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3063
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 1
+    action: 31
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3068
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 1
+    action: 32
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3018
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 1
+    action: 33
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3007
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 1
+    action: 34
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3037
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 1
+    action: 35
+    execution: 0
+    role: 3
+    alternativeRole: 0
+    historyKey: 3016
+    adaptation: ""
+  - scope: 1
+    action: 37
+    execution: 0
+    role: 2
+    alternativeRole: 0
+    historyKey: 3030
+    adaptation: ""
+  - scope: 1
+    action: 38
+    execution: 0
+    role: 2
+    alternativeRole: 0
+    historyKey: 3030
+    adaptation: ""
+  - scope: 1
+    action: 39
+    execution: 0
+    role: 2
+    alternativeRole: 0
+    historyKey: 3034
+    adaptation: ""
+  - scope: 1
+    action: 40
+    execution: 0
+    role: 3
+    alternativeRole: 0
+    historyKey: 3040
+    adaptation: ""
+  - scope: 1
+    action: 41
+    execution: 0
+    role: 4
+    alternativeRole: 0
+    historyKey: 3030
+    adaptation: ""
+  - scope: 1
+    action: 42
+    execution: 0
+    role: 2
+    alternativeRole: 0
+    historyKey: 3030
+    adaptation: ""
+  - scope: 1
+    action: 43
+    execution: 0
+    role: 6
+    alternativeRole: 0
+    historyKey: 3062
+    adaptation: ""
+  - scope: 1
+    action: 44
+    execution: 0
+    role: 4
+    alternativeRole: 0
+    historyKey: 3067
+    adaptation: ""
+  - scope: 1
+    action: 45
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 3032
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 1
+    action: 46
+    execution: 2
+    role: 1
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: "Unmatched source action; existing pressure counterpart"
+  - scope: 1
+    action: 48
+    execution: 0
+    role: 3
+    alternativeRole: 0
+    historyKey: 0
+    adaptation: ""
+  minimumObservationTime: 1.5
+  maximumObservationTime: 3
+  guardReactionDuration: 0.2
+  parryReactionDuration: 0.13333334
+  reboundOpportunityDuration: 0.6
+  defenseDecisionInterval: 0.1

@@ -1,0 +1,106 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e0378645b1e7f443910ef26c2d70739, type: 3}
+  m_Name: Attack0_Dodge
+  m_EditorClassIdentifier: 
+  damage: 72
+  postureDamage: 18
+  OverrideDefensePostureDamage: 1
+  GuardPostureDamage: 18
+  ParryPostureDamage: 9
+  DeflectedPostureDamage: 30
+  impactLevel: 2
+  type: 0
+  deflectResponse: 1
+  animationClip: {fileID: 7400000, guid: 5f85727ec473c3d45b68b54ee0f1e9c2, type: 2}
+  animationStateName: EvasiveAttack
+  animationSpeed: 0.95
+  totalFrames: 64
+  activeStartFrame: 24
+  recoveryStartFrame: 32
+  hasHitWindow: 1
+  NextComboAttack: {fileID: 11400000, guid: 7b179d2b413c57618cbbfe9e70d4b075, type: 2}
+  NextComboStartFrame: 32
+  ResistWindUpHit: 0
+  playbackSpeed:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.94
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.32812499
+      value: 0.94
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.375
+      value: 1.2
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.484374985
+      value: 1.2
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.546874983
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.953125001
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  maxDistance: 3.55
+  weight: 100
+  selectionContexts: 2
+  attackCooldown: 2

@@ -1,0 +1,101 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e0378645b1e7f443910ef26c2d70739, type: 3}
+  m_Name: Retreat_Dodge
+  m_EditorClassIdentifier: 
+  damage: 0
+  postureDamage: 0
+  impactLevel: 0
+  type: 0
+  deflectResponse: 1
+  NextComboAttack: {fileID: 11400000, guid: 982f5e4e87cd470eaf1c05126a193ee5, type: 2}
+  NextComboStartFrame: 38
+  ResistWindUpHit: 0
+  animationClip: {fileID: 7400000, guid: 92a20e893d88c1c44966be51c536a9bf, type: 2}
+  AfterHit: 1
+  AfterGuard: 1
+  AfterParry: 1
+  AfterMiss: 1
+  ResponseOpportunityDuration: 0
+  animationStateName: Retreat
+  animationSpeed: 1
+  totalFrames: 42
+  activeStartFrame: 30
+  recoveryStartFrame: 30
+  hasHitWindow: 0
+  playbackSpeed:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0.000000000
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.642857143
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.714285714
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.809523810
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1.000000000
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  maxDistance: 1.4
+  weight: 22
+  selectionContexts: 19
+  attackCooldown: 6.5
+  minDistance: 0.65
+  GuardComboAttack: {fileID: 0}
+  ParryComboAttack: {fileID: 0}
+  Followup: 1
+  RequireContactForCombo: 0
+  preferredStartDistance: 1
+  startDistanceTolerance: 0.1
+  retreatDistance: 4.4339085
+  retreatMotionDistance: 1.047
+  patternRole: 6
+  RetreatObservationDuration: 1.5
+  RetreatObservationMaximumDuration: 3

@@ -1,0 +1,112 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e0378645b1e7f443910ef26c2d70739, type: 3}
+  m_Name: Probe_B1
+  m_EditorClassIdentifier: 
+  damage: 96
+  postureDamage: 27
+  OverrideDefensePostureDamage: 1
+  GuardPostureDamage: 27
+  ParryPostureDamage: 13.5
+  DeflectedPostureDamage: 30
+  impactLevel: 1
+  type: 0
+  deflectResponse: 0
+  animationClip: {fileID: 7400000, guid: 83e0c130158d12549a0e57653143c012, type: 2}
+  AfterHit: 2
+  AfterGuard: 2
+  AfterParry: 3
+  AfterMiss: 1
+  ResponseOpportunityDuration: 0.90000000
+  animationStateName: SingleAttack
+  animationSpeed: 1
+  totalFrames: 61
+  activeStartFrame: 20
+  recoveryStartFrame: 31
+  hasHitWindow: 1
+  NextComboAttack: {fileID: 0}
+  NextComboStartFrame: 0
+  RequireContactForCombo: 0
+  hitGroup: 0
+  ResistWindUpHit: 0
+  playbackSpeed:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0.000000000
+      value: 0.950000000
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.295081967
+      value: 0.950000000
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.360655738
+      value: 1.050000000
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.508196721
+      value: 1.050000000
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.622950820
+      value: 1.200000000
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1.000000000
+      value: 1.200000000
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  maxDistance: 2.25
+  Followup: 1
+  minDistance: 0.85
+  weight: 70
+  selectionContexts: 7
+  attackCooldown: 1.5
+  GuardComboAttack: {fileID: 0}
+  ParryComboAttack: {fileID: 0}
+  preferredStartDistance: 1.1
+  startDistanceTolerance: 0.12
+  patternRole: 1
+  startMaxDistance: 1.35

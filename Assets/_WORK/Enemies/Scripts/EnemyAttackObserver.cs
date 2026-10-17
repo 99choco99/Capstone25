@@ -1,0 +1,140 @@
+﻿using UnityEngine;
+
+[RequireComponent(typeof(EnemySense))]
+public class EnemyAttackObserver : MonoBehaviour
+{
+    Player player;
+    private EnemySense sense;
+
+    private EnemyData data;
+
+    /// <summary>
+    /// player가 공격중인지 아닌지
+    /// </summary>
+    public bool IsPlayerAttacking { get; private set; }
+    public bool IsPlayerGuarding => player != null && player.Combat.CurrentDefenseType != DefenseType.None;
+
+    /// <summary>
+    /// 현재 몇번째 공격인지 구분하는 변수
+    /// </summary>
+    public int curAttackVersion { get; private set; }
+
+    public float AttackStartedTime { get; private set; } = float.NegativeInfinity;
+
+    /// <summary>
+    /// 예상 타격 시간
+    /// </summary>
+    public float ExpectedActiveTime { get; private set; }
+    public float DefenseStartTime => Mathf.Max(Time.time, ExpectedActiveTime - data.guardLeadTime);
+
+    private void Awake()
+    {
+        sense = GetComponent<EnemySense>();
+        data = GetComponent<EnemyStats>().Data;
+    }
+
+    private void OnEnable()
+    {
+        Player.OnLocalPlayerSpawned += BindPlayer;
+
+        if (Player.LocalPlayer != null)
+            BindPlayer(Player.LocalPlayer);
+    }
+
+    private void OnDisable()
+    {
+        Player.OnLocalPlayerSpawned -= BindPlayer;
+        UnbindPlayer();
+    }
+
+    private void BindPlayer(Player localPlayer)
+    {
+        if (localPlayer == null || !localPlayer.IsLocalPlayer)
+            return;
+        if (player == localPlayer)
+            return;
+
+        UnbindPlayer();
+
+        player = localPlayer;
+        player.Combat.AttackStarted += HandleAttackStart;
+        player.Combat.AttackEnded += HandleAttackEnd;
+    }
+
+    private void UnbindPlayer()
+    {
+        if (player != null && player.Combat != null)
+        {
+            player.Combat.AttackStarted -= HandleAttackStart;
+            player.Combat.AttackEnded -= HandleAttackEnd;
+        }
+
+        player = null;
+        HandleAttackEnd();
+    }
+
+    private void HandleAttackStart(float expectedActiveAt)
+    {
+        IsPlayerAttacking = true;
+        AttackStartedTime = Time.time;
+        ExpectedActiveTime = expectedActiveAt;
+        curAttackVersion++;
+    }
+
+    private void HandleAttackEnd()
+    {
+        IsPlayerAttacking = false;
+        AttackStartedTime = float.NegativeInfinity;
+        ExpectedActiveTime = 0f;
+    }
+
+    /// <summary>
+    /// player공격이 닿을만한가?
+    /// </summary>
+    public bool IsAttackInRange()
+    {
+        if (!IsPlayerAttacking || player == null)
+            return false;
+
+        return IsPlayerInReactionRange();
+    }
+
+    public bool IsAttackContinuationInRange()
+    {
+        return player != null && player.StateMachine?.CurrentState is PlayerAttackState attackState
+            && attackState.HasAttackContinuation && IsPlayerInReactionRange();
+    }
+
+    public bool TryGetWhiffOpportunity(out float elapsed, out float remaining)
+    {
+        elapsed = remaining = 0f;
+        return !IsPlayerAttacking && player != null && sense.CanSeeTarget
+            && player.StateMachine?.CurrentState is PlayerAttackState attackState
+            && attackState.TryGetWhiffRecovery(out elapsed, out remaining);
+    }
+
+    private bool IsPlayerInReactionRange()
+    {
+        if (!sense.CanSeeTarget)
+            return false;
+
+        Vector3 playerToEnemy = transform.position - player.transform.position;
+        playerToEnemy.y = 0f;
+
+        float sqrDistance = playerToEnemy.sqrMagnitude;
+        if (sqrDistance > data.reactionRange * data.reactionRange)
+            return false;
+        if (sqrDistance < 0.0001f)
+            return true;
+
+        Vector3 guardForward = transform.forward;
+        guardForward.y = 0f;
+        if (Vector3.Dot(guardForward.normalized, -playerToEnemy.normalized) < Mathf.Cos(data.guardAngle * 0.5f * Mathf.Deg2Rad))
+            return false;
+
+        Vector3 attackForward = player.transform.forward;
+        attackForward.y = 0f;
+
+        return Vector3.Dot(attackForward.normalized, playerToEnemy.normalized) >= Mathf.Cos(data.threatAngle * 0.5f * Mathf.Deg2Rad);
+    }
+}

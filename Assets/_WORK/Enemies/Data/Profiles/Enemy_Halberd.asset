@@ -1,0 +1,112 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e6064334515f8e24a962028d055fa65d, type: 3}
+  m_Name: Enemy_Halberd
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  id: 100
+  hp: 1680
+  posture: 630
+  exp: 5
+  combatRange: 3.6
+  combatExitRangeMultiplier: 1.4
+  closePressureDistance: 2.6
+  distantAttackDistance: 4.3333334
+  spacingSpeed: 2.5
+  minActionDelay: 0
+  maxActionDelay: 0
+  pattern:
+  - {fileID: 11400000, guid: dcd2a17b05024bd0b425af533cccf961, type: 2}
+  - {fileID: 11400000, guid: 7dfc6eb2463454e7213abf1fc63f5a68, type: 2}
+  - {fileID: 11400000, guid: 3a86fbaef122dabd01cea2f69cec339e, type: 2}
+  - {fileID: 11400000, guid: cb335bf2b7b54981465113996a144b41, type: 2}
+  - {fileID: 11400000, guid: 138a70336284650336433d222c71399f, type: 2}
+  - {fileID: 11400000, guid: cd654ee7de1f3cebf899dbf7378928a9, type: 2}
+  - {fileID: 11400000, guid: d71c79c091d275736b2833c2249cf520, type: 2}
+  - {fileID: 11400000, guid: 11edb37c9eac32ab979ec1f6d6352e66, type: 2}
+  avoidRepeatedPatterns: 1
+  repeatedPatternWeight: 0.35
+  attackPolicy: {fileID: 11400000, guid: a905ca69cc98475db1b8c96b6bd083ec, type: 2}
+  policyDistanceScale: 0.86666667
+  exchange:
+    enabled: 1
+    hitPressureChance: 0.55
+    guardedPressureChance: 0.7
+    guardedMixupWeight: 1.7
+    minObservationTime: 0.65
+    maxObservationTime: 1
+    spacingTimeout: 1.4
+    closingInterruptDistance: 0.65
+  retreatAttack: {fileID: 11400000, guid: cd654ee7de1f3cebf899dbf7378928a9, type: 2}
+  minimumRetreatJumpDistance: 1.25
+  parryChance: 0
+  blockChance: 1
+  defenseReactionTime: 0.14
+  guardPressureParryIncrement: 1
+  guardLeadTime: 0.11
+  defenseRecoveryDuration: 0.5
+  maximumHitReactions: 2
+  hitGuardRecoveryDuration: 0.16
+  counterChance: 1
+  counterDelay: 0.16
+  maximumPassiveParries: 2
+  whiffPunishChance: 0.85
+  whiffReactionTime: 0.15
+  whiffStartupMargin: 0.04
+  whiffPunishCooldown: 1.4
+  combatRotationSpeed: 15
+  chaseAngularSpeed: 400
+  chaseSpeed: 2.5
+  strafeSpeed: 0.7
+  observationDistance: 4.8
+  observationDistanceTolerance: 0.45
+  strafeArcAngle: 40
+  strafeStepDistance: 1.15
+  minStrafeTime: 0.65
+  maxStrafeTime: 1.3
+  strafePauseTime: 0.25
+  strafeRefreshTime: 0.25
+  arrivalTolerance: 0.1
+  strafeSampleDistance: 1.5
+  strafeRetryTime: 0.5
+  reactionRange: 2.7
+  threatAngle: 180
+  guardAngle: 90
+  distanceTolerance: 0.2
+  minimumApproachDistance: 1.35
+  approachRetryDelay: 1.2
+  attackPreparationTimeout: 3
+  failedPreparationRetryDelay: 2.5
+  maxPreparationRetreatDistance: 2.3
+  counterFollowupChance: 0.42
+  guardedCounterFollowupBonus: 0.1
+  pressureCounterFollowupBonus: 0.06
+  recentPatternMemory: 4
+  recentPatternWeight: 0.7
+  guardedPerilousWeight: 1.5
+  guardedDelayedWeight: 1.65
+  pressureRetreatWeight: 1.8
+  distantRushWeight: 1.5
+  playerPressureMemoryDuration: 2.5
+  playerPressureAttackCount: 2
+  burstApproachSpeed: 3.4
+  burstApproachAcceleration: 20
+  levelScaling:
+    Enabled: 1
+    MaximumLevel: 29
+    InitialHealthMultiplier: 1
+    InitialPostureMultiplier: 1
+    InitialDamageMultiplier: 1
+    MaximumHealthMultiplier: 1.15
+    MaximumPostureMultiplier: 1.12
+    MaximumDamageMultiplier: 1.1
+  locomotionWalkSpeed: 2.54
+  locomotionRunSpeed: 3.75

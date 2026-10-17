@@ -1,0 +1,116 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e0378645b1e7f443910ef26c2d70739, type: 3}
+  m_Name: PressureFollow
+  m_EditorClassIdentifier:
+  damage: 72
+  postureDamage: 18
+  OverrideDefensePostureDamage: 1
+  GuardPostureDamage: 18
+  ParryPostureDamage: 9
+  DeflectedPostureDamage: 30
+  impactLevel: 2
+  type: 0
+  deflectResponse: 1
+  NextComboAttack: {fileID: 11400000, guid: abb43df039396994ed9163397991cdce, type: 2}
+  ParryComboAttack: {fileID: 11400000, guid: abb43df039396994ed9163397991cdce, type: 2}
+  NextComboStartFrame: 47
+  ResistWindUpHit: 1
+  animationClip: {fileID: 7139934645174251864, guid: ddf585c7073d4698854feb8a16e02723, type: 3}
+  AfterHit: 1
+  AfterGuard: 1
+  AfterParry: 3
+  AfterMiss: 3
+  ResponseOpportunityDuration: 1.26666667
+  animationStateName: ComboFollow
+  animationSpeed: 1
+  totalFrames: 94
+  activeStartFrame: 26
+  recoveryStartFrame: 43
+  hasHitWindow: 1
+  playbackSpeed:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0.000000000
+      value: 1.2
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.244680851
+      value: 1.2
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.276595745
+      value: 1.55
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.457446809
+      value: 1.55
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.500000000
+      value: 1.05
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1.000000000
+      value: 1.05
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  maxDistance: 2.15
+  weight: 0
+  selectionContexts: 0
+  attackCooldown: 0
+  RequireContactForCombo: 1
+  minDistance: 0.0
+  GuardComboAttack: {fileID: 11400000, guid: abb43df039396994ed9163397991cdce, type: 2}
+  Followup: 1
+  hitGroup: 0
+  preferredStartDistance: 1.075
+  startDistanceTolerance: 0.12
+  hitWindows:
+  - weapon: 2
+    startFrame: 26
+    endFrame: 43
+    damageMultiplier: 1
+    postureMultiplier: 1

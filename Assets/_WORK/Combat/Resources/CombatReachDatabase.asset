@@ -1,0 +1,1311 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52255bab822a78043986ddd5b4bb0383, type: 3}
+  m_Name: CombatReachDatabase
+  m_EditorClassIdentifier: Assembly-CSharp::CombatReachDatabase
+  version: 1
+  actors:
+  - source: Assets/_WORK/Enemies/Prefabs/Enemy_DualWield Variant.prefab
+    sourceHash: cf1cceee6d500b52652e9720a23f8bc8|24e9d051d9cd219f52622c7d2f89f0fd|219917873de725d58c3d0315216b5e1c|de34e6b5634bfa73b3bb609a4de4f9ee
+    enemyData: {fileID: 11400000, guid: bdbb2ff2db80f2145b2cef3615b709f9, type: 2}
+    openingAttack: {fileID: 0}
+    controller: {fileID: 22100000, guid: 56c0bd650bff1bf43a340ce58251d69e, type: 2}
+    avatar: {fileID: 9000000, guid: 4d118c3040e58be4dac5014eb3fb177c, type: 3}
+    scale: {x: 1, y: 1, z: 1}
+    weapons: 0:0.16@slot=2|ARPG_Dual_Wield/Axe/AxeHitPoint_01:-0.5478764,0.993156254,-0.112379275|ARPG_Dual_Wield/Axe/AxeHitPoint_02:-0.5478764,0.993156254,0.08568266|ARPG_Dual_Wield/Axe/AxeHitPoint_03:-0.5478764,0.993156254,0.2837446|ARPG_Dual_Wield/Axe/AxeHitPoint_04:-0.5478764,0.993156254,0.481806517|ARPG_Dual_Wield/Axe/AxeHitPoint_05:-0.5478764,0.993156254,0.67986846;0:0.16@slot=1|ARPG_Dual_Wield/Sword/SwordHitPoint_01:0.4956203,1.05780292,-0.0896573439|ARPG_Dual_Wield/Sword/SwordHitPoint_02:0.4956203,1.05780292,0.08553798|ARPG_Dual_Wield/Sword/SwordHitPoint_03:0.4956203,1.05780292,0.2607333|ARPG_Dual_Wield/Sword/SwordHitPoint_04:0.4956203,1.05780292,0.435928583|ARPG_Dual_Wield/Sword/SwordHitPoint_05:0.4956203,1.05780292,0.6111239|ARPG_Dual_Wield/Sword/SwordHitPoint_06:0.4956203,1.05780292,0.7863192|ARPG_Dual_Wield/Sword/SwordHitPoint_07:0.4956203,1.05780292,0.961514533;
+    body:
+      center: {x: 0, y: 0.93, z: 0}
+      radius: 0.25
+      height: 1.87
+    attacks:
+    - data: {fileID: 11400000, guid: 2e87c987b9684566be3252de454a4f69, type: 2}
+      clip: {fileID: 7400000, guid: 99864878466545645a9ffe58ffedaefe, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 1.075
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 8081c244a5174c12941cac409f847212, type: 2}
+      clip: {fileID: 7400000, guid: b6b65ae779071b84dbb11aa7e76d9abd, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 2
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: f255d3d20d409d3994083e483225c6c0, type: 2}
+      clip: {fileID: 7400000, guid: 88da9f8e8e6b47b2a0a5db06c0efd0a8, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0.25
+        max: 1.85
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 7c4c6e523e4cac28bb39b2138a522c96, type: 2}
+      clip: {fileID: 7400000, guid: 1e21cf29c94844f4e840e9f19f9620c6, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 1.9
+        max: 7.775
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 0e9508ac41a0da211f4dcf34f59a636b, type: 2}
+      clip: {fileID: 7400000, guid: e2104075e10ad4c4da09ab2af2e41b36, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0.625
+        max: 3.3999999
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 3c3e9fd928a8c347050fe33f73ec8066, type: 2}
+      clip: {fileID: 7400000, guid: 852a4afd766012240bd4e7d0f8b76bcd, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0.32500002
+        max: 2.2
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: c71bdf6f163f43c1a18f1f75e2d21356, type: 2}
+      clip: {fileID: 7400000, guid: ded2014e1dfaa8d41b3951b12781e0c5, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands: []
+      note: "\uD6C4\uD1F4 \uD6C4 \uC7AC\uC9C4\uC785\uC740 \uBCC4\uB3C4 \uC900\uBE44
+        \uC815\uCC45 \uC0AC\uC6A9"
+    - data: {fileID: 11400000, guid: 5c1ab5fb54294a185a8d0aa7409e6f67, type: 2}
+      clip: {fileID: 2746797882735882954, guid: 4cad974890c041d8be26551344041c13,
+        type: 3}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 3
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+  - source: Assets/_WORK/Enemies/Prefabs/Enemy_Halberd.prefab
+    sourceHash: e08e4ffc5c88843e80be164c5c6fc71a|24e9d051d9cd219f52622c7d2f89f0fd|219917873de725d58c3d0315216b5e1c|de34e6b5634bfa73b3bb609a4de4f9ee
+    enemyData: {fileID: 11400000, guid: 007087e11c9303d52434047864c4d920, type: 2}
+    openingAttack: {fileID: 0}
+    controller: {fileID: 22100000, guid: 49f2d21815621b8a8fb388613ba9f2a4, type: 2}
+    avatar: {fileID: 9000000, guid: b9716d5dbdebf7947b9abf26c409ab77, type: 3}
+    scale: {x: 1, y: 1, z: 1}
+    weapons: 0:0.16|ARPG_Halberd/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_1:-1.36150336,0.211153865,0.154277816|ARPG_Halberd/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_2:-1.47696328,0.22159338,0.164442569|ARPG_Halberd/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_3:-1.5924238,0.232032731,0.174607247|ARPG_Halberd/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_4:-1.70788443,0.242472276,0.184772357|ARPG_Halberd/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_5:-1.82334483,0.252911717,0.194936916|ARPG_Halberd/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_6:-1.938805,0.263351083,0.205101788|ARPG_Halberd/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_7:-2.0542655,0.2737906,0.215267017|ARPG_Halberd/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_Shaft_1:0.0405828021,0.084383294,0.0308429115|ARPG_Halberd/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_Shaft_2:-0.306663126,0.115779579,0.06141327|ARPG_Halberd/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_Shaft_3:-0.653909,0.147176176,0.09198345|ARPG_Halberd/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_Shaft_4:-1.0011549,0.178572759,0.122553952;
+    body:
+      center: {x: 0, y: 0.93, z: 0}
+      radius: 0.25
+      height: 1.87
+    attacks:
+    - data: {fileID: 11400000, guid: dcd2a17b05024bd0b425af533cccf961, type: 2}
+      clip: {fileID: 7400000, guid: ee877a59b037cd14faf5014034b64a8a, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 3.85
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 7dfc6eb2463454e7213abf1fc63f5a68, type: 2}
+      clip: {fileID: 7400000, guid: 04999d32e59bb414a9578526b20bbdc6, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 3.375
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 3a86fbaef122dabd01cea2f69cec339e, type: 2}
+      clip: {fileID: 7400000, guid: e8a5f8c710de0774a9aecab1058855eb, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 3.175
+        max: 6.325
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: cb335bf2b7b54981465113996a144b41, type: 2}
+      clip: {fileID: 7400000, guid: c0e905a92c989fd48ac6af72f962ca67, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 6.125
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 138a70336284650336433d222c71399f, type: 2}
+      clip: {fileID: 7400000, guid: 3c1a866427a1eb54fbac2c923baf1d39, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 3.3
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: cd654ee7de1f3cebf899dbf7378928a9, type: 2}
+      clip: {fileID: 7400000, guid: b88b976ff11060747999f2d23909f2f2, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands: []
+      note: "\uD6C4\uD1F4 \uD6C4 \uC7AC\uC9C4\uC785\uC740 \uBCC4\uB3C4 \uC900\uBE44
+        \uC815\uCC45 \uC0AC\uC6A9"
+    - data: {fileID: 11400000, guid: d71c79c091d275736b2833c2249cf520, type: 2}
+      clip: {fileID: 7400000, guid: 77f78b5e8035077419f01d95c2a336ea, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0.825
+        max: 3.8999999
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 11edb37c9eac32ab979ec1f6d6352e66, type: 2}
+      clip: {fileID: 7400000, guid: 5f85727ec473c3d45b68b54ee0f1e9c2, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 1.3000001
+        max: 4.675
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+  - source: Assets/_WORK/Enemies/Prefabs/Enemy_Samurai.prefab
+    sourceHash: f1b7fae411311887cd690711b95cbcd7|24e9d051d9cd219f52622c7d2f89f0fd|219917873de725d58c3d0315216b5e1c|de34e6b5634bfa73b3bb609a4de4f9ee
+    enemyData: {fileID: 11400000, guid: 7721903fe1b9c5f5eeb2cf0d238a2df4, type: 2}
+    openingAttack: {fileID: 0}
+    controller: {fileID: 22100000, guid: dd91ad0a405b40b429081c59fc481f26, type: 2}
+    avatar: {fileID: 9000000, guid: cf820e3702004da4cb0188372db7bc37, type: 3}
+    scale: {x: 1, y: 1, z: 1}
+    weapons: 0:0.16|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_1:-0.0192965772,0.109430522,0.0470749438|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_2:-0.178934783,0.105199821,0.0583820939|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_3:-0.338572979,0.100969128,0.069689244|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_4:-0.498211175,0.09673843,0.0809963942|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_5:-0.657849431,0.0925077349,0.0923035443|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_6:-0.8174876,0.08827704,0.103610694|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_7:-0.977125764,0.08404635,0.114917845;
+    body:
+      center: {x: 0, y: 0.93, z: 0}
+      radius: 0.25
+      height: 1.87
+    attacks:
+    - data: {fileID: 11400000, guid: ff6bd48414f641dfb3440c37521675e7, type: 2}
+      clip: {fileID: 7400000, guid: c78ef2c458fbc9b4dae875f5cc040eea, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 1.025
+        max: 4.1
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 6f90844e9d380ff53b491a3fc8f15b57, type: 2}
+      clip: {fileID: 7400000, guid: 9cba7e2fb800323489b07978bb388cec, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 3.2
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: f9aa1dd47f7023df4b350763f0f1bbc7, type: 2}
+      clip: {fileID: 7400000, guid: c547b6d0985745248762f07bf493ee3d, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 2.45
+        max: 7.875
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 1df99a47f34c3be65fb87096569f2203, type: 2}
+      clip: {fileID: 7400000, guid: 4b9527d27da456d47a52067b6882a4f9, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0.425
+        max: 4.1
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: f05baa9468a0fa48e7640939fcef1d17, type: 2}
+      clip: {fileID: 7400000, guid: f8d95247f18d46c2ada7a0f84679a451, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 0.70000005
+      - min: 1.15
+        max: 3.2749999
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: af1dc048d61ad9f411671ab0e1dc8879, type: 2}
+      clip: {fileID: 7400000, guid: 92a20e893d88c1c44966be51c536a9bf, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands: []
+      note: "\uD6C4\uD1F4 \uD6C4 \uC7AC\uC9C4\uC785\uC740 \uBCC4\uB3C4 \uC900\uBE44
+        \uC815\uCC45 \uC0AC\uC6A9"
+    - data: {fileID: 11400000, guid: c82a8986b3560274142977623e5e4453, type: 2}
+      clip: {fileID: 7400000, guid: 49d40251854b42cb80124c21474f7187, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0.275
+        max: 2.225
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: cf5db98dba51a7665adee1869b333191, type: 2}
+      clip: {fileID: 7400000, guid: f6f1ce93c725b694a9d3cdc010d230c1, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 3.025
+        max: 4.9
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+  - source: Assets/_WORK/Enemies/Prefabs/Enemy_Warrior.prefab
+    sourceHash: 257ba7e2afef23fa257112d69629754d|24e9d051d9cd219f52622c7d2f89f0fd|219917873de725d58c3d0315216b5e1c|de34e6b5634bfa73b3bb609a4de4f9ee
+    enemyData: {fileID: 11400000, guid: df7a4f9b135ea2a6c5b050a47c7e6770, type: 2}
+    openingAttack: {fileID: 0}
+    controller: {fileID: 22100000, guid: c1ee4deae7a3da0f8a0ec73622c767e4, type: 2}
+    avatar: {fileID: 9000000, guid: 5c2d718897ea73e49b52d567d2b46575, type: 3}
+    scale: {x: 1, y: 1, z: 1}
+    weapons: 1:0.16|ARPG_Warrior/ARPG_Warrior/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.L/ORG-upper_arm.L/ORG-forearm.L/Shield
+      1/ShieldHitPoint_Top:0.00231270725,0.00333859748,0.000209256585|ARPG_Warrior/ARPG_Warrior/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.L/ORG-upper_arm.L/ORG-forearm.L/Shield
+      1/ShieldHitPoint_Left:-0.00125,0.0005,0.00034|ARPG_Warrior/ARPG_Warrior/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.L/ORG-upper_arm.L/ORG-forearm.L/Shield
+      1/ShieldHitPoint_Center:0,-0.00025,0.0004|ARPG_Warrior/ARPG_Warrior/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.L/ORG-upper_arm.L/ORG-forearm.L/Shield
+      1/ShieldHitPoint_Right:0.00125,0.0005,0.00034|ARPG_Warrior/ARPG_Warrior/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.L/ORG-upper_arm.L/ORG-forearm.L/Shield
+      1/ShieldHitPoint_Bottom:0.002166647,-0.00199775654,0.00020926194;0:0.16|ARPG_Warrior/ARPG_Warrior/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Sword
+      1/Weapon/HitPoint_1:-1.69681812E-06,0.00147768576,9.74706654E-06|ARPG_Warrior/ARPG_Warrior/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Sword
+      1/Weapon/HitPoint_2:-1.75655794E-06,0.003120461,1.01900723E-05|ARPG_Warrior/ARPG_Warrior/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Sword
+      1/Weapon/HitPoint_3:-1.81629775E-06,0.00476323627,1.0633079E-05|ARPG_Warrior/ARPG_Warrior/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Sword
+      1/Weapon/HitPoint_4:-1.87603746E-06,0.006406012,1.10760857E-05|ARPG_Warrior/ARPG_Warrior/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Sword
+      1/Weapon/HitPoint_5:-1.93577716E-06,0.008048787,1.15190924E-05|ARPG_Warrior/ARPG_Warrior/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Sword
+      1/Weapon/HitPoint_6:-1.995517E-06,0.009691562,1.19620981E-05|ARPG_Warrior/ARPG_Warrior/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Sword
+      1/Weapon/HitPoint_7:-2.0552568E-06,0.0113343373,1.24051048E-05;
+    body:
+      center: {x: 0, y: 0.93, z: 0}
+      radius: 0.25
+      height: 1.87
+    attacks:
+    - data: {fileID: 11400000, guid: d6e4afb3beb547028f8a81df7f128ed2, type: 2}
+      clip: {fileID: 7400000, guid: 83e0c130158d12549a0e57653143c012, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 3.7
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 4d842ff71d6c4d9d8ac08db2547fae86, type: 2}
+      clip: {fileID: 2746797882735882954, guid: ac6153bc39e0462e9d42bbfe293c8f45,
+        type: 3}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 1
+        max: 3.325
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: cddf5cfb5dd80e550a4bc7c37aa3d9f4, type: 2}
+      clip: {fileID: 7400000, guid: 77f78b5e8035077419f01d95c2a336ea, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0.90000004
+        max: 2.85
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 262561287a0c4146bc10b02ace904475, type: 2}
+      clip: {fileID: 7400000, guid: 1f9efb4605c0c0d4cb542893cd3fbb37, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 2.825
+        max: 5.2
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 3c013d8c81f7468eaf0ef4f52923a36e, type: 2}
+      clip: {fileID: 3094330708855449807, guid: a10af3d78eb744b7b5879bcd24bc6cf1,
+        type: 3}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 2.8
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 4501fd3236c14ce08237f5f97e5d90bc, type: 2}
+      clip: {fileID: 7400000, guid: a58590c3edef1f140a1a69bf79048242, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0.625
+        max: 2.8
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: e1017ae25f4200a2d9501813076a0f65, type: 2}
+      clip: {fileID: 7400000, guid: 378507d22867dbf469947bb3d1b1cb31, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands: []
+      note: "\uD6C4\uD1F4 \uD6C4 \uC7AC\uC9C4\uC785\uC740 \uBCC4\uB3C4 \uC900\uBE44
+        \uC815\uCC45 \uC0AC\uC6A9"
+    - data: {fileID: 11400000, guid: 59deff0e23886a5769cb6648401eb7ab, type: 2}
+      clip: {fileID: 7400000, guid: 2d8c23500b7febb40817e91ff0f45352, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 3.1
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: bd6e7429bbd727e81728d31f86871938, type: 2}
+      clip: {fileID: 7400000, guid: acd688bdb960b284abd34b0dfe9e790c, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 2.725
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+  - source: Assets/_WORK/Player/Prefabs/Player.prefab
+    sourceHash: 689c7b859606cad2e3029b5e810b2a81|5b79ef96daaa437f84f67431c3a8dac0|219917873de725d58c3d0315216b5e1c|de34e6b5634bfa73b3bb609a4de4f9ee
+    enemyData: {fileID: 0}
+    openingAttack: {fileID: 11400000, guid: 658c923794556d743b180470af576cea, type: 2}
+    controller: {fileID: 9100000, guid: 043765f8a01c47a4c800f8e312d42e07, type: 2}
+    avatar: {fileID: 9000000, guid: 2753a5800ca41894288e1e01ba204cb8, type: 3}
+    scale: {x: 1, y: 1, z: 1}
+    weapons: 0:0.15|Ch24_nonPBR/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/PlayerWeapon/HitPoints/Hit_0:-0.007,1.1411,-0.0964|Ch24_nonPBR/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/PlayerWeapon/HitPoints/Hit_1:0,0.904,-0.05|Ch24_nonPBR/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/PlayerWeapon/HitPoints/Hit_2:0,0.61,-0.014|Ch24_nonPBR/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/PlayerWeapon/HitPoints/Hit_3:0,0.308,0;
+    body:
+      center: {x: 0, y: 0.92, z: 0}
+      radius: 0.4
+      height: 1.8
+    attacks:
+    - data: {fileID: 11400000, guid: 658c923794556d743b180470af576cea, type: 2}
+      clip: {fileID: 7400000, guid: 173f5463fdf5eb0489150f9875884adf, type: 2}
+      target:
+        center: {x: 0, y: 0.93, z: 0}
+        radius: 0.25
+        height: 1.87
+      bands:
+      - min: 0.2
+        max: 2.5249999
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+  - source: Assets/_WORK/World/Scenes/Combat.unity
+    sourceHash: 95bd511ec2090c98247a127715c404ee|24e9d051d9cd219f52622c7d2f89f0fd|219917873de725d58c3d0315216b5e1c|de34e6b5634bfa73b3bb609a4de4f9ee
+    enemyData: {fileID: 11400000, guid: 6cdc59b9db7c47f439d5fa1080e7e0bb, type: 2}
+    openingAttack: {fileID: 0}
+    controller: {fileID: 22100000, guid: dd91ad0a405b40b429081c59fc481f26, type: 2}
+    avatar: {fileID: 9000000, guid: cf820e3702004da4cb0188372db7bc37, type: 3}
+    scale: {x: 1.0000001, y: 1, z: 1.0000001}
+    weapons: 0:0.16|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_1:-0.0192965772,0.109430522,0.0470749438|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_2:-0.178934783,0.105199821,0.0583820939|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_3:-0.338572979,0.100969128,0.069689244|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_4:-0.498211175,0.09673843,0.0809963942|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_5:-0.657849431,0.0925077349,0.0923035443|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_6:-0.8174876,0.08827704,0.103610694|ARPG_Samurai/rig/root/ORG-hips/ORG-spine/ORG-chest/ORG-shoulder.R/ORG-upper_arm.R/ORG-forearm.R/ORG-hand.R/Weapon/HitPoint_7:-0.977125764,0.08404635,0.114917845;
+    body:
+      center: {x: 0, y: 0.93, z: 0}
+      radius: 0.25000003
+      height: 1.87
+    attacks:
+    - data: {fileID: 11400000, guid: ff6bd48414f641dfb3440c37521675e7, type: 2}
+      clip: {fileID: 7400000, guid: c78ef2c458fbc9b4dae875f5cc040eea, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 1.025
+        max: 4.1
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 6f90844e9d380ff53b491a3fc8f15b57, type: 2}
+      clip: {fileID: 7400000, guid: 9cba7e2fb800323489b07978bb388cec, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 3.2
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: f9aa1dd47f7023df4b350763f0f1bbc7, type: 2}
+      clip: {fileID: 7400000, guid: c547b6d0985745248762f07bf493ee3d, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 2.45
+        max: 7.875
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: 1df99a47f34c3be65fb87096569f2203, type: 2}
+      clip: {fileID: 7400000, guid: 4b9527d27da456d47a52067b6882a4f9, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0.425
+        max: 4.1
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: f05baa9468a0fa48e7640939fcef1d17, type: 2}
+      clip: {fileID: 7400000, guid: f8d95247f18d46c2ada7a0f84679a451, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0
+        max: 0.70000005
+      - min: 1.15
+        max: 3.2749999
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: af1dc048d61ad9f411671ab0e1dc8879, type: 2}
+      clip: {fileID: 7400000, guid: 92a20e893d88c1c44966be51c536a9bf, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands: []
+      note: "\uD6C4\uD1F4 \uD6C4 \uC7AC\uC9C4\uC785\uC740 \uBCC4\uB3C4 \uC900\uBE44
+        \uC815\uCC45 \uC0AC\uC6A9"
+    - data: {fileID: 11400000, guid: c82a8986b3560274142977623e5e4453, type: 2}
+      clip: {fileID: 7400000, guid: 49d40251854b42cb80124c21474f7187, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 0.275
+        max: 2.225
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+    - data: {fileID: 11400000, guid: cf5db98dba51a7665adee1869b333191, type: 2}
+      clip: {fileID: 7400000, guid: f6f1ce93c725b694a9d3cdc010d230c1, type: 2}
+      target:
+        center: {x: 0, y: 0.92, z: 0}
+        radius: 0.4
+        height: 1.8
+      bands:
+      - min: 3.025
+        max: 4.9
+      note: "120Hz \uC6D0\uBCF8 \uBAA8\uC158 / \uBCF4\uC870 \uC804\uC9C4\xB7\uAC00\uB4DC
+        \uC5EC\uC720 \uC81C\uC678"
+  sourcePaths:
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield.fbx
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Attack_Combo1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Attack_Combo2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Attack_Combo3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Attack_Combo4.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Attack_Dodge.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Attack_Dodge_to_Combo1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Attack_Heavy1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Attack_Heavy1_Start.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Attack_Heavy2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Collide.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Death.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Dodge.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Executed_Death2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Executed_Death3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Guard.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Guard_Hit1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Guard_Hit2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Guard_Hit3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Guard_Start.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Hit1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Hit2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Hit3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Hit4.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Hit5.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Idle1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Parry.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Run_Forward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Walk2_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Walk_Backward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Walk_Backward_Left_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Walk_Backward_Right_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Walk_Forward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Walk_Forward_Left_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Walk_Forward_Right_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Walk_Leftward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGDualWield/Animations/Humanoid/ARPG_Dual_Wield_Walk_Rightward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Attack_Combo1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Attack_Combo2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Attack_Combo3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Attack_Combo4.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Attack_Dodge.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Attack_Dodge_to_Combo1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Attack_Heavy1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Attack_Heavy1_Start.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Attack_Heavy2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Attack_Sprint.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Collide.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Death.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Dodge.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Executed_Death2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Executed_Death3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Guard.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Guard_Hit1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Guard_Hit2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Guard_Hit3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Guard_Start.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Hit1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Hit2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Hit3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Hit4.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Hit5.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Idle1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Idle2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Parry.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Run_Forward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Walk2_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Walk_Backward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Walk_Backward_Left_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Walk_Backward_Right_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Walk_Forward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Walk_Forward_Left_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Walk_Forward_Right_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Walk_Leftward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/ARPG_Halberd_Walk_Rightward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Humanoid/Halberd_Humanoid.fbx
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGHalberd/Animations/Weapon/Halberd_Weapon.fbx
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Additional_Animations/Humanoid/Samurai_Attack_Combo_B2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Additional_Animations/Humanoid/Samurai_Attack_Combo_B3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Additional_Animations/Humanoid/Samurai_Attack_Combo_B4.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Additional_Animations/Humanoid/Samurai_Attack_Combo_B5.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Additional_Animations/Humanoid/Samurai_Attack_HeavyB.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Additional_Animations/Humanoid/Samurai_Collide_To_Stun.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Additional_Animations/Humanoid/Samurai_Execute_B.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Additional_Animations/Humanoid/Samurai_Jump_Forward.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Additional_Animations/Humanoid/Samurai_Stun.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Additional_Animations/Humanoid/Samurai_Stun_To_Idle1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Attack_Combo1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Attack_Combo2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Attack_Combo3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Attack_Combo4.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Attack_Dodge.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Attack_Heavy1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Attack_Heavy1_Start.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Attack_Heavy2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Collide.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Death.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Death2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Dodge.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Equip.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Execute.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Executed2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Executed_Death.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_B.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_B_Break.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_B_Hit1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_B_Hit2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_B_Hit3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_B_Start.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_B_to_Idle.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_Hit1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_Hit2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_Hit3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_Start.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_Walk_Backward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_Walk_Backward_Left_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_Walk_Backward_Right_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_Walk_Forward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_Walk_Forward_Left_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_Walk_Forward_Right_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_Walk_Leftward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Guard_Walk_Rightward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Hit1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Hit2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Hit3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Hit4.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Hit5.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Hit_knockdown.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Humanoid.fbx
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Idle1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Parry.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Run_Backward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Run_Backward_Left_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Run_Backward_Right_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Run_Forward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Run_Forward_Left_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Run_Forward_Right_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Run_Leftward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Run_Rightward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Sprint_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Walk2_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Walk_Backward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Walk_Backward_Left_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Walk_Backward_Right_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Walk_Forward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Walk_Forward_Left_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Walk_Forward_Right_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Walk_Leftward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGSamurai/Animations/Humanoid/ARPG_Samurai_Walk_Rightward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Additional_Animations/Humanoid/ARPG_Warrior_Attack_ComboB1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Additional_Animations/Humanoid/ARPG_Warrior_Attack_ComboB2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Additional_Animations/Humanoid/ARPG_Warrior_Attack_ComboB3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Additional_Animations/Humanoid/ARPG_Warrior_Attack_ComboB4.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Additional_Animations/Humanoid/ARPG_Warrior_Attack_Evade.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Additional_Animations/Humanoid/ARPG_Warrior_Attack_HeavyB.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Additional_Animations/Humanoid/ARPG_Warrior_Collide_To_Stun.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Additional_Animations/Humanoid/ARPG_Warrior_Stun.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior.fbx
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Attack_Combo1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Attack_Combo2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Attack_Combo4.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Attack_Heavy2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Attack_Sprint.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Collide.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Death.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Dodge.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Executed_Death.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Guard.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Guard_Hit1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Guard_Hit2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Guard_Hit3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Guard_Start.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Hit1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Hit2.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Hit3.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Hit4.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Hit5.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Idle1.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Parry.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Run_Forward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Walk2_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Walk_Backward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Walk_Backward_Left_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Walk_Backward_Right_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Walk_Forward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Walk_Forward_Left_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Walk_Forward_Right_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Walk_Leftward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/ARPG_Warrior_Walk_Rightward_IPC.anim
+  - Assets/ImportAsset/Animation/ARPGPack/ARPGWarrior/Animations/Humanoid/Warrior_Attack_Heavy1.anim
+  - Assets/ImportAsset/Animation/DoubleL/Demo/Anim/OneHand_Up_Run_B_InPlace.anim
+  - Assets/ImportAsset/Animation/DoubleL/Demo/Anim/OneHand_Up_Run_F_InPlace.anim
+  - Assets/ImportAsset/Animation/DoubleL/Demo/Anim/OneHand_Up_Run_L_InPlace.anim
+  - Assets/ImportAsset/Animation/DoubleL/Demo/Anim/OneHand_Up_Run_R_InPlace.anim
+  - Assets/ImportAsset/Animation/DoubleL/Model/T-Pose.fbx
+  - Assets/ImportAsset/Animation/EnemyCombat/DualWield_Finish.fbx
+  - Assets/ImportAsset/Animation/EnemyCombat/DualWield_LeftCounter.fbx
+  - Assets/ImportAsset/Animation/EnemyCombat/DualWield_LeftFollow.fbx
+  - Assets/ImportAsset/Animation/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx
+  - Assets/ImportAsset/Animation/WarriorCombat/Warrior_AdvanceSlash.fbx
+  - Assets/ImportAsset/Animation/WarriorCombat/Warrior_DownwardFinish.fbx
+  - Assets/ImportAsset/Animation/WarriorCombat/Warrior_FollowSlash.fbx
+  - Assets/ImportAsset/Animation/WarriorCombat/Warrior_PerilousThrust.fbx
+  - Assets/ImportAsset/Model/NPC/Knight D Pelegrini.fbx
+  - Assets/ImportAsset/Model/Player/Ch24_nonPBR.fbx
+  - Assets/ImportAsset/Two light weapons/Meshes/Two light weapons/SM_katana.FBX
+  - Assets/_WORK/Camera/Prefabs/CameraSystem.prefab
+  - Assets/_WORK/Combat/Editor/CombatReachBaker.cs
+  - Assets/_WORK/Combat/Prefabs/Weapons/WeaponTrail.prefab
+  - Assets/_WORK/Combat/Scripts/Animation/AnimationController.cs
+  - Assets/_WORK/Combat/Scripts/Attacks/AttackData.cs
+  - Assets/_WORK/Combat/Scripts/Attacks/AttackHitWindow.cs
+  - Assets/_WORK/Combat/Scripts/Reach/CombatReachDatabase.cs
+  - Assets/_WORK/Combat/Scripts/Weapons/Weapon.cs
+  - Assets/_WORK/DialogueQuest/Animations/NPC.controller
+  - Assets/_WORK/DialogueQuest/Prefabs/NPC.prefab
+  - Assets/_WORK/DialogueQuest/Prefabs/Name.prefab
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/AdvancingComboFinish.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/AdvancingComboFollow.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/AdvancingComboOpening.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/ApproachAttack.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/ComboFinish.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/ComboFollow.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/ComboFollow2.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/ComboOpening.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/CounterAttack.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/CounterComboAttack.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/CounterFollow.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/DelayedAttack.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/EvasiveAttack.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/FlurryFinish.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/FlurryFollow.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/FlurryFollow2.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/FlurryOpening.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/PerilousAttack.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/PerilousFinish.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/PerilousHeavyAttack.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/PerilousPrepare.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/ReenterAttack.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/Retreat.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/RushAttack.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/ShortComboFinish.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/ShortComboOpening.anim
+  - Assets/_WORK/Enemies/Animations/Combat/AttackSlots/SingleAttack.anim
+  - Assets/_WORK/Enemies/Animations/Combat/DualWield_RetreatDodge.anim
+  - Assets/_WORK/Enemies/Animations/Combat/Halberd_RetreatStep.anim
+  - Assets/_WORK/Enemies/Animations/Combat/Samurai_DelayedSpin.anim
+  - Assets/_WORK/Enemies/Animations/Combat/Samurai_RetreatStep.anim
+  - Assets/_WORK/Enemies/Animations/Combat/Sword_Slash02.anim
+  - Assets/_WORK/Enemies/Animations/Combat/Sword_Slash04.anim
+  - Assets/_WORK/Enemies/Animations/Combat/Sword_Slash05.anim
+  - Assets/_WORK/Enemies/Animations/Combat/Sword_Slash08.anim
+  - Assets/_WORK/Enemies/Animations/Combat/Warrior_RetreatStep.anim
+  - Assets/_WORK/Enemies/Animations/Controllers/EnemyController.controller
+  - Assets/_WORK/Enemies/Animations/Controllers/Enemy_DualWield.overrideController
+  - Assets/_WORK/Enemies/Animations/Controllers/Enemy_Halberd.overrideController
+  - Assets/_WORK/Enemies/Animations/Controllers/Enemy_Samurai.overrideController
+  - Assets/_WORK/Enemies/Animations/Controllers/Enemy_Warrior.overrideController
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Dual_Wield_Run_Backward_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Dual_Wield_Run_Backward_Left_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Dual_Wield_Run_Backward_Right_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Dual_Wield_Run_Forward_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Dual_Wield_Run_Forward_Left_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Dual_Wield_Run_Forward_Right_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Dual_Wield_Run_Leftward_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Dual_Wield_Run_Rightward_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Halberd_Run_Backward_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Halberd_Run_Backward_Left_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Halberd_Run_Backward_Right_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Halberd_Run_Forward_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Halberd_Run_Forward_Left_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Halberd_Run_Forward_Right_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Halberd_Run_Leftward_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Halberd_Run_Rightward_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Warrior_Run_Backward_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Warrior_Run_Backward_Left_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Warrior_Run_Backward_Right_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Warrior_Run_Forward_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Warrior_Run_Forward_Left_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Warrior_Run_Forward_Right_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Warrior_Run_Leftward_IPC.anim
+  - Assets/_WORK/Enemies/Animations/Locomotion/ARPG_Warrior_Run_Rightward_IPC.anim
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/CounterCrossCut.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/DelayedStrike.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/PerilousDrive.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/PressureFinish.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/PressureFollow.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/PressureFollow2.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/PressureOpening.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/ProbeSlash.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/ReenterSlash.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/Retreat_Dodge.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/RushEntry.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/ShortFinish.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_DualWield/ShortOpening.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/Attack1-3_Heavy2.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/Attack2_Combo4.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/Attack3_Combo3.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/Attack3_Flurry.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/Attack4-2_Combo2.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/Attack5_Sprint.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/DelayedStrike.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/PerilousThrust.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/PressureFinish.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/PressureFollow.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/PressureOpening.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/ProbeSlash.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/ReenterSlash.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/Retreat_Dodge.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Halberd/RushEntry.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/Attack1-3_Heavy2.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/Attack2_Combo4.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/Attack3_Flurry.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/Attack4-2_Combo2.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/Attack5_Sprint.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/CounterCut.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/DelayedStrike.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/JumpSlamThrust.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/PerilousThrust.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/PressureFinish.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/PressureFollow.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/PressureFollow2.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/PressureOpening.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/ProbeSlash.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/ReenterSlash.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/Retreat_Dodge.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Samurai/RushEntry.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/AdvanceSlash.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/Approach_Sprint.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/Attack2_Combo4.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/Attack4-2_Combo2.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/ComboB4.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/ComboB5.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/CounterB1.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/CounterB2.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/DelayedSlash.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/DownwardFinish.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/FollowSlash.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/Lunge.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/PerilousThrust.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/Probe_B1.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/ReenterSlash.asset
+  - Assets/_WORK/Enemies/Data/Attacks/Enemy_Warrior/Retreat_Dodge.asset
+  - Assets/_WORK/Enemies/Data/Profiles/Enemy_DualWield.asset
+  - Assets/_WORK/Enemies/Data/Profiles/Enemy_Halberd.asset
+  - Assets/_WORK/Enemies/Data/Profiles/Enemy_Samurai.asset
+  - Assets/_WORK/Enemies/Data/Profiles/Enemy_Warrior.asset
+  - Assets/_WORK/Enemies/Data/Profiles/King.asset
+  - Assets/_WORK/Enemies/Prefabs/Enemy_DualWield Variant.prefab
+  - Assets/_WORK/Enemies/Prefabs/Enemy_Halberd.prefab
+  - Assets/_WORK/Enemies/Prefabs/Enemy_Samurai.prefab
+  - Assets/_WORK/Enemies/Prefabs/Enemy_Warrior.prefab
+  - Assets/_WORK/Enemies/Scripts/EnemyAttackData.cs
+  - Assets/_WORK/Enemies/Scripts/EnemyData.cs
+  - Assets/_WORK/Enemies/Scripts/EnemyStats.cs
+  - Assets/_WORK/Player/Animations/Controllers/Player_AnimationController.controller
+  - Assets/_WORK/Player/Data/Attacks/NormalAttack/NormalAttack1.asset
+  - Assets/_WORK/Player/Data/Attacks/NormalAttack/NormalAttack2.asset
+  - Assets/_WORK/Player/Data/Attacks/NormalAttack/NormalAttack3.asset
+  - Assets/_WORK/Player/Data/Attacks/NormalAttack/NormalAttack4.asset
+  - Assets/_WORK/Player/Data/Attacks/NormalAttack/NormalAttack5.asset
+  - Assets/_WORK/Player/Data/Attacks/NormalAttack/SprintAttack.asset
+  - Assets/_WORK/Player/Prefabs/Player.prefab
+  - Assets/_WORK/Player/Scripts/Combat/PlayerCombat.cs
+  - Assets/_WORK/Player/Scripts/PlayerAttackData.cs
+  - Assets/_WORK/UI/Prefabs/life.prefab
+  - Assets/_WORK/World/Environment/Models/PrototypeMap.FBX
+  - Assets/_WORK/World/Environment/Prefabs/PrototypeMap_Project.prefab
+  - Assets/_WORK/World/Environment/Prefabs/RuinWallDetails.prefab
+  - Assets/_WORK/World/Prefabs/Map/SpawnPoint.prefab
+  - Assets/_WORK/World/Scenes/Combat.unity
+  sourceHashes:
+  - reach-inputs-1|fc40e5b89cc4502387523dbc0a83e55b
+  - reach-inputs-1|dd58c3d8d6278b27ff518e741642fdcc
+  - reach-inputs-1|de166991f01c67f3c56e140a86c72858
+  - reach-inputs-1|5fcb314ac6426814bfbe179a28b7d3a9
+  - reach-inputs-1|d9241926016cb205059a9243115788e7
+  - reach-inputs-1|18b269d3a5f1f1554e6811eae7ac405d
+  - reach-inputs-1|7cd4627fe21456f0b3038bf79e270691
+  - reach-inputs-1|0255078292da09ad7e8c7b3c21361cfe
+  - reach-inputs-1|0989da72ed3bba54d661bd39d35c7c33
+  - reach-inputs-1|0c1fbf75470a39a10f42a056296ce975
+  - reach-inputs-1|756d2aaa99654c8dcabedefeae09d328
+  - reach-inputs-1|b7b636b066adbd68b12cb05cda6eb474
+  - reach-inputs-1|ca77e5eae6965c619448d244ea6da57a
+  - reach-inputs-1|c4a8d6de767e2946746415d40b82e161
+  - reach-inputs-1|6c23426e1495a23b661388f68e26be30
+  - reach-inputs-1|b017a31ad689acc53aeedbf0f0338437
+  - reach-inputs-1|0ab6c0bec1c29e42a0bf1046c42e867f
+  - reach-inputs-1|6ac14c0ac980b45a91b1fb6d67739a90
+  - reach-inputs-1|3c24e34673889e4703afaadf47de5cec
+  - reach-inputs-1|7bc223d4e2d563e4860a2a19b1f16f2a
+  - reach-inputs-1|7057d6223cad1abedbd374c5ad6aa0c8
+  - reach-inputs-1|eb949b0a610fb3545172abbd71cbed51
+  - reach-inputs-1|18e7615a4693699948d6a9eed0b67465
+  - reach-inputs-1|911a33063e66af7d04d08738aeeaa219
+  - reach-inputs-1|a3d48b328f85af42e42f88ee1234eb19
+  - reach-inputs-1|e1592ce46360cc421d1bd6cb010d1cfa
+  - reach-inputs-1|52a31392f030c2a9b0df83b0aba7400c
+  - reach-inputs-1|31be96e422a89320683d091b067a0692
+  - reach-inputs-1|78d7afa6825aff606f532fccc9238173
+  - reach-inputs-1|13d32314b536906852acf33e205b232d
+  - reach-inputs-1|904cc3cdf442bff817c2b759a580cad1
+  - reach-inputs-1|64813b315dbf558ad73973d65ee5359f
+  - reach-inputs-1|646630841c7f12aa411020f7c031bb40
+  - reach-inputs-1|71a3f8afe9b816f0053f2ac736c9e248
+  - reach-inputs-1|e13f88f15be70a68fa905ce770b0eeee
+  - reach-inputs-1|1e1fc6b615a814ff30ff3b34105f377a
+  - reach-inputs-1|8b49359868ab62fd6d971ff06be59ed0
+  - reach-inputs-1|078e046b8b3a00c9ae18333af096cde1
+  - reach-inputs-1|c53f9b284fa09a08f58f2df1b9042418
+  - reach-inputs-1|8a90ced8580c6398644be98e54f4cb72
+  - reach-inputs-1|487f289b23741925116424619b0e72e7
+  - reach-inputs-1|89b4ff390b38d6a26943bf5ff02fa3a2
+  - reach-inputs-1|1db73a3b52236e4f1653e27f35df1e8b
+  - reach-inputs-1|659c987a609abe323dfd0edae40e2bf4
+  - reach-inputs-1|03ce3bd2cdcb878b54b7b1c941d59305
+  - reach-inputs-1|60aa5560514f9b5b3cff99d6230c1ebe
+  - reach-inputs-1|260836c94cc8b2af99969dac1b8aa427
+  - reach-inputs-1|c3d388f5ba2073cc297e368a88c57f46
+  - reach-inputs-1|1a1343e4174b718f872e1bcb8d0cba33
+  - reach-inputs-1|d5efaf4fe3f7612a0158dad6eba61faa
+  - reach-inputs-1|b55d179c6f587affcca732b144eda456
+  - reach-inputs-1|4c8995f48251502ba2758c4bf18da709
+  - reach-inputs-1|0bc9fe4e403f3a39983b852e75d8f0bb
+  - reach-inputs-1|c4218f659c1818b947475bef7f5dc170
+  - reach-inputs-1|b1720bcc6cbbb54b746a41d0782803de
+  - reach-inputs-1|5b59de4b9758ce9f53c2fb33e97cb8bb
+  - reach-inputs-1|0ecafff6d14969144e55fc3bb31ef349
+  - reach-inputs-1|581ad4b6a751dd5ced5d69de239546ef
+  - reach-inputs-1|a8da8904c5e969dadb311f8d7fab227f
+  - reach-inputs-1|95d4e9c48b5785d5a7a5b9c609a5f065
+  - reach-inputs-1|631992fbc54688fb66c8b27b8b49d457
+  - reach-inputs-1|226280303a8869a7abbaacb30a12a27a
+  - reach-inputs-1|5d741c11ecd3927bdfa669cadf5055d7
+  - reach-inputs-1|7430450f4f0c46ea6d3c54d7d923325e
+  - reach-inputs-1|08776ae3edbd55132518c922fbebba8e
+  - reach-inputs-1|e019f53c52291b2b53dd1e5d0fd4cf1f
+  - reach-inputs-1|7e86a1b952a1ff76f901694198c23260
+  - reach-inputs-1|d4c6173f15db7ff3734552729405f475
+  - reach-inputs-1|8c38234d7a5667b4379c907113a52995
+  - reach-inputs-1|8bf48f4e326a0495fec93b668bcd7014
+  - reach-inputs-1|96dc5accc78b13f79fc0160c2fca527a
+  - reach-inputs-1|5a93f7262685a034d1ffeb5a5acd3fcb
+  - reach-inputs-1|533924fdab0572cf55b3064cfb43c899
+  - reach-inputs-1|68e49438a876852ec27fe83b8edb1408
+  - reach-inputs-1|9b56f03d0b1ba386d1a6e0cbf75644ba
+  - reach-inputs-1|da4241cadcbd09f48e3e1dd3fe72a26d
+  - reach-inputs-1|017b49debaa04895fe986a2893f5b30b
+  - reach-inputs-1|c6295442eae134139d4149cbec5696ba
+  - reach-inputs-1|5fc4a3858bbf35f17c5e9f686d6221e8
+  - reach-inputs-1|8142468e6c51a285c3753a4760376297
+  - reach-inputs-1|ceac93e69e4d8a09f562c930cf8b8573
+  - reach-inputs-1|5a01e1aeb566dc2ab1eb4e9df7c1339a
+  - reach-inputs-1|89b5445c75ebd43861b900aa50c0f567
+  - reach-inputs-1|a7906729dedf67c20c0a75037830eb0e
+  - reach-inputs-1|1dcf8ccf7559723c6f6b104bd8402e58
+  - reach-inputs-1|203e76cda15fcc17557c9083dba5028e
+  - reach-inputs-1|db7d734bfa7d60cbc6d82548e0db8089
+  - reach-inputs-1|d1d44e37811caf76ef5bb31f83cf2d9c
+  - reach-inputs-1|bf259b72a548493bf3dd77e8c16672e4
+  - reach-inputs-1|47dc3ae175c56ff370d568d621297ea0
+  - reach-inputs-1|3fba373cd5383da165cf2c7cdb69c612
+  - reach-inputs-1|e6ba7640ea443da00c545f410ec973fc
+  - reach-inputs-1|2d357bdcf086bc8178b33cf611430e43
+  - reach-inputs-1|4bb578b6799696bc8d4e52ae2df5e9f2
+  - reach-inputs-1|97297fe9858c4a1d477c3f58a3f7e8ad
+  - reach-inputs-1|dc3e1b248a012cd58b0b76ccfd994e86
+  - reach-inputs-1|b4e9bde4ab6ca679b8847f4852092580
+  - reach-inputs-1|0b17e67ee4ae851bc218aa0b061a8d68
+  - reach-inputs-1|d157335ea42768b23749774b3c19c533
+  - reach-inputs-1|0af2f4a87316d7ef2c7a1882a47bc7f5
+  - reach-inputs-1|2f5fe23c91ceef30f7e60bc9cdeace1d
+  - reach-inputs-1|3d231237902df4a88e06985533c5ead1
+  - reach-inputs-1|578f0eeb6634b6bc14a8ce1b4d52b0eb
+  - reach-inputs-1|3bea4b836e293d264eb4d005d9726b83
+  - reach-inputs-1|27dec446b4d0d0fe2a531bade4a8523c
+  - reach-inputs-1|149a8de060bde0c1a048a5f5d90d064a
+  - reach-inputs-1|96499ef430a425867974e63d939127be
+  - reach-inputs-1|0fdfed79665a4be38bf38cbbfb9e0ecd
+  - reach-inputs-1|9f043d70bb70b02db4fc780b3308ee83
+  - reach-inputs-1|390f206f731fee97c47b2b026c068493
+  - reach-inputs-1|e0602edc9775f7cd898d7132abf3fdc8
+  - reach-inputs-1|e9de12a1b4a731400cda8231ac58c6ab
+  - reach-inputs-1|5fa6df8a1eb010f592b8d4cff43fd0d7
+  - reach-inputs-1|19cf028b5c30469eacf7161a67d604d2
+  - reach-inputs-1|e628b0d8373b96c099ffa4631c054ecf
+  - reach-inputs-1|df85b780e8e22c9bf619fe4d885c5a48
+  - reach-inputs-1|21f7a5a13344da3b059e51477fca9210
+  - reach-inputs-1|182afa807eced5d24f8efb24b208d844
+  - reach-inputs-1|a3019efc2df0d60fdbe8a5162d21bf04
+  - reach-inputs-1|3805e255c6f2d7bc4404dd1993ff07f9
+  - reach-inputs-1|6d7c8942560a73d7bceb2deb6f582d63
+  - reach-inputs-1|63dfeb1d2b9117fc9e90122db4f1e069
+  - reach-inputs-1|a979ca560f1b508fd2cb4a2b58642319
+  - reach-inputs-1|d6ac24bf82283e4956fb528cff0bb865
+  - reach-inputs-1|28a4a575db3b4f9d976f1f0d58b968ef
+  - reach-inputs-1|f1e9166ad688bc3f5180997de79c6760
+  - reach-inputs-1|f1b64b0cfc7612b749891d4bed0d5b35
+  - reach-inputs-1|76c56deec82afd60c34c4d9c4a83ea7a
+  - reach-inputs-1|ec755c4b2178515b53e397648bc0b33d
+  - reach-inputs-1|2f46e037f5167435a7c1afb4e6c081a1
+  - reach-inputs-1|cbfac0c4142f7dcd35f6835411295d64
+  - reach-inputs-1|5feb5cadf36e68db1dc3abdf5164e090
+  - reach-inputs-1|bd4d85349f70a2daeb4ef528b16f51bb
+  - reach-inputs-1|660b545dc128940c55f1834411a1a46d
+  - reach-inputs-1|9a7f69e141c3d4aa92d750295bf3fc9d
+  - reach-inputs-1|f6bbecfa9234830df95f3c956b5c7c15
+  - reach-inputs-1|3798fc893771ac8be345f9b2099557b5
+  - reach-inputs-1|1f207542c6b10e06ab627cc74850dd41
+  - reach-inputs-1|3f680fa11281595d115745c9078e5769
+  - reach-inputs-1|4966cbe13b4798ee39400b1a18af81f7
+  - reach-inputs-1|f27aef1c515de644344e92dc4aba83ab
+  - reach-inputs-1|091fa652c64ff0dd5415e75a55c58c0e
+  - reach-inputs-1|3cac5882cde1bf318523ebb1f13d1bea
+  - reach-inputs-1|001e1acdfa81c282028b6ea2264dc8d9
+  - reach-inputs-1|4bf82c4d442071544baf7ca4f00e6232
+  - reach-inputs-1|852cdd543af2199a6cb44f8221212590
+  - reach-inputs-1|1ab7abc88552b677dabeb78834ef01f3
+  - reach-inputs-1|80f930e6a221046a9dada7f37a0b0d9d
+  - reach-inputs-1|8712304200d1a4c03f4800e503f8fcc5
+  - reach-inputs-1|aff58f39d55bf9de8df171469a4d0be3
+  - reach-inputs-1|68bb32ed04d34c3724efb05b1c15373c
+  - reach-inputs-1|7da7c8602f655252bc863ab7b1f9df86
+  - reach-inputs-1|53ba8f231b50dcad9c01786ee3008cfa
+  - reach-inputs-1|f87bda5b6f49e412be4a4b88bb389e97
+  - reach-inputs-1|5eebfdbf3179211a9412c81f19efc676
+  - reach-inputs-1|88d3861a812f772e1ae388b890857313
+  - reach-inputs-1|87fa80f7011af98daa57ac7a24d6d855
+  - reach-inputs-1|4b69af07e937c4650011b792016aa56e
+  - reach-inputs-1|ebaf408818fa76aefa8ddebd78c5fd45
+  - reach-inputs-1|826eb4d4e51addbe4b268b75c6f4e7bc
+  - reach-inputs-1|3acb4208e057f4bbb63d02878665af8a
+  - reach-inputs-1|98fb9f0c6e5c4720efc35ccabd3d5998
+  - reach-inputs-1|cf4b2a726e23490ee09bbda9d0ee06df
+  - reach-inputs-1|421f82b009e8edebd51c2c54e873843a
+  - reach-inputs-1|ed008ecc96f04a527339250aafa8c0cd
+  - reach-inputs-1|58a0cf2a1832bc12a367f77988969a33
+  - reach-inputs-1|cc3823264e5be1bfcd83820a0a88ae87
+  - reach-inputs-1|268aaeb3a3ed79a0a0e0b39b7a31563f
+  - reach-inputs-1|e2484d37c9734275ef9dcca7dad9a92b
+  - reach-inputs-1|4d8e4bd14796e2f2666cf2ed91924813
+  - reach-inputs-1|aabf30f8517a8ab7b1bfb34da7203954
+  - reach-inputs-1|ba910a40927ff9155d57c25f9d0d38f5
+  - reach-inputs-1|ce6904cea013db1b2bab2bfa8cdd9ecc
+  - reach-inputs-1|1ceb7435b5df1b007c5bc844b57737de
+  - reach-inputs-1|e8b6084c73e49cf4a8b97b0fada99e17
+  - reach-inputs-1|e98ee6aeecf5f551624a0095d349a6e2
+  - reach-inputs-1|c9bffc206525932032ced231a75e8549
+  - reach-inputs-1|9971abb5ed5cca1e9538b6c21f069889
+  - reach-inputs-1|f5a0f865b83c1ae3aafd565e8c4b1634
+  - reach-inputs-1|7f0e35cea1d035ecd91c60b3c5c54791
+  - reach-inputs-1|e625a17864d5f8cce00b05525bcba529
+  - reach-inputs-1|d347879e9220e08c2804c9ce7a2dd73b
+  - reach-inputs-1|e1a1b3ad7c158fa6a33735e9f2bd0a84
+  - reach-inputs-1|11d3be0b184af0da74116aff3c5a8259
+  - reach-inputs-1|74f23d2358fa3de4bd8101a364c12b6a
+  - reach-inputs-1|ca7d62bb2da4e192ea4e37f9010f66fe
+  - reach-inputs-1|499b5e0fa1e45670d4eda149745d8ae0
+  - reach-inputs-1|8209461978c316a344e91fd6b5ae436d
+  - reach-inputs-1|cd92a1e480a78bea763677d2307cf403
+  - reach-inputs-1|2fd8bacf601d255eea397da04037a21f
+  - reach-inputs-1|8b3efc2d5fe671a36eb8fc727d158f72
+  - reach-inputs-1|654b5528cee66e0ee27dc5976483ed76
+  - reach-inputs-1|79e8a546bb469e77e04b527b32e7b3ad
+  - reach-inputs-1|76918bbb760277c96970a8d07273afc3
+  - reach-inputs-1|6b31f2f56a622065cfe43a44aa1c0db7
+  - reach-inputs-1|ff2f4bbf3c58f20b5cd8e5f31c6832c6
+  - reach-inputs-1|8b4d3cb0aa5abe872e018ca62b427e0d
+  - reach-inputs-1|f0910e37d0ad6e7c5123c5f36be359f0
+  - reach-inputs-1|92671faf11010787ecd14cfcf39c73ea
+  - reach-inputs-1|b2c93f09f175605b9e0b9cb557a52b35
+  - reach-inputs-1|be0ace7776055dbbcdef274ebe7437c1
+  - reach-inputs-1|f94d35c912983330f5b4c07985b569ac
+  - reach-inputs-1|d695db075b865808c0d76df1021ab582
+  - reach-inputs-1|59d13c39721d88684fc601e665819cca
+  - reach-inputs-1|a96268954e12b799763f8a735fdfb3c7
+  - reach-inputs-1|3e5928475ba3ed2649c24b640e69a9a9
+  - reach-inputs-1|e00b50766419be757138f437d6332802
+  - reach-inputs-1|4f00972a8df344b8057459e6789ca613
+  - reach-inputs-1|73d408400bf58b6b2a38970671d985d7
+  - reach-inputs-1|afbf6c58c3456c4031f3b4721d5720c3
+  - reach-inputs-1|2359a3d718f528035f7bc09eb9286c6d
+  - reach-inputs-1|8c509f56cc76aaf4a103f6cd3bbaa618
+  - reach-inputs-1|9fd9b2427d78d4e2d1bafb523bfe3ab2
+  - reach-inputs-1|e98ff516ce5cb9a50b4b6fde9bbba85f
+  - reach-inputs-1|a38227154dace6d14c80974a7fca970d
+  - reach-inputs-1|675a0c0b83d12537c505b4ab90f38bfc
+  - reach-inputs-1|3b5c7bb7e093824cc4938c1b4b5f2dd3
+  - reach-inputs-1|3df8e68f42fdc1888ea7893ce9f23bb6
+  - reach-inputs-1|6ddcadfc9c3edaca28ed020565eebaf0
+  - reach-inputs-1|55ccbcaa006d59d215da0d66c7e6b7c6
+  - reach-inputs-1|8ac46b43c179bf0d48ad09106540e0b5
+  - reach-inputs-1|28ce6d4a34b0ebd0cb4f43f4dc9aeaeb
+  - reach-inputs-1|a176f3eb0dc7cda2dcbc38524bba4789
+  - reach-inputs-1|029ff146f849430b4d4d961e92b76df2
+  - reach-inputs-1|5adac035c543e3031e0dc4259694ec19
+  - reach-inputs-1|b433dd12e455dfe4af7ac6c31137d58d
+  - reach-inputs-1|d52b46ffacff2cedfb08452ca08b727d
+  - reach-inputs-1|5a9b5036219162b1040dd7bed447c10c
+  - reach-inputs-1|cf0ea3ebbf298ed34ca897c124efaa71
+  - reach-inputs-1|75ec3e9337f122c075e733705fc5611a
+  - reach-inputs-1|93b3825e84f436a7318c9afdcf4ad69a
+  - reach-inputs-1|f9d728aa2c5d011dbd42f76efb025259
+  - reach-inputs-1|a00b72aa9214596fea1fcde4e7576857
+  - reach-inputs-1|61c0aa6dd77a26d8aa5649a42de60b51
+  - reach-inputs-1|3bdbc7aea7ac2928c644695ba5ee786d
+  - reach-inputs-1|2a6142d22d88e0d0e15170a9a6d24ff5
+  - reach-inputs-1|2f1079e334e12f42d39a78fd2c766f9a
+  - reach-inputs-1|a9230d64da548e3812f8ada08417b8e1
+  - reach-inputs-1|3b2befb78db00fa304fccfa66a5da87e
+  - reach-inputs-1|fb50d9b9c958733b2a17d9739dffd51c
+  - reach-inputs-1|7759f800e0520ea8af8217890e92d8aa
+  - reach-inputs-1|2fdcf0de6ba001de18d9277a16756ab4
+  - reach-inputs-1|83c289991b3a7d53be6e7a2ec76ac039
+  - reach-inputs-1|6638d1c6a8f8cc222f09d0d6ac0c61f4
+  - reach-inputs-1|3c2b8e06d4579e6ca55f9eb6af1e015b
+  - reach-inputs-1|7bfa11f127e70ac952920fa8a6dc62a6
+  - reach-inputs-1|3347d5f04befa1dfa8b9012ac1f888a9
+  - reach-inputs-1|fe22e2720b589cb87123183c891944a3
+  - reach-inputs-1|e743e4bd5f997bce4a48fb3fd3b5e544
+  - reach-inputs-1|d53622ab4da04c9d3c619b27ca61ea31
+  - reach-inputs-1|a3632015f9e5216bd0e6befb24824f20
+  - reach-inputs-1|4032af0ae927945739ca1cfd017c3167
+  - reach-inputs-1|239faf8100ebacba2b6b0a1b1fef1809
+  - reach-inputs-1|5ce6d95dd0c61da127fd6a0c8f3259ca
+  - reach-inputs-1|5cbae83b8baf824eea9494fffc326654
+  - reach-inputs-1|aa51def41ee264ace1b3ce871b74e0ce
+  - reach-inputs-1|8a12707860054b8f162aaab6c1a2a89d
+  - reach-inputs-1|c31db8606b8b51483a190bb15f305324
+  - reach-inputs-1|405b3de3d9972539f0fc7b6c21ace370
+  - reach-inputs-1|78aeb1d61459e48ffe0e8944cccc9b8c
+  - reach-inputs-1|dd0963b2f593b544ce2abb8b94e0480c
+  - reach-inputs-1|60c546c19b3ad3ef2f8ef5ae0e162913
+  - reach-inputs-1|853b9e2f1aff43e34d00666e6cef818e
+  - reach-inputs-1|bdc5776d934a85ae98f7e916e611dcff
+  - reach-inputs-1|7317c672cb9ce37ce820b288831f833e
+  - reach-inputs-1|802c8711d8835437b125628ac9ce5df5
+  - reach-inputs-1|02d61cf797101c6afd9aa12ee1a67783
+  - reach-inputs-1|c7887176b50f02a97ea890a60daa7476
+  - reach-inputs-1|6fc0907aa21a2e86f9a50e4ac94afbe5
+  - reach-inputs-1|f5e43442b136502c4520309f61a83daf
+  - reach-inputs-1|c7e4f3d2fc321dcd2e193028c0ee920e
+  - reach-inputs-1|c2e85493930a1003c04114425b91d37a
+  - reach-inputs-1|ff6027d562d566a46337ccdcb5bc1093
+  - reach-inputs-1|158a739c688a15b4a77f9fc2f4a03d75
+  - reach-inputs-1|f51254c57e5fbba8d5a70d59ca6732cc
+  - reach-inputs-1|16666d1f70ad669299d597eebb5e3042
+  - reach-inputs-1|2989f6ed5c54d06a58aa3f3ae41cb30a
+  - reach-inputs-1|9bb67da45b59a0fb985e5026c91d69c8
+  - reach-inputs-1|599365842c8ecbd115e962cac676597c
+  - reach-inputs-1|a3558ce7070319085286df4ca228216f
+  - reach-inputs-1|52d3db9bb373c0d59364cad239ff60a9
+  - reach-inputs-1|1d2c4ff654e7595c281c128208393dd9
+  - reach-inputs-1|e16cc2b8f6f3c4b400f098debf67e378
+  - reach-inputs-1|ab5f4e513c5d69520410af7af6502ed2
+  - reach-inputs-1|5cb3f0114e926260593bdcd495e4bbe7
+  - reach-inputs-1|3ef76c1a82cfe0c6503493dc8464dc5a
+  - reach-inputs-1|de9f329ec27101222a8c85d40c2550a8
+  - reach-inputs-1|923e72c30f03fc5647c42ae562d478d0
+  - reach-inputs-1|a9e37b6a25bb397d01739af2e83ecb91
+  - reach-inputs-1|abf288faed6a6c67e8b4a0edc4a8a785
+  - reach-inputs-1|c1a9bae95a9dd71096765bd546406954
+  - reach-inputs-1|6dc26988dd1ebfd662fa49f99f74b101
+  - reach-inputs-1|2e9333c51376d68accc8e66a0bc19054
+  - reach-inputs-1|8d6ee686fb184a0ab728db2718b89d44
+  - reach-inputs-1|5482b33ee0672cf91ad3fb9ac412e8e0
+  - reach-inputs-1|bbd3f665b0da5b38f547fbad4e0354d8
+  - reach-inputs-1|40d263ef33ebbb672dd956d4e2a46cd0
+  - reach-inputs-1|c11aec2631bed77fc5e3b94ff33959e7
+  - reach-inputs-1|f77c23598a2ba79d449073e1bb7e5e50
+  - reach-inputs-1|f5a437ece53b80fc09f5e2a8359bc61f
+  - reach-inputs-1|6f95b321248b6e747616384f3d51ae16
+  - reach-inputs-1|5efd2ca09739c00e51487c86295b762b
+  - reach-inputs-1|a60c23a03d8163998a6169faef67c16f
+  - reach-inputs-1|db18e2d59643524e7b33b1205e78287a
+  - reach-inputs-1|c3fa2a08698ff0f908372158ad9889b8
+  - reach-inputs-1|6fc5a7c2d33f580bb51046468fbb6f3a
+  - reach-inputs-1|44df9828ae0d8d3e7f725941f82ccc1a
+  - reach-inputs-1|80506c5dba7851845bf88d40c2c314cb
+  - reach-inputs-1|a75ea53e80061559099d07f3fd734045
+  - reach-inputs-1|627fa4e8c00d06fc9ef7f4329872fb6e
+  - reach-inputs-1|128229319b2555c3270455b65e915866
+  - reach-inputs-1|48b7dfc63a055721a53fe78a03351b45
+  - reach-inputs-1|dc8323fa306b3ec2dd261d3a967ca338
+  - reach-inputs-1|250ae759040189a7cd1d00b29fa6132d
+  - reach-inputs-1|66eee2f968de18fb73ba9e7972d21ca6
+  - reach-inputs-1|2287cd8a116a9e0cc108a382b5c6da24
+  - reach-inputs-1|f22d15ec1e1ded6a132d8194796438e7
+  - reach-inputs-1|8d83c1e531627effe7e181a1c9080005
+  - reach-inputs-1|761bcf4b19f88e314eeb5506ef7a6590
+  - reach-inputs-1|876270ed97e862165c0c1bd8eb3978ac
+  - reach-inputs-1|74a4db19e6a11c9015970a2e95042c9b
+  - reach-inputs-1|a5933976242beb5442bb824f7e505fca
+  - reach-inputs-1|959077a9d0c62feeb5e0093eb92a4638
+  - reach-inputs-1|3f2fd03e3a82f52287d450df8bd7bfc2
+  - reach-inputs-1|74572b7cc4a894814feeacda42b20589
+  - reach-inputs-1|1f74c8f25a22acd1ef4151dce16b13eb
+  - reach-inputs-1|98b94f2e95ca03daa3bb7f22c83cacbc
+  - reach-inputs-1|857583a3c9b1d38e84797fbaa49a62e0
+  - reach-inputs-1|3c4f46d68faf7a86f7a68e12ef2a3f0e
+  - reach-inputs-1|4e212515123d10e9ad016481ccc7ff87
+  - reach-inputs-1|8894ee0118ae271d924d22bdafdae52f
+  - reach-inputs-1|1173cf994d991916fe48f1bdceb6478e
+  - reach-inputs-1|f4c5adf12dc8a63c8090ae20e2255a3d
+  - reach-inputs-1|de496417ef8b6c2bef5ed0be3643b878
+  - reach-inputs-1|0a4e2f2b14053430b94d009d61ed465c
+  - reach-inputs-1|ebd2d44b03135dc635061580d4299d15
+  - reach-inputs-1|e7ab33813f5a01acaaed02b5d67ed4cc
+  - reach-inputs-1|b75c9d9f8eb9e30cf5915afc8b865ffd
+  - reach-inputs-1|be8d545e9ecdbfe88e3de1a6a2d7752b
+  - reach-inputs-1|02900e87447e446de3f9c44d50622397
+  - reach-inputs-1|45047e38e07f02c9e2a82d39a8798730
+  - reach-inputs-1|d26e31fff3ccae3d53b4fede923dc2c2
+  - reach-inputs-1|25b8acf180ea92ebd9011390c60fd167
+  - reach-inputs-1|9ef69b6b3b08824bf06a2bf47d3941d8
+  - reach-inputs-1|d6a89fb3e656e3293a196407efa47b7f
+  - reach-inputs-1|897c5177a3742c6b1d87a5e6f80d137f
+  - reach-inputs-1|c89b9e29562dd66eda6961a9dbc57afa
+  - reach-inputs-1|aa99d9c68b660d0bdf369979ea7680dc
+  - reach-inputs-1|83388de48392a53583ae3ad1bae614bc
+  - reach-inputs-1|871bbdabe68c86caecccf1de11957263
+  - reach-inputs-1|c05c5854fa026a95098d91ee5add9f1f
+  - reach-inputs-1|0eea2624cb063fcaf0bf0c3d19ecb4ce
+  - reach-inputs-1|579be4e60be1be2dc1612136168f8e04
+  - reach-inputs-1|5e5fe7fe0fc21a2d10c312dcce7da00a
+  - reach-inputs-1|53881a10a1f3646850cf200ed9a047c0
+  - reach-inputs-1|8104024b56231b25abc1150f1ca4feb9
+  - reach-inputs-1|4f78f9c4454f61976e42b14c2928dd7a
+  - reach-inputs-1|c83c1cb237f7b22625b865ea713b882d
+  - reach-inputs-1|c73c18276325e00c120a8dfeced67849
+  - reach-inputs-1|192efeac8b3890b742dd87cabdb7191d
+  - reach-inputs-1|d282e5fbe1e4dedbcfd3077b1cfa0a4c
+  - reach-inputs-1|ae31cc3e501dcc257720263f5058621c
+  - reach-inputs-1|95dcf391861dfa365ce2cd2d63f559a7
+  - reach-inputs-1|386fbcefec7f0f47c58d3bba6e3f70bd
+  - reach-inputs-1|1186f77e1e38e1845591292428b390e3
+  - reach-inputs-1|68e8c40b9bf41f6c14e64f57cb78e0ba
+  - reach-inputs-1|37ed47304000337c39dd6fc9d9c9b234
+  - reach-inputs-1|798da0c2c5e01b61be5ada79364d95a3
+  - reach-inputs-1|071375c5d3f701fe9b37d352edaaf655
+  - reach-inputs-1|fd88c936dd95dfa51f7c485a9aa67d0a
+  - reach-inputs-1|9f091c6308c8c2775df958eaf008195b
+  - reach-inputs-1|839ae1d39b6f1b5da4ae1d4a9cf87be9

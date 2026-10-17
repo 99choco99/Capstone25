@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3003779860b4be6a654ada7da7493af, type: 3}
+  m_Name: HeavyContact
+  m_EditorClassIdentifier: Assembly-CSharp::AttackImpactProfile
+  OverrideKnockback: 1
+  Knockback:
+    DirectHit:
+      Distance: 1.5
+      Duration: 0.45
+    Guard:
+      Distance: 1.35
+      Duration: 0.42
+    Parry:
+      Distance: 0.95
+      Duration: 0.32
+    MovementCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 2.5
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.2
+        value: 0.55
+        inSlope: 0.9
+        outSlope: 0.9
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 0.7
+        value: 0.9
+        inSlope: 0.55
+        outSlope: 0.55
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0.15
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0.33333334
+        outWeight: 0.33333334
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+  ContactSeparationDistanceLimit: -1
+  GuardMotion: 3
+  ForceHeavyRebound: 1
+  UseHeavyDefenseFeedback: 0
+  OverrideReactionSettings: 0
+  Reaction:
+    HitRecoveryDuration: 0.4
+    HitGuardRecoveryDuration: 0.2
+    DirectHitStop: 0.025
+    GuardHitStop: 0.025
+    ParryHitStop: 0.065
+    SpecialHitStop: 0.04
+    DirectHitShake: 0.1
+    GuardShake: 0.08
+    ParryShake: 0.22
+    SpecialHitShake: 0.22
